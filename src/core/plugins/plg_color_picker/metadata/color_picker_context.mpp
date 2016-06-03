@@ -1,0 +1,16 @@
+#include "../color_picker_context.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/type_class_definition.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE( ColorPickerContext, MetaNone() )
+	EXPOSE_METHOD( "startObservingColor", startObservingColor )
+	EXPOSE_METHOD( "endObservingColor", endObservingColor )
+	EXPOSE_METHOD( "grabScreenColor", grabScreenColor )
+	EXPOSE( "pixelColor", pixelColor_ )
+END_EXPOSE()
+} // end namespace wgt

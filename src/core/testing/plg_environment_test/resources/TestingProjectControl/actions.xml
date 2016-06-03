@@ -1,0 +1,6 @@
+<Actions>
+	<NewProject text="New Project" shortcut="" path="TestProject"/>
+	<OpenProject text="Open Project" shortcut="" path="TestProject"/>
+	<SaveProject text="Save Project" shortcut="" path="TestProject"/>
+	<CloseProject text="Close Project" shortcut="" path="TestProject"/>
+</Actions>

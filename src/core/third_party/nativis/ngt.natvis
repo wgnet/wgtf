@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="ObjectHandle">
+        <DisplayString Condition="storage_._Ptr == 0">ObjectHandle(empty)</DisplayString>
+        <DisplayString Condition="storage_._Ptr != 0">ObjectHandleT&lt;&gt;></DisplayString>
+
+      <Expand>
+        <ExpandedItem Condition="storage_._Ptr != 0"> *storage_._Ptr </ExpandedItem>
+      </Expand>
+  </Type>
+</AutoVisualizer>

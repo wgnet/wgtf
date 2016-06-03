@@ -1,0 +1,38 @@
+#include "interfaces/i_curve_editor.hpp"
+#include "models/bezier_point.hpp"
+#include "models/point.hpp"
+#include "interfaces/i_curve.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(Point, MetaNone())
+	EXPOSE("x", getX, setX, MetaNone())
+	EXPOSE("y", getY, setY, MetaNone())
+END_EXPOSE()
+
+BEGIN_EXPOSE(BezierPoint, MetaNone())
+	EXPOSE("cp1", cp1)
+	EXPOSE("cp2", cp2)
+	EXPOSE("pos", pos)
+END_EXPOSE()
+
+BEGIN_EXPOSE(ICurve, MetaNone())
+	EXPOSE_METHOD("addAt", addAt, undo, redo)
+	EXPOSE_METHOD("removeAt", removeAt, undo, redo)
+	EXPOSE("notifyDirty", curveDirty, MetaNone())
+	EXPOSE("points", getPoints, MetaNone())
+	EXPOSE("showControlPoints", getShowControlPoints, setShowControlPoints, MetaNone())
+END_EXPOSE()
+
+BEGIN_EXPOSE(ICurveEditor, MetaNone())
+	EXPOSE("curves", getCurves, MetaDisplayName(L"Curves"))
+	EXPOSE("subTitle", getSubTitle, putSubTitle, MetaDisplayName(L"Title"))
+	EXPOSE("xScale", getXScale, putXScale, MetaDisplayName(L"X Scale"))
+	EXPOSE("yScale", getYScale, putYScale, MetaDisplayName(L"Y Scale"))
+	EXPOSE("timeScaleEditEnabled", getTimeScaleEditEnabled, putTimeScaleEditEnabled, MetaNone())
+END_EXPOSE()
+} // end namespace wgt

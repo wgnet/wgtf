@@ -1,0 +1,8 @@
+plugins/plg_variant
+plugins/plg_logging_system
+plugins/plg_reflection
+plugins/plg_serialization
+plugins/plg_file_system
+plugins/plg_custom_xml_serialization_test
+
+

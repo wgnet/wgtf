@@ -1,0 +1,3 @@
+Python CMake files are based on the CPython CMake Buildsystem project.
+See files LICENSE_Apache_20 and README_CMAKE.
+https://github.com/python-cmake-buildsystem/python-cmake-buildsystem/

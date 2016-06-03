@@ -1,0 +1,21 @@
+#include "interfaces/i_node.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(INode, MetaNone())
+    EXPOSE("id", Id, MetaNone())
+    EXPOSE("nodeTitle", Title, MetaNone())
+    EXPOSE("nodeCoordX", X, MetaNone())
+    EXPOSE("nodeCoordY", Y, MetaNone())
+	EXPOSE("inputSlotsModel", GetInputSlotsModel, MetaNone())
+    EXPOSE("outputSlotsModel", GetOutputSlotsModel, MetaNone())
+    EXPOSE("icon", Icon, MetaNone())
+    EXPOSE("color", Color, MetaNone())
+    EXPOSE("subtitle", SubTitle, MetaNone())
+    EXPOSE_METHOD("setPos", SetPos)
+END_EXPOSE()
+}

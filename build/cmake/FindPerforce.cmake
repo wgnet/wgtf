@@ -1,0 +1,85 @@
+# Use FIND_PACKAGE( Perforce ) to run this script.
+INCLUDE( FindPackageHandleStandardArgs )
+INCLUDE( WGToolsProject )
+
+IF( NOT Perforce_FIND_VERSION )
+	SET( Perforce_FIND_VERSION "15.2" )
+ENDIF()
+
+IF( BW_PLATFORM_WINDOWS )
+	SET( PLATFORM_SUFFIX w )
+ELSE()
+	MESSAGE( "Skipping 'plg_perforce', currently only windows libraries are available" )
+	RETURN()
+ENDIF()
+
+SET( PERFORCE_DIR ${WG_TOOLS_THIRD_PARTY_DIR}/perforce/r${Perforce_FIND_VERSION} )
+
+IF( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+	SET( PERFORCE_DIR ${PERFORCE_DIR}/bin.ntx64 )
+	SET( BITNESS_SUFFIX 64 )
+ELSE()
+	SET( PERFORCE_DIR ${PERFORCE_DIR}/bin.ntx86 )
+ENDIF()
+
+SET( OPENSSL_DIR ${WG_TOOLS_THIRD_PARTY_DIR}/perforce/OpenSSL )
+
+IF( EXISTS "${PERFORCE_DIR}" )
+	SET( PERFORCE_EXISTS TRUE )
+ELSE()
+	SET( PERFORCE_EXISTS FALSE )
+ENDIF()
+
+# Same checks as BWQtCommon
+IF( CMAKE_GENERATOR_TOOLSET STREQUAL "v110_xp" )
+	SET( PERFORCE_DIR ${PERFORCE_DIR}/vs2012 )
+	SET( PERFORCE_EXISTS FALSE )
+ELSEIF( CMAKE_GENERATOR_TOOLSET STREQUAL "v120_xp" )
+	SET( PERFORCE_DIR ${PERFORCE_DIR}/vs2013 )
+	SET( OPENSSL_DIR ${OPENSSL_DIR}/vs2013 )
+ELSEIF( CMAKE_GENERATOR_TOOLSET STREQUAL "v140_xp" )
+	SET( PERFORCE_DIR ${PERFORCE_DIR}/vs2015 )
+	SET( OPENSSL_DIR ${OPENSSL_DIR}/vs2015 )
+ENDIF()
+
+SET( PERFORCE_DIR ${PERFORCE_DIR}_dyn )
+
+# Handle the QUIETLY and REQUIRED arguments and set PERFORCE_FOUND to TRUE
+# if all listed variables are TRUE
+FIND_PACKAGE_HANDLE_STANDARD_ARGS( Perforce
+	DEFAULT_MSG
+	PERFORCE_EXISTS
+)
+
+# Only certain commands, like INCLUDE_DIRECTORIES can contain generator
+# expressions like $CONFIG:Debug
+SET( PERFORCE_CONFIG_DIR ${PERFORCE_DIR}$<$<CONFIG:Debug>:_debug> )
+SET( CONFIG_SUFFIX $<$<CONFIG:Debug>:d>$<$<NOT:$<CONFIG:Debug>>:r> )
+SET( LIB_SUFFIX ${PLATFORM_SUFFIX}${BITNESS_SUFFIX}${CONFIG_SUFFIX} )
+SET( LIBEAY_PATH ${OPENSSL_DIR}/lib/libeay_${LIB_SUFFIX}.lib )
+SET( SSLEAY_PATH ${OPENSSL_DIR}/lib/ssleay_${LIB_SUFFIX}.lib )
+SET( PERFORCE_LIB_DIR ${PERFORCE_CONFIG_DIR}/lib )
+
+# Definitions, libraries and include dirs should be output for each FIND_PACKAGE script
+# No definitions
+SET( PERFORCE_DEFINITIONS )
+# No dependencies
+SET( PERFORCE_LIBRARIES
+	Ws2_32
+	${PERFORCE_CONFIG_DIR}/lib/libclient.lib
+	${PERFORCE_CONFIG_DIR}/lib/librpc.lib
+	${PERFORCE_CONFIG_DIR}/lib/libsupp.lib
+	${LIBEAY_PATH}
+	${SSLEAY_PATH}
+)
+# Includes
+SET( PERFORCE_INCLUDE_DIRS ${PERFORCE_CONFIG_DIR}/include )
+
+MARK_AS_ADVANCED( PERFORCE_EXISTS )
+
+IF( PERFORCE_FOUND )
+	MESSAGE( STATUS "Enabled ${PROJECT_NAME}. Perforce found in ${PERFORCE_DIR}." )
+ELSE()
+	MESSAGE( STATUS "Disabled ${PROJECT_NAME}. Perforce not found in ${PERFORCE_DIR}." )
+ENDIF()
+

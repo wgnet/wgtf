@@ -1,0 +1,16 @@
+CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
+
+MESSAGE( STATUS "core_serialization windows files are included")
+
+IF( BW_COMPILER_TOKEN STREQUAL "vc11" )
+	ADD_DEFINITIONS( -D_VARIADIC_MAX=6 )
+ENDIF()
+
+SET( WINDOWS_SRCS
+	windows/file_system.cpp
+)
+
+BW_BLOB_SOURCES( BLOB_SRCS
+	${WINDOWS_SRCS}
+	${BLOB_SRCS}
+)

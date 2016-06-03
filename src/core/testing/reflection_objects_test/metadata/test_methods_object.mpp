@@ -1,0 +1,16 @@
+#include "../test_methods_object.hpp"
+
+
+namespace wgt
+{
+BEGIN_EXPOSE( TestMethodsObject, MetaNone() )
+	EXPOSE_METHOD( "TestMethod1", testMethod1 )
+	EXPOSE_METHOD( "TestMethod2", testMethod2 )
+	EXPOSE_METHOD( "TestMethod3", testMethod3 )
+	EXPOSE_METHOD( "TestMethod4", testMethod4 )
+	EXPOSE_METHOD( "TestMethod5", testMethod5 )
+	EXPOSE_METHOD( "TestMethod6", testMethod6 )
+	EXPOSE_METHOD( "TestMethod7", testMethod7 )
+	EXPOSE_METHOD( "TestMethod8", testMethod8 )
+END_EXPOSE()
+} // end namespace wgt

@@ -1,0 +1,26 @@
+#include "../test_polymorphism.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+
+
+namespace wgt
+{
+BEGIN_EXPOSE( TestPolyCheckBox, TestPolyStruct, MetaNone() )
+	EXPOSE( "PolyBool", checked_, MetaNone() )
+END_EXPOSE()
+
+BEGIN_EXPOSE( TestPolyTextField, TestPolyStruct, MetaNone() )
+	EXPOSE( "PolyText", getText, setText, MetaNone() )
+	EXPOSE( "Number", getNumber, setNumber, MetaNone() )
+END_EXPOSE()
+
+BEGIN_EXPOSE( TestPolyComboBox, TestPolyStruct, MetaNone() )
+	EXPOSE( "PolyComBoxText", getSelected, setSelected, 
+	MetaEnum( L"red=0|green|"\
+			L"blue|custom" ) )
+END_EXPOSE()
+
+BEGIN_EXPOSE( TestPolyColor3, TestPolyComboBox, MetaNone() )
+END_EXPOSE()
+} // end namespace wgt

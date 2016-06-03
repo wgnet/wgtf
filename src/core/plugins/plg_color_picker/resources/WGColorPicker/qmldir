@@ -1,0 +1,9 @@
+module WGColorPicker
+
+WGColorPickerPanel.qml 1.0 WGColorPickerPanel.qml
+WGColorPicker 1.0 WGColorPicker.qml
+WGColorPickerDialog 1.0 WGColorPickerDialog.qml
+WGColorWheel 1.0 WGColorWheel.qml
+WGHslSlider 1.0 WGHslSlider.qml
+WGRgbSlider 1.0 WGRgbSlider.qml
+WGShadeGrid 1.0 WGShadeGrid.qml

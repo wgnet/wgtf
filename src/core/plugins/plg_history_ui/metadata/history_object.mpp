@@ -1,0 +1,20 @@
+#include "../history_object.hpp"
+
+#include "core_data_model/i_value_change_notifier.hpp"
+
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE( HistoryObject, MetaNoSerialization() )
+	EXPOSE( "History", getHistory, MetaNone() )
+	EXPOSE( "CurrentIndexSource", currentIndexSource, MetaNone() )
+	EXPOSE( "CreateMacro", createMacro, MetaNone() )
+	EXPOSE( "SelectionHandlerSource", selectionHandlerSource, MetaNone() )
+    EXPOSE( "IsClearButtonVisible", isClearButtonVisible, setClearButtonVisible, MetaNone())
+    EXPOSE( "IsMakeMacroButtonVisible", isMakeMacroButtonVisible, setMakeMacroButtonVisible, MetaNone())
+END_EXPOSE()
+} // end namespace wgt

@@ -1,0 +1,11 @@
+module WGNodeEditor
+
+ConnectionNodes 1.0 ConnectionNodes.qml
+ContextMenu 1.0 ContextMenu.qml
+GraphView 1.0 GraphView.qml
+Node 1.0 Node.qml
+NodeEditorView 1.0 NodeEditorView.qml
+NodeGroupArea 1.0 NodeGroupArea.qml
+NodeStyle 1.0 NodeStyle.qml
+Slot 1.0 Slot.qml
+SlotStyle 1.0 SlotStyle.qml

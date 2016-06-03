@@ -1,0 +1,12 @@
+CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
+
+MESSAGE( STATUS "core_serialization mac files are included")
+
+SET( MAC_SRCS
+	mac/file_system.cpp
+)
+
+BW_BLOB_SOURCES( BLOB_SRCS
+	${MAC_SRCS}
+	${BLOB_SRCS}
+)

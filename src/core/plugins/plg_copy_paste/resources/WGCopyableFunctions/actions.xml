@@ -1,0 +1,5 @@
+<Actions>
+	<ToggleCopyControls shortcut="" path="ToolBar|" icon=":/WGCopyableFunctions/icons/toggle_copy_16x16.png"/>
+	<Copy text="Copy" shortcut="Ctrl+C" path="Edit" icon=":/WGCopyableFunctions/icons/copy_16x16.png"/>
+	<Paste text="Paste" shortcut="Ctrl+V" path="Edit" icon=":/WGCopyableFunctions/icons/paste_16x16.png"/>
+</Actions>

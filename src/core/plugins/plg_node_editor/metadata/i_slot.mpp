@@ -1,0 +1,18 @@
+#include "interfaces/i_slot.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(ISlot, MetaNone())
+    EXPOSE("id", Id, MetaNone())
+    EXPOSE("isInput", IsInput, MetaNone())
+    EXPOSE("isConnected", IsConnected, MetaNone())
+    EXPOSE("node", Node, MetaNone())
+    EXPOSE("label", Label, MetaNone())
+    EXPOSE("icon", Icon, MetaNone())
+    EXPOSE("color", Color, MetaNone())
+END_EXPOSE()
+}

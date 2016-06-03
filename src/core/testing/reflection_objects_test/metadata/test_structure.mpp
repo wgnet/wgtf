@@ -1,0 +1,20 @@
+#include "../test_structure.hpp"
+#include "../test_objects_common.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE( TestStructure, MetaNone() )
+	DEFINE_TEST_DATA_TYPES_METADATA()
+END_EXPOSE()
+
+BEGIN_EXPOSE( TestInheritedStruct, TestStructure, MetaNone() )
+	DEFINE_TEST_INHERITED_DATA_TYPES_METADATA()
+END_EXPOSE()
+
+BEGIN_EXPOSE( TestEmptyStructure, MetaNone() )
+END_EXPOSE()
+} // end namespace wgt

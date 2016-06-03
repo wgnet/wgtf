@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1440</width>
+    <height>900</height>
+   </rect>
+  </property>
+  <property name="windowMaximized">
+   <bool>true</bool>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::PreventContextMenu</enum>
+  </property>
+  <property name="windowTitle">
+   <string>Generic App Test</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/plg_window_test/icons/ngt.png</normaloff>:/plg_window_test/icons/ngt.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="defaultView">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>32</height>
+       </size>
+      </property>
+      <property name="layoutTags" stdset="0">
+       <stringlist>
+        <string>doc_tab</string>
+       </stringlist>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QTabWidget" name="defaultView">
+      <property name="layoutTags" stdset="0">
+       <stringlist>
+        <string>viewport</string>
+        <string>default</string>
+       </stringlist>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="defaultMenuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1440</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="path" stdset="0">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QToolBar" name="defaultToolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="path" stdset="0">
+    <string>ToolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="path" stdset="0">
+    <string>ToolBar.Test</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>BottomToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QDockWidget" name="testPanels">
+   <property name="minimumSize">
+    <size>
+     <width>80</width>
+     <height>38</height>
+    </size>
+   </property>
+   <property name="baseSize">
+    <size>
+     <width>400</width>
+     <height>100</height>
+    </size>
+   </property>
+   <property name="layoutTags" stdset="0">
+    <stringlist>
+     <string>test</string>
+    </stringlist>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="widget"/>
+  </widget>
+  <widget class="QDockWidget" name="leftDock">
+   <property name="baseSize">
+    <size>
+     <width>100</width>
+     <height>100</height>
+    </size>
+   </property>
+   <property name="layoutTags" stdset="0">
+    <stringlist>
+     <string>scenebrowser</string>
+     <string>history</string>
+    </stringlist>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="widget_2">
+    <widget class="QDockWidget" name="leftDock_hidden">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>80</width>
+       <height>38</height>
+      </rect>
+     </property>
+     <property name="baseSize">
+      <size>
+       <width>100</width>
+       <height>100</height>
+      </size>
+     </property>
+     <property name="layoutTags" stdset="0">
+      <stringlist>
+       <string>macros</string>
+      </stringlist>
+     </property>
+     <property name="hidden" stdset="0">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="widget_3"/>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="bottomDock">
+   <property name="baseSize">
+    <size>
+     <width>0</width>
+     <height>250</height>
+    </size>
+   </property>
+   <property name="layoutTags" stdset="0">
+    <stringlist>
+     <string>assetbrowser</string>
+    </stringlist>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="widget_4"/>
+  </widget>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>

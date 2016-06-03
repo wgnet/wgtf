@@ -1,0 +1,62 @@
+<objects>
+		<!--
+			please add property 'type' attribute value if a property's value is not a string
+				list of value type
+				=============================================================
+				0  : if property value is a string, it's default one,
+				1  : if property value is a Boolean type.
+				2  : if property value is an Integer,
+				3  : if property value is a Double,
+				4  : if proeprty value is a enum List,
+				5  : if property value is a Vector2,
+				6  : if property value is a Vector3,
+				7  : if property value is a Vector4,
+	    =============================================================
+		-->
+	<object>
+		 <property name = "name"> object1 </property>
+		<property name = "map1"> testspace/decals/rock_01.dds </property>
+		<property name = "map2"> testspace/decals/rock_01_NM.dds </property>
+		<property name = "map3">  </property>
+		<property name = "createdBy"> j_artist </property>
+		<property name = "visible" type ="1"> true </property>
+		<property name = "position" type ="6"> -3.0, 3.0, -10.0 </property>
+		<property name = "rotation" type ="6"> 89.6, 61.5, -9.7 </property>
+		<property name = "scale" type ="6"> 31.423, 14.779, 2.34 </property>
+		<property name = "materialType" type ="4"> DIFFUSE, BUMP, PARALLAX, ENV_MAPPING, AMBIENT_OCCLUSION, SHADOWS </property>
+		<property name = "wrapping" type ="5"> 1.0, 1.0 </property>
+		<property name = "offsets" type ="7"> 0.0, 0.0, 0.0, 0.0 </property>
+	</object>
+	<object>
+		 <property name = "name"> object2 </property>
+		<property name = "modelName"> testspace/models/woodFence_01/normal/lod0/woodFence_01.model </property>
+		<property name = "createdBy"> j_artist </property>
+		<property name = "visible" type ="1"> true </property>
+		<property name = "position" type ="6"> 3.0, 3.0, -10.0 </property>
+		<property name = "rotation" type ="6"> 51.1, 4.6, 5.7 </property>
+		<property name = "scale" type ="6"> 1.0, 1.0, 1.0 </property>
+		<property name = "destructibleState" type ="4"> undamaged, destroyed </property>
+	</object>
+	<object>
+		 <property name = "name"> object3 </property>
+		<property name = "fmodEvent"> ambient/animals/cricket </property>
+		<property name = "createdBy"> s_audioengineer </property>
+		<property name = "visible" type ="1"> true </property>
+		<property name = "audible" type ="1"> true </property>
+		<property name = "position" type ="6"> -3.0, -3.0, -10.0 </property>
+	</object>
+	<object>
+		 <property name = "name"> object4 </property>
+		<property name = "modelName"> testspace/models/baseFlag/normal/lod0/baseFlag.model </property>
+		<property name = "createdBy"> j_artist </property>
+		<property name = "visible" type ="1"> true </property>
+		<property name = "position" type ="6"> 3.0, -3.0, -10.0 </property>
+		<property name = "rotation" type ="6"> 0.0, 0.0, 0.0 </property>
+		<property name = "radius" type ="3"> 50.0 </property>
+		<property name = "radiusColor" type ="7"> 255.0, 255.0, 255.0, 255.0 </property>
+		<property name = "team" type ="2"> 1 </property>
+		<property name = "pointsPerSecond" type ="3"> 1.0 </property>
+		<property name = "maxPointsPerSecond" type ="3"> 3.0 </property>
+		<property name = "ownerStopsCapturing" type ="1"> false </property>
+	</object>
+</objects>

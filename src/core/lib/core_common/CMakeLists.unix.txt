@@ -1,0 +1,11 @@
+CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
+
+SET( PLATFORM_SRCS
+	ngt_windows.hpp
+	ngt_windows.cpp
+	shared_library_unix.cpp
+)
+
+SET( PLATFORM_LIBRARIES
+	dl
+)
