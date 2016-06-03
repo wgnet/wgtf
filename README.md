@@ -1,0 +1,2 @@
+# wgtf
+Wargaming Tools Framework
