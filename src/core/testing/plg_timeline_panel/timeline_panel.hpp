@@ -7,6 +7,7 @@
 #include "core_dependency_system/depends.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
+#include "timeline_model.hpp"
  
 #include <memory>
  
@@ -22,7 +23,8 @@ public:
     void removePanel();
  
 private:
-    std::unique_ptr< IView > timelineView_;
+    wg_future<std::unique_ptr< IView >> timelineView_;
+	TimelineModel timelineModel_;
 };
  
 } // end namespace wgt

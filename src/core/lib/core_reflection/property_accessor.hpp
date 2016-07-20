@@ -5,6 +5,7 @@
 #include <memory>
 #include "i_definition_manager.hpp"
 #include "core_variant/collection.hpp"
+#include "reflection_dll.hpp"
 
 namespace wgt
 {
@@ -16,7 +17,7 @@ class MetaBase;
 class Variant;
 class ReflectedMethodParameters;
 
-class PropertyAccessor
+class REFLECTION_DLL PropertyAccessor
 {
 public:
 	PropertyAccessor();

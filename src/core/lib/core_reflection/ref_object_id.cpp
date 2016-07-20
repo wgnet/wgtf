@@ -11,10 +11,15 @@
 #include <uuid/uuid.h>
 #endif
 
+namespace
+{
+
+	wgt::RefObjectId s_zeroRefObjectId( 0, 0, 0, 0 );
+
+}
+
 namespace wgt
 {
-RefObjectId RefObjectId::s_zero_( 0, 0, 0, 0 );
-
 //==============================================================================
 RefObjectId::RefObjectId() :
 	a_( 0 ), b_( 0 ), c_( 0 ), d_( 0 )
@@ -124,6 +129,13 @@ RefObjectId RefObjectId::generate()
 #endif
 	
 	return n;
+}
+
+
+//==============================================================================
+const RefObjectId & RefObjectId::zero()
+{
+	return s_zeroRefObjectId;
 }
 
 

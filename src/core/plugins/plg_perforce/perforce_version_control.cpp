@@ -59,7 +59,7 @@ std::unique_ptr<IDepotView> PerforceVersionControl::createDepotView(const char* 
 
 	clientApi->SetProtocol("api", "76");			// 2014.1 compatible server
 	clientApi->SetProtocol("tag", "");			// Enabled Tagged output
-	//clientApi->SetProtocol("specstring", "");	// Parse Forms
+	clientApi->SetProtocol("specstring", "");	// Parse Forms
 
 	Error e;
 	clientApi->Init(&e);

@@ -9,6 +9,8 @@
 #include "core_variant/type_id.hpp"
 #include "core_variant/variant.hpp"
 
+#include "variant_dll.hpp"
+
 
 namespace wgt
 {
@@ -16,7 +18,7 @@ namespace wgt
 class CollectionIteratorImplBase;
 typedef std::shared_ptr<CollectionIteratorImplBase> CollectionIteratorImplPtr;
 
-class CollectionIteratorImplBase
+class VARIANT_DLL CollectionIteratorImplBase
 {
 public:
 	typedef std::forward_iterator_tag iterator_category;
@@ -77,7 +79,7 @@ public:
 };
 
 
-class CollectionImplBase
+class VARIANT_DLL CollectionImplBase
 {
 public:
 	// not just bool createNew for future support of multimaps
@@ -142,7 +144,7 @@ public:
 	virtual CollectionIteratorImplPtr end() = 0;
 	virtual std::pair< CollectionIteratorImplPtr, bool > get( const Variant& key, GetPolicy policy ) = 0;
 	virtual CollectionIteratorImplPtr erase( const CollectionIteratorImplPtr& pos ) = 0;
-	virtual size_t erase( const Variant& key ) = 0;
+	virtual size_t eraseKey( const Variant& key ) = 0;
 	virtual CollectionIteratorImplPtr erase(
 		const CollectionIteratorImplPtr& first,
 		const CollectionIteratorImplPtr& last ) = 0;
@@ -265,13 +267,13 @@ typename std::enable_if<
 /**
 Wrapper for generic container.
 */
-class Collection
+class VARIANT_DLL Collection
 {
 public:
 	/**
 	Proxy value that provides transparent read-write access to element value.
 	*/
-	class ValueRef
+	class VARIANT_DLL ValueRef
 	{
 	public:
 		ValueRef(const CollectionIteratorImplPtr& impl):
@@ -289,12 +291,6 @@ public:
 		T cast() const
 		{
 			return impl_->value().cast<T>();
-		}
-
-		template<typename T>
-		const T& castRef() const
-		{
-			return impl_->value().castRef<T>();
 		}
 
 		template<typename T>
@@ -347,7 +343,7 @@ public:
 	@warning operator*() could be slow because it returns a copy rather than
 	a reference.
 	*/
-	class ConstIterator
+	class VARIANT_DLL ConstIterator
 	{
 	public:
 		typedef CollectionIteratorImplBase::iterator_category iterator_category;
@@ -355,8 +351,8 @@ public:
 		typedef CollectionIteratorImplBase::difference_type
 			difference_type;
 
-		typedef const Variant pointer;
 		typedef const Variant reference;
+		typedef void pointer;
 
 		ConstIterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()):
 			impl_(impl)
@@ -436,7 +432,7 @@ public:
 	Note that this iterator implementation doesn't conform fully to standard
 	iterator requirements.
 	*/
-	class Iterator:
+	class VARIANT_DLL Iterator:
 		public ConstIterator
 	{
 	public:
@@ -446,9 +442,8 @@ public:
 		typedef ConstIterator::value_type value_type;
 		typedef ConstIterator::difference_type difference_type;
 
-		// Variant does not support pointers and references
-		typedef ValueRef pointer;
 		typedef ValueRef reference;
+		typedef void pointer;
 
 		Iterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()):
 			base(impl)
@@ -647,7 +642,7 @@ public:
 
 	Returns amount of elements erased.
 	*/
-	size_t erase(const Variant& key);
+	size_t eraseKey(const Variant& key);
 
 	/**
 	Erase elements between first and last, not including last.
@@ -717,7 +712,6 @@ private:
 	CollectionImplPtr impl_;
 
 };
-
 
 template<typename T>
 typename std::enable_if<

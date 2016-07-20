@@ -16,6 +16,7 @@ SET( BW_COMPILER_FLAGS
 	/Gy		# Enable function level linking
 
 	/w34302 # Enable warning 'conversion': truncation from 'type1' to 'type2'
+	/wd4251 # Disable warning 'type1' needs to have dll-interface to be used by clients of class 'type2'
 	/d2Zi+	# Put local variables and inline functions into the PDB
 	)
 

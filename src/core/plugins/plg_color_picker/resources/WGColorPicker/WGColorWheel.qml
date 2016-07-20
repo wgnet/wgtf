@@ -113,15 +113,62 @@ Rectangle {
     }
 
     Rectangle {
-        id: ringBorder
+        id: colorWheelBase
         anchors.fill: parent
         anchors.margins: defaultSpacing.doubleBorderSize
         height: parent.height
         width: height
-
-        color: palette.darkColor
-
+        color: "transparent"
         radius: width
+
+        /*!
+            Source for the rainbow gradient. Must not be a parent of the gradient.
+        */
+        Rectangle {
+            id: rainbowSource
+            radius: width
+            anchors.centerIn: parent
+            height: parent.height - defaultSpacing.doubleBorderSize * 2
+            width: height
+        }
+
+        /*!
+            Generates a rainbow gradient from the source image opacity
+        */
+        ConicalGradient {
+            id: rainbow
+            angle: __hueRotation
+            source: rainbowSource
+            anchors.fill: rainbowSource
+        
+            //Makes 90 degrees 'zero'
+            rotation: 90
+        
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#FF0000"}
+                GradientStop { position: 0.167; color: "#FF00FF"}
+                GradientStop { position: 0.333; color: "#0000FF"}
+                GradientStop { position: 0.5; color: "#00FFFF"}
+                GradientStop { position: 0.667; color: "#00FF00"}
+                GradientStop { position: 0.833; color: "#FFFF00"}
+                GradientStop { position: 1.0; color: "#FF0000"}
+            }
+        }
+
+        /*!
+            Outer border around the colour wheel
+        */
+        Rectangle {
+            id: colorRingBorder
+            anchors.centerIn: parent
+            height: parent.height - defaultSpacing.doubleBorderSize * 2 + border.width
+            width: height
+            radius: width
+
+            border.width: 2
+            border.color: palette.darkColor
+            color: "transparent"
+        }
 
         Rectangle {
             id: colorRing
@@ -131,25 +178,7 @@ Rectangle {
             height: parent.height - defaultSpacing.doubleBorderSize * 2
             width: height
 
-            ConicalGradient {
-                id: rainbow
-                angle: __hueRotation
-                source: colorRing
-                anchors.fill: parent
-
-                //Makes 90 degrees 'zero'
-                rotation: 90
-
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#FF0000"}
-                    GradientStop { position: 0.167; color: "#FF00FF"}
-                    GradientStop { position: 0.333; color: "#0000FF"}
-                    GradientStop { position: 0.5; color: "#00FFFF"}
-                    GradientStop { position: 0.667; color: "#00FF00"}
-                    GradientStop { position: 0.833; color: "#FFFF00"}
-                    GradientStop { position: 1.0; color: "#FF0000"}
-                }
-            }
+            color: "transparent"
 
             Rectangle {
                 id: hueSelectorMark
@@ -284,12 +313,15 @@ Rectangle {
                 }
             }
 
+            /*!
+                Inner circle that obscures the rainbow gradient to form a ring.
+                Also creates an inner border.
+            */
             Rectangle {
                 id: paletteMap
 
                 anchors.centerIn: parent
 
-                //inner circle that obscures the rainbow gradient to form a ring
                 width: parent.width - colorWheelWidth
                 height: width
 
@@ -298,6 +330,9 @@ Rectangle {
                 color: palette.mainWindowColor
 
                 clip: true
+
+                border.width: 2
+                border.color: palette.darkColor
 
                 MouseArea {
                     id: triangleArea
@@ -547,7 +582,6 @@ Rectangle {
                     // set the color of the points of the triangle and let the graphics card blend the values
 
                     fragmentShader: "
-                    in vec2 qt_TexCoord0;
                     varying vec4 vColor;
 
                     void main() {
@@ -560,7 +594,6 @@ Rectangle {
                     vertexShader: "
                     attribute highp vec4 qt_Vertex;
                     attribute highp vec2 qt_MultiTexCoord0;
-                    varying highp vec2 qt_TexCoord0;
                     uniform highp mat4 qt_Matrix;
                     uniform highp vec2 p1;
                     uniform highp vec2 p2;
@@ -619,7 +652,6 @@ Rectangle {
                             pos = p3;
                             vColor = vec4(0,0,0,1);
                         }
-                        qt_TexCoord0 = qt_MultiTexCoord0;
                         gl_Position = qt_Matrix * vec4(pos, 0, 1);
                     }"
                 }

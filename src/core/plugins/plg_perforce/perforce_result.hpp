@@ -13,22 +13,22 @@
 
 #include "version_control/i_result.hpp"
 
-#include <string>
-#include <vector>
-
 namespace wgt
 {
 class PerforceResult : public IResult
 {
 public:
-	PerforceResult(const char* output, const char* errors);
+	PerforceResult(const char* output, const char* errors, AttributeResults&& results = AttributeResults());
 
 	virtual const char* errors() const override;
 	virtual const char* output() const override;
 
+	virtual const AttributeResults& results() const override;
+
 private:
 	std::string output_;
 	std::string errors_;
+	AttributeResults results_;
 };
 
 class MultiResult : public IResult
@@ -38,11 +38,13 @@ public:
 
 	virtual const char* errors() const override;
 	virtual const char* output() const override;
+	virtual const AttributeResults& results() const override;
 
 private:
 	std::vector<IResultPtr> results_;
 	mutable std::string output_;
 	mutable std::string errors_;
+	mutable AttributeResults attributeResults_;
 };
 } // end namespace wgt
 #endif // PERFORCE_RESULT_H_

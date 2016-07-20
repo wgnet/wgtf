@@ -138,15 +138,7 @@ Item {
         anchors {left: parent.left; right: parent.right}
         anchors.top: parent.top
         visible: lineFrame
-
-        Text {
-            id: frameLabel
-            color: palette.highlightTextColor
-            anchors.left: parent.left
-            anchors.top: parent.top
-            text: baseFrame.text
-            visible: toggleable ? false : true
-        }
+        anchors.leftMargin: defaultSpacing.leftMargin
 
         WGCheckBox {
             id: toggleableBox
@@ -158,6 +150,15 @@ Item {
             checked: true
             anchors.left: parent.left
             anchors.top: parent.top
+        }
+
+        Text {
+            id: frameLabel
+            color: palette.highlightTextColor
+            anchors.left: parent.left
+            anchors.top: parent.top
+            text: baseFrame.text
+            visible: toggleable ? false : true
         }
 
         WGSeparator {

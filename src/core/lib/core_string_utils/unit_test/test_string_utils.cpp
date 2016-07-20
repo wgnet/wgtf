@@ -65,19 +65,19 @@ TEST( filePathMembers )
 	auto ext = std::string("ext");
 
 	FilePath path = FilePath::combine(part1, part2);
-	CHECK(path.getFolder() == part1);
+	CHECK(path.getFolder() == part1 + FilePath::kNativeDirectorySeparator);
 	CHECK(path.getFileNoExtension() == part2);
 	CHECK(path.getFileWithExtension() == part2);
 	CHECK(path.getExtension() == "");
 
 	FilePath dirPath = FilePath::combine(path.str(), "/");
-	CHECK(dirPath.getFolder() == part1 + FilePath::kNativeDirectorySeparator + part2);
+	CHECK(dirPath.getFolder() == part1 + FilePath::kNativeDirectorySeparator + part2 + FilePath::kNativeDirectorySeparator);
 	CHECK(dirPath.getFileNoExtension() == "");
 	CHECK(dirPath.getFileWithExtension() == "");
 	CHECK(dirPath.getExtension() == "");
 
 	FilePath fullPath = FilePath::combine(path.str(), file + FilePath::kExtensionSeparator + ext);
-	CHECK(fullPath.getFolder() == part1 + FilePath::kNativeDirectorySeparator + part2);
+	CHECK(fullPath.getFolder() == part1 + FilePath::kNativeDirectorySeparator + part2 + FilePath::kNativeDirectorySeparator);
 	CHECK(fullPath.getFileNoExtension() == file);
 	CHECK(fullPath.getFileWithExtension() == file + FilePath::kExtensionSeparator + ext);
 	CHECK(fullPath.getExtension() == ext);

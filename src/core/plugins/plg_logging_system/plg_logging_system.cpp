@@ -1,6 +1,7 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_generic_plugin_manager/generic_plugin_manager.hpp"
 #include "core_logging_system/logging_system.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include <vector>
 #include <memory>
 
@@ -8,10 +9,13 @@
 namespace wgt
 {
 /**
- * LoggingSystemPlugin
- *
- * A plugin used to expose the core logging system for NGT.
- */
+* A plugin used to expose the core logging system for NGT. 
+* Requires an ILogger to be registered for logging to occur.
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class LoggingSystemPlugin
 	: public PluginMain
 {
@@ -23,7 +27,8 @@ public:
 
 	bool PostLoad( IComponentContext & contextManager ) override
 	{		
-		loggingSystem_ = new LoggingSystem();
+		auto definitionManager = contextManager.queryInterface< IDefinitionManager >();
+		loggingSystem_ = new LoggingSystem( DIRef< IDefinitionManager >(contextManager) );
 		contextManager.registerInterface( loggingSystem_ );
 
 		return true;

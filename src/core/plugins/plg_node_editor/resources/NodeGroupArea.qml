@@ -56,12 +56,18 @@ Item
     {
         id: contextArea
         menuPath: "NodeEditor.group"
+
+        onAboutToShow: {
+            contextObject = groupItem
+        }
     }
 
     // editable header at the top of the group box
     WGTextBox {
         id: titleBox
         parent: groupFrame.frameBorder
+
+        useContextMenu: false
 
         anchors.bottom: parent.top
         anchors.left: parent.left
@@ -176,34 +182,6 @@ Item
         onReleased: {
             graphView.resetNodesSelection();
             graphView.unselectNode(groupItem);
-        }
-    }
-
-    WGAction
-    {
-        active: !locked
-        actionId: qsTr("NodeEditor.group|.Delete Group Box")
-        onTriggered: {
-            groupItem.deleteNode();
-        }
-    }
-    // bug with WGContextArea means the checked state of the menu won't update
-    WGAction
-    {
-        active: true
-        actionId: qsTr("NodeEditor.group|.Lock Group Box")
-        checkable: true
-        checked: locked
-        onTriggered: {
-            locked = !locked
-        }
-    }
-    WGAction
-    {
-        active: !locked
-        actionId: qsTr("NodeEditor.group|.Change Group Box Color")
-        onTriggered: {
-            groupItem.changeColor()
         }
     }
 }

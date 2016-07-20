@@ -37,9 +37,16 @@ ComboBox {
     */
     property string label: ""
 
+    /*! property indicates if the control represetnts multiple data values */
+    property bool multipleValues: false
+
     /*! \internal */
     // helper property for text color so states can all be in the background object
     property color __textColor: palette.neutralTextColor
+
+    /*! the property containing the string to be displayed when multiple values are represented by the control
+    */
+    property string __multipleValuesString: multipleValues ? "Multiple Values" : ""
 
     activeFocusOnTab: true
 
@@ -47,7 +54,7 @@ ComboBox {
 
     currentIndex: 0
 
-    implicitWidth: textMetricsCreator.maxWidth + defaultSpacing.leftMargin + defaultSpacing.rightMargin + defaultSpacing.doubleMargin
+    implicitWidth: Math.max(textMetricsCreator.maxWidth, multiValueTextMeasurement.width) + defaultSpacing.leftMargin + defaultSpacing.rightMargin + defaultSpacing.doubleMargin
 
     implicitHeight: defaultSpacing.minimumRowHeight ? defaultSpacing.minimumRowHeight : 22
 
@@ -71,6 +78,12 @@ ComboBox {
             }
         }
     }
+
+    TextMetrics {
+        id: multiValueTextMeasurement
+        text: __multipleValuesString
+    }
+
 
     // support copy&paste
     WGCopyable {
@@ -166,7 +179,7 @@ ComboBox {
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignLeft
             color : box.__textColor
-            text: control.currentText
+            text: box.multipleValues ? box.__multipleValuesString : control.currentText
             renderType: globalSettings.wgNativeRendering ? Text.NativeRendering : Text.QtRendering
         }
 

@@ -9,10 +9,19 @@
 #include "core_data_model/asset_browser/file_system_asset_browser_model.hpp"
 #include "core_data_model/asset_browser/i_asset_browser_event_model.hpp"
 #include "interfaces/panel_manager/i_panel_manager.hpp"
+#include "test_asset_browser_folder_context_menu.hpp"
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which queries the IPanelManager to create an asset browser
+*
+* @ingroup plugins
+* @image html plg_panel_manager_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - PanelManagerPlugin
+*/
 class TestPanelManagerPlugin
 	: public PluginMain
 {
@@ -22,8 +31,6 @@ public:
 
 	void Initialise(IComponentContext& contextManager) override
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
 		auto fileSystem = contextManager.queryInterface<IFileSystem>();
@@ -45,18 +52,21 @@ public:
 		
 		auto dataDef = definitionManager->getDefinition<IAssetBrowserModel>();
 		dataModel_ = ObjectHandleT<IAssetBrowserModel>(std::move(browserModel), dataDef);
-		panelManager->createAssetBrowser( dataModel_, assetBrowserView_ );
+		assetBrowserView_ = panelManager->createAssetBrowser( dataModel_ );
+		assetBrowserFolderContextMenuHandler_ = CreateMenuHandler<TestAssetBrowserFolderContextMenu>(contextManager);
 	}
 
 	bool Finalise( IComponentContext & contextManager ) override
 	{
+		assetBrowserFolderContextMenuHandler_.reset();
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		if (uiApplication)
 		{
-			if(assetBrowserView_ != nullptr)
+			if(assetBrowserView_.valid())
 			{
-				uiApplication->removeView( *assetBrowserView_ );
-				assetBrowserView_ = nullptr;
+                auto view = assetBrowserView_.get();
+				uiApplication->removeView( *view );
+				view = nullptr;
 			}
 		}
 		if (dataModel_ != nullptr)
@@ -70,7 +80,8 @@ public:
 private:
 	TestAssetPresentationProvider presentationProvider_;
 	ObjectHandleT<IAssetBrowserModel> dataModel_;
-	std::unique_ptr< IView > assetBrowserView_;
+	wg_future<std::unique_ptr<IView>> assetBrowserView_;
+	MenuHandlerPtr assetBrowserFolderContextMenuHandler_;
 };
 
 PLG_CALLBACK_FUNC(TestPanelManagerPlugin)

@@ -12,12 +12,17 @@ SET( ALL_SRCS
 	qt_framework.hpp
 	qt_preferences.cpp
 	qt_preferences.hpp
+    qt_action_manager.cpp
+	qt_action_manager.hpp
 	private/ui_view_creator.hpp
 	private/ui_view_creator.cpp
+	private/qt_ui_worker.hpp
+	private/qt_ui_worker.cpp
 )
 SOURCE_GROUP( "" FILES ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(WGControls resources/WGControls)
+BW_QT_ADD_QRC(private resources/private)
 BW_GLOB_RESOURCE_FILES()
 
 FILE( GLOB FONT_FILES resources/fonts/* )

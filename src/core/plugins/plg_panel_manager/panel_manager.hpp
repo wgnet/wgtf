@@ -20,9 +20,8 @@ public:
 	PanelManager( IComponentContext & contextManager );
 	virtual ~PanelManager();
 
-	void createAssetBrowser(
+	wg_future<std::unique_ptr< IView >> createAssetBrowser(
 		ObjectHandleT<IAssetBrowserModel> dataModel,
-		std::unique_ptr< IView > & o_AssetBrowser,
 		std::unique_ptr<IAssetBrowserEventModel> eventModel = nullptr ) override;
 
 private:

@@ -63,6 +63,7 @@ WGPanel {
             model: testModel
             selectionExtension: treeModelSelection
             treeExtension: treeModelExtension
+			columnSequence: [0, 0]
             columnDelegates: [defaultColumnDelegate, propertyDelegate]
 
             rightMargin: 8

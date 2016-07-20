@@ -15,6 +15,7 @@ WGContextArea
     {
         id: dynamicContextMenu
         path: menuPath
+
         WGListModel
         {
             id : contextMenuModel
@@ -31,17 +32,18 @@ WGContextArea
             onObjectRemoved: dynamicContextMenu.removeItem( object )
             delegate : MenuItem
             {
-                text : Value
+                text : qsTr("Create Node.") + value
                 onTriggered :
                 {
                     createNode(mapToItem(graphView, contextArea.popupPoint.x, contextArea.popupPoint.y).x,
-                               mapToItem(graphView, contextArea.popupPoint.x, contextArea.popupPoint.y).y, Value);
+                               mapToItem(graphView, contextArea.popupPoint.x, contextArea.popupPoint.y).y, value);
                 }
             }
         }
+
         MenuItem
         {
-            text: qsTr("Create Group Box")
+            text: qsTr("Groups.Create Group Box")
             onTriggered: {
 
                 //generate a random 'nice' color

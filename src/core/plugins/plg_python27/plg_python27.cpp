@@ -1,6 +1,7 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 
 #include "core_python27/defined_instance.hpp"
+#include "core_python27/defined_instance_meta_type.hpp"
 #include "core_python27/listener_hooks.hpp"
 #include "core_python27/scripting_engine.hpp"
 #include "core_python27/script_object_definition_registry.hpp"
@@ -9,13 +10,19 @@
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
 
+#include "core_variant/variant.hpp"
+
 
 namespace wgt
 {
 /**
- *	Controls initialization and finalization of Python and
- *	registers the Python interface to be used by other plugins.
- */
+* A plugin which controls initialization and finalization of Python 
+* and registers the IPythonScriptingEngine Python interface to be used by other plugins
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class Python27Plugin
 	: public PluginMain
 {
@@ -25,6 +32,7 @@ public:
 		, definitionRegistry_( contextManager )
 		, typeConverterQueue_( contextManager )
 		, hookListener_( new ReflectedPython::HookListener() )
+		, definedInstanceMetaType_()
 	{
 	}
 
@@ -40,8 +48,7 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager(
-			contextManager.queryInterface< IMetaTypeManager >() );
+		Variant::registerType( &definedInstanceMetaType_ );
 
 		// Initialize listener hooks
 		const auto pDefinitionManager = contextManager.queryInterface< IDefinitionManager >();
@@ -99,6 +106,7 @@ private:
 	ReflectedPython::ScriptObjectDefinitionRegistry definitionRegistry_;
 	PythonType::ConverterQueue typeConverterQueue_;
 	std::shared_ptr< ReflectedPython::HookListener > hookListener_;
+	ReflectedPython::DefinedInstanceMetaType definedInstanceMetaType_;
 };
 
 PLG_CALLBACK_FUNC( Python27Plugin )

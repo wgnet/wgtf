@@ -31,7 +31,7 @@ uint64_t BasePropertyWithMetaData::getNameHash() const
 
 MetaHandle BasePropertyWithMetaData::getMetaData() const
 {
-	//TODO
+	//TODO NGT-1582
 	//return property_->getMetaData() + metaData_;
 	return metaData_;
 }

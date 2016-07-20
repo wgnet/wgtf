@@ -7,6 +7,12 @@
 
 namespace wgt
 {
+
+
+/**
+ *	"Adapters" are for converting Qt concepts to WGTF.
+ *	e.g. Qt lists are single column, but WGTF lists support multiple columns.
+ */
 class IListAdapter : public QAbstractListModel
 {
 	Q_OBJECT
@@ -20,7 +26,27 @@ public:
 	virtual QAbstractItemModel * model() const = 0;
 
 	virtual QHash< int, QByteArray > roleNames() const;
+
+	/**
+	 *	Get the Qt index to the item at the given position.
+	 *	@param row WGTF row of the item.
+	 *		Should be in the range 0<=row<rowCount.
+	 *	@param column WGTF row of the item.
+	 *		Should be in the range 0<=column<columnCount.
+	 *	@param parent WGTF parent of the item, if applicable.
+	 *	@return the Qt index or invalid if the item was not found.
+	 */
 	virtual QModelIndex index(int row, int column = 0, const QModelIndex &parent = QModelIndex()) const;
+
+	/**
+	 *	Get the Qt index to the item at the given position.
+	 *	@param row WGTF row of the item.
+	 *		Should be in the range 0<=row<rowCount.
+	 *	@param column WGTF row of the item.
+	 *		Should be in the range 0<=column<columnCount.
+	 *	@param parent WGTF parent of the item, if applicable.
+	 *	@return the Qt index or invalid if the item was not found.
+	 */
 	virtual QModelIndex adaptedIndex(int row, int column = 0, const QModelIndex &parent = QModelIndex()) const = 0;
 	virtual int rowCount(const QModelIndex &parent) const = 0;
 	virtual QVariant data(const QModelIndex &index, int role) const;

@@ -404,7 +404,7 @@ bool PropertyAccessor::erase( const Variant & key ) const
 		}
 	} );
 
-	auto count = collection.erase( key );
+	auto count = collection.eraseKey( key );
 
 	preErase.disconnect();
 	postErased.disconnect();

@@ -6,6 +6,39 @@
 
 namespace wgt
 {
+
+/**
+ *	Convert single-column Qt lists into multiple-column WGTF lists.
+ *	Takes Qt list row indexes and map some of them to columns.
+ *	
+ *	E.g. Qt list models only have rows
+ *	row +---+---+---+---+
+ *	 0  |               |
+ *	    +---+---+---+---+
+ *	 1  |               |
+ *	    +---+---+---+---+
+ *	 2  |               |
+ *	    +---+---+---+---+
+ *	WGTF list models support columns
+ *	column 0  1   2   3
+ *	row +---+---+---+---+
+ *	 0  |   |   |   |   |
+ *	    +---+---+---+---+
+ *	 1  |   |   |   |   |
+ *	    +---+---+---+---+
+ *	 2  |   |   |   |   |
+ *	    +---+---+---+---+
+ *	ColumnListAdapter adds extra "row indexes" to the Qt model.
+ *	The extra "rows" are then laid out horizontally to form columns.
+ *	Qt rows
+ *	    +---+---+---+---+
+ *	    | 0 | 1 | 2 | 3 |
+ *	    +---+---+---+---+
+ *	    | 4 | 5 | 6 | 7 |
+ *	    +---+---+---+---+
+ *	    | 8 | 9 |10 |11 |
+ *	    +---+---+---+---+
+ */
 class ColumnListAdapter : public IListAdapter
 {
 	Q_OBJECT
@@ -16,14 +49,17 @@ public:
 	ColumnListAdapter( const QModelIndex & row );
 	virtual ~ColumnListAdapter();
 
-	QAbstractItemModel * model() const;
+	virtual QAbstractItemModel * model() const override;
 
-	QModelIndex adaptedIndex(int row, int column, const QModelIndex &parent) const;
-	int rowCount(const QModelIndex &parent) const;
+	virtual QModelIndex adaptedIndex( int row,
+		int column,
+		const QModelIndex & parent ) const override;
+	virtual int rowCount( const QModelIndex & parent ) const override;
 
 private:
-	void onParentDataChanged(const QModelIndex &topLeft, 
-		const QModelIndex &bottomRight, const QVector<int> &roles);
+	void onParentDataChanged( const QModelIndex & topLeft, 
+		const QModelIndex & bottomRight,
+		const QVector< int > & roles) override;
 
 private:
 	const QAbstractItemModel * model_;

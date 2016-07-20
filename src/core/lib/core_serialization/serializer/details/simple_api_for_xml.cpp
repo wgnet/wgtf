@@ -1,9 +1,37 @@
 #include "simple_api_for_xml.hpp"
+#include <string>
+#include <expat.h>
 
 
 namespace wgt
 {
-SimpleApiForXml::SimpleApiForXml( TextStream& stream ):
+class SimpleApiForXml::Impl
+{
+public:
+	explicit Impl( SimpleApiForXml* sax, TextStream& stream );
+	~Impl();
+
+	bool parse();
+	void abortParsing();
+
+	bool aborted() const
+	{
+		return aborted_;
+	}
+
+private:
+	XML_Parser parser_;
+	TextStream& stream_;
+	bool aborted_;
+	std::streamoff bytesRead_;
+
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+SimpleApiForXml::Impl::Impl( SimpleApiForXml* sax, TextStream& stream ):
 	parser_( XML_ParserCreate( "UTF-8" ) ),
 	stream_( stream ),
 	aborted_( false ),
@@ -49,7 +77,7 @@ SimpleApiForXml::SimpleApiForXml( TextStream& stream ):
 		}
 	};
 
-	XML_SetUserData( parser_, this );
+	XML_SetUserData( parser_, sax );
 
 	XML_SetElementHandler(
 		parser_,
@@ -61,14 +89,12 @@ SimpleApiForXml::SimpleApiForXml( TextStream& stream ):
 		&Callbacks::CharacterDataHandler );
 }
 
-
-SimpleApiForXml::~SimpleApiForXml()
+SimpleApiForXml::Impl::~Impl()
 {
 	XML_ParserFree( parser_ );
 }
 
-
-bool SimpleApiForXml::parse()
+bool SimpleApiForXml::Impl::parse()
 {
 	if( aborted_ )
 	{
@@ -127,14 +153,45 @@ bool SimpleApiForXml::parse()
 	return result;
 }
 
-
-void SimpleApiForXml::abortParsing()
+void SimpleApiForXml::Impl::abortParsing()
 {
 	if( !aborted_ )
 	{
 		XML_StopParser( parser_, XML_FALSE );
 		aborted_ = true;
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+SimpleApiForXml::SimpleApiForXml( TextStream& stream ):
+	impl_( new Impl( this, stream ) )
+{
+}
+
+
+SimpleApiForXml::~SimpleApiForXml()
+{
+	// nop
+}
+
+
+bool SimpleApiForXml::parse()
+{
+	return impl_->parse();
+}
+
+
+void SimpleApiForXml::abortParsing()
+{
+	impl_->abortParsing();
+}
+
+
+bool SimpleApiForXml::aborted() const
+{
+	return impl_->aborted();
 }
 
 

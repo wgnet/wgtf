@@ -32,44 +32,26 @@ const IClassDefinition * ReflectedObjectItem::getDefinition() const
 
 const char * ReflectedObjectItem::getDisplayText( int column ) const
 {
-	switch (column)
+	if (displayName_.empty())
 	{
-	case 0:
-		if (displayName_.empty())
+		auto definition = getDefinition();
+		if (definition == nullptr)
 		{
-			auto definition = getDefinition();
-			if (definition == nullptr)
-			{
-				return nullptr;
-			}
-			const MetaDisplayNameObj * displayName =
-				findFirstMetaData< MetaDisplayNameObj >( *definition, *getDefinitionManager() );
-			if (displayName == nullptr)
-			{
-				displayName_ = definition->getName();
-			}
-			else
-			{
-				std::wstring_convert< Utf16to8Facet > conversion( Utf16to8Facet::create() );
-				displayName_ = conversion.to_bytes( displayName->getDisplayName() );
-			}
+			return nullptr;
 		}
-		return displayName_.c_str();
-
-	case 1:
+		const MetaDisplayNameObj * displayName =
+			findFirstMetaData< MetaDisplayNameObj >( *definition, *getDefinitionManager() );
+		if (displayName == nullptr)
 		{
-			auto definition = getDefinition();
-			if (definition == nullptr)
-			{
-				return "";
-			}
-			return definition->getName();
+			displayName_ = definition->getName();
 		}
-
-	default:
-		assert( false );
-		return "";
+		else
+		{
+			std::wstring_convert< Utf16to8Facet > conversion( Utf16to8Facet::create() );
+			displayName_ = conversion.to_bytes( displayName->getDisplayName() );
+		}
 	}
+	return displayName_.c_str();
 }
 
 

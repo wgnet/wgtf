@@ -21,6 +21,6 @@ BW_ADD_TOOL_PLUGIN( plg_serialization SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_serialization PRIVATE
 	core_generic_plugin
-	core_serialization )
+	core_reflection )
 
 BW_PROJECT_CATEGORY( plg_serialization "Plugins" )

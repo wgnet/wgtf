@@ -31,15 +31,42 @@ enum GenericPluginLoadState
 		return pluginMain;\
 	}
 
+/**
+* @defgroup plugins Plugins
+* A list of plugins available
+*/
+/**
+* @defgroup coreplugins Core Plugins
+* A list of plugins which most plugins rely on
+*/
 class PluginMain
 {
 public:
 	PluginMain();
 	virtual ~PluginMain() {}
 
+    /**
+    * Called after all plugins have been loaded. Interface registration should occur here.
+    * @param IComponentContext provides access to services provided by other plugins
+    */
 	virtual bool PostLoad( IComponentContext & /*contextManager*/ ) { return true; }
+
+    /**
+    * Called after all plugins have registered their interfaces. Interface querying should occur here.
+    * @param IComponentContext provides access to services provided by other plugins
+    */
 	virtual void Initialise( IComponentContext & /*contextManager*/ ) {}
+
+    /**
+    * Cleanup stage during which all interfaces can still be accessed
+    * @param IComponentContext provides access to services provided by other plugins
+    */
 	virtual bool Finalise( IComponentContext & /*contextManager*/ ) { return true; }
+
+    /**
+    * Called before any plugins have been unloaded. Interface deregistration should occur here
+    * @param IComponentContext provides access to services provided by other plugins
+    */
 	virtual void Unload( IComponentContext & /*contextManager*/ ) {}
 
 	void init( const char * name );

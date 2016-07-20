@@ -21,7 +21,9 @@ WGExpandingRowLayout {
     WGHistoryImage {
         id: commandImage
         objectName: "commandImage_" + commandName.text
-        type: parent.displayObject ? (parent.displayObject.Type ? parent.displayObject.Type : "") : ""
+        type: ((typeof displayObject !== 'undefined') && (typeof displayObject.Type !== 'undefined')) ?
+            displayObject.Type :
+            ""
         isApplied: parent.isApplied
         visible: (parent.columnIndex == 0)
     }
@@ -30,8 +32,8 @@ WGExpandingRowLayout {
     WGHistoryText {
         id: commandName
         objectName: "commandName_" + text
-        text: typeof parent.displayObject.Name != 'undefined' ?
-            parent.displayObject.Name.toString() :
+        text: ((typeof displayObject !== 'undefined') && (typeof displayObject.Name !== 'undefined')) ?
+            displayObject.Name.toString() :
             "Unknown"
         isCurrentItem: parent.isCurrentItem
         isApplied: parent.isApplied
@@ -41,24 +43,24 @@ WGExpandingRowLayout {
     WGHistoryText {
         id: commandPreValue
         objectName: "commandPreValue_" + text
-        text: (typeof parent.displayObject.PreValue != 'undefined') ?
-            parent.displayObject.PreValue.toString() :
+        text: ((typeof displayObject !== 'undefined') && (typeof displayObject.PreValue !== 'undefined')) ?
+            displayObject.PreValue.toString() :
             ""
         isCurrentItem: parent.isCurrentItem
         isApplied: parent.isApplied
-        visible: (typeof parent.displayObject.PreValue != 'undefined')
+        visible: ((typeof displayObject !== 'undefined') && (typeof parent.displayObject.PreValue != 'undefined'))
     }
 
 
     WGHistoryText {
         id: commandPostValue
         objectName: "commandPostValue_" + text
-        text: (typeof parent.displayObject.PostValue != 'undefined') ?
-            parent.displayObject.PostValue.toString() :
+        text: ((typeof displayObject !== 'undefined') && (typeof displayObject.PostValue !== 'undefined')) ?
+            displayObject.PostValue.toString() :
             ""
         isCurrentItem: parent.isCurrentItem
         isApplied: parent.isApplied
-        visible: (typeof parent.displayObject.PostValue != 'undefined')
+        visible: ((typeof displayObject !== 'undefined') && (typeof displayObject.PostValue !== 'undefined'))
     }
 }
 

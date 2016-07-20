@@ -7,26 +7,26 @@
 
 #define BEGIN_EXPOSE_2( baseSpace, meta )\
 	template<>\
-	void * TypeClassDefinition< baseSpace >::upCast( void * object ) const\
+	void * ::wgt::TypeClassDefinition< baseSpace >::upCast( void * object ) const\
 	{\
 	return nullptr;\
 	}\
 	\
 	template<>\
-	TypeClassDefinition< baseSpace >::TypeClassDefinition()\
+	::wgt::TypeClassDefinition< baseSpace >::TypeClassDefinition()\
 		: metaData_( meta )\
 		, parentName_( nullptr )\
 	{\
 
 #define BEGIN_EXPOSE_3( baseSpace, base, meta )\
 	template<>\
-	void * TypeClassDefinition< baseSpace >::upCast( void * object ) const\
+	void * ::wgt::TypeClassDefinition< baseSpace >::upCast( void * object ) const\
 	{\
 	return static_cast< base * >( reinterpret_cast< baseSpace * >( object ) );\
 	}\
 	\
 	template<>\
-	TypeClassDefinition< baseSpace >::TypeClassDefinition()\
+	::wgt::TypeClassDefinition< baseSpace >::TypeClassDefinition()\
 		: metaData_( meta )\
 		, parentName_( getClassIdentifier< base >() )\
 	{\
@@ -40,9 +40,29 @@
 	properties_.addProperty( IBasePropertyPtr(\
 		ReflectedMethodFactory::create( name, &SelfType::method, nullptr, nullptr ) ) );
 
+#define EXPOSE_METHOD_3( name, method, meta )\
+	properties_.addProperty( IBasePropertyPtr( \
+		new BasePropertyWithMetaData( \
+			IBasePropertyPtr( \
+				ReflectedMethodFactory::create( name, \
+					&SelfType::method, \
+					nullptr /* undoMethod */, \
+					nullptr /* redoMethod */ ) ), \
+			meta ) ) );
+
 #define EXPOSE_METHOD_4( name, method, undoMethod, redoMethod )\
 	properties_.addProperty( IBasePropertyPtr(\
 		ReflectedMethodFactory::create( name, &SelfType::method, &SelfType::undoMethod, &SelfType::redoMethod ) ) );
+
+#define EXPOSE_METHOD_5( name, method, undoMethod, redoMethod, meta )\
+	properties_.addProperty( IBasePropertyPtr( \
+		new BasePropertyWithMetaData( \
+			IBasePropertyPtr( \
+				ReflectedMethodFactory::create( name, \
+					&SelfType::method, \
+					&SelfType::undoMethod, \
+					&SelfType::redoMethod ) ), \
+			meta ) ) );
 
 #define EXPOSE_2( name, _1 )\
 	properties_.addProperty( IBasePropertyPtr(\
@@ -133,7 +153,7 @@
 
 
 #define REGISTER_DEFINITION( type )\
-	definitionManager.registerDefinition<TypeClassDefinition< type >>();
+	definitionManager.registerDefinition<::wgt::TypeClassDefinition< type >>();
 
 #define DEREGISTER_DEFINITION( type ) \
 	{ \

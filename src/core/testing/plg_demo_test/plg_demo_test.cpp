@@ -69,7 +69,7 @@ public:
 private:
 	IEnvManager* envManager_;
 	IUIApplication* uiApplication_;
-	std::unique_ptr< IView > centralView_;
+	wg_future<std::unique_ptr< IView >> centralView_;
 	int envId_;
 };
 
@@ -84,25 +84,26 @@ DemoDoc::DemoDoc(
 	envId_ = envManager_->addEnv( name );
 	envManager_->selectEnv( envId_ );
 
-	auto viewCreator = get< IViewCreator >();
-	if (viewCreator)
-	{
-		viewCreator->createView(
-			"DemoTest/Demo.qml", demo,
-			[ this ]( std::unique_ptr< IView > & view )
-		{
-			centralView_ = std::move( view );
-			centralView_->registerListener( this );
-		});
-	}
+    auto viewCreator = get< IViewCreator >();
+    if (viewCreator)
+    {
+        centralView_ = viewCreator->createView(
+            "DemoTest/Demo.qml", demo, 
+            [&](IView & view)
+            {
+                view.registerListener( this );
+            } );
+    }
 }
 
 DemoDoc::~DemoDoc()
 {
-	if (centralView_ != nullptr)
+	if (centralView_.valid())
 	{
-		uiApplication_->removeView( *centralView_ );
-		centralView_->deregisterListener( this );
+        auto view = centralView_.get();
+		uiApplication_->removeView( *view );
+		view->deregisterListener( this );
+        view = nullptr;
 	}
 
 	envManager_->removeEnv( envId_ );
@@ -117,7 +118,15 @@ void DemoDoc::onFocusOut(IView* view)
 {
 }
 
-//==============================================================================
+/**
+* A plugin which creates a 3D viewport that displays sample models and textures
+*
+* @ingroup plugins
+* @image html plg_demo_test.png 
+* @bug NGT-2105
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class DemoTestPlugin
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -126,9 +135,9 @@ private:
 	
 	std::unique_ptr< DemoDoc > demoDoc_;
 	std::unique_ptr< DemoDoc > demoDoc2_;
-	std::unique_ptr< IView > propertyView_;
-	std::unique_ptr< IView > sceneBrowser_;
-	std::unique_ptr< IView > viewport_;
+	wg_future<std::unique_ptr< IView >> propertyView_;
+	wg_future<std::unique_ptr< IView >> sceneBrowser_;
+	wg_future<std::unique_ptr< IView >> viewport_;
 	ObjectHandle demoModel_;
 
 	IReflectionController* controller_;
@@ -151,9 +160,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		defManager_ =
 			contextManager.queryInterface< IDefinitionManager >();
 		assert(defManager_ != nullptr);
@@ -178,17 +184,17 @@ public:
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
-			viewCreator->createView(
+			propertyView_ = viewCreator->createView(
 				"DemoTest/DemoPropertyPanel.qml",
-				demoModel_, propertyView_ );
+				demoModel_ );
 
-			viewCreator->createView(
+			sceneBrowser_ = viewCreator->createView(
 				"DemoTest/DemoListPanel.qml",
-				demoModel_, sceneBrowser_);
+				demoModel_ );
 
-			viewCreator->createView(
+			viewport_ = viewCreator->createView(
 				"DemoTest/Framebuffer.qml",
-				demoModel_, viewport_);
+				demoModel_ );
 		}
 		createAction_ = uiFramework->createAction(
 			"New Object", 
@@ -206,22 +212,30 @@ public:
 		{
 			return false;
 		}
-		if (propertyView_ != nullptr)
+		if (propertyView_.valid())
 		{
-			uiApplication->removeView( *propertyView_ );
+            auto view = propertyView_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
 		}
-		if (sceneBrowser_ != nullptr)
+		if (sceneBrowser_.valid())
 		{
-			uiApplication->removeView( *sceneBrowser_ );
+            auto view = sceneBrowser_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
 		}
-		if (viewport_ != nullptr)
+		if (viewport_.valid())
 		{
-			uiApplication->removeView( *viewport_ );
+            auto view = viewport_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
+		}
+		if(createAction_ != nullptr)
+		{
+			uiApplication->removeAction( *createAction_ );
+			createAction_ = nullptr;
 		}
 
-		propertyView_ = nullptr;
-		sceneBrowser_ = nullptr;
-		viewport_ = nullptr;
 		demoDoc_ = nullptr;
 		demoDoc2_ = nullptr;
 		demoModel_.getBase< DemoObjectsFixMixIn >()->fini();

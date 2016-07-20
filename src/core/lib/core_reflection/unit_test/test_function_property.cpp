@@ -377,7 +377,7 @@ void test_binary_data_property( FIXTURE* fixture, const char * m_name, TestResul
 		std::shared_ptr< BinaryBlock > value;
 		Variant variant = 
 			fixture->binaryDataProperty_->get( provider, fixture->getDefinitionManager() );
-		variant.tryCast( value );
+		CHECK( variant.tryCast( value ) );
 		CHECK(subject_.binary_data_->compare( *value ) == 0);
 	}
 

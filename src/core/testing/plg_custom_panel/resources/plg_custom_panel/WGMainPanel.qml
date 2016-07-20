@@ -385,7 +385,7 @@ Rectangle {
                 font.bold: boldHeader_
                 font.pointSize: 9
                 renderType: globalSettings.wgNativeRendering ? Text.NativeRendering : Text.QtRendering
-                color: palette.highlightTextColor
+                color: palette.textColor
                 anchors.verticalCenter: parent.verticalCenter
                 text: mainPanel.subText != "" ? mainPanel.text + ": " : mainPanel.text
                 visible: toggleable_ ? false : true
@@ -407,7 +407,7 @@ Rectangle {
                 font.italic: italicSubHeader_
                 font.pointSize: 9
                 renderType: globalSettings.wgNativeRendering ? Text.NativeRendering : Text.QtRendering
-                color: palette.highlightTextColor
+                color: palette.textColor
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: headerIcon.right
                 text: mainPanel.subText

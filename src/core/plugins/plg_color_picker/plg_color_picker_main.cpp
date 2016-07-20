@@ -19,11 +19,14 @@
 namespace wgt
 {
 /**
- * ColorPickerPlugin
- *
- * This is the main application's plugin. It creates the temporary panel to display the ColorPIcker and
- * registers it with the UIFramework. So that it will be added to the main dialog
- */
+* A plugin which creates a panel with a color picker dialog. 
+* The color picker allows the colour to be manipulated by a wheel, sliders or picked from the screen.
+*
+* @ingroup plugins
+* @image html plg_color_picker.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class ColorPickerPlugin
     : public PluginMain
 {
@@ -32,13 +35,8 @@ public:
     {
     }
  
-    // Plugin creates resources
     bool PostLoad( IComponentContext & componentContext ) override
     {
-        // Static variable that must be set for every plugin
-        Variant::setMetaTypeManager(
-            componentContext.queryInterface< IMetaTypeManager >() );
- 
 		auto defManager = componentContext.queryInterface< IDefinitionManager >();
 		defManager->registerDefinition<TypeClassDefinition< ColorPickerContext >>();
 
@@ -47,21 +45,17 @@ public:
         return true;
     }
  
-    // Registration of services this plugin provides
-    // IComponentContext provides access to services provided by other plugins
     void Initialise( IComponentContext & componentContext ) override
     {
         colorPicker_->addPanel();
     }
  
-    // De-registration of services this plugin provides
     bool Finalise( IComponentContext & componentContext ) override
     {
         colorPicker_->removePanel();
         return true;
     }
  
-    // Plugin deletes resources
     void Unload( IComponentContext & componentContext ) override
     {
         colorPicker_.reset();

@@ -19,6 +19,7 @@ Rectangle {
 
     property bool showColorSlider: lockCurves && (curveRepeater.count == 3 || curveRepeater.count == 4)
     property bool alphaEnabled: true
+    property bool initialized: false
 
     Layout.fillHeight: true
     color: palette.mainWindowColor
@@ -26,6 +27,11 @@ Rectangle {
     onFocusChanged: {
         if ( curveEditor.focus === true )
         {
+            if (!initialized)
+            {
+                timeline.zoomExtents();
+                initialized = true;
+            }
             timeline.requestPaint();
             repaintCurves();
         }
@@ -76,19 +82,15 @@ Rectangle {
     {
         if(valuesToDelete.length > 0)
         {
-            // Can't group multi-selection deletions because commands get consolidated
-            //beginUndoFrame();
+            beginUndoFrame();
             for(var i = 0; i < valuesToDelete.length; ++i)
             {
                 var curveIt = iterator(curves)
-                // TODO: Remove this grouping when methods no longer get grouped for undo
-                beginUndoFrame();
                 while(curveIt.moveNext()){
                     curveIt.current.removeAt( valuesToDelete[i], true );
                 }
-                endUndoFrame();
             }
-            // endUndoFrame();
+            endUndoFrame();
         }
     }
 
@@ -294,6 +296,8 @@ Rectangle {
             valueScale: yScale
             Layout.fillHeight: true
             Layout.fillWidth: true
+			useAxisScaleLimit: yScaleLimit
+			maxYScaleFactor: -1000
 
             // Zoom to the extents of the curve, always zooms the full X axis and zooms to the available y extremes
             function zoomExtents()

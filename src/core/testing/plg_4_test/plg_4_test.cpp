@@ -31,7 +31,17 @@ private:
 	DIRef< InterfaceB > testClassB_;
 };
 
-//==============================================================================
+/**
+* A plugin which tests retrieving multiple interfaces of the same type (differing by minor version) 
+* from a single interface of a different type by outputting test data to the debug window.
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - FileSystemPlugin
+*       - ReflectionPlugin
+*       - CommandSystemPlugin
+*       - MainTestPlugin
+*/
 class TestPlugin4
 	: public PluginMain
 {

@@ -43,6 +43,8 @@ SOURCE_GROUP( "Type Converters" FILES ${TYPE_CONVERTER_SRCS} )
 SET( ALL_SRCS
 	defined_instance.cpp
 	defined_instance.hpp
+	defined_instance_meta_type.cpp
+	defined_instance_meta_type.hpp
 	definition_details.cpp
 	definition_details.hpp
 	definition_helper.cpp
@@ -71,9 +73,10 @@ BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} INTERFACE
 	core_dependency_system
 	core_reflection
+	wg_types
 	wg_pyscript
 )
 WG_TARGET_LINK_PYTHON()
 
 BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
-BW_PROJECT_CATEGORY( ${PROJECT_NAME} "NGT Libs" )
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "WGT Libs" )

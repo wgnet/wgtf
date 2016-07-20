@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include "reflection_dll.hpp"
+
 namespace wgt
 {
 class ObjectHandle;
@@ -19,7 +21,7 @@ class IBaseProperty;
  *	Interface for receiving notifications when objects are registered or
  *	deregistered with IObjectManager.
  */
-class IObjectManagerListener
+class REFLECTION_DLL IObjectManagerListener
 {
 public:
 	virtual ~IObjectManagerListener() {}
@@ -56,7 +58,7 @@ public:
  *	"Managed" objects - IObjectManager controls deletion.
  *	"Unmanaged" objects - owner controls deletion.
  */
-class IObjectManager
+class REFLECTION_DLL IObjectManager
 {
 public:
 	/**

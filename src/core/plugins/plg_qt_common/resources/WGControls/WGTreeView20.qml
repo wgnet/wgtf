@@ -2,7 +2,6 @@ import QtQuick 2.4
 import QtQuick.Controls 1.2
 import QtQml.Models 2.2
 import WGControls 2.0
-import "wg_view_selection.js" as WGViewSelection
 
 
 /*!
@@ -75,8 +74,12 @@ ScrollView {
 WGTreeViewBase {
     id: treeView
 
+	property alias style: itemView.style
+
     property alias roles: itemView.roles
 
+	property alias columnRole: itemView.columnRole
+	property alias columnRoles: itemView.columnRoles
     /*! The default component to be used for columns that are not specified
         by columnDelegates.
     */
@@ -99,14 +102,15 @@ WGTreeViewBase {
     property alias columnWidth: itemView.columnWidth
     property alias columnWidths: itemView.columnWidths
     property alias columnSpacing: itemView.columnSpacing
+	property alias columnSorter: itemView.columnSorter
+	property alias columnSorters: itemView.columnSorters
     
-
     property alias internalModel: treeView.model
 
     /*! This property holds the data model information that will be displayed
         in the view.
     */
-    property alias model: itemView.model
+    property alias model: itemView.sourceModel
 
     /*! A list of components to be used for each header/footer column.
         Item 0 for column 0, item 1 for column 1 etc.
@@ -121,56 +125,41 @@ WGTreeViewBase {
     property alias headerDelegate: itemView.headerDelegate
     property alias footerDelegate: itemView.footerDelegate
 
-    /*! This component is used for showing a sort indicator 
-        on header column.
-    */
-    property alias sortIndicator: itemView.sortIndicator
+    property alias clamp: itemView.clamp
+	property var currentIndex: itemView.selectionModel.currentIndex
+	onCurrentIndexChanged: {
+		itemView.selectionModel.setCurrentIndex( currentIndex, ItemSelectionModel.NoUpdate );
+	}
+	Connections {
+		target: itemView.selectionModel
+		onCurrentChanged: {
+			if (current != previous) {
+				currentIndex = current;
+			}
+		}
+	}
     property var extensions: []
 
-    /*! Move the keyboard highlight up.
-     */
-    function moveKeyHighlightPrevious(event) {
-        var newIndex = treeExtension.getPreviousIndex(itemView.selectionModel.currentIndex);
-        WGViewSelection.updateKeyboardSelection(event, newIndex, itemView, treeExtension);
-    }
-
-    /*! Move the keyboard highlight down.
-     */
-    function moveKeyHighlightNext(event) {
-        var newIndex = treeExtension.getNextIndex(itemView.selectionModel.currentIndex);
-        WGViewSelection.updateKeyboardSelection(event, newIndex, itemView, treeExtension);
-    }
-
-    /*! Move the keyboard highlight left.
-     */
-    function moveKeyHighlightBack(event) {
-        var newIndex = treeExtension.getBackwardIndex(itemView.selectionModel.currentIndex);
-        WGViewSelection.updateKeyboardSelection(event, newIndex, itemView, treeExtension);
-    }
-
-    /*! Move the keyboard highlight right.
-     */
-    function moveKeyHighlightForward(event) {
-        var newIndex = treeExtension.getForwardIndex(itemView.selectionModel.currentIndex);
-        WGViewSelection.updateKeyboardSelection(event, newIndex, itemView, treeExtension);
-    }
-
+	contentItem.x: -originX
+	contentItem.y: -originY
     clip: true
     view: itemView
     internalModel: itemView.extendedModel
-    keyboardHighlightModelIndex: itemView.currentIndex
 
     Keys.onUpPressed: {
-        moveKeyHighlightPrevious(event);
+        itemView.movePrevious(event);
     }
     Keys.onDownPressed: {
-        moveKeyHighlightNext(event);
+        itemView.moveNext(event);
     }
     Keys.onLeftPressed: {
-        moveKeyHighlightBack(event);
+        itemView.moveBackwards(event);
     }
     Keys.onRightPressed: {
-        moveKeyHighlightForward(event);
+        itemView.moveForwards(event);
+    }
+	onItemPressed: {
+		itemView.select(mouse, rowIndex);
     }
 
     // Data holder for various C++ extensions.
@@ -178,31 +167,12 @@ WGTreeViewBase {
     WGItemViewCommon {
         id: itemView
 
+		style: WGTreeViewStyle {}
+
         TreeExtension {
             id: treeExtension
         }
 
-        property var treeExtensions: treeView.extensions.concat(commonExtensions.concat([treeExtension]))
-        extensions: treeExtensions
-
-        Connections {
-            target: treeView
-            onItemPressed: {
-                if ((mouse.modifiers & Qt.ShiftModifier) && (mouse.modifiers & Qt.ControlModifier)) {
-                    var selection = treeExtension.itemSelection(itemView.selectionModel.currentIndex, rowIndex)
-                    itemView.selectionModel.select(selection, 0x0002) // Select
-                }
-                else if (mouse.modifiers & Qt.ShiftModifier) {
-                    var selection = treeExtension.itemSelection(itemView.selectionModel.currentIndex, rowIndex)
-                    itemView.selectionModel.select(selection, 0x0001 | 0x0002) // Clear || Select
-                }
-                else if (mouse.modifiers & Qt.ControlModifier) {
-                    itemView.selectionModel.setCurrentIndex(rowIndex, 0x0008) // Toggle
-                }
-                else {
-                    itemView.selectionModel.setCurrentIndex(rowIndex, 0x0001 | 0x0002) // Clear | Select
-                }
-            }
-        }
+		viewExtension: treeExtension
     }
 }

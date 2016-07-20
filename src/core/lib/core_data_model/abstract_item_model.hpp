@@ -62,6 +62,11 @@ public:
 	virtual ~AbstractItemModel() {}
 
 	virtual AbstractItem * item( const ItemIndex & index ) const = 0;
+	/**
+	 *	retrieve model index of specific item
+	 *	@param item supposed to belong to the model.
+	 *	@param o_Index return a valid ItemIndex if the item belongs to model, otherwise return a invalid ItemIndex.
+	 */
 	virtual void index( const AbstractItem * item, ItemIndex & o_Index ) const = 0;
 
 	virtual int rowCount( const AbstractItem * item ) const = 0;
@@ -72,6 +77,8 @@ public:
 	virtual bool insertColumns( int column, int count, const AbstractItem * parent ) { return false; }
 	virtual bool removeRows( int row, int count, const AbstractItem * parent ) { return false; }
 	virtual bool removeColumns( int column, int count, const AbstractItem * parent ) { return false; }
+
+	virtual std::vector< std::string > roles() const { return std::vector< std::string >(); }
 
 	virtual Connection connectPreItemDataChanged( DataCallback callback ) { return Connection(); }
 	virtual Connection connectPostItemDataChanged( DataCallback callback ) { return Connection(); }
@@ -520,16 +527,11 @@ private:
 			return 0;
 		}
 
-		return columnCount();
+		return rowCount();
 	}
 
 	int columnCount( const AbstractItem * item ) const override
 	{
-		if (item != nullptr)
-		{
-			return 0;
-		}
-
 		return columnCount();
 	}
 

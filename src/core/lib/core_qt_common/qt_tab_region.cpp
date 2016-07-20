@@ -1,15 +1,14 @@
 #include "qt_tab_region.hpp"
 #include "i_qt_framework.hpp"
-
-#include "core_ui_framework/i_view.hpp"
+#include "qml_view.hpp"
 
 #include <QTabWidget>
 #include <QVariant>
 
 namespace wgt
 {
-QtTabRegion::QtTabRegion( IQtFramework & qtFramework, QTabWidget & qTabWidget )
-	: qtFramework_( qtFramework )
+QtTabRegion::QtTabRegion( IComponentContext & context, QTabWidget & qTabWidget )
+	: Depends( context )
 	, qTabWidget_( qTabWidget )
 	, current_(nullptr)
 {
@@ -39,7 +38,13 @@ QtTabRegion::QtTabRegion( IQtFramework & qtFramework, QTabWidget & qTabWidget )
 			QWidget* curr = qTabWidget_.widget( index );
 			auto it = std::find_if( tabs_.begin(), tabs_.end(), [=](const Tabs::value_type& x) { return x.first == curr; } );
 			assert(it != tabs_.end());
-			it->second->focusInEvent();
+			auto view = it->second;
+			QmlView* qmlView = dynamic_cast<QmlView*>( view );
+			if(qmlView != nullptr)
+			{
+				qmlView->setNeedsToLoad( true );
+			}
+			view->focusInEvent();
 			current_ = curr;
 		}
 		else
@@ -62,7 +67,9 @@ const LayoutTags & QtTabRegion::tags() const
 void QtTabRegion::addView( IView & view )
 {
 	// IView will not control qWidget's life-cycle after this call.
-	auto qWidget = qtFramework_.toQWidget( view );
+	auto qtFramework = get<IQtFramework>();
+	assert( qtFramework != nullptr );
+	auto qWidget = qtFramework->toQWidget( view );
 	if (qWidget == nullptr)
 	{
 		return;
@@ -82,13 +89,14 @@ void QtTabRegion::addView( IView & view )
 		qTabWidget_.setTabText(id, QString( (std::string("noname_") + std::to_string(id)).c_str() ));
 	}
 	qTabWidget_.setVisible(true);
-	qTabWidget_.setCurrentIndex( id );
 }
 
 void QtTabRegion::removeView( IView & view )
 {
 	// IView will not control qWidget's life-cycle after this call.
-	auto qWidget = qtFramework_.toQWidget( view );
+	auto qtFramework = get<IQtFramework>();
+	assert( qtFramework != nullptr );
+	auto qWidget = qtFramework->toQWidget( view );
 	if (qWidget == nullptr)
 	{
 		return;
@@ -105,6 +113,6 @@ void QtTabRegion::removeView( IView & view )
 
 	qTabWidget_.removeTab( index );
 	// call this function to let IView control the qWidget's life-cycle again.
-	qtFramework_.retainQWidget( view );
+	qtFramework->retainQWidget( view );
 }
 } // end namespace wgt

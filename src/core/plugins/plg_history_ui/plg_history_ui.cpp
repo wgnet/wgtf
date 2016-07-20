@@ -55,6 +55,16 @@ private:
     PropertyAccessor makeMacroButtonVisibility;
 };
 
+/**
+* A plugin which creates a panel that shows command history that can be undone/redone. 
+* Only values set through reflection show history.
+*
+* @ingroup plugins
+* @image html plg_history_ui.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - MacrosUIPlugin (If wanting to use the Make Macro button)
+*/
 class HistoryUIPlugin
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -137,9 +147,6 @@ public:
 
 	void Initialise( IComponentContext& contextManager ) override
 	{
-		Variant::setMetaTypeManager(
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto pDefinitionManager =
 			contextManager.queryInterface< IDefinitionManager >();
 		if (pDefinitionManager == nullptr)
@@ -166,9 +173,9 @@ public:
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
-			viewCreator->createView(
+			panel_ = viewCreator->createView(
 				"WGHistory/WGHistoryView.qml",
-				history_, panel_);
+				history_ );
 		}
 
 		auto pQtFramework = contextManager.queryInterface< IQtFramework >();
@@ -192,10 +199,11 @@ public:
 		{
 			return true;
 		}
-		if (panel_ != nullptr)
+		if (panel_.valid())
 		{
-			uiApplication->removeView( *panel_ );
-			panel_ = nullptr;
+            auto view = panel_.get();
+			uiApplication->removeView( *view );
+			view = nullptr;
 		}
 		destroyActions( *uiApplication );
 		auto historyObject = history_.getBase< HistoryObject >();
@@ -205,7 +213,7 @@ public:
 	}
 
 private:
-	std::unique_ptr< IView > panel_;
+	wg_future<std::unique_ptr< IView >> panel_;
 	ObjectHandle history_;
     std::unique_ptr<IHistoryPanel> historyPanelInterface_;
     IInterface * historyPanelInterfaceID;

@@ -615,4 +615,19 @@ void WGItemView::refresh()
 	}
 	emit headerDataChanged();
 }
+
+int WGItemView::getRow( const QModelIndex & index ) const
+{
+	return index.row();
+}
+
+int WGItemView::getColumn( const QModelIndex & index ) const
+{
+	return index.column();
+}
+
+QModelIndex WGItemView::getParent( const QModelIndex & index ) const
+{
+	return index.parent();
+}
 } // end namespace wgt

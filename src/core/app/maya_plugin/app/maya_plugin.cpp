@@ -22,8 +22,9 @@
 #include "core_common/platform_env.hpp"
 #include "core_generic_plugin/interfaces/i_plugin_context_manager.hpp"
 
-#include "ngt_application_proxy.hpp"
+#include "application_proxy.hpp"
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
 #include <QtGui/QDockWidget>
 #include <QtGui/QLayout>
 #include <QtGui/QMainWindow>
@@ -43,47 +44,47 @@
 
 namespace wgt
 {
-char NGT_MAYA_COMMAND_SHOW[] = "NGTShow";
-char NGT_MAYA_COMMAND_HIDE[] = "NGTHide";
-char NGT_MAYA_COMMAND_START[] = "NGTStart";
-char NGT_MAYA_COMMAND_STOP[] = "NGTStop";
-const char * NGT_MAYA_PLUGIN_LIST_FILE = "\\plugins\\plugins_maya.txt";
+char WGT_MAYA_COMMAND_SHOW[] = "WGTShow";
+char WGT_MAYA_COMMAND_HIDE[] = "WGTHide";
+char WGT_MAYA_COMMAND_START[] = "WGTStart";
+char WGT_MAYA_COMMAND_STOP[] = "WGTStop";
+const char * WGT_MAYA_PLUGIN_LIST_FILE = "\\plugins\\plugins_maya.txt";
 
 #ifdef _DEBUG
-const char * NGT_MAYA_PLUGIN_NAME = "maya_plugin_d.mll";
+const char * WGT_MAYA_PLUGIN_NAME = "maya_plugin_d.mll";
 #else
-	const char * NGT_MAYA_PLUGIN_NAME = "maya_plugin.mll";
+	const char * WGT_MAYA_PLUGIN_NAME = "maya_plugin.mll";
 #endif
 
-static HMODULE hApp = ::GetModuleHandleA( NGT_MAYA_PLUGIN_NAME );
+static HMODULE hApp = ::GetModuleHandleA( WGT_MAYA_PLUGIN_NAME );
 
-static char ngtHome[MAX_PATH];
+static char wgtHome[MAX_PATH];
 static wchar_t exePath[MAX_PATH];
 
-const char NGT_HOME[] = "NGT_HOME";
-const char NGT_PATH[] = "PATH";
+const char WGT_HOME[] = "WGT_HOME";
+const char WGT_PATH[] = "PATH";
 
-static NGTApplicationProxy * ngtApp = nullptr;
+static ApplicationProxy * wgtApp = nullptr;
 static GenericPluginManager * pluginManager = nullptr;
 
-bool getNGTPlugins(std::vector< std::wstring >& plugins, const wchar_t* filepath)
+bool getWGTPlugins(std::vector< std::wstring >& plugins, const wchar_t* filepath)
 {	
 	return ConfigPluginLoader::getPlugins(plugins, std::wstring( filepath ));
 }
 
-bool loadNGT()
+bool loadWGT()
 {
-	MString filepath = ngtHome;
-	filepath += NGT_MAYA_PLUGIN_LIST_FILE;
+	MString filepath = wgtHome;
+	filepath += WGT_MAYA_PLUGIN_LIST_FILE;
 
 	std::vector< std::wstring > plugins;
-	if (!getNGTPlugins(plugins, filepath.asWChar()) || plugins.empty())
+	if (!getWGTPlugins(plugins, filepath.asWChar()) || plugins.empty())
 	{
 		return MStatus::kFailure; // failed to find any plugins!
 	}
 
 	auto& contextManager = pluginManager->getContextManager();
-	contextManager.setExecutablePath( ngtHome );
+	contextManager.setExecutablePath( wgtHome );
 
 	auto globalContext = contextManager.getGlobalContext();
 	globalContext->registerInterface(new MemoryPluginContextCreator);
@@ -96,80 +97,80 @@ bool loadNGT()
 		return false;
 	}
 
-	ngtApp = new NGTApplicationProxy( uiApp );
-	ngtApp->start();
+	wgtApp = new ApplicationProxy( uiApp );
+	wgtApp->start();
 
 	return true;
 }
 
-struct NGTShowCommand : public MTemplateAction< NGTShowCommand, NGT_MAYA_COMMAND_SHOW, MTemplateCommand_nullSyntax >
+struct WGTShowCommand : public MTemplateAction< WGTShowCommand, WGT_MAYA_COMMAND_SHOW, MTemplateCommand_nullSyntax >
 {
 	MStatus doIt(const MArgList& args) override;
 };
 
-MStatus NGTShowCommand::doIt(const MArgList& args)
+MStatus WGTShowCommand::doIt(const MArgList& args)
 {
-	if (!ngtApp || !ngtApp->started())
+	if (!wgtApp || !wgtApp->started())
 	{
 		return MStatus::kFailure;
 	}
 
-	if (!ngtApp->visible())
+	if (!wgtApp->visible())
 	{
-		ngtApp->show();
+		wgtApp->show();
 	}
 
 	return MStatus::kSuccess;
 }
 
-struct NGTHideCommand : public MTemplateAction< NGTShowCommand, NGT_MAYA_COMMAND_HIDE, MTemplateCommand_nullSyntax >
+struct WGTHideCommand : public MTemplateAction< WGTShowCommand, WGT_MAYA_COMMAND_HIDE, MTemplateCommand_nullSyntax >
 {
 	MStatus doIt(const MArgList& args) override;
 };
 
-MStatus NGTHideCommand::doIt(const MArgList& args)
+MStatus WGTHideCommand::doIt(const MArgList& args)
 {
-	if (!ngtApp || !ngtApp->started())
+	if (!wgtApp || !wgtApp->started())
 	{
 		return MStatus::kFailure;
 	}
 
-	ngtApp->hide();
+	wgtApp->hide();
 	return MStatus::kSuccess;
 }
 
-struct NGTStartCommand : public MTemplateAction< NGTShowCommand, NGT_MAYA_COMMAND_HIDE, MTemplateCommand_nullSyntax >
+struct WGTStartCommand : public MTemplateAction< WGTShowCommand, WGT_MAYA_COMMAND_HIDE, MTemplateCommand_nullSyntax >
 {
 	MStatus doIt(const MArgList& args) override;
 };
 
-MStatus NGTStartCommand::doIt(const MArgList& args)
+MStatus WGTStartCommand::doIt(const MArgList& args)
 {
-	if (!ngtApp)
+	if (!wgtApp)
 	{
 		return MStatus::kFailure;
 	}
 
-	if (!ngtApp->started())
+	if (!wgtApp->started())
 	{
-		ngtApp->start();
+		wgtApp->start();
 	}
 	return MStatus::kSuccess;
 }
 
-struct NGTStopCommand : public MTemplateAction< NGTShowCommand, NGT_MAYA_COMMAND_STOP, MTemplateCommand_nullSyntax >
+struct WGTStopCommand : public MTemplateAction< WGTShowCommand, WGT_MAYA_COMMAND_STOP, MTemplateCommand_nullSyntax >
 {
 	MStatus doIt(const MArgList& args) override;
 };
 
-MStatus NGTStopCommand::doIt(const MArgList& args)
+MStatus WGTStopCommand::doIt(const MArgList& args)
 {
-	if (!ngtApp || !ngtApp->started())
+	if (!wgtApp || !wgtApp->started())
 	{
 		return MStatus::kFailure;
 	}
 
-	ngtApp->stop();
+	wgtApp->stop();
 	return MStatus::kSuccess;
 }
 
@@ -178,23 +179,23 @@ MStatus initializeMayaPlugin(MObject obj)
 	MStatus status;
 
 
-    if (!Environment::getValue<MAX_PATH>( NGT_HOME, ngtHome ))
+    if (!Environment::getValue<MAX_PATH>( WGT_HOME, wgtHome ))
     {
 #ifdef _WIN32
-        GetModuleFileNameA( hApp, ngtHome, MAX_PATH );
-        PathRemoveFileSpecA( ngtHome );
-        Environment::setValue( NGT_HOME, ngtHome );
+        GetModuleFileNameA( hApp, wgtHome, MAX_PATH );
+        PathRemoveFileSpecA( wgtHome );
+        Environment::setValue( WGT_HOME, wgtHome );
 #endif // _WIN32
 
 #ifdef __APPLE__
         Dl_info info;
         if (!dladdr( reinterpret_cast<void*>(setContext), &info ))
         {
-            NGT_ERROR_MSG( "Generic plugin manager: failed to get current module file name%s", "\n" );
+            WGT_ERROR_MSG( "Generic plugin manager: failed to get current module file name%s", "\n" );
         }
-        strcpy(ngtHome, info.dli_fname);
-        const char* dir = dirname(ngtHome);
-        Environment::setValue( NGT_HOME, dir);
+        strcpy(wgtHome, info.dli_fname);
+        const char* dir = dirname(wgtHome);
+        Environment::setValue( WGT_HOME, dir);
 
         std::string dlybs = dir;
         dlybs += "/../PlugIns";
@@ -203,52 +204,54 @@ MStatus initializeMayaPlugin(MObject obj)
     }
 
 #ifdef __APPLE__
-    Environment::setValue( "QT_QPA_PLATFORM_PLUGIN_PATH", (std::string( ngtHome ) + "/../PlugIns/platforms").c_str() );
+    Environment::setValue( "QT_QPA_PLATFORM_PLUGIN_PATH", (std::string( wgtHome ) + "/../PlugIns/platforms").c_str() );
 #else
-    Environment::setValue( "QT_QPA_PLATFORM_PLUGIN_PATH", (std::string( ngtHome ) + "/platforms").c_str() );
+    Environment::setValue( "QT_QPA_PLATFORM_PLUGIN_PATH", (std::string( wgtHome ) + "/platforms").c_str() );
 #endif
 
 #ifdef _WIN32
     size_t convertedChars = 0;
-    mbstowcs_s( &convertedChars, exePath, MAX_PATH, ngtHome, _TRUNCATE );
+    mbstowcs_s( &convertedChars, exePath, MAX_PATH, wgtHome, _TRUNCATE );
     assert( convertedChars );
 #endif // _WIN32
 
 #ifdef __APPLE__
     std::wstring_convert< std::codecvt_utf8<wchar_t> > conv;
-    wcscpy(exePath, conv.from_bytes( ngtHome ).c_str());
+    wcscpy(exePath, conv.from_bytes( wgtHome ).c_str());
 #endif // __APPLE__
 
+	QDir::setCurrent( wgtHome );
+
     char path[2048];
-    if(Environment::getValue<2048>( NGT_PATH, path ))
+    if(Environment::getValue<2048>( WGT_PATH, path ))
     {
         std::string newPath( "\"" );
-        newPath += ngtHome;
+        newPath += wgtHome;
         newPath += "\";";
         newPath += path;
-        Environment::setValue( NGT_PATH, newPath.c_str() );
+        Environment::setValue( WGT_PATH, newPath.c_str() );
     }
 
 #ifdef _WIN32
-    SetDllDirectoryA( ngtHome );
+    SetDllDirectoryA( wgtHome );
 #endif // _WIN32
 
 
 
 	pluginManager = new GenericPluginManager();
 
-	NGTShowCommand::registerCommand( obj );
-	NGTHideCommand::registerCommand( obj );
-	NGTStartCommand::registerCommand( obj );
-	NGTStopCommand::registerCommand( obj );
+	WGTShowCommand::registerCommand( obj );
+	WGTHideCommand::registerCommand( obj );
+	WGTStartCommand::registerCommand( obj );
+	WGTStopCommand::registerCommand( obj );
 
-	return loadNGT() ? MStatus::kSuccess : MStatus::kFailure;
+	return loadWGT() ? MStatus::kSuccess : MStatus::kFailure;
 }
 
 MStatus uninitializeMayaPlugin(MObject obj)
 {
-	delete ngtApp;
-	ngtApp = nullptr;
+	delete wgtApp;
+	wgtApp = nullptr;
 	delete pluginManager;
 	pluginManager = nullptr;
 	// TODO: Maya crashes if return MStatus::kSuccess here

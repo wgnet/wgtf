@@ -68,6 +68,8 @@ Item {
     /*! This property specifies the alternate colour for the row background */
     property color alternateBackgroundColour: Qt.darker(palette.midLightColor,1.2)
 
+	property bool asynchronous: false
+
     /*! This signal is sent on a single click
     */
     signal clicked(var mouse)
@@ -76,6 +78,8 @@ Item {
     /*! This signal is sent on a double click
     */
     signal doubleClicked(var mouse)
+
+	signal rowReady();
 
     function calculateMaxTextWidth(index)
     {
@@ -202,6 +206,7 @@ Item {
             orientation: Qt.Horizontal
             interactive: false
             spacing: rowDelegate.columnSpacing
+			property int loadedItemCount: 0
 
             delegate: Loader {
                 id: columnDelegate
@@ -213,12 +218,18 @@ Item {
                 property int rowIndex: rowDelegate.rowIndex
                 property int columnIndex: index
                 property int indentation: rowDelegate.indentation
+				asynchronous: rowDelegate.asynchronous
 
                 sourceComponent:
                     columnIndex < columnDelegates.length ? columnDelegates[columnIndex] :
                     defaultColumnDelegate
 
                 onLoaded: {
+					columns.loadedItemCount++;
+					if(columns.loadedItemCount == columns.count)
+					{
+						rowDelegate.rowReady();
+					}
                     var widthFunction = function()
                     {
                         var columnWidths = rowDelegate.columnWidths;

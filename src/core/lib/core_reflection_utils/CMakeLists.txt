@@ -53,8 +53,6 @@ BW_BLOB_SOURCES( BLOB_SRCS
 BW_ADD_LIBRARY( core_reflection_utils ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_reflection_utils INTERFACE
-	core_variant
-	core_serialization
 	core_reflection
 	core_command_system
 	wg_types

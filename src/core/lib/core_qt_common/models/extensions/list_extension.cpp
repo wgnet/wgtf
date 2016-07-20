@@ -32,9 +32,6 @@ QItemSelection ListExtension::itemSelection( const QModelIndex & first, const QM
 		return QItemSelection( first, first );
 	}
 
-	assert( first.column() == 0 && !first.parent().isValid() );
-	assert( last.column() == 0 && !last.parent().isValid() );
-
 	auto begin = first;
 	auto end = last;
 

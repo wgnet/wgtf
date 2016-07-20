@@ -17,6 +17,10 @@
 
 namespace wgt
 {
+ITEMROLE(readOnly)
+ITEMROLE(enabled)
+ITEMROLE(multipleValues)
+
 namespace
 {
 	struct MaxMinValuePair
@@ -137,18 +141,7 @@ ReflectedPropertyItem::~ReflectedPropertyItem()
 
 const char * ReflectedPropertyItem::getDisplayText( int column ) const
 {
-	switch (column)
-	{
-	case 0:
-		return displayName_.c_str();
-
-	case 1:
-		return "Reflected Property";
-
-	default:
-		assert( false );
-		return "";
-	}
+	return displayName_.c_str();
 }
 
 ThumbnailData ReflectedPropertyItem::getThumbnail( int column ) const
@@ -418,7 +411,7 @@ Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
 		}
 		return modality;
 	}
-	else if ( roleId == IsReadOnlyRole::roleId_ )
+	else if (roleId == ItemRole::readOnlyId)
 	{
 		TypeId typeId = propertyAccessor.getType();
 		auto readonly =
@@ -429,6 +422,15 @@ Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
 		}
 		return false;
 	}
+	else if (roleId == ItemRole::enabledId)
+	{
+		return Variant(true);
+	}
+	else if (roleId == ItemRole::multipleValuesId)
+	{
+		return Variant(false);
+	}
+
 	return Variant();
 }
 
@@ -591,7 +593,7 @@ bool ReflectedPropertyItem::empty() const
 
 	if (isCollection)
 	{
-		const Collection & collection = value.castRef< const Collection >();
+		const Collection & collection = value.cast< const Collection& >();
 		return collection.empty();
 	}
 

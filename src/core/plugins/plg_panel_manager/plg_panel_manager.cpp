@@ -10,6 +10,13 @@
 
 namespace wgt
 {
+/**
+* A plugin which registers an IPanelManager interface which can be used to create an asset brower
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class PanelManagerPlugin
 	: public PluginMain
 {
@@ -37,8 +44,6 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{		
- 		Variant::setMetaTypeManager( 
- 			contextManager.queryInterface< IMetaTypeManager >() );
 	}
 
 	bool Finalise( IComponentContext & contextManager ) override

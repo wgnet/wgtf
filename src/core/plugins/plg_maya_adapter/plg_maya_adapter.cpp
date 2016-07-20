@@ -4,7 +4,6 @@
 #include "qt_copy_paste_manager.hpp"
 #include "qt_framework_adapter.hpp"
 #include "qt_application_adapter.hpp"
-#include "core_variant/variant.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_qt_common/shared_controls.hpp"
 #include "core_qt_common/qt_new_handler.hpp"
@@ -16,6 +15,15 @@
 
 namespace wgt
 {
+/**
+* A plugin which registers the required interfaces for other plugins to communicate with the Maya plugin.
+* Mutually exclusive with QtPluginApplication, QtPluginCommon and TestWindowPlugin.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class MayaAdapterPlugin
 	: public PluginMain
 {
@@ -27,10 +35,6 @@ public:
 
 	bool PostLoad( IComponentContext & contextManager ) override
 	{
-		qtCopyPasteManager_ = new QtCopyPasteManager();
-		types_.push_back(
-			contextManager.registerInterface(qtCopyPasteManager_));
-
 		IPluginContextManager* pPluginContextManager = contextManager.queryInterface<IPluginContextManager>();
 
 		if (pPluginContextManager && pPluginContextManager->getExecutablePath())
@@ -48,10 +52,11 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager(contextManager.queryInterface< IMetaTypeManager >());
-
 		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
 		auto commandsystem = contextManager.queryInterface<ICommandManager>();
+		qtCopyPasteManager_ = new QtCopyPasteManager();
+		types_.push_back(
+			contextManager.registerInterface(qtCopyPasteManager_));
 		qtCopyPasteManager_->init(definitionManager, commandsystem);
 
 		qtFramework_->initialise( contextManager );
@@ -66,6 +71,7 @@ public:
 		qtCopyPasteManager_->fini();
 		qtApplication_->finalise();
 		qtFramework_->finalise();
+		qtCopyPasteManager_ = nullptr;
 		return true;
 	}
 
@@ -78,7 +84,6 @@ public:
 
 		qtFramework_ = nullptr;
 		qtApplication_ = nullptr;
-		qtCopyPasteManager_ = nullptr;
 	}
 
 private:

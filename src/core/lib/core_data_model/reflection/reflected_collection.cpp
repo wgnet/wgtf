@@ -171,7 +171,7 @@ CollectionIteratorImplPtr ReflectedCollection::erase(const CollectionIteratorImp
 	return end();
 }
 
-size_t ReflectedCollection::erase(const Variant& key)
+size_t ReflectedCollection::eraseKey(const Variant& key)
 {
 	assert (controller_ != nullptr);
 	auto count = collection_.size();

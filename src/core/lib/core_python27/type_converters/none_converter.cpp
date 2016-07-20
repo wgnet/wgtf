@@ -19,8 +19,7 @@ bool NoneConverter::toVariant( const PyScript::ScriptObject & inObject,
 		return false;
 	}
 
-	void * noneType = nullptr;
-	outVariant = Variant( noneType );
+	outVariant = Variant( nullptr );
 	return true;
 }
 
@@ -29,19 +28,13 @@ bool NoneConverter::toScriptType( const Variant & inVariant,
 	PyScript::ScriptObject & outObject, void* userData ) /* override */
 {
 	// null void * -> None
-	if (!inVariant.typeIs< Variant::traits< void * >::storage_type >())
+	if (!inVariant.isNullPointer() || !inVariant.typeIs< void >())
 	{
 		return false;
 	}
 
-	void * ptr = nullptr;
-	const bool success = inVariant.tryCast< void * >( ptr );
-	if (success && (ptr == nullptr))
-	{
-		outObject = PyScript::ScriptObject::none();
-		return true;
-	}
-	return false;
+	outObject = PyScript::ScriptObject::none();
+	return true;
 }
 
 

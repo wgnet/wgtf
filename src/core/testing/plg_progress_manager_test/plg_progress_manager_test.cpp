@@ -7,7 +7,16 @@
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which queries the IPanelManager to create a dialog with a progress bar. 
+* Once the bar is complete the dialog will automatically close.
+*
+* @ingroup plugins
+* @image html plg_progress_manager_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - ProgressManagerUIPlugin
+*/
 class TestProgressManagerPlugin
 	: public PluginMain
 {
@@ -28,8 +37,6 @@ public:
 	//==========================================================================
 	bool PostLoad( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		return true;
 	}
 

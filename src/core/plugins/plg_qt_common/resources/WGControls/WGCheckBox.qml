@@ -28,7 +28,7 @@ WGCheckBase {
     */
     property bool checked: false
 
-    checkedState: Qt.Unchecked
+    checkedState: multipleValues ? Qt.PartiallyChecked : checked ? Qt.Checked : Qt.Unchecked
 
     activeFocusOnTab: enabled
 

@@ -31,39 +31,35 @@ protected:
 	{
 	}
 
-
-	//--------------------------------------------------------------------------
-	template< typename T >
-	T * baseGet( IComponentContext & context ) const
+	DependsImpl & operator=( const DependsImpl & that )
 	{
-		return Base::template get< T >( context );
+		pValue_ = that.pValue_;
+
+		Base::operator=( that );
+
+		return *this;
 	}
 
-
-	template<bool isSameType, bool _dummy = false>
+	template<typename T, bool = false>
 	struct GetHelper
 	{
 		//--------------------------------------------------------------------------
-		template< typename Source, typename Target, typename DependsType >
-		static Target * get( IComponentContext & context, Source * & pValue, DependsType & pThis )
+		template< typename Source >
+		static T * get( IComponentContext & context, Source * pValue, const DependsImpl & pThis )
 		{
-			if(pValue == nullptr)
-			{
-				pValue = context.queryInterface< Source >();
-			}
-			return pValue;
+			return pThis.Base::template get< T >( context );
 		}
 	};
 
 
 	template<bool _dummy>
-	struct GetHelper<false, _dummy>
+	struct GetHelper<T1, _dummy>
 	{
 		//--------------------------------------------------------------------------
-		template< typename Source, typename Target, typename DependsType >
-		static Target * get( IComponentContext & context, Source * & pValue, DependsType & pThis )
+		template< typename Source >
+		static T1 * get( IComponentContext & context, Source * pValue, const DependsImpl & pThis )
 		{
-			return pThis.template baseGet< Target >( context );
+			return pValue;
 		}
 	};
 
@@ -72,7 +68,7 @@ protected:
 	template< typename T >
 	T * get( IComponentContext & context ) const
 	{
-		return GetHelper< std::is_same< T1, T >::value >::template get< T1, T >( context, pValue_, *this );
+		return GetHelper< T >::get( context, pValue_, *this );
 	}
 
 
@@ -117,8 +113,16 @@ protected:
 		}
 		Base::onInterfaceDeregistered( caster );
 	}
+
+
+	void initValue( IComponentContext & context )
+	{
+		pValue_ = context.queryInterface< T1 >();
+		Base::initValue( context );
+	}
+
 private:
-	mutable T1 * pValue_;
+	T1 * pValue_;
 };
 
 //==============================================================================
@@ -128,6 +132,13 @@ template<>
 class DependsImpl< DummyDependsType >
 {
 protected:
+	DependsImpl & operator=( const DependsImpl & that )
+	{
+		//Do nothing
+		return *this;
+	}
+
+
 	//--------------------------------------------------------------------------
 	template< typename T >
 	T * get( IComponentContext & context ) const
@@ -155,6 +166,11 @@ protected:
 		//Do nothing
 	}
 
+	void initValue( IComponentContext & context )
+	{
+		//Do nothing
+	}
+
 };
 
 
@@ -176,16 +192,42 @@ class Depends
 	typedef DependsImpl< T1, T2, T3, T4, T5, T6 > Base;
 public:
 	Depends( IComponentContext & context )
-		: context_( context )
+		: context_( &context )
 	{
-		context_.registerListener( *this );
+		context_->registerListener( *this );
+
+		// call init after registration to avoid races
+		Base::initValue( *context_ );
+	}
+
+
+	Depends( const Depends & that )
+		: context_( that.context_ )
+	{
+		context_->registerListener( *this );
+		Base::operator=( that );
 	}
 
 
 	//--------------------------------------------------------------------------
 	~Depends()
 	{
-		context_.deregisterListener( *this );
+		context_->deregisterListener( *this );
+	}
+
+
+	Depends & operator=( const Depends & that )
+	{
+		if(context_ != that.context_)
+		{
+			context_->deregisterListener( *this );
+			context_ = that.context_;
+			context_->registerListener( *this );
+		}
+
+		Base::operator=( that );
+
+		return *this;
 	}
 
 
@@ -193,7 +235,7 @@ public:
 	template< typename T >
 	T * get() const
 	{
-		return Base::template get< T >( context_ );
+		return Base::template get< T >( *context_ );
 	}
 
 
@@ -201,7 +243,12 @@ public:
 	template< typename T >
 	void get( std::vector< T * > & interfaces ) const
 	{
-		Base::template get< T >( context_, interfaces );
+		Base::template get< T >( *context_, interfaces );
+	}
+
+	operator IComponentContext&()
+	{
+		return *context_;
 	}
 
 
@@ -219,7 +266,7 @@ private:
 		Base::onInterfaceDeregistered( caster );
 	}
 
-	IComponentContext & context_;
+	IComponentContext * context_;
 };
 } // end namespace wgt
 #endif //DEPENDS_HPP

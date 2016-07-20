@@ -10,7 +10,15 @@
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which creates a basic Qt window from a .ui file which other plugins will add panels an components to.
+* Mutually exclusive with MayaAdapterPlugin.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TestWindowPlugin
 	: public PluginMain
 {
@@ -20,6 +28,7 @@ private:
 public:
 	//==========================================================================
 	TestWindowPlugin(IComponentContext & contextManager )
+		: mainWindow_( contextManager )
 	{
 
 	}
@@ -33,10 +42,7 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		auto uiApplication = contextManager.queryInterface< IUIApplication >();
-		auto uiFramework = contextManager.queryInterface< IUIFramework >();
-
-		mainWindow_.init( *uiApplication, *uiFramework );
+		mainWindow_.init();
 	}
 
 	//==========================================================================

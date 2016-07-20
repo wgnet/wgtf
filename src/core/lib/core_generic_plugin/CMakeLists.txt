@@ -29,7 +29,7 @@ BW_ADD_LIBRARY( core_generic_plugin ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_generic_plugin INTERFACE
 	core_common
-	core_variant
+	core_reflection
 	core_dependency_system
 	core_logging
 )

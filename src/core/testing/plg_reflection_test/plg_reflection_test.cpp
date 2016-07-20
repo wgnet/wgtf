@@ -9,8 +9,12 @@
 namespace wgt
 {
 /**
- *	Test reflection system.
- */
+* A plugin which tests the reflection plugin
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TestPluginReflection
 	: public PluginMain
 {
@@ -26,13 +30,7 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		auto metaTypeManager =
-			contextManager.queryInterface< IMetaTypeManager >();
-		if (metaTypeManager)
-		{
-			metaTypeManager->registerType( baseProviderMetaType_.get() );
-		}
-		Variant::setMetaTypeManager( metaTypeManager );
+		Variant::registerType( baseProviderMetaType_.get() );
 
 		IDefinitionManager* pDefinitionManager =
 			contextManager.queryInterface< IDefinitionManager >();

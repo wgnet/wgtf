@@ -1,4 +1,3 @@
-plugins/plg_variant
 plugins/plg_logging_system
 plugins/plg_reflection
 plugins/plg_object
@@ -22,6 +21,7 @@ plugins/plg_panel_manager
 plugins/plg_panel_manager_test
 plugins/plg_test_active_filters
 plugins/plg_list_model_test
+plugins/plg_table_model_test
 plugins/plg_tree_model_test
 plugins/plg_modal_dlg_test
 plugins/plg_context_menu_test

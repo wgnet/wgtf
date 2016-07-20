@@ -454,19 +454,78 @@ WGPanel {
 
                                     WGControlChunk {
                                         tags: "image click thumbnail load picture"
-                                        WGExpandingRowLayout {
+                                        ColumnLayout {
                                             anchors.left: parent.left
                                             anchors.right: parent.right
-                                            Rectangle {
-                                                color: "transparent"
-                                                Layout.preferredWidth: 60
-                                            }
-                                            WGComboBoxImage {
-                                                id: openImage
-                                            }
-                                            Rectangle {
-                                                color: "transparent"
+                                            WGExpandingRowLayout {
+
                                                 Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGDropDownBox {
+                                                    id: openDropDown
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            WGExpandingRowLayout {
+
+                                                Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGImageDropDown {
+                                                    id: openImageDropDown
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+
+                                                WGLabel {
+                                                    text: "Image Drop Down Test"
+                                                }
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
                                             }
                                         }
                                     }
@@ -1064,19 +1123,78 @@ WGPanel {
                                             }
                                         }
                                         tags: "image click thumbnail load picture"
-                                        WGExpandingRowLayout {
+                                        ColumnLayout {
                                             anchors.left: parent.left
                                             anchors.right: parent.right
-                                            Rectangle {
-                                                color: "transparent"
-                                                Layout.preferredWidth: 60
-                                            }
-                                            WGComboBoxImage {
-                                                id: openImageClone
-                                            }
-                                            Rectangle {
-                                                color: "transparent"
+                                            WGExpandingRowLayout {
+
                                                 Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGDropDownBox {
+                                                    id: openDropDownClone
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            WGExpandingRowLayout {
+
+                                                Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGImageDropDown {
+                                                    id: openImageDropDownClone
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+
+                                                WGLabel {
+                                                    text: "Image Drop Down Test"
+                                                }
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
                                             }
                                         }
                                     }

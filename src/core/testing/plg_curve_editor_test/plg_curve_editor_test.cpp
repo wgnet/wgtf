@@ -8,7 +8,15 @@
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which queries the ICurveEditor interface and adds test data to be displayed and manipulated
+*
+* @ingroup plugins
+* @image html plg_curve_editor_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - CurveEditorPlugin
+*/
 class CurveEditorTestPlugin
 	: public PluginMain
 {

@@ -13,14 +13,6 @@ ListView {
     property var __onItemClicked: function(mouse, itemIndex, rowIndex) {}
     property var __onItemDoubleClicked: function(mouse, itemIndex, rowIndex) {}
 
-    /*! Stores which item is currently in focus by the keyboard.
-        Often this will correspond to the selected item, but not always.
-        E.g. pressing ctrl+up will move the current index, but not the selected index.
-        The default value is the same as the selection (modelIndex).
-        To be initialized by the parent.
-    */
-    property var keyboardHighlightModelIndex: null
-
     signal itemPressed(var mouse, var itemIndex, var rowIndex)
     signal itemClicked(var mouse, var itemIndex, var rowIndex)
     signal itemDoubleClicked(var mouse, var itemIndex, var rowIndex)
@@ -31,7 +23,10 @@ ListView {
 
     headerPositioning: ListView.OverlayHeader
     footerPositioning: ListView.OverlayFooter
-    contentWidth: contentItem.childrenRect.width 
+    contentWidth: contentItem.childrenRect.width + scrollViewError
+
+    // This workaround is needed until the standard QML ScrollView is fixed.
+    readonly property var scrollViewError: view.clamp ? 0 : 1
 
     header: depth == 0 ? view.header : null
     footer: depth == 0 ? view.footer : null
@@ -42,39 +37,12 @@ ListView {
 
         WGItemRow {
             id: itemRow
-            columnDelegates: view.columnDelegates
-            columnSequence: view.columnSequence
-            columnWidths: view.columnWidths
-            columnSpacing: view.columnSpacing
-            isSelected: view.selectionModel.isSelected(modelIndex)
-            isKeyboardHighlight: (keyboardHighlightModelIndex === modelIndex)
-
-            Connections {
-                target: view.selectionModel
-                onSelectionChanged: {
-                    itemRow.isSelected = view.selectionModel.isSelected(modelIndex)
-                }
-            }
+			view: treeViewBase.view
+			depth: treeViewBase.depth
 
             onItemPressed: treeViewBase.itemPressed(mouse, itemIndex, modelIndex)
             onItemClicked: treeViewBase.itemClicked(mouse, itemIndex, modelIndex)
             onItemDoubleClicked: treeViewBase.itemDoubleClicked(mouse, itemIndex, modelIndex)
-
-            onImplicitColumnWidthsChanged: {
-                var viewWidths = view.implicitColumnWidths;
-
-                while (viewWidths.length < implicitColumnWidths.length)
-                {
-                    viewWidths.push(0);
-                }
-
-                for (var i = 0; i < implicitColumnWidths.length; ++i)
-                {
-                    viewWidths[i] = Math.max(viewWidths[i], implicitColumnWidths[i]);
-                }
-
-                view.implicitColumnWidths = viewWidths;
-            }
         }
 
         Item {
@@ -97,8 +65,6 @@ ListView {
                         "__onItemPressed": function(mouse, itemIndex, rowIndex) { treeViewBase.itemPressed(mouse, itemIndex, rowIndex) },
                         "__onItemClicked": function(mouse, itemIndex, rowIndex) { treeViewBase.itemClicked(mouse, itemIndex, rowIndex) },
                         "__onItemDoubleClicked": function(mouse, itemIndex, rowIndex) { treeViewBase.itemDoubleClicked(mouse, itemIndex, rowIndex) },
-
-                        "keyboardHighlightModelIndex": Qt.binding( function() { return keyboardHighlightModelIndex; } )
                     })
 
                     childItems.width = Qt.binding( function() { return active ? item.contentWidth : 0 } )

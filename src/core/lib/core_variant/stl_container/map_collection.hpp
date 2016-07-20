@@ -25,7 +25,7 @@ namespace collection_details
 
 		static const bool is_const_container = std::is_const< container_type >::value;
 		static const bool can_set =
-			Variant::traits< value_type >::can_downcast &&
+			Variant::traits< value_type >::can_cast &&
 			!is_const_container &&
 			!std::is_const< value_type >::value;
 
@@ -128,7 +128,7 @@ namespace collection_details
 					return false;
 				}
 
-				return v.with< value_type >( [ impl, &v ]( const value_type& val )
+				return v.visit< value_type >( [ impl, &v ]( const value_type& val )
 				{
 					auto pos = impl->collectionImpl_.makeIterator( impl->iterator_ );
 					impl->collectionImpl_.onPreChange_( pos, v );
@@ -445,7 +445,7 @@ namespace collection_details
 			return makeIterator( r );
 		}
 
-		size_t erase( const Variant& key ) override
+		size_t eraseKey( const Variant& key ) override
 		{
 			key_type k;
 			if( !key.tryCast( k ) )
@@ -629,7 +629,7 @@ namespace collection_details
 			return end();
 		}
 
-		size_t erase( const Variant& key ) override
+		size_t eraseKey( const Variant& key ) override
 		{
 			return 0;
 		}

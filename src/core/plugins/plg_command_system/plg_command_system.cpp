@@ -20,6 +20,17 @@
 
 namespace wgt
 {
+/**
+* A plugin which registers ICommandManager and IEnvManager interfaces to allow other plugins to queue and register commands. 
+* It maintains and processes a command queue and tracks the history of all executed commands coordinating undo/redo operations.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @note The command queue is important for concurrency. The command manager will perform all data modifications on the same thread.
+*       All data changes should be wrapped in a command and executed via the command manager to guarantee there are no data races.
+*       Requires Plugins:
+*       - @ref coreplugins
+*/
 class CommandSystemPlugin
 	: public PluginMain
 {
@@ -65,9 +76,6 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager(
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		IApplication * application = contextManager.queryInterface< IApplication >();
 		assert( application != nullptr );
 		IEnvManager * envManager = contextManager.queryInterface< IEnvManager >();

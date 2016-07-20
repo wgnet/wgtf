@@ -8,8 +8,10 @@ import WGControls 2.0
 
 WGSliderControl {
     id: reflectedSlider
-    objectName:  itemData != null ? itemData.indexPath : "slider_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "slider_component" : itemData.indexPath
     anchors.fill: parent
+    enabled: itemData.enabled && !itemData.readOnly
+    multipleValues: itemData.multipleValues
 
     value: itemData.value
 
@@ -24,9 +26,7 @@ WGSliderControl {
     minimumValue: maxSliderRangeExceeded ? itemData.value - Math.floor(maxSliderRange/2) : itemData.minValue
     maximumValue: maxSliderRangeExceeded ? itemData.value + Math.floor(maxSliderRange/2) : itemData.maxValue
 
-    Binding {
-        target: itemData
-        property: "value"
-        value: reflectedSlider.value
-    }
+	onValueChanged: {
+		itemData.value = reflectedSlider.value
+	}
 }

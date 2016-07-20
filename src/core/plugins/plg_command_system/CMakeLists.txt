@@ -23,7 +23,6 @@ BW_TARGET_LINK_LIBRARIES( plg_command_system PRIVATE
 	core_reflection
 	core_generic_plugin
 	core_command_system
-	core_serialization
 )
 
 BW_PROJECT_CATEGORY( plg_command_system "Plugins" )

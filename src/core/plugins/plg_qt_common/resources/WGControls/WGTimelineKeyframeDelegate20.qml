@@ -130,6 +130,10 @@ WGTimelineFrameSlider {
                     }
                 }
             }
+
+            onValueChanged: {
+                time = value / rootFrame.framesPerSecond;
+            }
         }
     }
 

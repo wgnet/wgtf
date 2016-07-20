@@ -149,5 +149,5 @@ BW_TARGET_LINK_LIBRARIES( core_data_model INTERFACE
 	core_reflection_utils
 )
 
-BW_PROJECT_CATEGORY( core_data_model "WGT Libs" )
+BW_PROJECT_CATEGORY( core_data_model "WGT Libs/Data Model" )
 

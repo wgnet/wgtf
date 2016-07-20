@@ -9,27 +9,22 @@ TableView
 {
     id: tableView
     Layout.fillWidth: true
-    itemDelegate: Item
-    {
-        id: item
-        Component.onCompleted:{
-            var column = getColumn(styleData.column)
-            // This is just a place holder for now allowing us to visualize the data
-            var snippet =
-'import QtQuick 2.5
- import QtQuick.Controls 1.3
- Text
+    itemDelegate: Text
  {
+        id: cell
      text: getText()
      color: styleData.textColor
      elide: Text.ElideRight
 
      function getText()
      {
-         var itemData = tableView.model.data(tableView.model.index(' + styleData.row + '), "Value")
+            if(styleData.row < 0 || styleData.role === undefined || styleData.role === "")
+                return "";
          try
          {
-              return itemData.' +  column.role + '.toString()
+                var itemData = tableView.model.data(tableView.model.index(styleData.row), "value")
+                // This call unfortunately makes adapting to a Javascript data model difficult
+                return getProperty(itemData, styleData.role).toString()
          }
          catch(e)
          {
@@ -37,20 +32,6 @@ TableView
              return ""
          }
      }
- }'
-            internal.dynamicObject = Qt.createQmlObject(snippet,
-                item, "dynamicTableViewItemDelegate")
-        }
-        Component.onDestruction:
-        {
-            internal.dynamicObject.destroy()
-        }
-
-        QtObject
-        {
-            id: internal
-            property var dynamicObject: undefined
-        }
     }
 
     property var fixedColumns: []
@@ -73,7 +54,9 @@ TableView
     {
         while(columnCount > 0)
         {
-            removeColumn(0);
+            // Sometimes removing column 0 causes an exception, we need to continue running our code or we lose columns
+            try{ removeColumn(0); }
+            catch(e){}
         }
         addColumns(fixedColumns, false)
         addColumns(movableColumns, true)
@@ -106,14 +89,15 @@ TableView
         //}
 
         // Iterate through the list of columns
-        var iter = iterator(columns)
-        while(iter.moveNext())
+        for(var i = 0; i < columns.count(); ++i)
         {
-            var prop = iter.current
+            var prop = columns.item(i)
             var title = prop
             if (typeof(prop) !== "string")
+            {
                 title = prop.title ? prop.title : "(???)"
                 prop = prop.role ? prop.role : prop.toString()
+            }
             var column = columnDelegate.createObject(undefined,
                 {
                     "role": prop,

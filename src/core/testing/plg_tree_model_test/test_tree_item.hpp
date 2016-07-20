@@ -32,15 +32,15 @@ class TestTreeItem: public AbstractTreeItem
 {
 public:
 	TestTreeItem( const char* name, const AbstractTreeItem* parent );
-	TestTreeItem( const TestTreeItem& rhs );
 	virtual ~TestTreeItem();
-
-	TestTreeItem& operator=( const TestTreeItem& rhs );
 
 	const AbstractTreeItem* getParent() const;
 
-	virtual Variant getData( int column, size_t roleId ) const;
-	virtual bool setData( int column, size_t roleId, const Variant& data );
+	virtual Variant getData( int column, size_t roleId ) const override;
+	virtual bool setData( int column, size_t roleId, const Variant& data ) override;
+
+	virtual Connection connectPreDataChanged( DataCallback callback ) override;
+	virtual Connection connectPostDataChanged( DataCallback callback ) override;
 
 private:
 	struct Implementation;

@@ -4,6 +4,7 @@
 #include "../utilities/reflection_utilities.hpp"
 #include "../property_accessor.hpp"
 #include "../interfaces/i_base_property.hpp"
+#include "../reflection_dll.hpp"
 #include "meta_base.hpp"
 
 namespace wgt
@@ -11,10 +12,10 @@ namespace wgt
 class IBaseProperty;
 
 //==============================================================================
-MetaHandle findFirstMetaData( const TypeId & typeId, const MetaHandle & metaData, const IDefinitionManager & definitionManager );
-MetaHandle findFirstMetaData( const TypeId & typeId, const PropertyAccessor & accessor, const IDefinitionManager & definitionManager );
-MetaHandle findFirstMetaData( const TypeId & typeId, const IBaseProperty & pProperty, const IDefinitionManager & definitionManager );
-MetaHandle findFirstMetaData( const TypeId & typeId, const IClassDefinition & definition, const IDefinitionManager & definitionManager );
+REFLECTION_DLL MetaHandle findFirstMetaData( const TypeId & typeId, const MetaHandle & metaData, const IDefinitionManager & definitionManager );
+REFLECTION_DLL MetaHandle findFirstMetaData( const TypeId & typeId, const PropertyAccessor & accessor, const IDefinitionManager & definitionManager );
+REFLECTION_DLL MetaHandle findFirstMetaData( const TypeId & typeId, const IBaseProperty & pProperty, const IDefinitionManager & definitionManager );
+REFLECTION_DLL MetaHandle findFirstMetaData( const TypeId & typeId, const IClassDefinition & definition, const IDefinitionManager & definitionManager );
 
 
 //==============================================================================

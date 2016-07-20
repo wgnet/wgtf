@@ -1,6 +1,7 @@
 #include "base_asset_object_item.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/asset_browser/i_asset_presentation_provider.hpp"
+#include <vector>
 
 namespace wgt
 {

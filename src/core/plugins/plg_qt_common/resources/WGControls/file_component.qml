@@ -4,11 +4,11 @@ import QtQuick.Layouts 1.1
 
 WGFileSelectBox {
     id: fileComponent
-    objectName:  itemData != null ? itemData.indexPath : "file_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "file_component" : itemData.indexPath
 
     //TODO: use WGAssetBrowserDialog when metadata says it's asset browser
-    property var assetDlg : WGNativeFileDialog{}
-    property var fileDlg : WGNativeFileDialog {}
+    property Component assetDlg : WGNativeFileDialog{}
+    property Component fileDlg : WGNativeFileDialog {}
 
     onFileChosen: {
         itemData.value = selectedFile
@@ -24,6 +24,8 @@ WGFileSelectBox {
     title: itemData.urlDialogTitle
     folder: itemData.urlDialogDefaultFolder
     modality: itemData.urlDialogModality
+    enabled: itemData.enabled && !itemData.readOnly
+    multipleValues: itemData.multipleValues
 
     dialog: itemData.urlIsAssetBrowser ? assetDlg: fileDlg
 

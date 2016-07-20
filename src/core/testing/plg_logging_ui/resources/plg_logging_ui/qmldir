@@ -1,0 +1,3 @@
+module plg_logging_ui
+ 
+LoggingPanel 1.0 logging_panel.qml

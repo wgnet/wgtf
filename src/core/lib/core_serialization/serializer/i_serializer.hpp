@@ -4,6 +4,7 @@
 #include "core_variant/variant.hpp"
 #include "core_common/deprecated.hpp"
 #include "core_reflection/object_handle.hpp"
+#include "core_serialization/serialization_dll.hpp"
 #include <utility>
 
 namespace wgt
@@ -15,7 +16,7 @@ class ISerializationManager;
  * Serializer interface
  */
 
-class ISerializer
+class SERIALIZATION_DLL ISerializer
 {
 public:
 	virtual ~ISerializer();
@@ -40,7 +41,7 @@ public:
 
 		if( !isObject )
 		{
-			if( auto ptr = tmp.castPtr< T >() )
+			if( auto ptr = tmp.value< T* >() )
 			{
 				value = std::move( *ptr );
 			}

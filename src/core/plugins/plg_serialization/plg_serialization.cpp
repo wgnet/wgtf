@@ -30,7 +30,14 @@ private:
 	std::unique_ptr< SerializationManager > serializationManager_;
 };
 
-//==============================================================================
+/**
+* A plugin which registers an ISerializationManager interface which allows reading and writing Variant objects to an IDataStream
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+
+*/
 class SerializationPlugin
 	: public PluginMain
 {

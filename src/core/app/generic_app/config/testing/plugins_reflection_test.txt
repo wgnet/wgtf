@@ -1,4 +1,3 @@
-plugins/plg_variant
 plugins/plg_reflection
 plugins/plg_object
 plugins/plg_serialization

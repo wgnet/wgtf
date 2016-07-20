@@ -79,6 +79,11 @@ Control {
     property bool checked: false
 
     /*!
+      Property determines if the state represents multiple data values
+    */
+    property bool multipleValues: false
+
+    /*!
         This property is \c true if the control takes the focus when it is
         pressed; \l{QQuickItem::forceActiveFocus()}{forceActiveFocus()} will be
         called on the control.

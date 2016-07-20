@@ -9,18 +9,16 @@ import WGControls 2.0
 ListView {
     id: listViewBase
 
+	property alias currentRow: listViewBase.currentIndex
+
     property var view
+	property bool asynchronous: false
     headerPositioning: ListView.OverlayHeader
     footerPositioning: ListView.OverlayFooter
-    contentWidth: contentItem.childrenRect.width 
+    contentWidth: contentItem.childrenRect.width + scrollViewError
 
-    /*! Stores which item is currently in focus by the keyboard.
-        Often this will correspond to the selected item, but not always.
-        E.g. pressing ctrl+up will move the current index, but not the selected index.
-        The default value is the same as the selection (modelIndex).
-        To be initialized by the parent.
-    */
-    property var keyboardHighlightModelIndex: null
+    // This workaround is needed until the standard QML ScrollView is fixed.
+    readonly property var scrollViewError: view.clamp ? 0 : 1
 
     /*! Propogates events from children to parents.
         \param mouse the MouseEvent that triggered the signal.
@@ -36,20 +34,8 @@ ListView {
 
     delegate: WGItemRow {
         id: itemRow
-        columnDelegates: view.columnDelegates
-        columnSequence: view.columnSequence
-        columnWidths: view.columnWidths
-        columnSpacing: view.columnSpacing
-        isSelected: view.selectionModel.isSelected(modelIndex)
-        isKeyboardHighlight: (keyboardHighlightModelIndex === modelIndex)
-
-        Connections {
-            target: view.selectionModel
-            onSelectionChanged: {
-                itemRow.isSelected = view.selectionModel.isSelected(modelIndex)
-            }
-        }
-
+		view: listViewBase.view
+		asynchronous:  listViewBase.asynchronous
         /*! Pass events up to listViewBase.
             \param mouse passed as an argument by WGItemRow.
             \param itemIndex passed as an argument by WGItemRow.
@@ -62,21 +48,5 @@ ListView {
         onItemPressed: listViewBase.itemPressed(mouse, itemIndex, modelIndex)
         onItemClicked: listViewBase.itemClicked(mouse, itemIndex, modelIndex)
         onItemDoubleClicked: listViewBase.itemDoubleClicked(mouse, itemIndex, modelIndex)
-
-        onImplicitColumnWidthsChanged: {
-            var viewWidths = view.implicitColumnWidths;
-
-            while (viewWidths.length < implicitColumnWidths.length)
-            {
-                viewWidths.push(0);
-            }
-
-            for (var i = 0; i < implicitColumnWidths.length; ++i)
-            {
-                viewWidths[i] = Math.max(viewWidths[i], implicitColumnWidths[i]);
-            }
-
-            view.implicitColumnWidths = viewWidths;
-        }
     }
 }

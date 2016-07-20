@@ -67,9 +67,7 @@ Item {
         Loader {
             id: scrollContent
 
-            property int barMargin: verticalScrollBar.visible ? defaultSpacing.rightMargin : 0
-
-            width: scrollableFrame.vertical ? scrollableFrame.width - defaultSpacing.leftMargin - barMargin : undefined
+            width: scrollableFrame.vertical ? scrollableFrame.width - defaultSpacing.leftMargin - defaultSpacing.rightMargin : undefined
             height: !scrollableFrame.vertical ? scrollableFrame.height : undefined
 
             sourceComponent: childObject

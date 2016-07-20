@@ -111,8 +111,46 @@ Item
         ValueExtension {}
     }
 
-    ContextMenu
+    ContextMenu {
+        onAboutToShow: {
+            contextObject = graphView
+        }
+    }
+
+    WGAction
     {
+        active: true //!contextObject.locked ** TODO Fix when crash is fixed. NGT-2643
+        actionId: qsTr("NodeEditor.group|.Groups.Delete Group Box")
+        onTriggered: {
+            contextObject.deleteNode();
+        }
+    }
+    WGAction
+    {
+        active: true
+        actionId: qsTr("NodeEditor.group|.Groups.Lock Group Box")
+        //checkable: true
+        //checked: contextObject.locked ** TODO Fix when crash is fixed. NGT-2643
+        onTriggered: {
+            contextObject.locked = !contextObject.locked
+        }
+    }
+    WGAction
+    {
+        active: true //!contextObject.locked ** TODO Fix when crash is fixed. NGT-2643
+        actionId: qsTr("NodeEditor.group|.Groups.Change Group Box Color")
+        onTriggered: {
+            contextObject.changeColor()
+        }
+    }
+
+    WGAction
+    {
+        active: true
+        actionId: qsTr("NodeEditor.node|.Delete Node")
+        onTriggered: {
+            deleteNode(contextObject.nodeID);
+        }
     }
 
     WGGridCanvas
@@ -269,7 +307,7 @@ Item
             model: connectionsListModel
             delegate: ConnectionNodes
             {
-                connectionObj: Value
+                connectionObj: value
                 connectionID: connectionObj.id
                 firstSlot: connectionObj.output
                 secondSlot: connectionObj.input
@@ -331,7 +369,7 @@ Item
                 delegate: Node
                 {
                     id: nodeContainer
-                    nodeObj: Value
+                    nodeObj: value
                     nodeID: nodeObj.id
                     nodeTitle: nodeObj.nodeTitle
                     inputSlotsModel: nodeObj.inputSlotsModel

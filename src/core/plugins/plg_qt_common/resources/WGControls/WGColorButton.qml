@@ -77,12 +77,11 @@ WGPushButton {
         }
     }
 
-    Rectangle {
+    Item {
         id: checkSquare
         anchors.fill: parent
         anchors.margins: defaultSpacing.rowSpacing
         visible: enabled && colorSquare.color.a != 1
-        color: "transparent"
         Image {
             source: "icons/bw_check_6x6.png"
             fillMode: Image.Tile
@@ -100,6 +99,22 @@ WGPushButton {
 
         color: parent.color
     }
+
+    Item {
+        id: multipleValuesDisplay
+        anchors.fill: parent
+        anchors.margins: defaultSpacing.rowSpacing
+        visible: multipleValues
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                    GradientStop { position: 0.0; color: "red" }
+                    GradientStop { position: 0.5; color: "green" }
+                    GradientStop { position: 1.0; color: "blue" }
+                }
+        }
+    }
+
 
     ColorDialog {
         id: colorDialog

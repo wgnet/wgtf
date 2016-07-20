@@ -7,7 +7,6 @@
 #include "core_python_script/i_scripting_engine.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
 #include "core_reflection/reflection_macros.hpp"
-#include "core_variant/variant.hpp"
 
 #include <memory>
 
@@ -44,7 +43,15 @@ ObjectHandle createContextObject( IComponentContext& componentContext,
 	return contextObject;
 }
 
-
+/**
+* A plugin which queries the IPythonScriptingEngine to test adding components through python scripts
+*
+* @ingroup plugins
+* @image html plg_python27_ui_test.png
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - Python27Plugin
+*/
 struct Python27TestUIPlugin
 	: public PluginMain
 {
@@ -61,10 +68,6 @@ struct Python27TestUIPlugin
 
 	void Initialise( IComponentContext& componentContext ) override
 	{
-		// Initialise variant system; this is required for every plugin that uses Variant.
-		auto metaTypeManager = componentContext.queryInterface<IMetaTypeManager>();
-		Variant::setMetaTypeManager( metaTypeManager );
-
 		auto pDefinitionManager = componentContext.queryInterface< IDefinitionManager >();
 		if (pDefinitionManager == nullptr)
 		{

@@ -75,8 +75,8 @@ private:
 	typedef std::vector< std::pair< IDataSource*, int > > DataSrcEnvPairs;
 	DataSrcEnvPairs dataSrcEnvPairs_;
 
-	typedef std::vector< std::unique_ptr<AbstractTreeModel> > TestModels;
-	TestModels test1Models_;
+    typedef std::vector< std::unique_ptr<AbstractTreeModel> > TestModels;
+    TestModels test1Models_;
 
 	typedef std::vector< std::pair< std::unique_ptr<IView>, int > > TestViews;
 	TestViews test1Views_;

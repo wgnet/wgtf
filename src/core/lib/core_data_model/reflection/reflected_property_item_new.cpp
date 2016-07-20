@@ -31,6 +31,9 @@ ITEMROLE( isCollection )
 ITEMROLE( elementValueType )
 ITEMROLE( elementKeyType )
 ITEMROLE( itemId )
+ITEMROLE( readOnly )
+ITEMROLE( enabled )
+ITEMROLE( multipleValues )
 
 namespace
 {
@@ -606,7 +609,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 		}
 		return modality;
 	}
-	else if ( roleId == IsReadOnlyRole::roleId_ )
+	else if (roleId == ItemRole::readOnlyId)
 	{
 		TypeId typeId = propertyAccessor.getType();
 		auto readonly =
@@ -617,6 +620,15 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 		}
 		return false;
 	}
+	else if (roleId == ItemRole::enabledId)
+	{
+		return Variant(true);
+	}
+	else if (roleId == ItemRole::multipleValuesId)
+	{
+		return Variant(false);
+	}
+
 	return Variant();
 }
 
@@ -631,12 +643,20 @@ bool ReflectedPropertyItemNew::setData( int column, size_t roleId, const Variant
 	auto pDefinitionManager = this->getDefinitionManager();
 	if (pDefinitionManager == nullptr)
 	{
-		return 0;
+		return false;
 	}
 
 	auto obj = getObject();
 	auto propertyAccessor = obj.getDefinition( *pDefinitionManager )->bindProperty(
 		path_.c_str(), obj );
+
+	preSetValue( propertyAccessor, data );
+
+	std::shared_ptr<void> defer( nullptr,
+		std::bind( [this, &propertyAccessor, &data]
+	{
+		this->postSetValue( propertyAccessor, data ); 
+	} ) );
 
 	if (roleId == ValueRole::roleId_)
 	{

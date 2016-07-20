@@ -66,11 +66,11 @@ QtApplication::QtApplication( int argc, char** argv )
 	, bQuit_( false )
 
 {
-	char ngtHome[MAX_PATH];
+	char wgtHome[MAX_PATH];
 
-	if (Environment::getValue< MAX_PATH >( "NGT_HOME", ngtHome ))
+	if (Environment::getValue< MAX_PATH >( "WGT_HOME", wgtHome ))
 	{
-		QCoreApplication::addLibraryPath( ngtHome );
+		QCoreApplication::addLibraryPath( wgtHome );
 	}
 	
 	application_.reset( new QApplication( argc_, argv_ ) );
@@ -128,6 +128,10 @@ void QtApplication::update()
 	}
 
 	layoutManager_.update();
+	if(qtFramework_ != nullptr)
+	{
+		qtFramework_->incubate();
+	}
 
 	signalUpdate();
 }
@@ -153,18 +157,12 @@ void QtApplication::quitApplication()
 
 void QtApplication::addWindow( IWindow & window )
 {
-	assert( window.getApplication() == nullptr );
-
-	window.setApplication( this );
 	layoutManager_.addWindow( window );
 }
 
 void QtApplication::removeWindow( IWindow & window )
 {
-	assert( window.getApplication() == this );
-
 	layoutManager_.removeWindow( window );
-	window.setApplication( nullptr );
 }
 
 void QtApplication::addView( IView & view )

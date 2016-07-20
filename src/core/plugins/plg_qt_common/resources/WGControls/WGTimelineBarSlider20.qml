@@ -9,14 +9,15 @@ import WGControls 2.0
 
 \code{.js}
 
-**** TODO **** {
-    Layout.fillWidth: true
+WGTimelineBarSlider {
     minimumValue: 0
-    maximumValue: 100
-    lowerValue: 25
-    upperValue: 75
+    maximumValue: totalFrames
+    startFrame: 25
+    endFrame: 75
     stepSize: 1
     enabled: true
+
+    barColor: "blue"
 }
 
 \endcode
@@ -164,6 +165,10 @@ WGSlider {
             }
         }
 
+        onValueChanged: {
+            model.startTime = value / timelineFrame.framesPerSecond;
+        }
+
         // need to set max value here or the value might be clamped before the value is valid
         Component.onCompleted: {
             maximumValue = Qt.binding(function() { return sliderMaxHandle.value - minimumBarWidth })
@@ -185,6 +190,10 @@ WGSlider {
             onEndFrameChanged: {
                 sliderMaxHandle.value = endFrame
             }
+        }
+
+        onValueChanged: {
+            model.endTime = value / timelineFrame.framesPerSecond;
         }
 
         // need to set min value here or the value might be clamped before the value is valid

@@ -14,11 +14,13 @@
 namespace wgt
 {
 /**
- * TimelinePanelPlugin
- *
- * This is the main application's plugin. It creates the TimelinePanel and
- * registers it with the UIFramework. So that it will be added to the main dialog
- */
+* A plugin which creates a panel with a timeline component filled with sample data
+*
+* @ingroup plugins
+* @image html plg_timeline_panel.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TimelinePanelPlugin
     : public PluginMain
 {
@@ -27,33 +29,24 @@ public:
     {
     }
  
-    // Plugin creates resources
     bool PostLoad( IComponentContext & componentContext ) override
     {
-        // Static variable that must be set for every plugin
-        Variant::setMetaTypeManager(
-            componentContext.queryInterface< IMetaTypeManager >() );
- 
         // Create the panel
         timelinePanel_.reset( new TimelinePanel( componentContext ) );
         return true;
     }
  
-    // Registration of services this plugin provides
-    // IComponentContext provides access to services provided by other plugins
     void Initialise( IComponentContext & componentContext ) override
     {
         timelinePanel_->addPanel();
     }
  
-    // De-registration of services this plugin provides
     bool Finalise( IComponentContext & componentContext ) override
     {
         timelinePanel_->removePanel();
         return true;
     }
  
-    // Plugin deletes resources
     void Unload( IComponentContext & componentContext ) override
     {
         timelinePanel_.reset();

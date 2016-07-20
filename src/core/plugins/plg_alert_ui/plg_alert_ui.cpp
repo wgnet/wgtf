@@ -14,14 +14,18 @@
 namespace wgt
 {
 /**
- * AlertUIPlugin
- *
- * A plugin used to register the basic alert logger so that it can
- * be used by applications to display alerts. Requires the logging system to
- * also be included in the project. No alerts will be displayed unless an
- * IAlertPresenter is registered with the AlertManager and an ILogger invokes
- * the add() functionality on the AlertManager.
- */
+* A plugin used to register the basic alert logger so that it can
+* be used by applications to display alerts. Requires the logging system to
+* also be included in the project. No alerts will be displayed unless an
+* IAlertPresenter is registered with the AlertManager and an ILogger invokes
+* the add() functionality on the AlertManager.
+* 
+* @ingroup plugins
+* @image html plg_alert_ui.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - LoggingSystemPlugin
+*/
 class AlertUIPlugin
 	: public PluginMain
 {
@@ -46,9 +50,6 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
- 		Variant::setMetaTypeManager( 
- 			contextManager.queryInterface< IMetaTypeManager >() );
-			
 		ILoggingSystem* loggingSystem = 
 			contextManager.queryInterface< ILoggingSystem >();
 		if (loggingSystem != nullptr)

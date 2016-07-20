@@ -782,7 +782,7 @@ void listConversionTest( ReflectedPython::DefinedInstance & instance,
 		char buffer[ maxDigits ];
 		PlatformHelpers::sprintfSize_t(buffer, erasureId);
 		Variant key( buffer );
-		auto erasureCount = listResult.erase( key );
+		auto erasureCount = listResult.eraseKey( key );
 		CHECK( erasureCount == 1 );
 
 		const size_t expectedSize = originalSize - 1;
@@ -802,7 +802,7 @@ void listConversionTest( ReflectedPython::DefinedInstance & instance,
 		CHECK( getSuccess );
 
 		Variant key( "Invalid" );
-		auto erasureCount = listResult.erase( key );
+		auto erasureCount = listResult.eraseKey( key );
 		CHECK( erasureCount == 0 );
 
 		const size_t expectedSize = originalSize;
@@ -1500,7 +1500,7 @@ void tupleConversionTest( ReflectedPython::DefinedInstance & instance,
 
 		const size_t erasureId = originalSize - 1;
 		Variant key( erasureId );
-		auto erasureCount = tupleResult.erase( key );
+		auto erasureCount = tupleResult.eraseKey( key );
 		CHECK( erasureCount == 0 );
 
 		const size_t expectedSize = originalSize;
@@ -1962,7 +1962,7 @@ void dictConversionTest( ReflectedPython::DefinedInstance & instance,
 		char buffer[ maxDigits ];
 		PlatformHelpers::sprintfSize_t(buffer, erasureId);
 		Variant key( buffer );
-		auto erasureCount = dictResult.erase( key );
+		auto erasureCount = dictResult.eraseKey( key );
 		CHECK( erasureCount == 1 );
 
 		const size_t expectedSize = originalSize - 1;
@@ -1982,7 +1982,7 @@ void dictConversionTest( ReflectedPython::DefinedInstance & instance,
 		CHECK( getSuccess );
 
 		Variant key( "Invalid" );
-		auto erasureCount = dictResult.erase( key );
+		auto erasureCount = dictResult.eraseKey( key );
 		CHECK( erasureCount == 0 );
 
 		const size_t expectedSize = originalSize;
@@ -2712,7 +2712,7 @@ void getCollectionPath2( const ReflectedPython::DefinedInstance & instance,
 	TestResult & result_ )
 {
 	std::string pathName = "childTest";
-	pathName += DOT_OPERATOR;
+	pathName += IClassDefinition::DOT_OPERATOR;
 	pathName += collectionName;
 	const bool getCollectionSuccess = instance.get< Collection >(
 		pathName.c_str(), outCollection );
@@ -2758,11 +2758,11 @@ void checkSequencePaths( const ReflectedPython::DefinedInstance & instance,
 		const auto & valueFullPath = valueInstance.fullPath();
 
 		std::string expectedValueFullPath = "childTest";
-		expectedValueFullPath += DOT_OPERATOR;
+		expectedValueFullPath += IClassDefinition::DOT_OPERATOR;
 		expectedValueFullPath += collectionName;
-		expectedValueFullPath += INDEX_OPEN;
+		expectedValueFullPath += IClassDefinition::INDEX_OPEN;
 		expectedValueFullPath += std::to_string( expectedKey );
-		expectedValueFullPath += INDEX_CLOSE;
+		expectedValueFullPath += IClassDefinition::INDEX_CLOSE;
 		CHECK_EQUAL( expectedValueFullPath, valueFullPath );
 
 		int valueValue = -1;
@@ -2819,11 +2819,11 @@ void checkMappingPaths( const ReflectedPython::DefinedInstance & instance,
 		const auto & valueFullPath = valueInstance.fullPath();
 
 		std::string expectedValueFullPath = "childTest";
-		expectedValueFullPath += DOT_OPERATOR;
+		expectedValueFullPath += IClassDefinition::DOT_OPERATOR;
 		expectedValueFullPath += collectionName;
-		expectedValueFullPath += INDEX_OPEN;
+		expectedValueFullPath += IClassDefinition::INDEX_OPEN;
 		expectedValueFullPath += expectedKeyFullPath;
-		expectedValueFullPath += INDEX_CLOSE;
+		expectedValueFullPath += IClassDefinition::INDEX_CLOSE;
 		CHECK_EQUAL( expectedValueFullPath, valueFullPath );
 	}
 }

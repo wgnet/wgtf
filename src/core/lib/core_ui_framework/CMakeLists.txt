@@ -5,6 +5,8 @@ INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
 SET( ALL_SRCS
+    action_manager.cpp
+    action_manager.hpp
 	generic_component_provider.hpp
 	i_action.hpp
 	i_component.hpp

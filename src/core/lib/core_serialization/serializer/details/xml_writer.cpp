@@ -19,7 +19,7 @@ namespace
 	{
 		const char* result = value.type()->name();
 
-		value.with<ObjectHandle>( [&]( const ObjectHandle& v )
+		value.visit<ObjectHandle>( [&]( const ObjectHandle& v )
 		{
 			if( const IClassDefinition* definition = v.getDefinition( definitionManager ) )
 			{
@@ -38,7 +38,7 @@ namespace
             type == TypeId::getType<Vector2>() ||
             type == TypeId::getType<Vector3>() ||
             type == TypeId::getType<Vector4>() ||
-			type == TypeId::getType< std::shared_ptr< BinaryBlock > >();
+			type == TypeId::getType<BinaryBlock>();
 	}
 
 }
@@ -67,7 +67,7 @@ bool XMLWriter::write( const Variant& value )
 
 void XMLWriter::writeValue( const Variant& value, bool explicitType, bool isObjectReference /* = false*/ )
 {
-	value.with<ObjectHandle>( [=]( const ObjectHandle& v )
+	value.visit<ObjectHandle>( [=]( const ObjectHandle& v )
 	{
 		if (isObjectReference)
 		{
@@ -83,15 +83,15 @@ void XMLWriter::writeValue( const Variant& value, bool explicitType, bool isObje
 		}
 		writeObject( v, true );
 	} ) ||
-	value.with<Collection>( [=]( const Collection& v )
+	value.visit<Collection>( [=]( const Collection& v )
 	{
 		writeCollection( v );
 	} ) ||
-	value.with< std::shared_ptr< BinaryBlock > >( [=]( const std::shared_ptr< BinaryBlock >& v )
+	value.visit<BinaryBlock>( [=]( const BinaryBlock& v )
 	{
 		writeVariant( v, true );
 	} ) ||
-	value.with<Variant>( [=]( const Variant& v )
+	value.visit<Variant>( [=]( const Variant& v )
 	{
 		if( auto definition = definitionManager_.getDefinition( v.type()->typeId().getName() ) )
 		{

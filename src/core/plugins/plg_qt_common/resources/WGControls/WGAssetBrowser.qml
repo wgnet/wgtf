@@ -292,7 +292,7 @@ Rectangle {
         filter: WGTokenizedStringFilter {
             id: folderFilter
             filterText: activeFilters_.stringValue
-            itemRole: "value"
+            itemRole: "indexPath"
             splitterChar: ","
         }
 
@@ -329,6 +329,9 @@ Rectangle {
 
                     // Reset the flag to track the folder history
                     rootFrame.shouldTrackFolderHistory = true;
+
+                    // Prepare the context menu for the selected folder
+                    folderContextMenu.contextObject = selector.selectedItem;
                 }
 
                 folderTreeExtension.blockSelection = false;
@@ -355,7 +358,7 @@ Rectangle {
         filter: WGTokenizedStringFilter {
             id: folderContentsFilter
             filterText: activeFilters_.stringValue
-            itemRole: "value"
+            itemRole: "indexPath"
             splitterChar: ","
         }
 
@@ -895,23 +898,14 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: defaultSpacing.minimumRowHeight + defaultSpacing.doubleBorderSize
 
-            Rectangle {
-                id: activeFiltersRect
-                Layout.fillWidth: true
-                Layout.minimumHeight: defaultSpacing.minimumRowHeight + defaultSpacing.doubleBorderSize
-                Layout.preferredHeight: childrenRect.height
-                color: "transparent"
-
                 WGActiveFilters {
                     id: activeFilters
                     objectName: "activeFilters"
-                    anchors {left: parent.left; top: parent.top; right: parent.right}
-                    height: childrenRect.height
-                    inlineTags: true
+                Layout.fillWidth: true
+                Layout.minimumHeight: defaultSpacing.minimumRowHeight + defaultSpacing.doubleBorderSize
                     __splitterChar: ","
                     dataModel: rootFrame.viewModel.data.activeFilters
                 }
-            }
 
             // Apply custom filters to data that do not get overridden by
             // the text-based filters. Temporary solution until a more
@@ -921,11 +915,13 @@ Rectangle {
             WGLabel {
                 text: "File Type:"
                 visible: customContentFiltersList.count > 0
+                Layout.alignment: Qt.AlignTop
             }
 
             WGDropDownBox {
                 id: customContentFiltersMenu
                 Layout.preferredWidth: 150
+                Layout.alignment: Qt.AlignTop
                 visible: customContentFiltersList.count > 0
 
                 model: customContentFiltersList
@@ -1114,6 +1110,24 @@ Rectangle {
                                     elide: Text.ElideRight
                                 }
                             }
+
+                        //--------------------------------------
+                        // Folder Context Menu
+                        //--------------------------------------
+                        WGContextArea {
+                            id: folderContextArea
+                            objectName: "folderContextArea"
+                            onAboutToShow: {
+                                // Prepare the context menu by passing the selected asset from the
+                                // list model and telling the menu to show, which will update
+                                // the actions data with the selected asset for processing.
+                                contextMenu.contextObject = selector.selectedItem;
+                            }
+                            WGContextMenu {
+                                id: folderContextMenu
+                                path: "WGAssetBrowserFolderMenu"
+                            }
+                        }
                     }// TreeView
                         /*
                         Rectangle {

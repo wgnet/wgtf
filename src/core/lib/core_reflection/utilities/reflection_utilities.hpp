@@ -3,6 +3,7 @@
 
 #include "core_variant/variant.hpp"
 #include "core_reflection/object_handle.hpp"
+#include "core_reflection/reflection_dll.hpp"
 
 namespace wgt
 {
@@ -11,8 +12,8 @@ class IDefinitionManager;
 namespace ReflectionUtilities
 {
 
-bool isPolyStruct( const PropertyAccessor & pa );
-bool isStruct( const PropertyAccessor & pa );
+REFLECTION_DLL bool isPolyStruct( const PropertyAccessor & pa );
+REFLECTION_DLL bool isStruct( const PropertyAccessor & pa );
 
 
 // =============================================================================
@@ -59,22 +60,22 @@ Variant reference( T *& value )
 
 // =============================================================================
 template<>
-Variant copy< Variant >( Variant & value );
+REFLECTION_DLL Variant copy< Variant >( Variant & value );
 
 
 // =============================================================================
 template<>
-Variant copy< const Variant >( const Variant & value );
+REFLECTION_DLL Variant copy< const Variant >( const Variant & value );
 
 
 // =============================================================================
 template<>
-Variant reference< Variant >( Variant & value );
+REFLECTION_DLL Variant reference< Variant >( Variant & value );
 
 
 // =============================================================================
 template<>
-Variant reference< const Variant >( const Variant & value );
+REFLECTION_DLL Variant reference< const Variant >( const Variant & value );
 
 
 // =============================================================================

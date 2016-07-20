@@ -9,3 +9,7 @@ Example to use Python 2.7.11:
 3. Double-check your folder structure matches the PYTHON_DIR in the build script
    ngt/build/cmake/FindCorePython.cmake.
 
+Compatibility Notes
+- To build with VS2015, Python sources must be patched or taken from the latest.
+- Python plugins are not supported for use with MacOS or Maya.
+

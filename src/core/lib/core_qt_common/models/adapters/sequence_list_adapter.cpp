@@ -59,6 +59,7 @@ void SequenceListAdapter::setModel( const QVariant &model )
 {
 	beginResetModel();
 	disconnect();
+	reset();
 	model_ = model.value< QAbstractListModel * >();
 	connect();
 	endResetModel();

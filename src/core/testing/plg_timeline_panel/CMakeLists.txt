@@ -10,6 +10,8 @@ FIND_PACKAGE( QT5 )
 # ALL_SRCS is a list of any uncategorized files that should be part of your project.
 # These are all of the blank files you created earlier.
 SET( ALL_SRCS
+	timeline_model.hpp
+	timeline_model.cpp
     timeline_panel.hpp
     timeline_panel.cpp
     plg_timeline_panel_main.cpp

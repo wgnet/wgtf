@@ -89,6 +89,7 @@ GridLayout {
                             newLabel.createObject(mainColumn, {
                                                        "text": labelList[j],
                                                        "formlabel": true,
+                                                       "linkedFormObject": mainColumn.children[j],
                                                        "Layout.minimumHeight": heightList[j],
                                                        "Layout.column": 0,
                                                        "Layout.row": j+1
@@ -106,6 +107,7 @@ GridLayout {
                                                        "text": labelList[j],
                                                        "formlabel": true,
                                                        "localForm": true,
+                                                       "linkedFormObject": mainColumn.children[j],
                                                        "Layout.alignment": Qt.AlignRight,
                                                        "Layout.minimumHeight": heightList[j],
                                                        "Layout.column": 0,

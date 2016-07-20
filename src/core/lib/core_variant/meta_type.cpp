@@ -3,6 +3,8 @@
 #include "core_serialization/resizing_memory_stream.hpp"
 #include "core_serialization/text_stream.hpp"
 #include <string>
+#include <cassert>
+#include <cstdint>
 
 
 namespace wgt
@@ -24,30 +26,31 @@ namespace
 }
 
 
-MetaType::MetaType(
-	const char* name,
-	size_t size,
-	const TypeId& typeId,
-	const std::type_info& typeInfo,
-	const std::type_info* pointedType,
-	int flags ):
-
-	typeId_( typeId ),
-	name_( name ? name : typeInfo.name() ),
-	size_( size ),
-	typeInfo_( typeInfo ),
-	pointedType_( pointedType ),
-	flags_( flags ),
-#if !FAST_RUNTIME_POINTER_CAST
-	ptrCastsMutex_(),
-	ptrCasts_(),
-#endif // FAST_RUNTIME_POINTER_CAST
+MetaType::MetaType( const char* name, const Data& data ):
+	data_( data ),
+	name_( name ? name : data.typeId_.getName() ),
 	conversionsFrom_(),
 	defaultConversionFrom_( nullptr )
 {
+	for( int i = 0; i <= QualifiersMask; ++i )
+	{
+		// Qualified instance must be at least 4 bytes aligned (Variant uses 2 lower bits for storage type)
+		assert( ( reinterpret_cast< uintptr_t >( qualified_ + i ) & 0x03 ) == 0 );
+		qualified_[ i ].type_ = this;
+	}
+
 	addConversionFrom< std::string >( &convertFromString );
 }
 	
+
+const MetaType::Qualified* MetaType::qualified( int qualifiers ) const
+{
+	assert( qualifiers >= 0 );
+	assert( qualifiers < QualifiersMask );
+
+	return qualified_ + qualifiers;
+}
+
 
 bool MetaType::convertFrom( void* to, const MetaType* fromType, const void* from ) const
 {
@@ -59,7 +62,7 @@ bool MetaType::convertFrom( void* to, const MetaType* fromType, const void* from
 	}
 
 	// custom conversion
-	auto conv = conversionsFrom_.find( &fromType->typeInfo() );
+	auto conv = conversionsFrom_.find( fromType->typeId() );
 	if( conv != conversionsFrom_.end() )
 	{
 		return conv->second( this, to, fromType, from );
@@ -83,7 +86,7 @@ bool MetaType::canConvertFrom( const MetaType* fromType ) const
 	}
 
 	// custom conversion
-	auto conv = conversionsFrom_.find( &fromType->typeInfo() );
+	auto conv = conversionsFrom_.find( fromType->typeId() );
 	if( conv != conversionsFrom_.end() )
 	{
 		return true;
@@ -109,11 +112,11 @@ bool MetaType::canConvertTo( const MetaType* toType ) const
 	return toType->canConvertFrom( this );
 }
 
-void MetaType::addConversionFrom( const std::type_info& fromType, ConversionFunc func )
+void MetaType::addConversionFrom( const TypeId& fromType, ConversionFunc func )
 {
-	if( fromType != typeInfo_ )
+	if( fromType != data_.typeId_ )
 	{
-		conversionsFrom_[ &fromType ] = func;
+		conversionsFrom_[ fromType ] = func;
 	}
 }
 
@@ -123,12 +126,20 @@ void MetaType::setDefaultConversionFrom( ConversionFunc func )
 	defaultConversionFrom_ = func;
 }
 
-#if FAST_RUNTIME_POINTER_CAST
 
-void* MetaType::castPtr( const std::type_info& type, void* value, bool const_value ) const
+bool MetaType::castPtr( const TypeId& destType, void** dest, void* src ) const
 {
-	// TODO: hack CRT structures and cast without exceptions
+	if( destType != data_.typeId_ )
+	{
+		return false;
+	}
+
+	if( dest )
+	{
+		*dest = src;
+	}
+
+	return true;
 }
 
-#endif // FAST_RUNTIME_POINTER_CAST
 } // end namespace wgt

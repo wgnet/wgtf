@@ -5,18 +5,33 @@ import QtQuick.Layouts 1.1
 import WGControls 2.0
 
 /*!
- \brief Slider with a multiple handles that should really only be used in the Timeline Control
+ \brief A slider with a multiple keyframe handles and no bar that should really only be used in the Timeline Control
 
 \code{.js}
 
-**** TODO **** {
-    Layout.fillWidth: true
+WGTimelineFrameSlider {
+    id: frameSlider
     minimumValue: 0
-    maximumValue: 100
-    lowerValue: 25
-    upperValue: 75
+    maximumValue: totalFrames
+    startFrame: 25
+    endFrame: 75
     stepSize: 1
     enabled: true
+
+    Repeater {
+        model: keys
+
+        WGTimelineFrameSliderHandle {
+            id: frameSliderHandle
+            minimumValue: frameSlider.minimumValue
+            maximumValue: frameSlider.maximumValue
+            showBar: false
+            value: time * rootFrame.framesPerSecond
+            frameType: type
+
+            label: label
+        }
+    }
 }
 
 \endcode

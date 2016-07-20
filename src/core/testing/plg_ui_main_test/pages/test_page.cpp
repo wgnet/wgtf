@@ -265,25 +265,25 @@ const TestPolyStructPtr & TestPage::getTestPolyStruct() const
 void TestPage::generateEnumFunc(
 	std::map< int, std::wstring > * o_enumMap ) const
 {
-    // change the case just for the purpose of demonstrating dynamically generating dropdown list 
-    // when users click on the dropdownbox
-    static int i = 0;
-    if(i == 0)
-    {
-        o_enumMap->clear();
-        o_enumMap->insert( std::make_pair( 0, L"First Value" ) );
-        o_enumMap->insert( std::make_pair( 1, L"Second Value" ) );
-        o_enumMap->insert( std::make_pair( 2, L"third Value" ) );
-        o_enumMap->insert( std::make_pair( 3, L"Forth Value" ) );
-        i = 1;
-        return;
-    }
-    o_enumMap->clear();
-    o_enumMap->insert( std::make_pair( 0, L"1st Value" ) );
-    o_enumMap->insert( std::make_pair( 1, L"2nd Value" ) );
-    o_enumMap->insert( std::make_pair( 2, L"3rd Value" ) );
-    o_enumMap->insert( std::make_pair( 3, L"4th Value" ) );
-    i = 0;
+	// change the case just for the purpose of demonstrating dynamically generating dropdown list 
+	// when users click on the dropdownbox
+	static int i = 0;
+	if(i == 0)
+	{
+		o_enumMap->clear();
+		o_enumMap->insert( std::make_pair( 0, L"First Value" ) );
+		o_enumMap->insert( std::make_pair( 1, L"Second Value" ) );
+		o_enumMap->insert( std::make_pair( 2, L"third Value" ) );
+		o_enumMap->insert( std::make_pair( 3, L"Forth Value" ) );
+		i = 1;
+		return;
+	}
+	o_enumMap->clear();
+	o_enumMap->insert( std::make_pair( 0, L"1st Value" ) );
+	o_enumMap->insert( std::make_pair( 1, L"2nd Value" ) );
+	o_enumMap->insert( std::make_pair( 2, L"3rd Value" ) );
+	o_enumMap->insert( std::make_pair( 3, L"4th Value" ) );
+	i = 0;
 
 }
 
@@ -305,6 +305,11 @@ const std::string & TestPage::getAssetUrl() const
 void TestPage::setAssetUrl( const std::string & url )
 {
 	assetUrl_ = url;
+}
+
+void TestPage::methodOnly()
+{
+	// Do nothing
 }
 
 TestPage2::TestPage2()

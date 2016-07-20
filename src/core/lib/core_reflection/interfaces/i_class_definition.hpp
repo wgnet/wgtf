@@ -21,11 +21,6 @@ typedef ObjectHandleT< MetaBase > MetaHandle;
 typedef std::function<void*( )> DataGetter;
 
 
-extern const char INDEX_OPEN;
-extern const char INDEX_CLOSE;
-extern const char DOT_OPERATOR;
-
-
 /**
  *	Interface for storing info that "defines" a class.
  *	
@@ -37,9 +32,13 @@ extern const char DOT_OPERATOR;
  *	Stores info about inheritance and if a class can be cast to a base or
  *	derived class.
  */
-class IClassDefinition
+class REFLECTION_DLL IClassDefinition
 {
 public:
+	static const char INDEX_OPEN = '[';
+	static const char INDEX_CLOSE = ']';
+	static const char DOT_OPERATOR = '.';
+
 	virtual ~IClassDefinition() {}
 
 	/**

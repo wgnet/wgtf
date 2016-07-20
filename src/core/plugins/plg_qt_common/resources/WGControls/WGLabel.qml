@@ -27,6 +27,11 @@ Text {
     */
     property bool localForm: false
 
+    property QtObject linkedFormObject: Item{}
+
+    enabled: linkedFormObject.enabled
+
+
     /*
         Links the label to it's control object and then finds the copyable inside it.
         Only works with form labels.

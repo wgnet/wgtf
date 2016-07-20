@@ -9,6 +9,7 @@
 #include "reflected_object.hpp"
 #include "ref_object_id.hpp"
 #include "core_serialization/serializer/i_serializer.hpp"
+#include "reflection_dll.hpp"
 
 namespace wgt
 {
@@ -22,7 +23,7 @@ typedef std::unordered_set< ObjectMetaData * > ObjIdSet;
  *	Note that ObjectManager holds strong references to "unmanaged" objects.
  *	So the owner must unregister the object with ObjectManager before deletion.
  */
-class ObjectManager 
+class REFLECTION_DLL ObjectManager 
 	: public Implements< IObjectManager >
 {
 public:

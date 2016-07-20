@@ -94,11 +94,6 @@ namespace
 }
 
 
-const char INDEX_OPEN = '[';
-const char INDEX_CLOSE = ']';
-const char DOT_OPERATOR = '.';
-
-
 //------------------------------------------------------------------------------
 ClassDefinition::ClassDefinition( std::unique_ptr<IClassDefinitionDetails> details )
 	: details_( std::move(details) )

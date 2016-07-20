@@ -29,6 +29,14 @@ private:
 	const clock_t startTime_;
 };
 
+/**
+* A plugin which automatically quits the application after an amount of time
+*
+* @ingroup plugins
+* @image html plg_automation.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class AutomationPlugin
 	: public PluginMain
 {

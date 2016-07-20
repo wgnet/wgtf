@@ -1,8 +1,7 @@
 #include "qt_menu.hpp"
-
 #include "core_ui_framework/i_action.hpp"
 #include "core_logging/logging.hpp"
-
+#include "core_common/signal.hpp"
 #include <QApplication>
 #include <QAction>
 #include <QObject>
@@ -167,6 +166,11 @@ void QtMenu::destroyQAction( IAction & action )
 	{
 		actions_.erase( it );
 	}
+	auto findIt = connections_.find( &action );
+	if (findIt != connections_.end())
+	{
+		 connections_.erase( findIt );
+	}
 }
 
 QAction * QtMenu::getQAction( IAction & action )
@@ -206,7 +210,12 @@ void QtMenu::addMenuAction( QMenu & qMenu, QAction & qAction, const char * path 
 	}
 
 	assert( menu != nullptr );
-	menu->addAction( &qAction );
+	auto order = qAction.property( "order" ).toInt();
+
+	auto actions = menu->actions();
+	auto it = std::find_if( actions.begin(), actions.end(), 
+		[&](QAction * action) { return action->property( "order" ).toInt() > order; } );
+	menu->insertAction( it == actions.end() ? nullptr : *it, &qAction );
 }
 
 void QtMenu::removeMenuAction( QMenu & qMenu, QAction & qAction )
@@ -218,7 +227,7 @@ void QtMenu::removeMenuAction( QMenu & qMenu, QAction & qAction )
 		removeMenuAction( *child, qAction );
 		if (child->isEmpty())
 		{
-			delete child;
+            child->deleteLater();
 		}
 	}
 }
@@ -242,6 +251,7 @@ QSharedPointer< QAction > QtMenu::createSharedQAction( IAction & action )
 		qAction->setCheckable( true );
 		qAction->setChecked( action.checked() );
 	}
+	qAction->setProperty( "order", action.order() );
 
 	QObject::connect( qAction.data(), &QAction::triggered, 
 		[&action]() 
@@ -252,6 +262,14 @@ QSharedPointer< QAction > QtMenu::createSharedQAction( IAction & action )
 			}
 			action.execute();
 		});
+
+	connections_[&action]= action.signalShortcutChanged.connect( 
+		[qAction](const char* shortcut)
+
+	{
+		assert( qAction != nullptr );
+		qAction->setShortcut( QKeySequence( shortcut ) );
+	} );
 
 	return qAction;
 }

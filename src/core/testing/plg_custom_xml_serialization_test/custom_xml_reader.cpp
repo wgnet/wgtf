@@ -24,7 +24,7 @@ CustomXmlDataReader::StackItem::StackItem( Variant value )
 void CustomXmlDataReader::StackItem::cast()
 {
 
-	if( auto v = value.castPtr< CustomXmlData >() )
+	if( auto v = value.value< CustomXmlData* >() )
 	{
 		data = v;
 	}

@@ -15,6 +15,8 @@ SET( DATA_MODEL_SRCS
 	models/data_change_notifier.hpp
 	models/qt_collection_model.cpp
 	models/qt_collection_model.hpp
+	models/qt_item_data.cpp
+	models/qt_item_data.hpp
 	models/qt_item_model.cpp
 	models/qt_item_model.hpp
 	models/qt_model_helpers.cpp
@@ -30,6 +32,8 @@ SET( DATA_MODEL_SRCS
 	models/role_provider.hpp
 	models/qt_abstract_item_model.hpp
 	models/qt_abstract_item_model.cpp
+	models/wg_sort_filter_proxy.cpp
+	models/wg_sort_filter_proxy.hpp
 )
 SOURCE_GROUP( "DataModel" FILES ${DATA_MODEL_SRCS} )
 
@@ -61,6 +65,8 @@ SET( DATA_MODEL_EXTENSIONS_SRCS
 	models/extensions/list_extension.hpp
 	models/extensions/selection_extension.cpp
 	models/extensions/selection_extension.hpp
+	models/extensions/table_extension.cpp
+	models/extensions/table_extension.hpp
 	models/extensions/tree_extension.cpp
 	models/extensions/tree_extension.hpp
 	models/extensions/tree_extension_old.cpp
@@ -134,8 +140,6 @@ SET( ALL_SRCS
 	qml_component.hpp
 	qml_view.cpp
 	qml_view.hpp
-	qt_action_manager.cpp
-	qt_action_manager.hpp
 	qt_image_provider.cpp
 	qt_image_provider.hpp
 	qt_image_provider_old.cpp
@@ -187,6 +191,7 @@ BW_TARGET_LINK_LIBRARIES( core_qt_common INTERFACE
 	core_data_model
 	core_logging
 	core_string_utils
+	core_ui_framework
 	core_qt_script
 )
 BW_TARGET_LINK_LIBRARIES( core_qt_common PRIVATE
@@ -195,7 +200,6 @@ BW_TARGET_LINK_LIBRARIES( core_qt_common PRIVATE
 	Qt5::QuickWidgets
 	Qt5::Quick
 	Qt5::UiTools
-	Qt5::Xml
 )
 
 INCLUDE_DIRECTORIES(${Qt5Core_PRIVATE_INCLUDE_DIRS})

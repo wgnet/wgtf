@@ -7,6 +7,7 @@
 #include "core_reflection/property_accessor.hpp"
 #include "i_item_role.hpp"
 #include <sstream>
+#include "core_string_utils/string_utils.hpp"
 
 namespace wgt
 {
@@ -30,7 +31,7 @@ struct SimpleActiveFiltersModel::Impl
 	std::string id_;
 	int removedIndex_;
 
-	void addFilter( const char* text );
+	void addFilter( const char* display, const char* value, bool active );
 	void addSavedFilter( const char* filterId );
 	bool updateSavedFilter( const char* filterId);
 	void generateStringValue();
@@ -54,11 +55,19 @@ SimpleActiveFiltersModel::Impl::Impl(
 {
 }
 
-void SimpleActiveFiltersModel::Impl::addFilter( const char* text )
+void SimpleActiveFiltersModel::Impl::addFilter( const char* display, const char* value, bool active )
+{
+	auto found = std::find_if(filterTerms_.begin(), filterTerms_.end(), [value](const Variant& term){
+		return term.value<ObjectHandleT<ActiveFilterTerm>>()->getValue() == value;
+	});
+	if(found == filterTerms_.end())
 {
 	auto filterTerm = definitionManager_.create< ActiveFilterTerm >();
-	filterTerm->setValue( text );
+		filterTerm->setDisplay( display );
+		filterTerm->setValue( value );
+		filterTerm->setActive( active );
 	filterTerms_.push_back( filterTerm );
+}
 }
 
 void SimpleActiveFiltersModel::Impl::addSavedFilter( const char* filterId )
@@ -114,7 +123,11 @@ void SimpleActiveFiltersModel::Impl::generateStringValue()
 				stringValue_ += ",";
 			}
 
-			stringValue_ += term->getValue();
+			stringValue_ += term->getDisplay();
+			if(term->getDisplay() != term->getValue())
+			{
+				stringValue_ += ";" + term->getValue();
+			}
 			++iteration;
 		}
 	}
@@ -238,9 +251,9 @@ void SimpleActiveFiltersModel::clearCurrentFilter()
 	impl_->filterTerms_.clear();
 }
 
-void SimpleActiveFiltersModel::addFilterTerm( std::string text )
+void SimpleActiveFiltersModel::addFilterTerm( std::string display, std::string value, bool active )
 {
-	impl_->addFilter( text.c_str() );
+	impl_->addFilter( display.c_str(), value.c_str(), active );
 }
 
 IListModel * SimpleActiveFiltersModel::getSavedFilters() const
@@ -305,7 +318,8 @@ bool SimpleActiveFiltersModel::loadFilter( std::string filterId )
 	{
 		if (token.length() > 0)
 		{
-			impl_->addFilter( token.c_str() );
+			auto displayValue = StringUtils::split(token, ';');
+			impl_->addFilter( displayValue[0].c_str(), displayValue.size() > 1 ? displayValue[1].c_str() : "", true );
 		}
 	}
 

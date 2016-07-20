@@ -13,10 +13,11 @@
 namespace wgt
 {
 /**
- * FileSystemPlugin
- *
- * A plugin used to enumerate and manipulate the underlying file system
- */
+* A plugin used to enumerate and manipulate the underlying file system
+*
+* @ingroup plugins
+* @ingroup coreplugins
+*/
 class FileSystemPlugin
 	: public PluginMain
 {

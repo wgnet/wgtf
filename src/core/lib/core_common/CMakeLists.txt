@@ -19,6 +19,7 @@ SET( ALL_SRCS
 	platform_dll.cpp
 	platform_env.hpp
 	platform_env.cpp
+	platform_export.hpp
 	platform_path.hpp
 	platform_path.cpp
 	platform_std.hpp
@@ -31,6 +32,7 @@ SET( ALL_SRCS
 	thread_local_value.cpp
 	wg_condition_variable.cpp
 	wg_condition_variable.hpp
+    wg_future.hpp
 	wg_read_write_lock.cpp
 	wg_read_write_lock.hpp
 	${PLATFORM_SRCS}

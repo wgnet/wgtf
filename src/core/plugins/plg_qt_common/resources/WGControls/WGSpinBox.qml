@@ -111,6 +111,12 @@ Control {
 
     property alias contentWidth: input.contentWidth
 
+    /*! property indicates if the control represetnts multiple data values */
+    property bool multipleValues: false
+
+    /*! property contains the string to be shown when multiple values are represented*/
+    property string __multipleValuesString: "--"
+
     /*!
         \qmlproperty real SpinBox::value
 
@@ -285,13 +291,13 @@ Control {
             },
             State {
                 name: "HOVERED"
-                when: button.hovered && spinbox.enabled
+                when: button.hovered && spinbox.enabled && !spinbox.readOnly
                 PropertyChanges {target: button; highlightColor: palette.lighterShade}
                 PropertyChanges {target: arrowText; color: palette.textColor}
             },
             State {
                 name: "DISABLED"
-                when: !spinbox.enabled
+                when: !spinbox.enabled || spinbox.readOnly
                 PropertyChanges {target: button; color: "transparent"}
                 PropertyChanges {target: button; borderColor: palette.darkShade}
                 PropertyChanges {target: button; innerBorderColor: "transparent"}
@@ -384,6 +390,7 @@ Control {
     implicitWidth: numDigits * textMetricsCreator.maxWidth + decimals * textMetricsCreator.maxWidth
                    + decimalWidthCalculator.width + suffixPrefixWidthCalculator.width
                     + (hasArrows ? spinBoxSpinnerSize : 0)
+                        + (multipleValues ? multiValueTextCalculator.width : 0)
 
     activeFocusOnTab: true
 
@@ -427,6 +434,11 @@ Control {
     TextMetrics {
         id: suffixPrefixWidthCalculator
         text: prefix + suffix
+    }
+
+    TextMetrics {
+        id: multiValueTextCalculator
+        text: __multipleValuesString
     }
 
     WGTextBox {
@@ -498,7 +510,14 @@ Control {
             {
                 if (useValidatorOnInputText)
                 {
-                    input.text = validator.text
+                    if (multipleValues)
+                    {
+                        input.text = __multipleValuesString
+                    }
+                    else
+                    {
+                        input.text = validator.text
+                    }
                 }
                 ready = true
             }
@@ -515,9 +534,6 @@ Control {
         //Keys.forwardTo: spinbox
 
         onEditAccepted: {
-            if ( stepSize !== 0 ) {
-                value = Math.round(value / stepSize) * stepSize;
-            }
             spinbox.editingFinished();
         }
 

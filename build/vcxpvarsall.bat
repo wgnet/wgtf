@@ -39,7 +39,7 @@ goto usage
 :x86
 if not exist "%VCBINDIR%vcvars32.bat" goto missing
 call "%VCBINDIR%vcvars32.bat"
-@set LIB=%VCINSTALLDIR%lib;%VCINSTALLDIR%atlmfc\lib;%WINSDKDIR%Lib;
+@set LIB=%VCINSTALLDIR%lib;%VCINSTALLDIR%atlmfc\lib;%VCINSTALLDIR%UnitTest\lib;%WINSDKDIR%Lib;
 @rem Present in VS2015 onwards
 @if not "%UCRTVersion%" == "" @set LIB=%UniversalCRTSdkDir%lib\%UCRTVersion%\ucrt\x86;%LIB%
 goto :setenv
@@ -47,13 +47,13 @@ goto :setenv
 :amd64
 if not exist "%VCBINDIR%amd64\vcvars64.bat" goto missing
 call "%VCBINDIR%amd64\vcvars64.bat"
-@set LIB=%VCINSTALLDIR%lib\amd64;%VCINSTALLDIR%atlmfc\lib\amd64;%WINSDKDIR%Lib\x64;
+@set LIB=%VCINSTALLDIR%lib\amd64;%VCINSTALLDIR%atlmfc\lib\amd64;%VCINSTALLDIR%UnitTest\lib\amd64;%WINSDKDIR%Lib\x64;
 @rem Present in VS2015 onwards
 @if not "%UCRTVersion%" == "" @set LIB=%UniversalCRTSdkDir%lib\%UCRTVersion%\ucrt\x64;%LIB%
 goto :setenv
 
 :setenv
-@set INCLUDE=%VCINSTALLDIR%include;%VCINSTALLDIR%atlmfc\include;%WINSDKDIR%Include;
+@set INCLUDE=%VCINSTALLDIR%include;%VCINSTALLDIR%atlmfc\include;%VCINSTALLDIR%UnitTest\include;%WINSDKDIR%Include;
 @if not "%UCRTVersion%" == "" @set INCLUDE=%UniversalCRTSdkDir%include\%UCRTVersion%\ucrt;%INCLUDE%
 @set PATH=%WINSDKDIR%Bin;%PATH%
 @set CL=/D_USING_V110_SDK71_;%CL%

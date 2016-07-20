@@ -21,16 +21,20 @@ class ActiveFilterTerm
 
 public:
 
-	ActiveFilterTerm() : value_( "" ), active_( true ) {}
+	ActiveFilterTerm() : display_(""), value_( "" ), active_( true ) {}
 	virtual ~ActiveFilterTerm() {}
 
-	virtual const std::string & getValue() const { return value_; }
+	virtual const std::string & getDisplay() const { return display_; }
+	virtual void setDisplay(const std::string & display) { display_ = display; }
+
+	virtual const std::string & getValue() const { return value_.empty() ? display_ : value_; }
 	virtual void setValue( const std::string & value ) { value_ = value; }
 
 	virtual bool isActive() const { return active_; }
 	virtual void setActive( const bool & active ) {	active_ = active; }
 
 private:
+	std::string display_;
 	std::string value_;
 	bool active_;
 };
@@ -99,7 +103,7 @@ public:
 	virtual void clearCurrentFilter() {}
 	
 	// Adds a filter term to the list
-	virtual void addFilterTerm( std::string text ) {}
+	virtual void addFilterTerm( std::string display, std::string value, bool active ) {}
 
 	// Returns saved active filters names
 	// Expected: IListModel of saved active filter IDs as saved by the preferences system
