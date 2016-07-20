@@ -11,6 +11,9 @@ Button {
 
     property bool buttonChecked: checked
 
+    /*! property determines if the control represents multiple values */
+    property bool multipleValues: false
+
     onButtonCheckedChanged: {
         checked = buttonChecked
     }

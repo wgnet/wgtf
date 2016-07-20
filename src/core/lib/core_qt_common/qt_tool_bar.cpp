@@ -2,6 +2,7 @@
 #include "core_ui_framework/i_action.hpp"
 #include "core_logging/logging.hpp"
 #include "core_string_utils/string_utils.hpp"
+#include "core_ui_framework/i_ui_framework.hpp"
 #include <QToolBar>
 #include <assert.h>
 

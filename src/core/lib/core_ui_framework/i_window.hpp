@@ -40,9 +40,6 @@ public:
 	virtual const Regions & regions() const = 0;
 	virtual IStatusBar* statusBar() const = 0;
 
-	virtual void setApplication( IUIApplication * application ) = 0;
-	virtual IUIApplication * getApplication() const = 0;
-
 	SignalVoid signalClose;
 	SignalConfirm signalTryClose;
 };

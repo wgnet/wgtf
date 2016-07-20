@@ -25,7 +25,17 @@ private:
 	float value_;
 };
 
-//==============================================================================
+/**
+* A plugin which tests using multiple registered interfaces of 
+* the same type by outputting test data to the debug window
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - FileSystemPlugin
+*       - ReflectionPlugin
+*       - CommandSystemPlugin
+*       - MainTestPlugin
+*/
 class TestPlugin2
 	: public PluginMain
 {

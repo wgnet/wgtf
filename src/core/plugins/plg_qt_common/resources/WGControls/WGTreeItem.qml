@@ -235,6 +235,7 @@ ListView {
                 anchors.left: parent.left
                 anchors.right: parent.right
 
+				columnSequence: treeView.columnSequence
                 columnWidths: treeView.columnWidths
                 columnSpacing: treeView.columnSpacing
                 defaultColumnDelegate: headerColumnDelegate

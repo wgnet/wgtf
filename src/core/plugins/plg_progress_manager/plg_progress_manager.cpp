@@ -5,6 +5,14 @@
 
 namespace wgt
 {
+/**
+* A plugin which registers an IProgressManager interface that is responsible for 
+* providing feedback to users when running commands that take a long amount of time
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class ProgressManagerUIPlugin
 	: public PluginMain
 {
@@ -12,6 +20,7 @@ public:
 
 	//==========================================================================
 	ProgressManagerUIPlugin( IComponentContext & contextManager )
+		: progressManager_( new ProgressManager( contextManager ) )
 	{
 	}
 
@@ -24,22 +33,19 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		progressManager_ = new ProgressManager();
-		progressManager_->init( contextManager );
+		progressManager_->init();
 	}
 
 	//==========================================================================
 	bool Finalise( IComponentContext & contextManager )
 	{
-		progressManager_->fini();
-		delete progressManager_;
-		progressManager_ = nullptr;
-
+        progressManager_->fini();
+        progressManager_.reset();
 		return true;
 	}
 
 private:
-	ProgressManager * progressManager_;
+	std::unique_ptr<ProgressManager> progressManager_;
 
 };
 

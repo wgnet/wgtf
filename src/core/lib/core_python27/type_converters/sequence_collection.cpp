@@ -303,7 +303,7 @@ CollectionIteratorImplPtr Sequence< T >::erase(
 
 
 template< typename T >
-size_t Sequence< T >::erase( const Variant & key ) /* override */
+size_t Sequence< T >::eraseKey( const Variant & key ) /* override */
 {
 	key_type index;
 	if (!key.tryCast( index ))

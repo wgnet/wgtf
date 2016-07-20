@@ -4,7 +4,7 @@ import QtQuick.Layouts 1.1
 import WGControls 1.0
 
 Rectangle {
-    objectName:  itemData != null ? itemData.indexPath : "property_tree_view"
+    objectName: typeof itemData.indexPath == "undefined" ? "property_tree_view" : itemData.indexPath
     property variant source_ : source
 
     color: palette.mainWindowColor

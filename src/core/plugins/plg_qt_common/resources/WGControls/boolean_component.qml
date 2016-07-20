@@ -3,13 +3,13 @@ import QtQuick 2.3
 
 WGCheckBox{
     id: checkbox
-    objectName: itemData != null ? itemData.indexPath : "boolean_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "boolean_component" : itemData.indexPath
     anchors.left: parent.left
     checked: itemData.value
+    enabled: itemData.enabled && !itemData.readOnly
+    multipleValues: itemData.multipleValues
 
-    Binding {
-        target: itemData
-        property: "value"
-        value: checkbox.checked
+    onCheckedChanged: {
+        itemData.value = checked;
     }
 }

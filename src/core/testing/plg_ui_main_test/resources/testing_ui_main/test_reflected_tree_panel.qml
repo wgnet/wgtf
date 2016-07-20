@@ -32,7 +32,7 @@ Rectangle {
     WGFilteredTreeModel {
         id: testModel
         source: sourceModel
-
+        objectName: viewId
         filter: WGTokenizedStringFilter {
             id: stringFilter
             filterText: searchBox.text
@@ -60,6 +60,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         model: testModel
+		columnSequence: [0, 0]
         columnDelegates: [defaultColumnDelegate, propertyDelegate]
         selectionExtension: treeModelSelection
         treeExtension: treeModelExtension

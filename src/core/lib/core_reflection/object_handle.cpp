@@ -50,7 +50,7 @@ ObjectHandle::ObjectHandle( const std::nullptr_t & )
 
 ObjectHandle::ObjectHandle( const Variant & variant, const IClassDefinition * definition )
 {
-	if( auto handlePtr = variant.castPtr< ObjectHandle >() )
+	if( auto handlePtr = variant.value< ObjectHandle* >() )
 	{
 		// avoid pointless nesting
 		storage_ = handlePtr->storage_;
@@ -70,7 +70,7 @@ ObjectHandle::ObjectHandle( Variant * variant, const IClassDefinition * definiti
 		return;
 	}
 
-	if( auto handlePtr = variant->castPtr< ObjectHandle >() )
+	if( auto handlePtr = variant->value< ObjectHandle* >() )
 	{
 		// avoid pointless nesting
 		storage_ = handlePtr->storage_;

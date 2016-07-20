@@ -69,6 +69,9 @@ Item {
     /*! This property defines what frame component will be used for the numberbox buttons */
     property alias buttonFrame: sliderValue.buttonFrame
 
+    /*! property indicates if the control represetnts multiple data values */
+    property bool multipleValues: false
+
     /*! This property defines the value indicated by the control
         The default value is \c 0.0
     */
@@ -269,6 +272,8 @@ Item {
 
         value: sliderFrame.value;
 
+        multipleValues: sliderFrame.multipleValues
+
         onValueChanged: {
             if ( __handleMoving ) {
                 setValueHelper(sliderFrame, "value", value);
@@ -330,6 +335,7 @@ Item {
         suffix: sliderFrame.suffix
 
         value: sliderFrame.value
+        multipleValues: sliderFrame.multipleValues
 
         minimumValue: sliderFrame.minimumValue
         maximumValue: sliderFrame.maximumValue

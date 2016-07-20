@@ -9,7 +9,7 @@ import WGControls 1.0
 
 \code{.js}
 WGThumbnailButton {
-    iconSource: "icons/file"
+    source: "icons/file"
     defaultText: "Click to Load an Image"
 }\endcode
 */
@@ -93,12 +93,6 @@ Button {
             opacity: enabled ? 1 : 0.4
 
             fillMode: Image.PreserveAspectFit
-
-            Component.onCompleted: {
-                if (icon.source == ""){
-                    defaulttext1.visible = true
-                }
-            }
         }
 
         WGLabel{
@@ -109,7 +103,7 @@ Button {
             horizontalAlignment: "AlignHCenter"
             verticalAlignment: "AlignVCenter"
             text: defaultText
-            visible: false
+            visible: icon.source == ""
             wrapMode: "Wrap"
         }
     }

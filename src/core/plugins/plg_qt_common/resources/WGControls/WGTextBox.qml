@@ -23,10 +23,17 @@ TextField {
     */
     property string label: ""
 
+    /*! This property determines if the textBox has a context menu
+        The default value is \c true
+    */
+    property bool useContextMenu : true
+
     /*! This property determines if the context menu for this control contains the "Find In AssetBrowser" option
         The default value is \c false
     */
     property bool assetBrowserContextMenu : false
+
+    property bool multipleValues: false
 
     /*! This alias holds the width of the text entered into the textbox.
       */
@@ -125,8 +132,11 @@ TextField {
 
         cursorShape: Qt.IBeamCursor
         onClicked:{
-            var highlightedText = selectedText
-            contextMenu.popup()
+            if (textBox.useContextMenu)
+            {
+                var highlightedText = selectedText
+                contextMenu.popup()
+            }
         }
     }
 

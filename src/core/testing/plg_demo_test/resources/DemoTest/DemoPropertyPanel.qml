@@ -75,6 +75,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         model: testModel
         rightMargin: 8 // leaves just enought space for conventional slider
+		columnSequence: [0, 0]
         columnDelegates: [defaultColumnDelegate, propertyDelegate]
         selectionExtension: treeModelSelection
         treeExtension: treeModelExtension

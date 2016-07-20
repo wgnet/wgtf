@@ -33,6 +33,10 @@ public:
 	WGItemView();
 	~WGItemView();
 
+	Q_INVOKABLE int getRow( const QModelIndex & index ) const;
+	Q_INVOKABLE int getColumn( const QModelIndex & index ) const;
+	Q_INVOKABLE QModelIndex getParent( const QModelIndex & index ) const;
+
 signals:
 	void modelChanged();
 	void extendedModelChanged();

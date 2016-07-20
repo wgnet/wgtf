@@ -126,9 +126,9 @@ Variant SequenceIterator< T >::value() const /* override */
 	
 	Variant result;
 	std::string childPath;
-	childPath += INDEX_OPEN;
+	childPath += IClassDefinition::INDEX_OPEN;
 	childPath += std::to_string( index_ );
-	childPath += INDEX_CLOSE;
+	childPath += IClassDefinition::INDEX_CLOSE;
 	const bool success = typeConverters_.toVariant( item, result, containerHandle_, childPath );
 	return result;
 }

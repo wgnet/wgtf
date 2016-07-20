@@ -30,8 +30,7 @@ ReflectedTreeModel::ReflectedTreeModel(
 	const ObjectHandle & object,
 	IDefinitionManager & definitionManager,
 	IReflectionController * controller )
-	: base( 2 )
-	, rootItem_( object )
+	: rootItem_( object )
 	, definitionManager_( definitionManager )
 	, listener_( new ReflectedTreeModelPropertyListener( rootItem_ ) )
 {

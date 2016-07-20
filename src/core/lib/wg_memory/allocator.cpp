@@ -249,7 +249,11 @@ public:
 		}
 
 		// failed to find a proper context
-		assert( false );
+		char msg[ 128 ];
+		snprintf( msg, 128, "deallocate: failed to find memory context for %p\n", ptr );
+		::OutputDebugStringA( msg );
+
+		::free( ptr );
 	}
 
 	void cleanup()
@@ -368,7 +372,9 @@ public:
 
 				{
 					char allocIdBuffer[ 2048 ] = { 0 };
-					sprintf( allocIdBuffer, "Alloc Id: %lu\n", static_cast< unsigned long >( liveAllocation.second->allocId_ ) );
+					sprintf( allocIdBuffer, "Leaked allocation: id %lu, address %p\n",
+						static_cast< unsigned long >( liveAllocation.second->allocId_ ),
+						liveAllocation.first);
 					builder.append( allocIdBuffer );
 				}
 				const auto & allocStack = liveAllocation.second;

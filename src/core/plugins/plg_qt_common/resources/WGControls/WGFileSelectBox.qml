@@ -21,6 +21,13 @@ WGExpandingRowLayout {
     */
     property alias text: textField.text
 
+    /*! property indicates if the control represetnts multiple data values */
+    property bool multipleValues: false
+
+    /*! the property containing the string to be displayed when multiple values are represented by the control
+    */
+    property string __multipleValuesString: "Multiple Values"
+
     /*! The folder the fileDialog will open to by default.
       The default value is empty
     */
@@ -140,8 +147,7 @@ WGExpandingRowLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: defaultSpacing.minimumRowHeight
 
-        //TODO: Make this point to the data
-        text: fileUrl
+        text: fileComponent.multipleValues ? fileComponent.__multipleValuesString : fileUrl
         readOnly: true
 
         MouseArea {

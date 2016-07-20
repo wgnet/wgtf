@@ -98,7 +98,10 @@ Row
                 else if (mouse.button == Qt.RightButton)
                 {
                     mouse.accepted = true;
-                    removeConnection()
+					if (!canvasContainer.creatingConnection)
+					{
+						removeConnection();
+					}
                 }
             }
 

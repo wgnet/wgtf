@@ -2,6 +2,8 @@
 
 #include "core_data_model/abstract_item_model.hpp"
 #include "core_data_model/i_item_role.hpp"
+#include "core_data_model_cmds/interfaces/i_item_model_controller.hpp"
+#include "core_dependency_system/di_ref.hpp"
 #include "helpers/qt_helpers.hpp"
 
 namespace wgt
@@ -11,10 +13,14 @@ ITEMROLE( decoration )
 
 struct QtItemModel::Impl
 {
-	Impl( AbstractItemModel & source )
-		: source_( source )
+	Impl( IComponentContext & context,
+		AbstractItemModel & source )
+		: itemModelController_( context )
+		, source_( source )
 	{
 	}
+
+	DIRef< IItemModelController > itemModelController_;
 
 	AbstractItemModel & source_;
 
@@ -28,8 +34,9 @@ struct QtItemModel::Impl
 	Connection connectPostErased_;
 };
 
-QtItemModel::QtItemModel( AbstractItemModel & source )
-	: impl_( new Impl( source ) )
+QtItemModel::QtItemModel( IComponentContext & context,
+	AbstractItemModel & source )
+	: impl_( new Impl( context, source ) )
 {
 	// @see AbstractItemModel::DataSignature
 	auto preData = 
@@ -44,7 +51,7 @@ QtItemModel::QtItemModel( AbstractItemModel & source )
 		if (role == DefinitionRole::roleId_)
 		{
 			QList<QPersistentModelIndex> parents;
-			parents.append( modelIndex );
+			parents.append( modelIndex.isValid() ? modelIndex : QModelIndex() );
 			this->layoutAboutToBeChanged( parents, QAbstractItemModel::VerticalSortHint );
 			return;
 		}
@@ -65,7 +72,7 @@ QtItemModel::QtItemModel( AbstractItemModel & source )
 		if (role == DefinitionRole::roleId_)
 		{
 			QList<QPersistentModelIndex> parents;
-			parents.append( modelIndex );
+			parents.append( modelIndex.isValid() ? modelIndex : QModelIndex() );
 			this->layoutChanged( parents, QAbstractItemModel::VerticalSortHint );
 			return;
 		}
@@ -84,7 +91,9 @@ QtItemModel::QtItemModel( AbstractItemModel & source )
 		}
 		else
 		{
-			roles.append( static_cast< int >( role ) );
+			int encodedRole = static_cast< int >( role );
+			encodeRole( role, encodedRole );
+			roles.append( encodedRole );
 		}
 		this->dataChanged( topLeft, bottomRight, roles );
 	};
@@ -99,7 +108,7 @@ QtItemModel::QtItemModel( AbstractItemModel & source )
 	{
 		auto parentItem = impl_->source_.item( parentIndex );
 		const QModelIndex modelIndex = createIndex( parentIndex.row_, parentIndex.column_, parentItem );
-		this->beginInsertRows( modelIndex, startPos, startPos + count - 1 );
+		this->beginInsertRows( modelIndex.isValid() ? modelIndex : QModelIndex(), startPos, startPos + count - 1 );
 	};
 	impl_->connectPreInsert_ =
 		impl_->source_.connectPreRowsInserted( preInsert );
@@ -109,8 +118,6 @@ QtItemModel::QtItemModel( AbstractItemModel & source )
 		int startPos,
 		int count )
 	{
-		auto parentItem = impl_->source_.item( parentIndex );
-		const QModelIndex modelIndex = createIndex( parentIndex.row_, parentIndex.column_, parentItem );
 		this->endInsertRows();
 	};
 	impl_->connectPostInserted_ =
@@ -123,7 +130,7 @@ QtItemModel::QtItemModel( AbstractItemModel & source )
 	{
 		auto parentItem = impl_->source_.item( parentIndex );
 		const QModelIndex modelIndex = createIndex( parentIndex.row_, parentIndex.column_, parentItem );
-		this->beginRemoveRows( modelIndex, startPos, startPos + count - 1 );
+		this->beginRemoveRows( modelIndex.isValid() ? modelIndex : QModelIndex(), startPos, startPos + count - 1 );
 	};
 	impl_->connectPreErase_ =
 		impl_->source_.connectPreRowsRemoved( preErase );
@@ -133,8 +140,6 @@ QtItemModel::QtItemModel( AbstractItemModel & source )
 		int startPos,
 		int count )
 	{
-		auto parentItem = impl_->source_.item( parentIndex );
-		const QModelIndex modelIndex = createIndex( parentIndex.row_, parentIndex.column_, parentItem );
 		this->endRemoveRows();
 	};
 	impl_->connectPostErased_ =
@@ -268,14 +273,50 @@ bool QtItemModel::setData( const QModelIndex &index, const QVariant &value, int 
 		return false;
 	}
 
-	auto oldValue = QtHelpers::toQVariant( item->getData( index.row(), index.column(), role ), this );
+	size_t roleId = role;
+	switch (role)
+	{
+	case Qt::DisplayRole:
+		roleId = ItemRole::displayId;
+		break;
+
+	case Qt::DecorationRole:
+		roleId = ItemRole::decorationId;
+		break;
+
+	default:
+		decodeRole( role, roleId );
+		break;
+	}
+
+	// Use QVariant for comparison
+	// because QVariant has lower precision than Variant
+	auto oldValue = QtHelpers::toQVariant( item->getData( index.row(), index.column(), roleId ), this );
 	if (value == oldValue)
 	{
 		return true;
 	}
 
 	auto data = QtHelpers::toVariant( value );
-	return item->setData( index.row(), index.column(), role, data );
+
+	// Item already uses the Command System or the Command System is not available
+	if (item->hasController() || (impl_->itemModelController_ == nullptr))
+	{
+		// Set property directly
+		return item->setData( index.row(), index.column(), roleId, data );
+	}
+
+	// Queue with Command System, to register undo/redo data
+	auto pParent = index.parent().isValid() ?
+		reinterpret_cast< AbstractItem * >( index.parent().internalId() ) : nullptr; 
+	AbstractItemModel::ItemIndex dataModelIndex( index.row(),
+		index.column(),
+		pParent );
+
+	return impl_->itemModelController_->setValue( impl_->source_,
+		dataModelIndex,
+		roleId,
+		data );
 }
 
 QVariant QtItemModel::headerData( int section, Qt::Orientation orientation, int role ) const
@@ -322,8 +363,20 @@ bool QtItemModel::removeColumns( int column, int count, const QModelIndex &paren
 	return impl_->source_.removeColumns( column, count, parentItem );
 }
 
-QtListModel::QtListModel( AbstractListModel & source ) 
-	: QtItemModel( source ) 
+QHash< int, QByteArray > QtItemModel::roleNames() const
+{
+	auto roles = impl_->source_.roles();
+	auto roleNames = QAbstractItemModel::roleNames();
+	for (auto & role : roles)
+	{
+		registerRole( role.c_str(), roleNames );
+	}
+	return roleNames;
+}
+
+QtListModel::QtListModel( IComponentContext & context,
+	AbstractListModel & source ) 
+	: QtItemModel( context, source ) 
 {}
 
 const AbstractListModel & QtListModel::source() const
@@ -359,8 +412,8 @@ bool QtListModel::removeItem( int row )
 }
 
 
-QtTreeModel::QtTreeModel( AbstractTreeModel & source ) 
-	: QtItemModel( source ) 
+QtTreeModel::QtTreeModel( IComponentContext & context, AbstractTreeModel & source ) 
+	: QtItemModel( context, source ) 
 {}
 
 const AbstractTreeModel & QtTreeModel::source() const
@@ -396,8 +449,9 @@ bool QtTreeModel::removeItem( int row, QObject * parent )
 }
 
 
-QtTableModel::QtTableModel( AbstractTableModel & source ) 
-	: QtItemModel( source ) 
+QtTableModel::QtTableModel( IComponentContext & context,
+	AbstractTableModel & source ) 
+	: QtItemModel( context, source ) 
 {}
 
 const AbstractTableModel & QtTableModel::source() const

@@ -45,7 +45,7 @@ Item {
 
     visible: columnCount > 0
 
-    Item {
+    Row {
         id: columns
         objectName: "columns"
         anchors.top: parent.top
@@ -78,7 +78,7 @@ Item {
             for (var i = 0; i < columns.children.length; ++i)
             {
                 column = columns.children[i];
-                columnWidth = column.width;
+                columnWidth = column.width - handleWidth;
                 columnWidths.push(columnWidth);
                 totalWidth += columnWidth + handleWidth;
             }
@@ -113,11 +113,8 @@ Item {
             Rectangle {
                 id: column
                 color: "transparent"
-                property var previousColumn: index === 0 ? null : columns.children[index - 1]
-                y: 0
                 height: columns.height
-                x: index === 0 ? 0 : previousColumn.x + previousColumn.width + handleWidth
-                width: handle.x
+                width: handle.x + handle.width
                 onWidthChanged: columns.updateWidths()
 
                 Rectangle {
@@ -143,11 +140,11 @@ Item {
                         drag.axis: Drag.XAxis
                         drag.minimumX: index === 0 ? firstColumnIndentation + minimumColumnSize : minimumColumnSize
                         drag.maximumX: resizable ? maximumColumnSize : columns.calculateMaxColumnSize(column.x, index)
-
+                        
                         onPositionChanged: {
                             columns.fixHandles();
                         }
-
+                        
                         onDoubleClicked: {
                             if (idealColumnSizeFunction !== null)
                             {

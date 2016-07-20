@@ -40,8 +40,8 @@ bool PythonPanel::addPanel()
 		NGT_ERROR_MSG("Failed to find IViewCreator\n");
 		return false;
 	}
-	viewCreator->createView(
-		"Python27UITest/PythonObjectTestPanel.qml", contextObject_, pythonView_ );
+	pythonView_ = viewCreator->createView(
+		"Python27UITest/PythonObjectTestPanel.qml", contextObject_ );
 	return true;
 }
 
@@ -56,9 +56,11 @@ void PythonPanel::removePanel()
 		return;
 	}
 
-	if (pythonView_ != nullptr)
+	if (pythonView_.valid())
 	{
-		uiApplication->removeView( *pythonView_ );
+        auto view = pythonView_.get();
+		uiApplication->removeView( *view );
+        view = nullptr;
 	}
 }
 } // end namespace wgt

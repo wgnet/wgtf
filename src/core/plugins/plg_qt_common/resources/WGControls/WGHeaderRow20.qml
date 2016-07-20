@@ -9,13 +9,8 @@ Item {
 
     width: childrenRect.width != 0 ? childrenRect.width : 1024
     height: childrenRect.height != 0 ? childrenRect.height : 1024
-
-    property var columnDelegates: []
-    property var columnSequence: []
-    property var columnWidths: []
-    property var headerData: []
-    property var sortIndicators: []
-    property alias columnSpacing: row.spacing
+	
+	property var view
 
     /* MOVE INTO STYLE*/
     Rectangle {
@@ -27,43 +22,70 @@ Item {
     }
     /**/
 
+	QtObject {
+		id: internal
+		property int sortColumn: -1
+		property var order: Qt.AscendingOrder
+	}
+
     Row {
         id: row
+		spacing: view.columnSpacing
+
         Repeater {
             model: columnCount()
 
             Item {
-                width: columnWidths[index]
+                width: view.columnWidths[index]
                 height: childrenRect.height
                 clip: true
                 MouseArea {
-                    width: columnWidths[index]
+                    width: view.columnWidths[index]
                     height: row.height
                     acceptedButtons: Qt.RightButton | Qt.LeftButton;
 
                     onClicked: {
-                        //TODO handle sort
+                        if (internal.sortColumn == index) {
+							if (internal.order == Qt.AscendingOrder) {
+								internal.order = Qt.DescendingOrder;
+							}
+							else {
+								internal.order = Qt.AscendingOrder;
+							}
+						}
+						else {
+							internal.sortColumn = index;
+							internal.order = Qt.AscendingOrder;
+						}
+						view.model.sort( internal.sortColumn, internal.order );
                     }
                 }
 
-                Column {
-                    id: columnLayoutRow
+                // header component
+                Loader {
+                    id: columnDelegateLoader
+                    property var headerData: view.columnSequence.length <= index ? view.headerData[index] :  view.headerData[view.columnSequence[index]]
+                    property var headerWidth: sortIndicator.x
+                    sourceComponent: view.headerDelegates[index]
+                }
 
-                    // sort indicator componenet.
-                    Loader {
-                        id: sortIndicatorLoader
-                        width: itemRow.columnWidths[index]
-                        property var headerSortIndex: index;
-                        sourceComponent: itemRow.sortIndicators[index]
-                    }
+				Image {
+					id: sortIndicator
 
-                    // header component
-                    Loader {
-                        id: columnDelegateLoader
-                        property var headerData: itemRow.columnSequence.length <= index ? itemRow.headerData[index] :  itemRow.headerData[itemRow.columnSequence[index]]
-                        property var headerWidth: itemRow.columnWidths[index] - x
-                        sourceComponent: itemRow.columnDelegates[index]
-                    }
+					x: parent.width - width
+					source: {
+						if (internal.sortColumn == index) {
+							if (internal.order == Qt.AscendingOrder) {
+								return "icons/sort_up_10x10.png";
+							}
+							else {
+								return "icons/sort_down_10x10.png";
+							}
+						}
+						else {
+							return "icons/sort_blank_10x10.png";
+						}
+					}
                 }
             }
         }

@@ -21,6 +21,7 @@ namespace wgt
 {
 namespace
 {
+
 	class VoidMetaType
 		: public MetaType
 	{
@@ -35,11 +36,7 @@ namespace
 		VoidMetaType():
 			base(
 				"void",
-				0,
-				TypeId::getType< void >(),
-				typeid( void ),
-				nullptr,
-				DeducibleFromText )
+				MetaType::data< void >( DeducibleFromText ) )
 		{
 			setDefaultConversionFrom( &convertToVoid );
 		}
@@ -89,67 +86,12 @@ namespace
 			// nop
 		}
 
-#if !FAST_RUNTIME_POINTER_CAST
-
-		void throwPtr( void* ptr, bool const_value ) const override
+	protected:
+		VoidMetaType( const char* name, const MetaType::Data& data ):
+			base( name, data )
 		{
-			// nop
+			setDefaultConversionFrom( &convertToVoid );
 		}
-
-#endif
-
-	};
-
-
-	class PtrMetaType:
-		public MetaTypeImpl< void* >
-	{
-		typedef MetaTypeImpl< void* > base;
-
-		static bool convertToVoidPtr( const MetaType* toType, void* to, const MetaType* fromType, const void* from )
-		{
-			if( auto ptr = fromType->castPtr< void* >( from ) )
-			{
-				toType->copy( to, &ptr );
-				return true;
-			}
-
-			return false;
-		}
-
-	public:
-		PtrMetaType():
-			base( "ptr" )
-		{
-			setDefaultConversionFrom( &convertToVoidPtr );
-		}
-
-	};
-
-
-	class ConstPtrMetaType:
-		public MetaTypeImpl< const void* >
-	{
-		typedef MetaTypeImpl< const void* > base;
-
-		static bool convertToConstVoidPtr( const MetaType* toType, void* to, const MetaType* fromType, const void* from )
-		{
-			if( auto ptr = fromType->castPtr< const void* >( from ) )
-			{
-				toType->copy( to, &ptr );
-				return true;
-			}
-
-			return false;
-		}
-
-	public:
-		ConstPtrMetaType():
-			base( "ptr" )
-		{
-			setDefaultConversionFrom( &convertToConstVoidPtr );
-		}
-
 	};
 
 
@@ -248,13 +190,13 @@ namespace
 	};
 
 
-	class BinaryBlockSharedPtrMetaType
-		: public MetaTypeImplNoStream<std::shared_ptr< BinaryBlock >>
+	class BinaryBlockMetaType
+		: public MetaTypeImplNoStream< BinaryBlock >
 	{
-		typedef MetaTypeImplNoStream<std::shared_ptr< BinaryBlock >> base;
+		typedef MetaTypeImplNoStream< BinaryBlock > base;
 
 	public:
-		BinaryBlockSharedPtrMetaType():
+		BinaryBlockMetaType():
 			base( "blob", 0 )
 		{
 		}
@@ -263,8 +205,8 @@ namespace
 		{
 			const auto& binary = base::cast(value);
 			std::string encodeValue = 
-				Base64::encode( static_cast<const char*>(binary->data()), 
-								binary->length() );
+				Base64::encode( static_cast<const char*>(binary.data()), 
+								binary.length() );
 			FixedMemoryStream dataStream( encodeValue.c_str(), encodeValue.length() );
 			stream.serializeString( dataStream );
 		}
@@ -283,7 +225,7 @@ namespace
 				stream.setState( std::ios_base::badbit );
 				return;
 			}
-			base::cast(value) = std::make_shared< BinaryBlock >(
+			base::cast(value) = BinaryBlock(
 				decodeValue.c_str(),
 				decodeValue.length(),
 				false );
@@ -292,7 +234,7 @@ namespace
 		void streamOut(BinaryStream& stream, const void* value) const override
 		{
 			const auto& binary = base::cast(value);
-			stream.serializeBuffer( binary->cdata(), binary->length() );
+			stream.serializeBuffer( binary.cdata(), binary.length() );
 		}
 
 		void streamIn(BinaryStream& stream, void* value) const override
@@ -301,7 +243,7 @@ namespace
 			stream.deserializeBuffer( dataStream );
 			if (!stream.fail())
 			{
-				base::cast(value) = std::make_shared< BinaryBlock >(
+				base::cast(value) = BinaryBlock(
 					dataStream.buffer().c_str(),
 					dataStream.buffer().length(),
 					false );
@@ -311,6 +253,7 @@ namespace
 
 
 	const char g_separator = ',';
+
 }
 
 // Vector2
@@ -398,14 +341,12 @@ DefaultMetaTypeManager::DefaultMetaTypeManager()
 	, typeInfoToMetaType_()
 {
 	defaultMetaTypes_.emplace_back( new VoidMetaType() );
-	defaultMetaTypes_.emplace_back( new PtrMetaType() );
-	defaultMetaTypes_.emplace_back( new ConstPtrMetaType() );
 	defaultMetaTypes_.emplace_back( new UIntMetaType() );
 	defaultMetaTypes_.emplace_back( new IntMetaType() );
 	defaultMetaTypes_.emplace_back( new RealMetaType() );
 	defaultMetaTypes_.emplace_back( new StringMetaType );
 	defaultMetaTypes_.emplace_back( new MetaTypeImpl< Collection >( "collection" ) );
-	defaultMetaTypes_.emplace_back( new BinaryBlockSharedPtrMetaType() );
+	defaultMetaTypes_.emplace_back( new BinaryBlockMetaType() );
 	defaultMetaTypes_.emplace_back( new MetaTypeImpl< Vector2 >( "vector2" ) );
 	defaultMetaTypes_.emplace_back( new MetaTypeImpl< Vector3 >( "vector3" ) );
 	defaultMetaTypes_.emplace_back( new MetaTypeImpl< Vector4 >( "vector4" ) );

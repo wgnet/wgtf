@@ -14,11 +14,20 @@
 
 namespace wgt
 {
-class QtPlugin
+/**
+* A plugin which creates and registers an IUIApplication interface for Qt to allow adding UI Components to the application.
+* Mutually exclusive with MayaAdapterPlugin.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
+class QtPluginApplication
 	: public PluginMain
 {
 public:
-	QtPlugin( IComponentContext & contextManager ){}
+	QtPluginApplication( IComponentContext & contextManager ){}
 
 	bool PostLoad( IComponentContext & contextManager ) override
 	{
@@ -33,8 +42,6 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		IQtFramework* qtFramework =
 			contextManager.queryInterface< IQtFramework >();
 		assert( qtFramework != nullptr );
@@ -64,5 +71,5 @@ private:
 	std::vector< IInterface * > types_;
 };
 
-PLG_CALLBACK_FUNC( QtPlugin )
+PLG_CALLBACK_FUNC( QtPluginApplication )
 } // end namespace wgt

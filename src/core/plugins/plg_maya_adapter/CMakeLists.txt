@@ -25,12 +25,16 @@ SET( ALL_SRCS
     qt_window_adapter.cpp
 	${PLUGIN_QT_COMMON_DIR}/qt_framework.cpp
 	${PLUGIN_QT_COMMON_DIR}/qt_framework.hpp
+    ${PLUGIN_QT_COMMON_DIR}/qt_action_manager.cpp
+	${PLUGIN_QT_COMMON_DIR}/qt_action_manager.hpp
 	${PLUGIN_QT_COMMON_DIR}/qt_preferences.cpp
 	${PLUGIN_QT_COMMON_DIR}/qt_preferences.hpp
 	${PLUGIN_QT_COMMON_DIR}/qt_copy_paste_manager.cpp
 	${PLUGIN_QT_COMMON_DIR}/qt_copy_paste_manager.hpp
 	${PLUGIN_QT_COMMON_DIR}/private/ui_view_creator.hpp
 	${PLUGIN_QT_COMMON_DIR}/private/ui_view_creator.cpp
+	${PLUGIN_QT_COMMON_DIR}/private/qt_ui_worker.hpp
+	${PLUGIN_QT_COMMON_DIR}/private/qt_ui_worker.cpp
 	${PLUGIN_QT_APP_DIR}/qt_application.cpp
 	${PLUGIN_QT_APP_DIR}/qt_application.hpp
     ${MAYA_APP_PLUGIN_DIR}/app/interfaces/i_application_adapter.hpp

@@ -12,8 +12,8 @@ Text {
 
     clip: false
     color: isCurrentItem ?
-        palette.highlightTextColor :
-        palette.textColor
+        palette.textColor :
+        palette.neutralTextColor
     font.bold: isCurrentItem
     font.italic: !isApplied
     opacity: isApplied ? 1 : 0.35

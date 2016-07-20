@@ -115,7 +115,8 @@ struct QmlView::Impl
 	}
 
 
-	bool doLoad(const QUrl & qUrl, std::function< void() > loadedHandler = [] {}, bool async = true )
+	bool doLoad(const QUrl & qUrl, std::function< void() > loadedHandler = [] {},
+                std::function< void() > errorHandler = [] {}, bool async = true )
 	{
 		std::unique_lock< std::mutex > holder( loadMutex_ );
 		auto qmlEngine = qmlContext_->engine();
@@ -131,6 +132,11 @@ struct QmlView::Impl
 		{
 			loadedHandler();
 		});
+        helper.data_->connections_ += 
+            helper.data_->sig_Error_.connect([ errorHandler ]( QQmlComponent * )
+        {
+            errorHandler();
+        });
 		helper.load( async );
 		return true;
 	}
@@ -155,6 +161,7 @@ struct QmlView::Impl
 //==============================================================================
 QmlView::QmlView( const char * id, IQtFramework & qtFramework, QQmlEngine & qmlEngine )
 	: impl_( new Impl( *this, id, qtFramework, qmlEngine ) )
+	, needLoad_(false)
 {
 	QObject::connect( impl_->quickView_, SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)),
 		this, SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
@@ -280,7 +287,8 @@ void QmlView::error( QQuickWindow::SceneGraphError error, const QString &message
 
 
 //------------------------------------------------------------------------------
-bool QmlView::load( const QUrl & qUrl, std::function< void() > loadedHandler, bool async )
+bool QmlView::load( const QUrl & qUrl, std::function< void() > loadedHandler, 
+                   std::function< void() > errorHandler, bool async )
 {
 	impl_->url_ = qUrl;
 
@@ -290,8 +298,8 @@ bool QmlView::load( const QUrl & qUrl, std::function< void() > loadedHandler, bo
 	this->setContextProperty( QString( "preference" ), value );
 	this->setContextProperty( QString( "viewId" ), impl_->id_.c_str() );
 	this->setContextProperty( QString( "View" ), QVariant::fromValue(impl_->quickView_ ) );
-
-	return impl_->doLoad( qUrl, loadedHandler, async );
+	impl_->qmlContext_->setContextProperty(QString("qmlView"), this);
+	return impl_->doLoad( qUrl, loadedHandler, errorHandler, async );
 }
 
 
@@ -329,6 +337,23 @@ void QmlView::focusOutEvent()
 	{
 		rootObject->setFocus(false);
 	}
+}
+
+//------------------------------------------------------------------------------
+void QmlView::setNeedsToLoad(bool load)
+{
+	if(load == needLoad_)
+	{
+		return;
+	}
+	needLoad_ = load;
+	emit needsToLoadChanged();
+}
+
+//------------------------------------------------------------------------------
+bool QmlView::getNeedsToLoad() const
+{
+	return needLoad_;
 }
 
 //------------------------------------------------------------------------------

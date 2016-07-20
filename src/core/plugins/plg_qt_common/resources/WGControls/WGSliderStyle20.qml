@@ -73,6 +73,8 @@ Style {
 
     property real __clampedLength: control.__clampedLength
 
+    property int __multiValueDashSpacing: 9
+
     padding { top: vertPadding ; left: horzPadding ; right: horzPadding ; bottom: vertPadding }
 
     property Component groove: Item {
@@ -83,22 +85,51 @@ Style {
         implicitHeight: Math.round(defaultSpacing.minimumRowHeight / 4)
 
         WGTextBoxFrame {
+            id: grooveFrame
             radius: defaultSpacing.standardRadius
             anchors.fill: parent
             color: control.enabled ? palette.textBoxColor : "transparent"
+
+            Rectangle {
+                id: multivalueStyling
+                color: "transparent"
+                visible: control.multipleValues
+                anchors.fill: parent
+                anchors.margins: parent.border.width
+                radius: parent.radius
+
+
+                Row {
+                    Repeater {
+                        id: multipleValueRepeater
+
+                        model: grooveFrame.width / __multiValueDashSpacing
+                        Item {
+                            height: multivalueStyling.height
+                            width: __multiValueDashSpacing
+                            Rectangle {
+                                id: dash
+                                color: palette.highlightColor
+                                height: multivalueStyling.height
+                                width: 3
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
     /*! This property holds the coloured bar of the slider.
     */
     property Component bar: Item {
-        property color fillColor: control.__handlePosList[barid].barColor
+        property color fillColor: control.multipleValues ? "transparent" : control.__handlePosList[barid].barColor
         clip: true
         Rectangle {
             clip: true
             anchors.fill: parent
             anchors.margins: defaultSpacing.standardBorderSize
-            border.color: control.enabled ? Qt.darker(fillColor, 1.2) : palette.lighterShade
+            border.color: control.multipleValues ? "transparent" : control.enabled ? Qt.darker(fillColor, 1.2) : palette.lighterShade
             radius: defaultSpacing.halfRadius
             color: control.enabled ? fillColor : palette.lightShade
         }

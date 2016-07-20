@@ -5,6 +5,7 @@
 
 #include "core_reflection/generic/base_generic_object.hpp"
 #include "wg_pyscript/py_script_object.hpp"
+#include "core_serialization/text_stream.hpp"
 
 #include <memory>
 
@@ -106,6 +107,7 @@ private:
 	std::string fullPath_;
 };
 
+TextStream& operator<<( TextStream& stream, const DefinedInstance& value );
 
 
 } // namespace ReflectedPython

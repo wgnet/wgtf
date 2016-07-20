@@ -33,11 +33,11 @@ void XMLReader::StackItem::cast( IDefinitionManager& definitionManager )
 	object = ObjectHandle();
 	collection = nullptr;
 
-	if( auto v = value.castPtr< ObjectHandle >() )
+	if( auto v = value.value< ObjectHandle* >() )
 	{
 		object = *v;
 	}
-	else if( auto v = value.castPtr< Collection >() )
+	else if( auto v = value.value< Collection* >() )
 	{
 		collection = v;
 	}
@@ -65,7 +65,7 @@ XMLReader::XMLReader( TextStream& stream, IDefinitionManager& definitionManager,
 
 bool XMLReader::read( Variant& value )
 {
-	stack_.emplace_back( value );
+	stack_.emplace_back( std::move( value ) );
 	pushed_ = true;
 	done_ = false;
 
@@ -198,7 +198,7 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 						return;
 					}
 
-					if( !k.convert( keyMetaType ) )
+					if( !k.setType( keyMetaType ) )
 					{
 						// key type conversion failed
 						abortParsing();
@@ -252,7 +252,7 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 		bool isEmpty = current.value.isVoid();
 		if( !isEmpty )
 		{
-			if( auto object = current.value.castPtr< ObjectHandle >() )
+			if( auto object = current.value.value< ObjectHandle* >() )
 			{
 				if( !object->isValid() )
 				{
@@ -330,7 +330,7 @@ void XMLReader::elementEnd( const char* elementName )
 	auto& current = stack_.back();
 	if( !current.characterData.empty() )
 	{
-		if( !current.value.castPtr< Collection >() )
+		if( !current.value.value< Collection* >() )
 		{
 			FixedMemoryStream dataStream( current.characterData.c_str(), current.characterData.size() );
 			TextStream stream( dataStream );
@@ -371,7 +371,7 @@ void XMLReader::elementEnd( const char* elementName )
 		
 		stack_.pop_back();
 	}
-	else if( parent.value.castPtr< Collection >() )
+	else if( parent.value.value< Collection* >() )
 	{
 		current.pos.setValue( current.value );
 		stack_.pop_back();
@@ -401,7 +401,7 @@ void XMLReader::characterData( const char* data, size_t length )
 			current.characterData.append( data, data + length );
 		}
 	}
-	else if( current.value.castPtr< Collection >() )
+	else if( current.value.value< Collection* >() )
 	{
 		// ignore character data in collection
 	}

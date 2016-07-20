@@ -51,7 +51,7 @@ public:
 
 	virtual CollectionIteratorImplPtr erase(
 		const CollectionIteratorImplPtr & pos ) override;
-	virtual size_t erase( const Variant & key ) override;
+	virtual size_t eraseKey( const Variant & key ) override;
 	virtual CollectionIteratorImplPtr erase(
 		const CollectionIteratorImplPtr & first,
 		const CollectionIteratorImplPtr& last ) override;

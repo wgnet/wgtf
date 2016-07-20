@@ -1,6 +1,8 @@
 #ifndef I_SERIALIZATION_MANAGER_HPP
 #define I_SERIALIZATION_MANAGER_HPP
 
+#include "../serialization_dll.hpp"
+
 #include "core_variant/type_id.hpp"
 #include "core_serialization/serializer/i_serializer.hpp"
 #include "core_serialization/i_datastream.hpp"
@@ -9,7 +11,7 @@
 namespace wgt
 {
 class IDataStream;
-class DEPRECATED ISerializationManager
+class DEPRECATED SERIALIZATION_DLL ISerializationManager
 {
 
 public:

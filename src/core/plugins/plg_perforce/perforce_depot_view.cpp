@@ -18,6 +18,7 @@
 #pragma warning(disable:4267 4244)
 #include "p4/clientApi.h"
 #include "p4/spec.h"
+#include "core_string_utils/string_utils.hpp"
 #pragma warning(pop)
 
 namespace wgt
@@ -32,6 +33,52 @@ std::string join(const TCollection& col)
 	}
 	return stream.str().c_str();
 }
+
+class ResultStats : public StrDict
+{
+public:
+	virtual StrPtr * VGetVar(const StrPtr &var) override
+	{
+		auto found = stats_.find(var.Text());
+		if(found != stats_.end())
+		{
+			return &found->second;
+		}
+		return nullptr;
+	}
+
+	virtual void VSetVar(const StrPtr &var, const StrPtr &val) override
+	{
+		stats_[var.Text()] = val;
+	}
+
+	virtual void VRemoveVar(const StrPtr &var) override
+	{
+		auto found = stats_.find(var.Text());
+		if(found != stats_.end())
+		{
+			stats_.erase(found);
+		}
+	}
+
+	virtual void VClear() override
+	{
+		stats_.clear();
+	}
+
+	std::unordered_map<std::string, std::string> toStdMap() const
+	{
+		std::unordered_map<std::string, std::string> stats;
+		for(auto& stat : stats_)
+		{
+			stats[stat.first] = stat.second.Text();
+		}
+		return std::move(stats);
+	}
+
+private:
+	std::unordered_map<std::string, StrBuf> stats_;
+};
 
 class P4ClientUser : public ClientUser
 {
@@ -51,25 +98,45 @@ public:
 	{
 		auto output = join(GetOutput());
 		auto errors = join(GetErrors());
-		return IResultPtr(new PerforceResult(output.c_str(), errors.c_str()));
+		return IResultPtr( new PerforceResult( output.c_str(), errors.c_str(), fileResults()) );
 	}
 
 private:
+
+	AttributeResults fileResults() const
+	{
+		AttributeResults results;
+		for(const auto& resultStat : outputStats_)
+		{
+			results.emplace_back(resultStat.toStdMap());
+		}
+		return std::move(results);
+	}
+
 	void OutputError(const char* error) override
 	{
-		//ClientUser::OutputError(error);
+		outputStats_.emplace_back();
+		outputStats_.back().VSetVar(StrBuf("error"), StrRef(error));
 		errors_.emplace_back(error);
 	}
 
 	virtual void OutputInfo(char level, const char *data) override
 	{
-		//ClientUser::OutputInfo(level, data);
 		output_.emplace_back(data);
+	}
+
+	virtual void OutputStat(StrDict *varList) override
+	{
+		if(varList)
+		{
+			outputStats_.emplace_back();
+			outputStats_.back().CopyVars(*varList);
+		}
+		ClientUser::OutputStat(varList);
 	}
 
 	virtual void OutputText(const char *data, int length) override
 	{
-		//ClientUser::OutputText(data, length);
 		output_.emplace_back(data);
 	}
 
@@ -81,6 +148,7 @@ private:
 	std::string input_;
 	Errors errors_;
 	Output output_;
+	std::vector<ResultStats> outputStats_;
 };
 
 struct PerforceDepotView::PerforceDepotViewImplementation

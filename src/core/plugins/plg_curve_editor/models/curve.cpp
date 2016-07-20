@@ -166,13 +166,13 @@ void Curve::removeAt(float time, bool triggerCallback)
 	auto& points = points_;
 	auto& removedCallback = removed_;
 	auto removeListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint){ removeListeners(bezierPoint); };
-	auto executeFunc = [time, removeListenersFunc, triggerCallback, &points, &removedCallback]()
+	auto executeFunc = [bezierPoint, removeListenersFunc, triggerCallback, &points, &removedCallback]()
 	{
 		auto index = 0;
 		for( auto iter = std::begin(points); iter != std::end(points); ++iter, ++index )
 		{
 			auto& point = *(*iter);
-			if ( point.pos->getX() == time )
+			if ( &point == bezierPoint.get() )
 			{
 				removeListenersFunc(*iter);
 				points.erase(iter);

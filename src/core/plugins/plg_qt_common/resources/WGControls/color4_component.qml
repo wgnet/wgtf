@@ -13,7 +13,8 @@ import QtQuick.Dialogs 1.2
 
 WGExpandingRowLayout {
     id: colorLayout
-    objectName:  itemData != null ? itemData.indexPath : "color4_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "color4_component" :  itemData.indexPath
+    enabled: itemData.enabled && !itemData.readOnly
 
     property bool showAlpha: true
 
@@ -55,6 +56,7 @@ WGExpandingRowLayout {
             width: 40
             height: parent.height
             defaultColorDialog: false
+            multipleValues: itemData.multipleValues
 
             onClicked: {
                 beginUndoFrame();
@@ -133,6 +135,8 @@ WGExpandingRowLayout {
                     number: itemData.value.x
                     minimumValue: 0
                     maximumValue: 255
+                    multipleValues: itemData.multipleValues
+                    readOnly: itemData.readOnly
 
                     onNumberChanged: {
                         itemData.value.x = number
@@ -144,6 +148,8 @@ WGExpandingRowLayout {
                     number: itemData.value.y
                     minimumValue: 0
                     maximumValue: 255
+                    multipleValues: itemData.multipleValues
+                    readOnly: itemData.readOnly
 
                     onNumberChanged: {
                         itemData.value.y = number
@@ -155,6 +161,8 @@ WGExpandingRowLayout {
                     number: itemData.value.z
                     minimumValue: 0
                     maximumValue: 255
+                    multipleValues: itemData.multipleValues
+                    readOnly: itemData.readOnly
 
                     onNumberChanged: {
                         itemData.value.z = number
@@ -178,6 +186,8 @@ WGExpandingRowLayout {
             number: showAlpha ? itemData.value.w : 255
             minimumValue: 0
             maximumValue: 255
+            multipleValues: itemData.multipleValues
+            readOnly: itemData.readOnly
             hasArrows: false
             horizontalAlignment: Text.AlignHCenter
 

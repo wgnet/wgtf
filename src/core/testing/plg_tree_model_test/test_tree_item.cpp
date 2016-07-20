@@ -92,11 +92,13 @@ bool TestTreeItemOld::setData( int column, size_t roleId, const Variant& data )
 struct TestTreeItem::Implementation
 {
 	Implementation( TestTreeItem& main, const char* name, const AbstractTreeItem* parent );
-	~Implementation();
 
 	AbstractTreeItem& main_;
-	const char* name_;
+	std::string name_;
 	const AbstractTreeItem* parent_;
+
+	Signal< DataSignature > preDataChanged_;
+	Signal< DataSignature > postDataChanged_;
 };
 
 TestTreeItem::Implementation::Implementation(
@@ -107,36 +109,17 @@ TestTreeItem::Implementation::Implementation(
 {
 }
 
-TestTreeItem::Implementation::~Implementation()
-{
-	delete name_;
-}
-
 
 TestTreeItem::TestTreeItem( const char* name, const AbstractTreeItem* parent )
 	: impl_( new Implementation( *this, name, parent ) )
 {
 }
 
-TestTreeItem::TestTreeItem( const TestTreeItem& rhs )
-	: impl_( new Implementation( *this, rhs.impl_->name_, rhs.impl_->parent_ ) )
-{
-}
 
 TestTreeItem::~TestTreeItem()
 {
 }
 
-TestTreeItem& TestTreeItem::operator=( const TestTreeItem& rhs )
-{
-	if (this != &rhs)
-	{
-		impl_.reset( new Implementation(
-			*this, rhs.impl_->name_, rhs.impl_->parent_ ) );
-	}
-
-	return *this;
-}
 
 const AbstractTreeItem* TestTreeItem::getParent() const
 {
@@ -145,17 +128,59 @@ const AbstractTreeItem* TestTreeItem::getParent() const
 
 Variant TestTreeItem::getData( int column, size_t roleId ) const
 {
-	if (roleId == ItemRole::displayId ||
-		roleId == ItemRole::valueId)
+	if (column == 0)
 	{
-		return column == 0 ? impl_->name_ : "Value";
+		if (roleId == ItemRole::displayId ||
+			roleId == ItemRole::valueId)
+		{
+			return impl_->name_;
+		}
+	}
+	else
+	{
+		if (roleId == ItemRole::displayId ||
+			roleId == ItemRole::valueId)
+		{
+			return "Value";
+		}
 	}
 
 	return Variant();
 }
 
-bool TestTreeItem::setData( int column, size_t roleId, const Variant& data )
+
+bool TestTreeItem::setData( int column, size_t roleId, const Variant& data ) /* override */
 {
+	if (column == 0)
+	{
+		if (roleId == ItemRole::displayId ||
+			roleId == ItemRole::valueId)
+		{
+			std::string name;
+			if (data.tryCast( name ))
+			{
+				impl_->preDataChanged_( column, roleId, data );
+				impl_->name_ = name;
+				impl_->postDataChanged_( column, roleId, data );
+				return true;
+			}
+		}
+	}
+
 	return false;
 }
+
+
+Connection TestTreeItem::connectPreDataChanged( DataCallback callback ) /* override */
+{
+	return impl_->preDataChanged_.connect( callback );
+}
+
+
+Connection TestTreeItem::connectPostDataChanged( DataCallback callback ) /* override */
+{
+	return impl_->postDataChanged_.connect( callback );
+}
+
+
 } // end namespace wgt

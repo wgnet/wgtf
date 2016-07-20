@@ -24,7 +24,7 @@ Item
         // the header at the top of the node
 
         id: titleBar
-        color: "black"
+        color: Qt.rgba(palette.textBoxColor.r, palette.textBoxColor.g, palette.textBoxColor.b, 1.0)
 
         height: defaultSpacing.minimumRowHeight
 
@@ -36,7 +36,7 @@ Item
             source: parent
             gradient: Gradient {
                 GradientStop { position: 0.0; color: node.enabled ? node.nodeColor : "#999999"}
-                GradientStop { position: 1.0; color: "black" }
+                GradientStop { position: 1.0; color: "#00000000" }
             }
         }
 

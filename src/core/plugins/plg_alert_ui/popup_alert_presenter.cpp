@@ -42,9 +42,9 @@ PopupAlertPresenter::PopupAlertPresenter( IComponentContext & contextManager )
 	auto viewCreator = get< IViewCreator >();
 	if (viewCreator)
 	{
-		viewCreator->createView(
+		alertWindow_ = viewCreator->createView(
 			"plg_alert_ui/alert_window.qml",
-			alertPageModel_, alertWindow_ );
+			alertPageModel_ );
 	}
 
 	ILoggingSystem* loggingSystem = 
@@ -73,7 +73,13 @@ PopupAlertPresenter::~PopupAlertPresenter()
 	if (uiApplication != nullptr)
 	{
 		uiApplication->removeAction( *testAddAlert_ );
-		uiApplication->removeView( *alertWindow_ );
+        if(alertWindow_.valid())
+        {
+            auto view = alertWindow_.get();
+            uiApplication->removeView( *view );
+            view = nullptr;
+        }
+		
 	}
 	testAddAlert_.reset();
 }

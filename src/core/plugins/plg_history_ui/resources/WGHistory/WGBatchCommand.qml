@@ -33,7 +33,9 @@ ColumnLayout {
     WGListModel {
         id: batchModel
 
-        source: displayObject.Children
+        source: ((typeof displayObject !== 'undefined') && (typeof displayObject !== 'undefined')) ?
+            displayObject.Children :
+            null
 
         ValueExtension {}
     }

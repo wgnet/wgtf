@@ -386,7 +386,7 @@ TEST_F(VectorFixture, Collection_vector_erase_iterator_empty_range)
 
 TEST_F(VectorFixture, Collection_vector_erase_key)
 {
-	CHECK(collection.erase(1) == 1);
+	CHECK(collection.eraseKey(1) == 1);
 
 	const CheckValue<size_t, int> check[] =
 	{
@@ -435,7 +435,7 @@ TEST_F(VectorFixture, Collection_vector_const)
 	CHECK(constCollection.erase(it) == constCollection.end());
 	checkContents(EXTRA_ARGS, check);
 
-	CHECK(constCollection.erase(1) == 0);
+	CHECK(constCollection.eraseKey(1) == 0);
 	checkContents(EXTRA_ARGS, check);
 }
 
@@ -599,7 +599,7 @@ TEST_F(ArrayFixture, Collection_array_resize)
 	CHECK(collection.erase(it) == collection.end());
 	checkContents(EXTRA_ARGS, check);
 
-	CHECK(collection.erase(1) == 0);
+	CHECK(collection.eraseKey(1) == 0);
 	checkContents(EXTRA_ARGS, check);
 }
 
@@ -641,7 +641,7 @@ TEST_F(ArrayFixture, Collection_array_const)
 	CHECK(constCollection.erase(it) == constCollection.end());
 	checkContents(EXTRA_ARGS, check);
 
-	CHECK(constCollection.erase(1) == 0);
+	CHECK(constCollection.eraseKey(1) == 0);
 	checkContents(EXTRA_ARGS, check);
 }
 
@@ -857,7 +857,7 @@ TEST_F(MapFixture, Collection_map_erase_iterator)
 
 TEST_F(MapFixture, Collection_map_erase_key)
 {
-	CHECK(collection.erase("one") == 1);
+	CHECK(collection.eraseKey("one") == 1);
 	CHECK(collection.find("one") == collection.end());
 
 	const CheckValue<const char*, int> check[] =
@@ -904,7 +904,7 @@ TEST_F(MapFixture, Collection_map_const)
 	CHECK(constCollection.erase(it) == constCollection.end());
 	checkContents(EXTRA_ARGS, check);
 
-	CHECK(constCollection.erase("one") == 0);
+	CHECK(constCollection.eraseKey("one") == 0);
 	checkContents(EXTRA_ARGS, check);
 }
 
@@ -975,7 +975,7 @@ TEST(Collection_multimap)
 	collectionCheckOrdered(EXTRA_ARGS, collection, check2);
 
 	// erase key
-	CHECK(collection.erase("one") == 2);
+	CHECK(collection.eraseKey("one") == 2);
 
 	const CheckValue<const char*, int> check3[] =
 	{
@@ -1116,7 +1116,7 @@ TEST(Collection_linear_notifications)
 
 	CHECK_EQUAL( 0, counter );
 
-	c.erase( 2 );
+	c.eraseKey( 2 );
 	CHECK_EQUAL( 2, counter );
 
 	auto it = c.insert( 1 );
@@ -1147,7 +1147,7 @@ TEST(Collection_mapping_notifications)
 
 		CHECK_EQUAL( 3, c.size() );
 		CHECK_EQUAL( 1, count );
-		CHECK_EQUAL( "1 one", pos.key().castRef< const std::string >() );
+		CHECK_EQUAL( "1 one", pos.key().cast< const std::string& >() );
 		CHECK_EQUAL( 1, pos.value().cast< int >() );
 	} );
 
@@ -1159,7 +1159,7 @@ TEST(Collection_mapping_notifications)
 		CHECK_EQUAL( 2, c.size() );
 		CHECK_EQUAL(1, count);
 
-		CHECK_EQUAL("2 two", pos.key().castRef< const std::string >());
+		CHECK_EQUAL("2 two", pos.key().cast< const std::string& >());
 		CHECK_EQUAL(2, pos.value().cast< int >());
 	} );
 
@@ -1169,7 +1169,7 @@ TEST(Collection_mapping_notifications)
 		counter += 1;
 
 		CHECK_EQUAL( 1, count );
-		CHECK_EQUAL( "2 two", pos.key().castRef< const std::string >() );
+		CHECK_EQUAL( "2 two", pos.key().cast< const std::string& >() );
 		CHECK_EQUAL( 2, pos.value().cast< int >() );
 	} );
 
@@ -1179,7 +1179,7 @@ TEST(Collection_mapping_notifications)
 		counter += 1;
 
 		CHECK_EQUAL( 1, count );
-		CHECK_EQUAL( "1 uno", pos.key().castRef< const std::string >() );
+		CHECK_EQUAL( "1 uno", pos.key().cast< const std::string& >() );
 		CHECK_EQUAL( 0, pos.value().cast< int >() );
 	} );
 
@@ -1189,7 +1189,7 @@ TEST(Collection_mapping_notifications)
 		counter += 1;
 
 		CHECK_EQUAL( 1, newValue.cast< int >() );
-		CHECK_EQUAL( "1 uno", pos.key().castRef< const std::string >() );
+		CHECK_EQUAL( "1 uno", pos.key().cast< const std::string& >() );
 		CHECK_EQUAL( 0, pos.value().cast< int >() );
 	} );
 
@@ -1199,13 +1199,13 @@ TEST(Collection_mapping_notifications)
 		counter += 1;
 
 		CHECK_EQUAL( 0, oldValue.cast< int >() );
-		CHECK_EQUAL( "1 uno", pos.key().castRef< const std::string >() );
+		CHECK_EQUAL( "1 uno", pos.key().cast< const std::string& >() );
 		CHECK_EQUAL( 1, pos.value().cast< int >() );
 	} );
 
 	CHECK_EQUAL( 0, counter );
 
-	c.erase( "1 one" );
+	c.eraseKey( "1 one" );
 	CHECK_EQUAL( 2, counter );
 
 	auto it = c.insert( "1 uno" );

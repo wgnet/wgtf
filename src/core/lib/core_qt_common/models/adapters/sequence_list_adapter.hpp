@@ -6,6 +6,14 @@
 
 namespace wgt
 {
+
+
+/**
+ *	Converter for re-ordering or repeating model indexes.
+ *	E.g. columnSequence: [0,1,2,0,1,2]
+ *	Will create a Qt model with 6 columns,
+ *	but the WGTF model only has 3 columns repeated twice.
+ */
 class SequenceListAdapter : public IListAdapter
 {
 	Q_OBJECT
@@ -18,14 +26,35 @@ public:
 	SequenceListAdapter();
 	virtual ~SequenceListAdapter();
 
-	QAbstractItemModel * model() const;
+	virtual QAbstractItemModel * model() const override;
 
-	QModelIndex adaptedIndex(int row, int column, const QModelIndex &parent) const;
-	int rowCount(const QModelIndex &parent) const;
+	/**
+	 *	Calculate re-ordered Qt index.
+	 *	Unless the sequence is empty, then return a normal Qt index.
+	 *	@param row WGTF row of the item.
+	 *		Should be in the range 0<=row<rowCount.
+	 *	@param column WGTF row of the item.
+	 *		Should be in the range 0<=column<columnCount.
+	 *	@param parent WGTF parent of the item, if applicable.
+	 *	@return the Qt index or invalid if the item was not found.
+	 */
+	virtual QModelIndex adaptedIndex( int row,
+		int column,
+		const QModelIndex & parent ) const override;
+
+	/**
+	 *	Get the converted number of rows.
+	 *	Unless the sequence is empty, then return the normal Qt row count.
+	 *	@post rowCount should not be <0.
+	 *	@param parent WGTF parent of the item, if applicable.
+	 *	@return the number of rows or 0.
+	 */
+	virtual int rowCount( const QModelIndex & parent ) const override;
 
 private:
-	void onParentDataChanged(const QModelIndex &topLeft, 
-		const QModelIndex &bottomRight, const QVector<int> &roles);
+	virtual void onParentDataChanged( const QModelIndex & topLeft, 
+		const QModelIndex & bottomRight,
+		const QVector< int > & roles ) override;
 
 	QVariant getModel() const;
 	void setModel( const QVariant &model );

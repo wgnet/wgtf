@@ -21,6 +21,7 @@ BW_ADD_TOOL_PLUGIN( plg_editor_interaction SHARED
 )
 
 BW_TARGET_LINK_LIBRARIES( plg_editor_interaction PRIVATE
+	core_data_model_cmds
 	core_generic_plugin
 	core_reflection
 	core_reflection_utils

@@ -2,19 +2,24 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_logging/logging.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
-#include "core_qt_common/qt_action_manager.hpp"
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/i_window.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
-#include "core_variant/variant.hpp"
 #include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which creates a panel that when right mouse clicked opens up a context menu
+*
+* @ingroup plugins
+* @image html plg_context_menu_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class ContextMenuTest
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -35,8 +40,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto uiFramework = contextManager.queryInterface< IUIFramework >();
 		assert( uiFramework != nullptr );
 
@@ -59,13 +62,24 @@ public:
 			std::bind( &ContextMenuTest::canTestPerforce, this, _1 ));
 		uiApplication->addAction( *cmTestCheckOut_ );
 
+		testActions_.push_back( uiFramework->createAction( "TestMenu.Fifth:2", [](IAction*){} ) );
+		testActions_.push_back( uiFramework->createAction( "TestMenu.Fourth:1", [](IAction*){} ) );
+		testActions_.push_back( uiFramework->createAction( "TestMenu.Second", [](IAction*){} ) );
+		testActions_.push_back( uiFramework->createAction( "TestMenu.Third", [](IAction*){} ) );
+		testActions_.push_back( uiFramework->createAction( "TestMenu.First", [](IAction*){} ) );
+
+		for (auto & testAction : testActions_)
+		{
+			uiApplication->addAction( *testAction );
+		}
+
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
 			// Create the view and present it
-			viewCreator->createView(
+			testView_ = viewCreator->createView(
 				"plg_context_menu_test/test_contextmenu_panel.qml",
-				ObjectHandle(), testView_ );
+				ObjectHandle() );
 		}
 	}
 
@@ -77,14 +91,22 @@ public:
 		
 		uiApplication->removeAction( *cmTestOpen_ );
 		uiApplication->removeAction( *cmTestCheckOut_ );
+
+		for (auto & testAction : testActions_)
+		{
+			uiApplication->removeAction( *testAction );
+		}
 		
 		cmTestOpen_.reset();
 		cmTestCheckOut_.reset();
 
-		if (testView_ != nullptr)
+		testActions_.clear();
+
+		if (testView_.valid())
 		{
-			uiApplication->removeView( *testView_ );
-			testView_ = nullptr;
+            auto view = testView_.get();
+			uiApplication->removeView( *view );
+			view = nullptr;
 		}
 
 		return true;
@@ -130,9 +152,10 @@ public:
 
 private:
 	
-	std::unique_ptr<IView> testView_;
+	wg_future<std::unique_ptr< IView >> testView_;
 	std::unique_ptr< IAction > cmTestCheckOut_;
 	std::unique_ptr< IAction > cmTestOpen_;
+	std::vector< std::unique_ptr< IAction > > testActions_;
 };
 
 PLG_CALLBACK_FUNC( ContextMenuTest )

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import compileall
 import os
+import re
 import shutil
 import sys
 
@@ -16,9 +17,28 @@ def main():
 			if fileName.endswith(".pyc"):
 				os.remove(os.path.join(dirPath, fileName))
 
+	# Ignore the following files in standard Python, because they produce errors
+	ignoredFiles = (
+		"py3_test_grammar\.py",
+		"_mock_backport\.py",
+		"bad_coding.*\.py",
+		"badsyntax.*\.py",
+		"test_compile.py",
+		"test_grammar.py"
+	)
+	ignoredString = ""
+	for i in ignoredFiles:
+		ignoredString += "(" + i + ")|"
+	ignoredString = ignoredString.rstrip("|")
+	ignoredExpression = re.compile(ignoredString)
+
 	# Compile new *.pyc files
 	print "Compiling *.py files in", sourceDir
-	compileall.compile_dir(sourceDir)
+	result = compileall.compile_dir(sourceDir, quiet=1, rx=ignoredExpression)
+
+	# Returns 0 on failure
+	if result == 0:
+		sys.exit( 1 )
 
 	# Clear deployment directory
 	print "Copying *.pyc files to", deploymentDir

@@ -136,20 +136,14 @@ Item
             }
         }
 
-
-        WGAction
-        {
-            active: true
-            actionId: qsTr("NodeEditor.node|.Delete Node")
-            onTriggered: {
-                deleteNode(nodeID);
-            }
-        }
-
         ContextMenu
         {
             id: contextArea
             menuPath: "NodeEditor.node"
+
+            onAboutToShow: {
+                contextObject = nodeContainer
+            }
         }
 
         ColumnLayout
@@ -203,9 +197,9 @@ Item
                         delegate : Slot
                         {
                             z : nodeContainer.z + 10
-                            slotObj: Value
-                            isInput: Value.isInput
-                            connected: Value.isConnected
+                            slotObj: value
+                            isInput: value.isInput
+                            connected: value.isConnected
                             parentNode: nodeContainer
                         }
                     }
@@ -238,9 +232,9 @@ Item
                         delegate : Slot
                         {
                             z : nodeContainer.z + 10
-                            slotObj: Value
-                            isInput: Value.isInput
-                            connected: Value.isConnected
+                            slotObj: value
+                            isInput: value.isInput
+                            connected: value.isConnected
                             parentNode: nodeContainer
                             Layout.alignment : Qt.AlignTop | Qt.AlignRight
                         }

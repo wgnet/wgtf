@@ -13,43 +13,65 @@ UIViewCreator::UIViewCreator(IComponentContext & context)
 
 
 //------------------------------------------------------------------------------
-void UIViewCreator::createView(
+wg_future<std::unique_ptr< IView >> UIViewCreator::createView(
 	const char * path,
 	const ObjectHandle & context,
-	std::unique_ptr< IView > & o_ResultView,
 	const char * uniqueName)
 {
 	auto uiFrameWork = get< IUIFramework >();
 	if (uiFrameWork == nullptr)
 	{
-		return;
+        return std::future<std::unique_ptr<IView>>();
 	}
 	auto uiApplication = get< IUIApplication >();
-	uiFrameWork->createViewAsync(
+	auto view = uiFrameWork->createViewAsync(
 		uniqueName, path, IUIFramework::ResourceType::Url, context,
-		[&o_ResultView, uiApplication](std::unique_ptr< IView > & view)
+		[uiApplication](IView & view)
 	{
-		o_ResultView = std::move(view);
-		if (o_ResultView != nullptr)
+		if (uiApplication)
 		{
-			if (uiApplication)
-			{
-				uiApplication->addView(*o_ResultView);
-			}
-		}
-		else
-		{
-			NGT_ERROR_MSG("Failed to load qml\n");
+			uiApplication->addView(view);
 		}
 	});
+	return view;
 }
 
 //------------------------------------------------------------------------------
-void UIViewCreator::createView(
+wg_future<std::unique_ptr< IView >> UIViewCreator::createView(
 	const char * path,
 	const ObjectHandle & context,
-	std::function< void(std::unique_ptr< IView > &) > functor,
+	std::function< void(IView &) > functor,
 	const char * uniqueName )
+{
+	auto uiFrameWork = get< IUIFramework >();
+	if (uiFrameWork == nullptr )
+	{
+        return std::future<std::unique_ptr<IView>>();
+	}
+
+	auto uiApplication = get< IUIApplication >();
+
+	auto view = uiFrameWork->createViewAsync(
+		uniqueName,
+		path, IUIFramework::ResourceType::Url, context,
+		[uiApplication, functor ](IView & view)
+	{
+		if (uiApplication)
+		{
+			uiApplication->addView(view);
+		}
+		functor( view );
+	});
+	return view;
+}
+
+
+//------------------------------------------------------------------------------
+void UIViewCreator::createWindow(
+	const char * path,
+	const ObjectHandle & context,
+	std::function< void(std::unique_ptr< IWindow > &) > functor,
+	IUIFramework::ResourceType type )
 {
 	auto uiFrameWork = get< IUIFramework >();
 	if (uiFrameWork == nullptr )
@@ -59,17 +81,13 @@ void UIViewCreator::createView(
 
 	auto uiApplication = get< IUIApplication >();
 
-	uiFrameWork->createViewAsync(
-		uniqueName,
-		path, IUIFramework::ResourceType::Url, context,
-		[uiApplication, functor ](std::unique_ptr< IView > & view)
+	uiFrameWork->createWindowAsync(
+		path, type, context,
+		[uiApplication, functor ](std::unique_ptr< IWindow > & view)
 	{
 		if (view)
 		{
-			if (uiApplication)
-			{
-				uiApplication->addView(*view);
-			}
+			uiApplication->addWindow( *view );
 			functor( view );
 		}
 		else

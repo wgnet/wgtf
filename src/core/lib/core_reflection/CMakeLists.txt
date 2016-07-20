@@ -3,6 +3,9 @@ PROJECT( core_reflection )
 
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
+INCLUDE( ExtractExports )
+
+ADD_DEFINITIONS( -DREFLECTION_EXPORT )
 
 SET( INTERFACES_SRCS
 	interfaces/i_base_property.hpp
@@ -46,6 +49,7 @@ SET( ALL_SRCS
 	generic/generic_property.hpp
 	i_definition_manager.hpp
 	i_object_manager.hpp
+	memory_overrides.cpp
 	mutable_vector.hpp
 	object_manager.cpp
 	object_manager.hpp
@@ -63,6 +67,7 @@ SET( ALL_SRCS
 	reflected_property.hpp
 	reflected_types.cpp
 	reflected_types.hpp
+	reflection_dll.hpp
 	reflection_macros.hpp
 	ref_object_id.hpp
 	ref_object_id.cpp
@@ -84,17 +89,53 @@ SET( ALL_SRCS
 )
 SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
 
+IF( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
+	SET( EXPORTS_SRC ${CMAKE_CURRENT_BINARY_DIR}/reflection_exports.cpp )
+	SOURCE_GROUP( "Generated" FILES ${EXPORTS_SRC} )
+
+	EXTRACT_EXPORTS( ${EXPORTS_SRC}
+		core_variant
+		core_serialization
+	)
+ELSE()
+	UNSET( EXPORTS_SRC )
+ENDIF()
+
+SET( EXPORT_DEFINES REFLECTION_EXPORT VARIANT_EXPORT SERIALIZATION_EXPORT )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 	${INTERFACES_SRCS}
+	${EXPORTS_SRC}
 )
-BW_ADD_LIBRARY( core_reflection ${BLOB_SRCS} )
+BW_ADD_LIBRARY( core_reflection SHARED ${BLOB_SRCS} )
+
+IF( "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" )
+	BW_TARGET_LINK_LIBRARIES( core_reflection PRIVATE
+		-Wl,-force_load core_variant
+		-Wl,-force_load core_serialization
+	)
+ELSEIF( "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" )
+	BW_TARGET_LINK_LIBRARIES( core_reflection PRIVATE
+		-Wl,--whole-archive
+		core_variant
+		core_serialization
+		-Wl,--no-whole-archive
+	)
+ENDIF()
 
 BW_TARGET_LINK_LIBRARIES( core_reflection PRIVATE
 	core_variant
+	core_serialization
 	core_logging
+	wg_memory
 	wg_types
 )
+
+FOREACH( lib core_variant core_serialization core_reflection )
+	BW_APPEND_TARGET_LIST_PROPERTIES( ${lib} COMPILE_DEFINITIONS
+		${EXPORT_DEFINES}
+	)
+ENDFOREACH()
 
 BW_PROJECT_CATEGORY( core_reflection "WGT Libs/Reflection" )

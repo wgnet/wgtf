@@ -27,6 +27,7 @@
 #include "core_ui_framework/i_preferences.hpp"
 #include "core_ui_framework/i_window.hpp"
 #include "core_data_model/i_list_model.hpp"
+#include "core_qt_common/helpers/qt_helpers.hpp"
 
 #include <private/qmetaobjectbuilder_p.h>
 #include <QVariant>
@@ -132,9 +133,9 @@ void QtScriptingEngine::Implementation::initialise( IQtFramework& qtFramework, I
 	// TODO: All but the scriptTypeConverter need to be moved to the qt app plugin.
 	qtTypeConverters_.emplace_back( new GenericQtTypeConverter< ObjectHandle >() );
 	qtTypeConverters_.emplace_back( new ImageQtTypeConverter() );
-	qtTypeConverters_.emplace_back( new ModelQtTypeConverter() );
+	qtTypeConverters_.emplace_back( new ModelQtTypeConverter( contextManager ) );
 	qtTypeConverters_.emplace_back( new QObjectQtTypeConverter() );
-	qtTypeConverters_.emplace_back( new CollectionQtTypeConverter() );
+	qtTypeConverters_.emplace_back( new CollectionQtTypeConverter( contextManager ) );
 	qtTypeConverters_.emplace_back( new ScriptQtTypeConverter( self_ ) );
 
 	QMetaType::registerComparators<ObjectHandle>();
@@ -479,12 +480,12 @@ void QtScriptingEngine::deleteMacro( QString command )
 	impl_->commandSystemProvider_->deleteMacroByName( commandId.c_str() );
 }
 
-void QtScriptingEngine::selectControl( WGCopyController* control, bool append )
+void QtScriptingEngine::selectControl( wgt::WGCopyController* control, bool append )
 {
 	impl_->copyPasteManager_->onSelect( control, append );
 }
 
-void QtScriptingEngine::deselectControl( WGCopyController* control, bool reset )
+void QtScriptingEngine::deselectControl( wgt::WGCopyController* control, bool reset )
 {
 	impl_->copyPasteManager_->onDeselect( control, reset );
 }
@@ -516,6 +517,24 @@ QObject * QtScriptingEngine::iterator( const QVariant & collection )
 
 	// QML will take ownership of this object
 	return new WGListIterator( *listModel );
+}
+
+QVariant QtScriptingEngine::getProperty( const QVariant & object, QString propertyPath )
+{
+	ObjectHandle handle;
+	if(QtHelpers::toVariant(object).tryCast(handle))
+	{
+		auto definition = handle.getDefinition(*getDefinitionManager());
+		if(definition != nullptr)
+		{
+			auto accessor = definition->bindProperty(propertyPath.toLocal8Bit().data(), handle);
+			if(accessor.isValid())
+			{
+				return QtHelpers::toQVariant(accessor.getValue(), nullptr);
+			}
+		}
+	}
+	return QVariant();
 }
 
 bool QtScriptingEngine::setValueHelper( QObject * object, QString property, QVariant value )

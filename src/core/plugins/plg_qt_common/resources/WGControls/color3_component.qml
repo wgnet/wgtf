@@ -6,7 +6,7 @@ import QtQuick.Dialogs 1.2
 Loader
 {
     id: color3_Loader
-    objectName:  itemData != null ? itemData.indexPath : "color3_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "color3_component" : itemData.indexPath
     Component.onCompleted: {
         color3_Loader.setSource("color4_component.qml", { "showAlpha": false });
     }

@@ -37,7 +37,7 @@ public:
 
 	virtual void clearCurrentFilter() override;
 
-	virtual void addFilterTerm( std::string text ) override;
+	virtual void addFilterTerm( std::string display, std::string value, bool active ) override;
 
 	virtual IListModel * getSavedFilters() const override;
 

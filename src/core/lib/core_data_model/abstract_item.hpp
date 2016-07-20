@@ -23,6 +23,13 @@ public:
 
 	virtual Connection connectPreDataChanged( DataCallback callback ) { return Connection(); }
 	virtual Connection connectPostDataChanged( DataCallback callback ) { return Connection(); }
+
+	/**
+	 *	@return true if this item uses a controller to call setData() via the
+	 *		Command System.
+	 *		false if the item sets data directly.
+	 */
+	virtual bool hasController() const { return false; }
 };
 
 class AbstractListItem : public AbstractItem

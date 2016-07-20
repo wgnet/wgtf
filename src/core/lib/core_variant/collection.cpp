@@ -204,11 +204,11 @@ Collection::Iterator Collection::erase(const Iterator& pos)
 }
 
 
-size_t Collection::erase(const Variant& key)
+size_t Collection::eraseKey(const Variant& key)
 {
 	if(impl_)
 	{
-		return impl_->erase(key);
+		return impl_->eraseKey(key);
 	}
 	else
 	{

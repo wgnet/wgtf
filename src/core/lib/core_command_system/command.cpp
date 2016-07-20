@@ -3,6 +3,12 @@
 
 namespace wgt
 {
+
+bool isCommandSuccess( CommandErrorCode errorCode )
+{
+	return (errorCode == CommandErrorCode::COMMAND_NO_ERROR);
+}
+
 //==============================================================================
 Command::~Command()
 {
@@ -63,14 +69,14 @@ void Command::fireProgressMade( const CommandInstance & command ) const
 
 void Command::fireCommandExecuted(const CommandInstance & command, CommandOperation operation) const
 {
-    EventListenerCollection::const_iterator it =
-        eventListenerCollection_.begin();
-    EventListenerCollection::const_iterator itEnd =
-        eventListenerCollection_.end();
-    for (; it != itEnd; ++it)
-    {
-        (*it)->commandExecuted(command, operation);
-    }
+	EventListenerCollection::const_iterator it =
+		eventListenerCollection_.begin();
+	EventListenerCollection::const_iterator itEnd =
+		eventListenerCollection_.end();
+	for (; it != itEnd; ++it)
+	{
+		(*it)->commandExecuted(command, operation);
+	}
 }
 
 //==============================================================================

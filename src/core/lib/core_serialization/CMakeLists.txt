@@ -4,6 +4,8 @@ PROJECT( core_serialization )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
+ADD_DEFINITIONS( -DSERIALIZATION_EXPORT )
+
 find_package(Expat REQUIRED)
 
 SET( SERIALIZER_DETAILS_SRCS
@@ -50,6 +52,7 @@ SET( ALL_SRCS
 	i_datastream.hpp
 	resizing_memory_stream.hpp
 	resizing_memory_stream.cpp
+	serialization_dll.hpp
 	std_data_stream.hpp
 	text_stream.cpp
 	text_stream.hpp
@@ -57,7 +60,6 @@ SET( ALL_SRCS
 	text_stream_manip.hpp
 )
 
-BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 
 IF( BW_PLATFORM_WINDOWS )
 	INCLUDE( "CMakeLists.windows.txt" )
@@ -65,12 +67,12 @@ ELSEIF( BW_PLATFORM_MAC )
 	INCLUDE( "CMakeLists.mac.txt" )
 ENDIF()
 
-SOURCE_GROUP( "Source" FILES ${BLOB_SRCS} )
+SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${SERIALIZER_DETAILS_SRCS}
 	${SERIALIZER_SRCS}
-	${BLOB_SRCS}
+	${ALL_SRCS}
 	${INTERFACE_SRCS}
 )
 

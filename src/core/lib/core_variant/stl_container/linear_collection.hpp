@@ -25,7 +25,7 @@ namespace collection_details
 		typedef LinearCollectionIteratorImpl< collection_impl > this_type;
 
 		static const bool can_set =
-			Variant::traits< value_type >::can_downcast &&
+			Variant::traits< value_type >::can_cast &&
 			!std::is_const< container_type >::value &&
 			!std::is_const< value_type >::value;
 
@@ -115,7 +115,7 @@ namespace collection_details
 					return false;
 				}
 
-				return v.with< value_type >( [ impl, &v ]( const value_type& val )
+				return v.visit< value_type >( [ impl, &v ]( const value_type& val )
 				{
 					auto pos = impl->collectionImpl_.makeIterator( impl->index_ );
 					impl->collectionImpl_.onPreChange_( pos, v );
@@ -415,7 +415,7 @@ namespace collection_details
 			return makeIterator( r - container_.begin() );
 		}
 
-		size_t erase( const Variant& key ) override
+		size_t eraseKey( const Variant& key ) override
 		{
 			key_type i;
 			if( !key.tryCast( i ) )
@@ -667,7 +667,7 @@ namespace collection_details
 			return end();
 		}
 
-		size_t erase( const Variant& key ) override
+		size_t eraseKey( const Variant& key ) override
 		{
 			return 0;
 		}

@@ -8,12 +8,13 @@ import WGControls 1.0
 
 WGVector4 {
     id: vector4
-    objectName: itemData != null ? itemData.indexPath : "vector4_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "vector4_component" : itemData.indexPath
     value: itemData.value
+    readOnly: itemData.readOnly
+    enabled: itemData.enabled
+    multipleValues: itemData.multipleValues
 
-    Binding {
-        target: itemData
-        property: "value"
-        value: vector4.value
+    onValueChanged: {
+        itemData.value = vector4.value;
     }
 }

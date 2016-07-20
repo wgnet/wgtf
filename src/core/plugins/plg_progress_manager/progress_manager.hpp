@@ -3,6 +3,11 @@
 
 #include "core_command_system/i_command_event_listener.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_logging_system/interfaces/i_logging_system.hpp"
+#include "core_command_system/i_command_manager.hpp"
+#include "core_command_system/i_command_manager.hpp"
+#include "core_qt_common/i_qt_framework.hpp"
 
 #include <QObject>
 #include <QString>
@@ -24,6 +29,7 @@ typedef std::vector< QString > CommandIdList;
 class ProgressManager
 	: public QObject
 	, public ICommandEventListener
+	, public Depends< ILoggingSystem, ICommandManager, IQtFramework >
 {
 	Q_OBJECT
 
@@ -35,11 +41,11 @@ public slots:
 	void timedUpdate();
 
 public:
-	ProgressManager();
+	ProgressManager( IComponentContext & contextManager );
 	~ProgressManager();
 
-	/// Cache the context manager and register command status listener
-	void init( IComponentContext & contextManager );
+	/// Register command status listener
+	void init();
 
 	/// Deregister command status listener
 	void fini();
@@ -95,14 +101,12 @@ private:
 	mutable int progressValue_;
 	mutable bool isMultiCommandProgress_;
 	mutable QQuickView * view_;
-	mutable IComponentContext * contextManager_;
 	mutable CommandIdList commandIdList_;
 	mutable CommandIdList::iterator curCommandId_;
 	mutable bool isViewVisible_;
 	mutable std::thread::id threadId_;
 
 	QTimer * timer_;
-	ILoggingSystem * loggingSystem_;
 	QWindow * prevFocusedWindow_;
 
 	bool isCurrentCommandActive() { return (  commandIdList_.size() > 0 && commandIdList_.end() != curCommandId_  ); }

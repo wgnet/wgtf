@@ -54,6 +54,7 @@ public:
 
 	virtual bool preErase( const PropertyAccessor & accessor, size_t index, size_t count ) = 0;
 	virtual bool postErased( const PropertyAccessor & accessor, size_t index, size_t count ) = 0;
+	virtual bool hasController() const override;
 
 	uint64_t getId() const;
 	const std::string & getPath() const;

@@ -3,7 +3,7 @@ import QtQuick.Controls 1.2
 
 WGNumberBox {
     id: numberBox
-    objectName:  itemData != null ? itemData.indexPath : "number_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "number_component" : itemData.indexPath
     anchors.left: parent.left
 
     number: itemData.value
@@ -11,12 +11,12 @@ WGNumberBox {
     maximumValue: itemData.maxValue
     stepSize: itemData.stepSize
     decimals: itemData.decimals
-    readOnly: itemData.isReadOnly
+    readOnly: itemData.readOnly
+    enabled: itemData.enabled
+    multipleValues: itemData.multipleValues
 
-    Binding {
-        target: itemData
-        property: "value"
-        value: numberBox.number
+    onNumberChanged: {
+        itemData.value = numberBox.number;
     }
 
 }

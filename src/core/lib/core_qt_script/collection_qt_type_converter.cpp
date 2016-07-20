@@ -10,6 +10,13 @@
 namespace wgt
 {
 
+
+CollectionQtTypeConverter::CollectionQtTypeConverter( IComponentContext & context )
+	: context_( context )
+{
+}
+
+
 /**
 *	Convert a QVariant to a Collection.
 *	Note that o_variant will be referencing the collection in qVariant,
@@ -63,7 +70,8 @@ bool CollectionQtTypeConverter::toQVariant(const Variant& variant,
 	auto collectionModel = new CollectionModel();
 	collectionModel->setSource( value );
 
-	auto model = new QtCollectionModel( std::unique_ptr<CollectionModel>(collectionModel) );
+	auto model = new QtCollectionModel( context_,
+		std::unique_ptr< CollectionModel >( collectionModel ) );
 	model->setParent(parent);
 	o_qVariant = QVariant::fromValue( model );
 

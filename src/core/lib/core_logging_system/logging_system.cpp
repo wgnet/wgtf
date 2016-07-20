@@ -1,21 +1,26 @@
 #include "logging_system.hpp"
 #include "log_message.hpp"
 #include "interfaces/i_logger.hpp"
+#include "interfaces/i_logging_model.hpp"
+#include "interfaces/metadata/i_logging_model.mpp"
 #include "alerts/alert_manager.hpp"
 #include "alerts/basic_alert_logger.hpp"
+#include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/reflection_macros.hpp"
 #include <cstdarg>
 #include <cstdio>
 #include <assert.h>
 
 namespace wgt
 {
-LoggingSystem::LoggingSystem()
+LoggingSystem::LoggingSystem( DIRef< IDefinitionManager > definitionManager )
 	: alertManager_( new AlertManager() )
 	, basicAlertLogger_( nullptr )
 	, hasAlertManagement_( false )
 	, running_( true )
 {
 	processor_ = new std::thread( &LoggingSystem::process, this );
+	definitionManager.get()->registerDefinition<TypeClassDefinition< ILoggingModel >>();
 }
 
 LoggingSystem::~LoggingSystem()

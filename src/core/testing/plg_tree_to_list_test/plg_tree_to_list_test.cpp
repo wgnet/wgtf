@@ -3,20 +3,25 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_logging/logging.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
-#include "core_qt_common/qt_action_manager.hpp"
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/i_window.hpp"
-#include "core_variant/variant.hpp"
 #include "test_tree_model.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
 #include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which displays a tree as a list with sample data
+*
+* @ingroup plugins
+* @image html plg_tree_to_list_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TreeToListTest
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -37,8 +42,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto uiFramework = contextManager.queryInterface< IUIFramework >();
 		assert( uiFramework != nullptr );
 
@@ -51,10 +54,9 @@ public:
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
-			viewCreator->createView(
+			testView_ = viewCreator->createView(
 				"plg_tree_to_list_test/test_tree_to_list_panel.qml",
-				std::move(model),
-				testView_);
+				std::move(model) );
 		}
 	}
 
@@ -64,10 +66,11 @@ public:
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		assert( uiApplication != nullptr );
 
-		if (testView_ != nullptr)
+		if (testView_.valid())
 		{
-			uiApplication->removeView( *testView_ );
-			testView_ = nullptr;
+            auto view = testView_.get();
+			uiApplication->removeView( *view );
+			view = nullptr;
 		}
 
 		return true;
@@ -75,7 +78,7 @@ public:
 
 private:
 	
-	std::unique_ptr<IView> testView_;
+	wg_future<std::unique_ptr< IView >> testView_;
 };
 
 PLG_CALLBACK_FUNC( TreeToListTest )

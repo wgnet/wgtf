@@ -7,6 +7,7 @@
 namespace wgt
 {
 class AlertManager;
+class IDefinitionManager;
 class ILogger;
 class LogMessage;
 
@@ -15,6 +16,7 @@ class ILoggingSystem
 public:
 
 	ILoggingSystem() {}
+	ILoggingSystem( IDefinitionManager & definitionManager ) {}
 	virtual ~ILoggingSystem() {}
 
 	virtual bool registerLogger( ILogger* logger ) = 0;

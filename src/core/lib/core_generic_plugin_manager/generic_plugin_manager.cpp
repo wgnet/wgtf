@@ -2,6 +2,7 @@
 #include "core_dependency_system/i_interface.hpp"
 #include "core_generic_plugin/env_context.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
+#include "core_generic_plugin/interfaces/i_command_line_parser.hpp"
 #include "core_generic_plugin/interfaces/i_component_context_creator.hpp"
 #include "core_generic_plugin/interfaces/i_memory_allocator.hpp"
 #include "notify_plugin.hpp"
@@ -27,7 +28,7 @@ namespace wgt
 //==============================================================================
 GenericPluginManager::GenericPluginManager(bool applyDebugPostfix_)
 	: contextManager_( new PluginContextManager() )
-    , applyDebugPostfix(applyDebugPostfix_)
+	, applyDebugPostfix(applyDebugPostfix_)
 {
 }
 
@@ -132,10 +133,13 @@ void GenericPluginManager::notifyPlugins(
 //==============================================================================
 HMODULE GenericPluginManager::loadPlugin( const std::wstring & filename )
 {
+	std::string errorMsg;
 	auto processedFileName = processPluginFilename( filename );
 
 	setEnvContext( contextManager_->createContext( filename ) );
 	HMODULE hPlugin = ::LoadLibraryW( processedFileName.c_str() );
+	// Must get last error before doing anything else
+	const bool hadError = FormatLastErrorMessage( errorMsg );
 	setEnvContext( nullptr );
 
 	if (hPlugin != nullptr)
@@ -146,13 +150,23 @@ HMODULE GenericPluginManager::loadPlugin( const std::wstring & filename )
 	{
 		contextManager_->destroyContext( filename );
 
-		std::string errorMsg;
-		bool hadError = FormatLastErrorMessage(errorMsg);
-
 		NGT_ERROR_MSG( "Could not load plugin %S (from %S): %s\n",
 			filename.c_str(),
 			processedFileName.c_str(),
 			hadError ? errorMsg.c_str() : "Unknown error" );
+
+#if defined( _DEBUG )
+		// Fail automated tests
+		const auto pCommandLine = this->queryInterface< ICommandLineParser >();
+		const auto requireAllSpecifiedPlugins = (pCommandLine == nullptr) ?
+			true :
+			pCommandLine->getFlag( "-unattended" );
+
+		if (requireAllSpecifiedPlugins)
+		{
+			assert( false && "Could not load plugin" );
+		}
+#endif // defined( _DEBUG )
 	}
 	return hPlugin;
 }

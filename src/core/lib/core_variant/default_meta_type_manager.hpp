@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "interfaces/i_meta_type_manager.hpp"
+#include "meta_type.hpp"
 #include "wg_types/hash_utilities.hpp"
 #include <set>
 #include <vector>
@@ -14,15 +14,14 @@
 namespace wgt
 {
 class DefaultMetaTypeManager
-	: public Implements< IMetaTypeManager >
 {
 public:
 	DefaultMetaTypeManager();
 
-	bool registerType(const MetaType* type) override;
-	bool deregisterType(const MetaType* type) override;
-	const MetaType* findType(const char* name) const override;
-	const MetaType* findType(const TypeId& typeId) const override;
+	bool registerType(const MetaType* type);
+	bool deregisterType(const MetaType* type);
+	const MetaType* findType(const char* name) const;
+	const MetaType* findType(const TypeId& typeId) const;
 
 private:
 	struct NameHash

@@ -14,6 +14,7 @@ public:
 
 	void undo() override;
 	void redo() override;
+	virtual ObjectHandle getCommandDescription() const override;
 
 private:
 	CommandInstance & commandInstance_;

@@ -178,7 +178,7 @@ CollectionIteratorImplPtr Mapping::erase(
 }
 
 
-size_t Mapping::erase( const Variant & key ) /* override */
+size_t Mapping::eraseKey( const Variant & key ) /* override */
 {
 	PyScript::ScriptObject scriptKey;
 	const bool success = typeConverters_.toScriptType( key, scriptKey );

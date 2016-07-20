@@ -121,6 +121,14 @@ private:
 	ReflectedList gl_;
 };
 
+/**
+* A plugin which tests the reflection plugin
+*
+* @ingroup plugins
+* @bug currently broken
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TestObjHandlePlugin
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -133,8 +141,6 @@ public:
 
 	bool PostLoad( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		if (IDefinitionManager* dm = contextManager.queryInterface<IDefinitionManager>())
 		{
 			def1_ = dm->registerDefinition< TypeClassDefinition< Test1 > >();
@@ -161,8 +167,8 @@ public:
 			return;
 		}
 		
-		viewCreator->createView( "plg_list_model_test/test_list_panel.qml",
-			glist_->getList(), viewGL_ );
+		viewGL_  = viewCreator->createView( "plg_list_model_test/test_list_panel.qml",
+			glist_->getList() );
 
 		test_ = std::unique_ptr<Test3>( new Test3(3) );
 		auto model = std::unique_ptr< ITreeModel >( new ReflectedTreeModel(
@@ -170,25 +176,27 @@ public:
 			*defManager,
 			contextManager.queryInterface<IReflectionController>() ) );
 
-		viewCreator->createView( "plg_tree_model_test/test_tree_panel.qml",
-			ObjectHandle(std::move( model )), viewTest_ );
+		viewTest_ = viewCreator->createView( "plg_tree_model_test/test_tree_panel.qml",
+			ObjectHandle(std::move( model )) );
 	}
 
 	bool Finalise( IComponentContext & contextManager ) override
 	{
 		if (IUIApplication* app = contextManager.queryInterface<IUIApplication>())
 		{
-			if (viewGL_ != nullptr)
+			if (viewGL_.valid())
 			{
-				app->removeView( *viewGL_ );
+                auto view = viewGL_.get();
+				app->removeView( *view );
+                view = nullptr;
 			}
-			if (viewTest_ != nullptr)
+			if (viewTest_.valid())
 			{
-				app->removeView( *viewTest_ );
+                auto view = viewTest_.get();
+				app->removeView( *view );
+                view = nullptr;
 			}
 		}
-		viewGL_.reset();
-		viewTest_.reset();
 		return true;
 	}
 
@@ -202,9 +210,9 @@ private:
 	IClassDefinition* def3_;
 
 	std::unique_ptr<GListTest> glist_;
-	std::unique_ptr<IView> viewGL_;
+	wg_future<std::unique_ptr< IView >> viewGL_;
 	std::unique_ptr<Test3> test_;
-	std::unique_ptr<IView> viewTest_;
+	wg_future<std::unique_ptr< IView >> viewTest_;
 };
 
 PLG_CALLBACK_FUNC( TestObjHandlePlugin )

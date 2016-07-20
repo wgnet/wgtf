@@ -7,15 +7,25 @@
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_window.hpp"
 #include "core_ui_framework/i_action.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_ui_framework/interfaces/i_view_creator.hpp"
 
 #include <vector>
 
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which creates a button which when pressed creates a dialog window with Ok and Cancel buttons
+*
+* @ingroup plugins
+* @image html plg_modal_dlg_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class ModalDlgTestPlugin
 	: public PluginMain
+	, public Depends< IViewCreator >
 {
 private:
 	std::unique_ptr< IAction > testModalDialog_;
@@ -33,6 +43,7 @@ private:
 public:
 	//==========================================================================
 	ModalDlgTestPlugin(IComponentContext & contextManager )
+		: Depends( contextManager )
 	{
 	}
 
@@ -58,16 +69,18 @@ public:
 			"ShowModalDialog", 
 			std::bind( &ModalDlgTestPlugin::showModalDialog, this, _1 ) );
 
-		modalDialog_ = uiFramework->createWindow( 
-			"plg_modal_dlg_test/test_custom_dialog.qml", 
-			IUIFramework::ResourceType::Url );
-		if (modalDialog_ != nullptr)
+		auto viewCreator = get< IViewCreator >();
+		viewCreator->createWindow( 
+			"plg_modal_dlg_test/test_custom_dialog.qml",ObjectHandle(),
+			[ this ]( std::unique_ptr< IWindow > & window )
 		{
-			modalDialog_->hide();
-		}
-
+			modalDialog_ = std::move( window );
+			if (modalDialog_ != nullptr)
+			{
+				modalDialog_->hide();
+			}
+		});
 		uiApplication->addAction( *testModalDialog_ );
-		uiApplication->addWindow( *modalDialog_ );
 	}
 	//==========================================================================
 	bool Finalise( IComponentContext & contextManager )

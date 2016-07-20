@@ -4,3 +4,7 @@ ngt/build/cmake/FindPerforce.cmake.
 The default path is ngt/src/core/third_party/perforce.r15.2/bin.ntx64/vs2015_dyn
 or ngt/src/core/third_party/perforce.r15.2/bin.ntx64/vs2015_dyn_debug.
 If Perforce is not present, Perforce projects will be disabled.
+
+Compatibility Notes
+- Perforce plugins are not supported for MacOS or Maya.
+

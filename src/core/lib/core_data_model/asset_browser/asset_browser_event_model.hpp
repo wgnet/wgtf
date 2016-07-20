@@ -12,6 +12,7 @@
 #pragma once
 
 #include "i_asset_browser_event_model.hpp"
+#include "core_dependency_system/i_interface.hpp"
 #include "core_common/signal.hpp"
 
 #include <vector>

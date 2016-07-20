@@ -6,7 +6,7 @@ import QtQuick.Window 2.1
 import WGControls 2.0
 
 /*!
-    \brief Timeline Panel WIP.
+    \brief A multitrack timeline control to show durations and keyframes of various tracks/objects/events.
 */
 
 Rectangle {
@@ -55,6 +55,12 @@ Rectangle {
 
     Component.onCompleted: {
         timelineFrame.currentFrame = 0
+    }
+
+    onFocusChanged: {
+        if (focus === true) {
+            gridCanvas.requestPaint();
+        }
     }
 
     property alias setTimeDialog: timelineDialogs.setTimeDialog
@@ -329,6 +335,9 @@ Rectangle {
                     property Component textObject: WGTextBox {
                         id: textObject
                         text: model.text
+                        onEditAccepted: {
+                            model.text = text;
+                        }
                     }
 
                     // a full width non interactive bar with a label. Useful for organisation mostly.
@@ -348,8 +357,8 @@ Rectangle {
                         minimumValue: 0
                         maximumValue: totalFrames
                         stepSize: 1
-                        startFrame: startTime * timelineFrame.framesPerSecond
-                        endFrame: endTime * timelineFrame.framesPerSecond
+                        startFrame: model.startTime * timelineFrame.framesPerSecond
+                        endFrame: model.endTime * timelineFrame.framesPerSecond
                         barColor: model.barColor
 
                         barIndex: index
@@ -390,7 +399,7 @@ Rectangle {
             id: timelineArea
 
             Layout.fillWidth: true
-            Layout.preferredHeight: defaultSpacing.standardRowHeight
+            Layout.preferredHeight: defaultSpacing.minimumRowHeight
 
             handleClamp: false
 

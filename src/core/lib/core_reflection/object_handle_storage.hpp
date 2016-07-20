@@ -3,19 +3,19 @@
 
 #include "core_variant/type_id.hpp"
 #include "interfaces/i_class_definition.hpp"
+#include "reflection_dll.hpp"
 #include <cassert>
 #include <memory>
 #include <unordered_set>
 #include <type_traits>
 #include <typeinfo>
 
-
 namespace wgt
 {
 class RefObjectId;
 class IParticleEffectTreeModel;
 	 
-class IObjectHandleStorage
+class REFLECTION_DLL IObjectHandleStorage
 {
 public:
 	virtual ~IObjectHandleStorage() {}
@@ -29,7 +29,7 @@ public:
 
 
 //==============================================================================
-class ObjectHandleStorageVoid : public IObjectHandleStorage
+class REFLECTION_DLL ObjectHandleStorageVoid : public IObjectHandleStorage
 {
 public:
 	ObjectHandleStorageVoid(std::shared_ptr<void> data, TypeId type, DataGetter getter)
@@ -66,7 +66,6 @@ private:
 	TypeId type_;
 	DataGetter getter_;
 };
-
 
 //==============================================================================
 template< typename T >
@@ -245,7 +244,7 @@ private:
 
 
 //==============================================================================
-class ObjectHandleStorageReflectedCast
+class REFLECTION_DLL ObjectHandleStorageReflectedCast
 	: public IObjectHandleStorage
 {
 public:

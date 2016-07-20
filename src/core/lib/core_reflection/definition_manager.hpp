@@ -5,15 +5,16 @@
 
 #include "i_definition_manager.hpp"
 #include "core_dependency_system/i_interface.hpp"
-
 #include "wg_types/hashed_string_ref.hpp"
+#include "reflection_dll.hpp"
 
 namespace wgt
 {
+
 /**
  * DefinitionManager
  */
-class DefinitionManager 
+class REFLECTION_DLL DefinitionManager 
 	: public Implements< IDefinitionManager >
 { 
 public:
@@ -62,5 +63,6 @@ private:
 	PropertyAccessorListeners listeners_;
 	IObjectManager & objectManager_;
 };
+
 } // end namespace wgt
 #endif // DEFINITION_MANAGER_HPP

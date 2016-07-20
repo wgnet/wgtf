@@ -1,12 +1,13 @@
 #include "qt_window_adapter.hpp"
+#include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QMainWindow>
 #include <assert.h>
 
 namespace wgt
 {
-QtWindowAdapter::QtWindowAdapter( IQtFramework & qtFramework, QIODevice & source )
-	: QtWindow( qtFramework, source )
+QtWindowAdapter::QtWindowAdapter( IComponentContext & context, QIODevice & source )
+	: QtWindow( context, source )
 {
 }
 

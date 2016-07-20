@@ -34,7 +34,11 @@ Rectangle {
     /*! This property holds the default text string that will be displayed if /c source_ is not defined.
         The default value is \c "Image not found"
     */
-    property string notFoundString: "Image not found"
+    property string __notFoundString: "Image not found"
+
+    property bool multipleValues: false
+
+    property string __multipleValuesString: "Multiple Values"
 
     color: palette.lightShade
 
@@ -80,15 +84,13 @@ Rectangle {
         anchors.fill: parent
         Image {
             id: icon
-            anchors.fill: parent
+            anchors.centerIn: parent
+            height: sourceSize.height < parent.height ? sourceSize.height : parent.height
+            width: sourceSize.width < parent.width ? sourceSize.width : parent.width
             anchors.margins: defaultSpacing.standardBorderSize
             source: thumbnail.source
-
-            Component.onCompleted: {
-                if (thumbnail.source == ""){
-                    missingText.visible = true
-                }
-            }
+            visible: !multipleValues
+            fillMode: Image.PreserveAspectFit
         }
         WGLabel{
             objectName: "Label"
@@ -97,8 +99,19 @@ Rectangle {
             width: (parent.width - (defaultSpacing.leftMargin + defaultSpacing.rightMargin))
             horizontalAlignment: "AlignHCenter"
             verticalAlignment: "AlignVCenter"
-            text: notFoundString
-            visible: false
+            text: __notFoundString
+            visible: thumbnail.source == "" && !multipleValues
+            wrapMode: "Wrap"
+        }
+        WGLabel{
+            objectName: "MultiValuesText"
+            id: multipleValuesText
+            anchors.centerIn: parent
+            width: (parent.width - (defaultSpacing.leftMargin + defaultSpacing.rightMargin))
+            horizontalAlignment: "AlignHCenter"
+            verticalAlignment: "AlignVCenter"
+            text: __multipleValuesString
+            visible: multipleValues
             wrapMode: "Wrap"
         }
     }

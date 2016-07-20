@@ -15,7 +15,8 @@ BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 BW_ADD_EXECUTABLE( variant_unit_test ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( variant_unit_test PRIVATE
-	core_variant
+	core_common
+	core_reflection
 	core_unit_test
 	)
 

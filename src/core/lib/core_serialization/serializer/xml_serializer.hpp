@@ -3,20 +3,21 @@
 
 #include "i_serializer.hpp"
 #include "core_dependency_system/i_interface.hpp"
-
 #include "core_serialization/text_stream.hpp"
+#include "core_serialization/serialization_dll.hpp"
 #include <string>
+
 namespace wgt
 {
 class IDefinitionManager;
 
-class XMLSerializer:
+class SERIALIZATION_DLL XMLSerializer:
 	public Implements< ISerializer >
 {
 public:
 	using ISerializer::deserialize;
 
-	struct Format
+	struct SERIALIZATION_DLL Format
 	{
 		struct Unformatted {};
 
@@ -104,5 +105,6 @@ private:
 	Format format_;
 
 };
+
 } // end namespace wgt
 #endif

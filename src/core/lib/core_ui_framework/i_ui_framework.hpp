@@ -2,7 +2,8 @@
 #define I_UI_FRAMEWORK_HPP
 
 #include "core_reflection/object_handle.hpp"
-
+#include "core_common/wg_future.hpp"
+#include "core_common/signal.hpp"
 #include <memory>
 
 namespace wgt
@@ -19,6 +20,7 @@ class IPreferences;
  */
 class IUIFramework
 {
+	typedef Signal<void(void)> SignalVoid;
 public:
     /**
      * Resource types
@@ -64,16 +66,23 @@ public:
 	virtual std::unique_ptr< IView > createView(const char* uniqueName,
 		const char * resource, ResourceType type,
 		const ObjectHandle & context = ObjectHandle()) = 0;
-
-	virtual void createViewAsync(
-		const char * uniqueName,
-		const char * resource, ResourceType type, 
-		const ObjectHandle & context = ObjectHandle(),
-		std::function< void(std::unique_ptr< IView > & ) > loadedHandler =
-			[] ( std::unique_ptr< IView > & ){} ) = 0;
 	virtual std::unique_ptr< IWindow > createWindow( 
 		const char * resource, ResourceType type,
 		const ObjectHandle & context = ObjectHandle() ) = 0;
+
+	virtual void enableAsynchronousViewCreation( bool enabled ) = 0;
+
+	virtual wg_future< std::unique_ptr<IView> > createViewAsync(
+		const char * uniqueName,
+		const char * resource, ResourceType type, 
+		const ObjectHandle & context = ObjectHandle(),
+		std::function< void( IView & ) > loadedHandler =
+			[] ( IView & ){} ) = 0;
+	virtual void createWindowAsync( 
+		const char * resource, ResourceType type,
+		const ObjectHandle & context = ObjectHandle(),
+		std::function< void(std::unique_ptr< IWindow > & ) > loadedHandler =
+		[] ( std::unique_ptr< IWindow > & ){} ) = 0;
 
 	virtual void loadActionData( const char * resource, ResourceType type ) = 0;
 	virtual void registerComponent( const char * id, IComponent & component ) = 0;
@@ -83,6 +92,8 @@ public:
 
 	virtual void setPluginPath( const std::string& path ) = 0;
 	virtual const std::string& getPluginPath() const = 0; 
+
+	virtual void showShortcutConfig() const = 0;
 
 	enum MessageBoxButtons
 	{
@@ -96,7 +107,11 @@ public:
 
 	virtual int displayMessageBox( const char* title, const char* message, int buttons ) = 0;
 
+	virtual void registerQmlType( ObjectHandle type ) = 0;
 	virtual IPreferences * getPreferences() = 0;
+	virtual void doOnUIThread( std::function< void() > ) = 0;
+
+	SignalVoid signalKeyBindingsChanged;
 };
 } // end namespace wgt
 #endif//I_UI_FRAMEWORK_HPP

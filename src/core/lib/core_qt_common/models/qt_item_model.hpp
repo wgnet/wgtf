@@ -11,6 +11,7 @@ class AbstractItemModel;
 class AbstractListModel;
 class AbstractTreeModel;
 class AbstractTableModel;
+class IComponentContext;
 
 
 /**
@@ -21,7 +22,7 @@ class QtItemModel : public QtAbstractItemModel, public RoleProvider
 	Q_OBJECT
 
 public:
-	QtItemModel( AbstractItemModel & source );
+	QtItemModel( IComponentContext & context, AbstractItemModel & source );
 	virtual ~QtItemModel();
 
 	/**
@@ -49,6 +50,8 @@ public:
 	bool removeRows( int row, int count, const QModelIndex &parent ) override;
 	bool removeColumns( int column, int count, const QModelIndex &parent ) override;
 
+	QHash< int, QByteArray > roleNames() const override;
+
 private:
 	struct Impl;
 	std::unique_ptr< Impl > impl_;
@@ -63,7 +66,8 @@ class QtListModel : public QtItemModel
 	Q_OBJECT
 
 public:
-	QtListModel( AbstractListModel & source );
+	QtListModel( IComponentContext & context,
+		AbstractListModel & source );
 
 	/**
 	 *	Get AbstractListModel that is being adapted to be used by Qt.
@@ -109,7 +113,7 @@ class QtTreeModel : public QtItemModel
 	Q_OBJECT
 
 public:
-	QtTreeModel( AbstractTreeModel & source );
+	QtTreeModel( IComponentContext & context, AbstractTreeModel & source );
 
 	/**
 	 *	Get AbstractTreeModel that is being adapted to be used by Qt.
@@ -157,7 +161,7 @@ class QtTableModel : public QtItemModel
 	Q_OBJECT
 
 public:
-	QtTableModel( AbstractTableModel & source );
+	QtTableModel( IComponentContext & context, AbstractTableModel & source );
 
 	/**
 	 *	Get AbstractTableModel that is being adapted to be used by Qt.

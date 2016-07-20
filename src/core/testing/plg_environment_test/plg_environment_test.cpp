@@ -2,21 +2,31 @@
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
-#include "core_variant/variant.hpp"
 
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_window.hpp"
+#include "core_ui_framework/interfaces/i_view_creator.hpp"
 #include "project/metadata/project.mpp"
+
+#include "core_dependency_system/depends.hpp"
 #include <vector>
 
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which creates a project option in the menu bar that lets you create, open and save project environment settings
+*
+* @ingroup plugins
+* @image html plg_environment_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class EnvrionmentTestPlugin
 	: public PluginMain
+	, public Depends< IViewCreator >
 {
 private:
 	std::vector<IInterface*> types_;
@@ -32,7 +42,8 @@ private:
 public:
 	//==========================================================================
 	EnvrionmentTestPlugin(IComponentContext & contextManager )
-        : contextManager_( & contextManager )
+        : Depends( contextManager )
+		, contextManager_( & contextManager )
 	{
 
 	}
@@ -46,8 +57,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
 		// register reflected type definition
 		IDefinitionManager* defManager =
 			contextManager.queryInterface< IDefinitionManager >();
@@ -90,14 +99,22 @@ public:
         uiApplication->addAction( *saveProject_ );
         uiApplication->addAction( *closeProject_ );
 
-        newProjectDialog_ = uiFramework->createWindow( 
-            "TestingProjectControl/NewProjectDialog.qml", 
-            IUIFramework::ResourceType::Url, projectManager_ );
-        if(newProjectDialog_ != nullptr)
-        {
-            connections_ += newProjectDialog_->signalClose.connect( std::bind( &EnvrionmentTestPlugin::onNewDlgClose, this ) );
-            uiApplication->addWindow( *newProjectDialog_ );
-        }
+		auto viewCreator = get< IViewCreator >();
+		if (viewCreator)
+		{
+			viewCreator->createWindow( 
+				"TestingProjectControl/NewProjectDialog.qml", 
+				projectManager_,
+				[ this ] ( std::unique_ptr< IWindow > & window )
+				{
+					newProjectDialog_ = std::move( window );
+					if(newProjectDialog_ != nullptr)
+					{
+						connections_ += newProjectDialog_->signalClose.connect( std::bind( &EnvrionmentTestPlugin::onNewDlgClose, this ) );
+					}
+				});
+		}
+
 	}
 	//==========================================================================
 	bool Finalise( IComponentContext & contextManager ) override
@@ -171,14 +188,21 @@ public:
             uiApplication->removeWindow( *openProjectDialog_ );
             openProjectDialog_ = nullptr;
         }
-        openProjectDialog_ = uiFramework->createWindow( 
-            "TestingProjectControl/OpenProjectDialog.qml", 
-            IUIFramework::ResourceType::Url, projectManager_ );
-        if(openProjectDialog_ != nullptr)
-        {
-            connections_ += openProjectDialog_->signalClose.connect( std::bind( &EnvrionmentTestPlugin::onOpenDlgClose, this ) );
-            uiApplication->addWindow( *openProjectDialog_ );
-        }
+		auto viewCreator = get< IViewCreator >();
+		if (viewCreator)
+		{
+			viewCreator->createWindow( 
+				"TestingProjectControl/OpenProjectDialog.qml", 
+				projectManager_,
+				[ this ]( std::unique_ptr< IWindow > & window )
+				{
+					openProjectDialog_ = std::move( window );
+					if(openProjectDialog_ != nullptr)
+					{
+						connections_ += openProjectDialog_->signalClose.connect( std::bind( &EnvrionmentTestPlugin::onOpenDlgClose, this ) );
+					}
+				});
+		}
     }
     void saveProject()
     {

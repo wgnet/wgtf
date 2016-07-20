@@ -9,6 +9,7 @@
 namespace wgt
 {
 class CollectionModel;
+class IComponentContext;
 
 
 /**
@@ -20,7 +21,8 @@ class QtCollectionModel : public QtListModel
 	Q_OBJECT
 
 public:
-	QtCollectionModel( std::unique_ptr<CollectionModel>&& source );
+	QtCollectionModel( IComponentContext & context,
+		std::unique_ptr< CollectionModel > && source );
 
 	QHash< int, QByteArray > roleNames() const override;	
 

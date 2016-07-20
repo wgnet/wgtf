@@ -104,6 +104,8 @@ Item {
     */
     property var columnSequence: []
 
+	property bool asynchronous: false
+
     onColumnSequenceChanged: {
         updateColumnCount();
     }
@@ -208,6 +210,8 @@ Item {
 
     /*! This property contains the number of columns */
     property int columnCount: 0
+
+	signal readyToShow()
 
     Component.onCompleted: updateColumnCount()
 
@@ -371,38 +375,55 @@ Item {
         property real headerHeight: headerItemLoader.status === Loader.Ready ? listView.headerItem.height : 0
         property real footerHeight: footerItemLoader.status === Loader.Ready ? listView.footerItem.height : 0
         property bool scrollable: contentHeight > height
+		property int loadedItemCount: 0
 
-        delegate: WGListViewRowDelegate {
-            anchors.left: parent.left
-            width: Math.max(columnsFrame.width, minimumRowWidth)
-            defaultColumnDelegate: listView.defaultColumnDelegate
-            columnDelegates: listView.columnDelegates
-            columnSequence: listView.columnSequence
-            columnWidths: listView.columnWidths
-            columnSpacing: listView.columnSpacing
-            selectionExtension: listView.selectionExtension
-            modelIndex: listView.model.index(rowIndex, 0)
-            showBackgroundColour: backgroundColourMode !== noBackgroundColour
-            backgroundColour: listView.backgroundColour
-            alternateBackgroundColour: listView.alternateBackgroundColour
-            hasActiveFocusDelegate: listView.activeFocus
+        delegate: Loader{ 
+			id: loader
+			asynchronous: listView.asynchronous
+			signal loadReady()
+			onLoadReady: {
+				list.loadedItemCount++;
+				if(list.loadedItemCount == list.count)
+				{
+					listView.readyToShow();
+				}
+			}
+			sourceComponent: WGListViewRowDelegate {
+				anchors.left: parent.left
+				width: Math.max(columnsFrame.width, minimumRowWidth)
+				defaultColumnDelegate: listView.defaultColumnDelegate
+				columnDelegates: listView.columnDelegates
+				columnSequence: listView.columnSequence
+				columnWidths: listView.columnWidths
+				columnSpacing: listView.columnSpacing
+				selectionExtension: listView.selectionExtension
+				modelIndex: listView.model.index(rowIndex, 0)
+				showBackgroundColour: backgroundColourMode !== noBackgroundColour
+				backgroundColour: listView.backgroundColour
+				alternateBackgroundColour: listView.alternateBackgroundColour
+				hasActiveFocusDelegate: listView.activeFocus
+				asynchronous: listView.asynchronous
 
-            onClicked: {
-                var modelIndex = listView.model.index(rowIndex, 0);
-                listView.rowClicked(mouse, modelIndex);
+				onClicked: {
+					var modelIndex = listView.model.index(rowIndex, 0);
+					listView.rowClicked(mouse, modelIndex);
 
-                // Update the selectionExtension's currentIndex
-                setCurrentIndex( modelIndex )
-            }
+					// Update the selectionExtension's currentIndex
+					setCurrentIndex( modelIndex )
+				}
 
-            onDoubleClicked: {
-                var modelIndex = listView.model.index(rowIndex, 0);
-                listView.rowDoubleClicked(mouse, modelIndex);
+				onDoubleClicked: {
+					var modelIndex = listView.model.index(rowIndex, 0);
+					listView.rowDoubleClicked(mouse, modelIndex);
 
-                // Update the selectionExtension's currentIndex
-                setCurrentIndex( modelIndex )
-            }
-        }
+					// Update the selectionExtension's currentIndex
+					setCurrentIndex( modelIndex )
+				}
+				onRowReady: {
+					loader.loadReady();
+				}
+			}
+		}
     }
 
     property alias headerItem: headerItemLoader.item

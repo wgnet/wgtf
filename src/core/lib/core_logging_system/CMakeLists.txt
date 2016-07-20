@@ -4,11 +4,18 @@ PROJECT( core_logging_system )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
+
+SET( METADATA_SRCS
+	interfaces/metadata/i_logging_model.mpp
+)
+SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
+
 SET( INTERFACES_SRC
 	interfaces/i_logger.hpp
 	interfaces/i_logging_system.hpp
+	interfaces/i_logging_model.hpp
 )
-SOURCE_GROUP( "interfaces" FILES ${INTERFACES_SRC} )
+SOURCE_GROUP( "Interfaces" FILES ${INTERFACES_SRC} )
 
 SET( ALERTS_SRC
 	alerts/i_alert_presenter.hpp
@@ -17,7 +24,7 @@ SET( ALERTS_SRC
 	alerts/basic_alert_logger.cpp
 	alerts/basic_alert_logger.hpp
 )
-SOURCE_GROUP( "alerts" FILES ${ALERTS_SRC} )
+SOURCE_GROUP( "Alerts" FILES ${ALERTS_SRC} )
 
 SET( ALL_SRCS
 	log_message.cpp
@@ -32,12 +39,14 @@ BW_BLOB_SOURCES( BLOB_SRCS
 	${INTERFACES_SRC}
 	${ALERTS_SRC}
 	${ALL_SRCS}
+	${METADATA_SRCS}
 )
-BW_ADD_LIBRARY( core_logging_system ${BLOB_SRCS} )
+BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )
 
-BW_TARGET_LINK_LIBRARIES( core_logging_system INTERFACE
+BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} INTERFACE
 	core_dependency_system
 	core_common
+	core_reflection
 )
 
 BW_PROJECT_CATEGORY( core_logging_system "WGT Libs" )

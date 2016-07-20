@@ -1,6 +1,9 @@
 #include "role_provider.hpp"
 #include "core_logging/logging.hpp"
 
+#include <limits>
+#include <type_traits>
+
 namespace wgt
 {
 void RoleProvider::registerRole( const char * roleName, 
@@ -9,7 +12,10 @@ void RoleProvider::registerRole( const char * roleName,
 	auto roleId = ItemRole::compute( roleName );
 
 	// TODO: Need to move this out of roleNames() and into a modelReset callback
-	int role = ( roleId % ( INT_MAX - Qt::UserRole ) ) + Qt::UserRole;
+	typedef std::underlying_type< Qt::ItemDataRole >::type ItemDataType;
+	const auto roleMax = std::numeric_limits< ItemDataType >::max();
+	const int role =
+		static_cast< int >( (roleId % (roleMax - Qt::UserRole)) + Qt::UserRole );
 
 	auto it = o_RoleNames.find( role );
 	if (it != o_RoleNames.end())

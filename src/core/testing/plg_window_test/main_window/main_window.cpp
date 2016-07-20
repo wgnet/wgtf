@@ -6,15 +6,13 @@
 #include "core_data_model/reflection/reflected_tree_model.hpp"
 
 #include "core_ui_framework/i_action.hpp"
-#include "core_ui_framework/i_ui_application.hpp"
-#include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_window.hpp"
 
 namespace wgt
 {
 //==============================================================================
-MainWindow::MainWindow()
-	: app_( nullptr )
+MainWindow::MainWindow( IComponentContext & context )
+	: Depends( context )
 {
 }
 
@@ -25,29 +23,48 @@ MainWindow::~MainWindow()
 }
 
 //==============================================================================
-void MainWindow::init( IUIApplication & uiApplication, IUIFramework & uiFramework )
+void MainWindow::init()
 {
-	uiFramework.loadActionData( 
-		":/plg_window_test/actions.xml", IUIFramework::ResourceType::File );
-	mainWindow_ = uiFramework.createWindow( 
-		":/plg_window_test/main_window.ui", IUIFramework::ResourceType::File );
-	uiApplication.addWindow( *mainWindow_ );
+	auto uiFramework = get< IUIFramework >();
+	if (uiFramework)
+	{
+		uiFramework->loadActionData( 
+			":/plg_window_test/actions.xml", IUIFramework::ResourceType::File );
+		createActions( *uiFramework );
+	}
 
-	createActions( uiFramework );
-	addMenuBar( uiApplication );
-	app_ = &uiApplication;
-	uiFramework_ = &uiFramework;
+	auto viewCreator = get< IViewCreator >();
+	auto uiApplication = get< IUIApplication >();
+    assert(uiApplication != nullptr);
+	if (viewCreator)
+	{
+		ObjectHandle handle;
+		viewCreator->createWindow(
+			":/plg_window_test/main_window.ui",
+			handle,
+			[ this, uiApplication ]( std::unique_ptr< IWindow > & window )
+			{
+				mainWindow_ = std::move( window );
+				connections_ += mainWindow_->signalClose.connect( std::bind( &MainWindow::onClose, this ) );
+				connections_ += mainWindow_->signalTryClose.connect( std::bind( &MainWindow::onTryClose, this, std::placeholders::_1 ) );
+				connections_ += uiApplication->signalStartUp.connect( std::bind( &MainWindow::onStartUp, this ) );
+				addMenuBar( *uiApplication );
+			},
+			IUIFramework::ResourceType::File );
+	}
 
-	connections_ += mainWindow_->signalClose.connect( std::bind( &MainWindow::onClose, this ) );
-	connections_ += mainWindow_->signalTryClose.connect( std::bind( &MainWindow::onTryClose, this, std::placeholders::_1 ) );
-	connections_ += uiApplication.signalStartUp.connect( std::bind( &MainWindow::onStartUp, this ) );
 }
 
 //------------------------------------------------------------------------------
 void MainWindow::fini()
 {
-	app_->removeAction( *testExit_ );
-	app_->removeWindow( *mainWindow_ );
+	auto app = get< IUIApplication >();
+	if (app)
+	{
+		app->removeAction( *testExit_ );
+		app->removeAction( *shortcutConfig_ );
+		app->removeWindow( *mainWindow_ );
+	}
 	destroyActions();
 	mainWindow_.reset();
 	connections_.clear();
@@ -60,15 +77,25 @@ void MainWindow::close( IAction * action )
 
 void MainWindow::onClose()
 {
-	assert( app_ != nullptr );
-	app_->quitApplication();
+	auto app = get< IUIApplication >();
+	assert( app != nullptr );
+	app->quitApplication();
+}
+
+void MainWindow::showShortcutConfig( IAction* action )
+{
+	auto framework = get< IUIFramework >();
+	assert( framework != nullptr );
+	framework->showShortcutConfig();
 }
 
 void MainWindow::onTryClose( bool& shouldClose )
 {
 	if (shouldClose)
 	{
-		int result = uiFramework_->displayMessageBox( "Do you want to close?", 
+		auto uiFramework = get< IUIFramework >();
+        assert(uiFramework != nullptr);
+		int result = uiFramework->displayMessageBox( "Do you want to close?", 
 														"Are you sure you want to close the Generic App?",
 														IUIFramework::Cancel| IUIFramework::Ok );
 
@@ -85,16 +112,20 @@ void MainWindow::createActions( IUIFramework & uiFramework )
 	testExit_ = uiFramework.createAction(
 		"Exit", 
 		std::bind( &MainWindow::close, this, std::placeholders::_1 ) );
+	shortcutConfig_ = uiFramework.createAction( "Preferences.Shortcuts", 
+		std::bind( &MainWindow::showShortcutConfig, this, std::placeholders::_1));
 }
 
 void MainWindow::destroyActions()
 {
 	testExit_.reset();
+	shortcutConfig_.reset();
 }
 
 void MainWindow::addMenuBar( IUIApplication & uiApplication )
 {
 	uiApplication.addAction( *testExit_ );
+	uiApplication.addAction( *shortcutConfig_ );
 }
 
 void MainWindow::onStartUp()

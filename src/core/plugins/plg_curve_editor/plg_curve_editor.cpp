@@ -38,6 +38,15 @@ void cleanupQtResources()
 
 namespace wgt
 {
+
+/** 
+* A plugin which registers an ICurveEditor interface on a panel that allows curves to be displayed and manipulated
+* 
+* @ingroup plugins
+* @image html plg_curve_editor.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class CurveEditorPlugin
 	: public PluginMain
 	, public Depends< IViewCreator, ICurveEditor >
@@ -51,12 +60,6 @@ public:
 	bool PostLoad( IComponentContext & contextManager ) override
 	{
 		initQtResources();
-
-		auto metaTypeMgr = contextManager.queryInterface< IMetaTypeManager >();
-		assert(metaTypeMgr);
-		if (metaTypeMgr == nullptr)
-			return false;
-		Variant::setMetaTypeManager(metaTypeMgr);
 
 		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
 		assert(definitionManager != nullptr);
@@ -81,19 +84,20 @@ public:
 
 		if (viewCreator != nullptr)
 		{
-			viewCreator->createView(
-				"plg_curve_editor/CurveEditor.qml", curveModel, curvePanel_ );
+			curvePanel_ = viewCreator->createView(
+				"plg_curve_editor/CurveEditor.qml", curveModel);
 		}
 	}
 
 	bool Finalise( IComponentContext & contextManager ) override
 	{
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
-		if(uiApplication && (curvePanel_ != nullptr))
+		if(uiApplication && (curvePanel_.valid()))
 		{
-			uiApplication->removeView(*curvePanel_);
+            auto view = curvePanel_.get();
+			uiApplication->removeView(*view);
+            view = nullptr;
 		}
-		curvePanel_.reset();
 		
 		return true;
 	}
@@ -110,7 +114,7 @@ public:
 
 private:
 	std::vector< IInterface * > types_;
-	std::unique_ptr< IView > curvePanel_;
+	wg_future<std::unique_ptr< IView >> curvePanel_;
 };
 
 PLG_CALLBACK_FUNC(CurveEditorPlugin)

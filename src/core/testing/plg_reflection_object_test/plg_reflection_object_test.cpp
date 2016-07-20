@@ -6,7 +6,13 @@
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which tests the reflection plugin
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class ReflectionObjectTestPlugin
 	: public PluginMain
 {
@@ -27,9 +33,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		// register reflected type definition
 		IDefinitionManager* defManager =
 			contextManager.queryInterface< IDefinitionManager >();

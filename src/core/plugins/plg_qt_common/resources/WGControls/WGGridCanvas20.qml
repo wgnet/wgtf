@@ -154,11 +154,16 @@ Canvas {
 
     function nearestQuarter(val)
     {
-        if( val < 1 )
+        if (val < 0)
+        {
+            val = Number.MIN_VALUE;
+        }
+        else if( val < 1 )
         {
             // Find nearest multiple of 1/4
             var multiplier = 4;
-            while(val * multiplier < 1)
+
+            while(val * multiplier < 1 && val * multiplier < Infinity)
             {
                 multiplier *= 4;
             }
@@ -171,6 +176,13 @@ Canvas {
             // Find nearest multiple of 4
             val = Math.floor(val) - (Math.floor(val) % 4);
         }
+
+        // handle case where we have a value that is too low
+        if (val < 1e-16)
+        {
+            val = 1e-16;
+        }
+
         return val
     }
 

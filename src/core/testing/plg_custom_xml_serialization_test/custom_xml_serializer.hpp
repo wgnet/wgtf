@@ -1,5 +1,7 @@
 #ifndef CUSTOM_XML_SERIALIZER_HPP
 #define CUSTOM_XML_SERIALIZER_HPP
+
+#include "core_dependency_system/i_interface.hpp"
 #include "core_serialization/serializer/i_serializer.hpp"
 
 namespace wgt

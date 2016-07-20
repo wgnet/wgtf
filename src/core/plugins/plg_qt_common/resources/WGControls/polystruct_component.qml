@@ -1,13 +1,15 @@
 import QtQuick 2.3
 import QtQuick.Controls 1.2
-import WGControls 1.0
+import WGControls 2.0
 
 
 WGDropDownBox {
     id: combobox
-    objectName:  itemData != null ? itemData.indexPath : "polystruct_component"
+    objectName: typeof itemData.indexPath == "undefined" ? "polystruct_component" : itemData.indexPath
     anchors.left: parent.left
     anchors.right: parent.right
+    enabled: itemData.enabled && !itemData.readOnly
+    multipleValues: itemData.multipleValues
 
     Component.onCompleted: {
         currentIndex = Qt.binding( function() {

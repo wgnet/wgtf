@@ -44,11 +44,25 @@ import Qt.labs.templates 1.0 as T
 
 T.ItemDelegate {
     id: control
+    objectName: control.text!= "" ? "dropDownDelegate_" + control.text : "dropDownDelegate"
 
-    implicitWidth: Math.max(background ? background.implicitWidth : 0,
-                            (label ? label.implicitWidth : 0) +
-                            (indicator ? indicator.implicitWidth : 0) +
-                            (label && indicator ? spacing : 0) + leftPadding + rightPadding)
+    /*! The QtObject for the icon/image in the dropDownBox
+        By default this is an image that points to the imageRole URL but can be made any Item based QML object.
+    */
+    property Component imageDelegate: Image {
+        id: imageDelegate
+        source: parentControl.imageRole ? control.image : ""
+        height: sourceSize.height < parentControl.imageMaxHeight ? sourceSize.height : parentControl.imageMaxHeight
+        width: sourceSize.width < parentControl.imageMaxHeight ? sourceSize.width : parentControl.imageMaxHeight
+        fillMode: Image.PreserveAspectFit
+    }
+
+    property QtObject parentControl
+
+    implicitWidth: parentControl.labelMaxWidth + (parentControl.imageRole ? control.height : 0)
+                   + (parentControl.showRowIndicator ? indicator.implicitWidth : 0)
+                   + control.leftPadding + control.rightPadding
+                   + defaultSpacing.doubleMargin
     implicitHeight: Math.max(background ? background.implicitHeight : 0,
                              Math.max(label ? label.implicitHeight : 0,
                                       indicator ? indicator.implicitHeight : 0) + topPadding + bottomPadding)
@@ -63,20 +77,29 @@ T.ItemDelegate {
 
     //! [label]
     label: Item {
-        width: control.availableWidth - (control.checkable ? indicator.width + control.spacing : 0) + (delegateImage.visible? delegateImage.width : 0)
-        height: control.availableHeight
+        id: label
+        width: parentControl.labelMaxWidth + (parentControl.imageRole ? delegateImage.width : 0) + (parentControl.showRowIndicator ? indicator.width : 0)
+        height: parentControl.height
         x: control.mirrored ? control.width - width - control.rightPadding : control.leftPadding
-        y: control.topPadding
+        anchors.verticalCenter: parent.verticalCenter
 
-        Image {
+        Item {
             id: delegateImage
-            source: control.image
-            visible: control.image
-            height: control.availableHeight
+            objectName: "DelegateImage"
+            anchors.verticalCenter: parent.verticalCenter
+            height: parentControl.imageMaxHeight
             width: height
+
+            visible: control.image
+
+            Loader {
+                anchors.centerIn: parent
+                sourceComponent: imageDelegate
+            }
         }
 
         WGLabel {
+            id: delegateLabel
             anchors.left: delegateImage.visible ? delegateImage.right : parent.left
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
@@ -93,28 +116,37 @@ T.ItemDelegate {
     //! [label]
 
     //! [indicator]
-    indicator: Image {
+    indicator: Text {
+        id: indicator
         x: control.mirrored ? control.leftPadding : control.width - width - control.rightPadding
-        y: control.topPadding + (control.availableHeight - height) / 2
+        anchors.verticalCenter: parent.verticalCenter
 
-        visible: control.checked
-        source: control.checkable ? "qrc:/qt-project.org/imports/Qt/labs/controls/images/check.png" : ""
+        height: parentControl.imageMaxHeight
+        width: parentControl.imageMaxHeight
+
+        font.family : "Marlett"
+        font.pixelSize: Math.round(parent.height)
+
+        color: palette.textColor
+
+        visible: control.checked && parentControl.showRowIndicator && !parentControl.multipleValues
+        text: control.checkable ? "\uF062" : ""
     }
     //! [indicator]
 
     //! [background]
-    background: Rectangle {
-        implicitWidth: 100
-        implicitHeight: defaultSpacing.minimumRowHeight
+    background: Item {
+        implicitWidth: parent.width
+        implicitHeight: parentControl.height
         visible: control.pressed || control.highlighted
-        color: control.pressed ? palette.mainWindowColor : palette.darkHeaderColor
     }
 
     //! [background]
 
     WGHighlightFrame {
         anchors.fill: parent
-        visible: hoverArea.containsMouse
+        anchors.margins: defaultSpacing.standardBorderSize
+        visible: hoverArea.containsMouse || (parentControl.hovered && control.checked && !parentControl.multipleValues)
         z: -1
     }
 

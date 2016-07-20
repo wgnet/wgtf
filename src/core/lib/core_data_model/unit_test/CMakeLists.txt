@@ -7,6 +7,9 @@ SET( ALL_SRCS
 	main.cpp
 	pch.cpp
 	pch.hpp
+	test_abstract_item_model.hpp
+	test_abstract_item_model.cpp
+	test_collection_model.cpp
 	test_data_model_objects.hpp
 	test_data_model_objects.cpp
 	test_data_model.cpp

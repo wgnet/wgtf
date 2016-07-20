@@ -22,7 +22,7 @@ ENDIF()
 
 BW_ADD_EXECUTABLE( serialization_unit_test ${BLOB_SRCS} )
 BW_TARGET_LINK_LIBRARIES( serialization_unit_test PRIVATE
-	core_serialization
+	core_common
 	core_reflection
 	core_string_utils
 	core_unit_test

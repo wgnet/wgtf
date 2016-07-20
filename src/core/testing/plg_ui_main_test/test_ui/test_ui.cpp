@@ -83,35 +83,34 @@ void TestUI::createViews( IUIFramework & uiFramework, IDataSource* dataSrc, int 
 	assert( defManager != nullptr );
 	auto controller = get<IReflectionController>();
 	assert( controller != nullptr );
-
 	auto viewCreator = get< IViewCreator >();
 	assert(viewCreator != nullptr);
 
-	test1Models_.emplace_back( new ReflectedTreeModelNew( context_, dataSrc->getTestPage() ) );
+    test1Models_.emplace_back( new ReflectedTreeModelNew( context_, dataSrc->getTestPage() ) );
 	std::string uniqueName1 = dataSrc->description() + std::string("testing_ui_main/test_property_tree_panel.qml");
-	viewCreator->createView(
+	auto view = viewCreator->createView(
 		"testing_ui_main/test_property_tree_panel.qml",
 		test1Models_.back().get(),
-		[ this, envIdx ] (std::unique_ptr< IView > & view )
+		[&] (IView & view )
 		{
-			test1Views_.emplace_back( TestViews::value_type( std::move( view ), envIdx ) );
-			test1Views_.back().first->registerListener(this);
+            view.registerListener(this);
 		},
 		uniqueName1.c_str() );
+	test1Views_.emplace_back( TestViews::value_type( std::move( view.get() ), envIdx ) );
 
-	auto model = std::unique_ptr< ITreeModel >(
-		new ReflectedTreeModel( dataSrc->getTestPage2(), *defManager, controller ) );
+    auto model = std::unique_ptr< ITreeModel >(
+        new ReflectedTreeModel( dataSrc->getTestPage2(), *defManager, controller ) );
 	std::string uniqueName2 = dataSrc->description() + std::string("testing_ui_main/test_reflected_tree_panel.qml");
 
-	viewCreator->createView(
+	view = viewCreator->createView(
 		"testing_ui_main/test_reflected_tree_panel.qml",
 		std::move(model),
-		[ this, envIdx ] ( std::unique_ptr< IView > & view )
+		[&] ( IView & view )
 		{
-			test2Views_.emplace_back(TestViews::value_type(std::move( view ), envIdx ) );
-			test2Views_.back().first->registerListener(this);
+            view.registerListener(this);
 		},
 		uniqueName2.c_str());
+	test2Views_.emplace_back(TestViews::value_type(std::move( view.get() ), envIdx ) );
 }
 
 // =============================================================================
@@ -129,7 +128,7 @@ void TestUI::destroyViews( size_t idx )
 {
 	assert( test1Views_.size() == test2Views_.size() );
 	removeViews( idx );
-	test1Models_.erase( test1Models_.begin() + idx );
+    test1Models_.erase( test1Models_.begin() + idx );
 	test1Views_.erase( test1Views_.begin() + idx );
 	test2Views_.erase( test2Views_.begin() + idx );
 }

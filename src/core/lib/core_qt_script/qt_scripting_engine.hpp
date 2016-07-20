@@ -57,9 +57,10 @@ protected:
 	Q_INVOKABLE void endUndoFrame();
 	Q_INVOKABLE void abortUndoFrame();
 	Q_INVOKABLE void deleteMacro( QString command );
-	Q_INVOKABLE void selectControl( WGCopyController* control, bool append = true );
-	Q_INVOKABLE void deselectControl( WGCopyController* control, bool reset = false );
+	Q_INVOKABLE void selectControl( wgt::WGCopyController* control, bool append = true );
+	Q_INVOKABLE void deselectControl( wgt::WGCopyController* control, bool reset = false );
 	Q_INVOKABLE QObject * iterator( const QVariant & collection );
+	Q_INVOKABLE QVariant getProperty( const QVariant & object, QString propertyPath );
 	// this function is used to resolve breaking binding issue for checkbox and pushbutton, since
 	// clicking on checkbox or pushbutton will break the "checked" property binding
 	//see: https://bugreports.qt.io/browse/QTBUG-42505 for reference

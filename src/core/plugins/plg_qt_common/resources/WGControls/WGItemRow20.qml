@@ -8,36 +8,16 @@ import WGControls 2.0
 */
 Item {
     id: itemRow
-    objectName: typeof(model.display) != "undefined" ? "WGItemRow_" + model.display : "WGItemRow"
+    objectName: "WGItemRow_" + index
 
-    width: childrenRect.width != 0 ? childrenRect.width : 1024
-    height: childrenRect.height != 0 ? childrenRect.height : 1024
+    width: row.width != 0 ? row.width : 1024
+    height: row.height != 0 ? row.height : 1024
+    clip: true
 
-    /*! A list of components to be used for each column.
-        Item 0 for column 0, item 1 for column 1 etc.
-        If the number of columns surpasses the length of columnDelegates,
-        then WGItemViewCommon will append more of the default columnDelegate.
-        The default value is an empty list.
-    */
-    property var columnDelegates: []
-
-    /*! This property holds a list of indexes to adapt from the model's columns
-        to the view's columns.
-        e.g. if the input model has 1 column, but columnSequence is [0,0,0]
-             then the view can have 3 columns that lookup column 0 in the model.
-        The default value is an empty list
-    */
-    property var columnSequence: []
-    property var columnWidths: []
-    property var implicitColumnWidths: []
-    property alias columnSpacing: row.spacing
-    property bool isSelected: false
-    
-    /*! Stores which item is currently in focus by the keyboard.
-        Often this will correspond to the selected item, but not always.
-        E.g. pressing ctrl+up will move the current index, but not the selected index.
-    */
-    property bool isKeyboardHighlight: false
+	property var view
+	property var depth: 0
+	property var rowIndex: modelIndex
+	property bool asynchronous: false
 
     /*! Pass parameters from mouse events up to parent.
         \see columnMouseArea for original event.
@@ -51,146 +31,238 @@ Item {
     signal itemClicked(var mouse, var itemIndex)
     signal itemDoubleClicked(var mouse, var itemIndex)
 
-    /* MOVE INTO STYLE*/
-    // Current selection and mouse hover
-    Rectangle {
-        id: backgroundArea
-        anchors.fill: row
-        color: palette.highlightShade
-        opacity: isSelected ? 1 : 0.5
-        visible: hoverArea.containsMouse || isSelected
+    QtObject {
+        id: internal
+        property var implicitColumnWidths: []
+
+        onImplicitColumnWidthsChanged: {
+            var viewWidths = view.implicitColumnWidths;
+
+            while (viewWidths.length < implicitColumnWidths.length)
+            {
+                viewWidths.push(0);
+            }
+
+            for (var i = 0; i < implicitColumnWidths.length; ++i)
+            {
+                viewWidths[i] = Math.max(viewWidths[i], implicitColumnWidths[i]);
+            }
+
+            view.implicitColumnWidths = viewWidths;
+        }
     }
 
-    MouseArea {
-        id: hoverArea
-        anchors.fill: backgroundArea
-        hoverEnabled: true
-    }
-
-    // Keyboard focus highlight
-    // Note: not using ListView.highlight or ListView.highlightFollowsCurrentItem
-    Rectangle {
-        id: keyboardFocusArea
+    Loader {
+        id: rowBackground
+        objectName: "RowBackground"
         anchors.fill: row
-        color: palette.highlightShade
-        opacity: 0.25
-        visible: isKeyboardHighlight
+
+		asynchronous: itemRow.asynchronous
+        property bool isSelected: view.selectionModel.isSelected(modelIndex)
+        property bool isCurrent: view.selectionModel.currentIndex === modelIndex
+
+        Connections {
+            target: view.selectionModel
+            onSelectionChanged: {
+                rowBackground.isSelected = view.selectionModel.isSelected(modelIndex)
+            }
+        }
+
+        sourceComponent: view.style.rowBackground
     }
-    /**/
 
     Component.onCompleted: {
-        var implicitWidths = implicitColumnWidths;
+        var implicitWidths = internal.implicitColumnWidths;
 
-        while (implicitWidths.length < columnWidths.length) {
+        while (implicitWidths.length < view.columnWidths.length) {
             implicitWidths.push(0);
         }
 
-        implicitColumnWidths = implicitWidths;
+        internal.implicitColumnWidths = implicitWidths;
     }
 
-    // Controls column spacing.
     Row {
         id: row
-        objectName: typeof(model.display) != "undefined" ? "Row_" + model.display : "Row"
 
-        // Repeat columns horizontally.
-        Repeater {
-            id: rowRepeater
+        property var minX: rowHeader.width
+        property var maxX: rowFooter.x - lastColumnHandleSpacer.width
 
-            model: WGSequenceList {
-                id: rowModel
-                model: columnModel
-                sequence: columnSequence
-            }
+        // Controls column spacing.
+        Row {
+            id: columnsLayout
+            objectName: "Row"
+            spacing: view.columnSpacing
 
-            delegate: Item {
-                id: columnContainer
-                width: columnWidths[index]
-                height: childrenRect.height
-                clip: true
+            // Repeat columns horizontally.
+            Repeater {
+                id: columns
+                objectName: "Columns"
 
-                MouseArea {
-                    id: columnMouseArea
-                    width: columnWidths[index]
-                    height: row.height
-                    acceptedButtons: Qt.RightButton | Qt.LeftButton;
-
-                    /*! Pass parameters from mouse events up to parent.
-                        \param mouse the KeyEvent that triggered the signal.
-                        \param itemIndex comes from C++.
-                               Call to modelIndex() automatically looks up the
-                               "C++ model index" from the row and column.
-                               Index of items inside the WGItemRow.
-                     */
-                    onPressed: itemPressed(mouse, modelIndex)
-                    onClicked: itemClicked(mouse, modelIndex)
-                    onDoubleClicked: itemDoubleClicked(mouse, modelIndex)
+                model: WGSequenceList {
+                    id: rowModel
+                    model: columnModel
+                    sequence: view.columnSequence
                 }
 
-                // Line up columns horizontally.
-                Row {
-                    id: columnLayoutRow
-                    objectName: typeof(model.display) != "undefined" ? "columnLayoutRow_" + model.display : "columnLayoutRow"
+                delegate: Item {
+                    id: columnContainer
+                    objectName: "ColumnContainer_" + index
+                    width: view.columnWidths[index]
+                    height: childrenRect.height
+                    clip: true
 
-                    /* MOVE INTO STYLE*/
-
-                    // Add expanded/collapsed arrow.
-                    Row {
-                        id: iconArea
-                        objectName: typeof(model.display) != "undefined" ? "iconArea_" + model.display : "iconArea"
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        width: childrenRect.width
-                        height: childrenRect.height
-
-                        visible: __isTree && index == 0
-
-                        property bool __isTree: typeof expanded != "undefined"
-                        property real __depth: __isTree ? depth : 0
-                        property bool __hasChildren: __isTree ? hasChildren : false
-                        property bool __expanded: __isTree ? expanded : false
-
-                        // Reserve space.
-                        Item {
-                            width: iconArea.__depth * 10
-                            height: 1
-                        }
-
-                        // Expanded/collapsed arrow for tree views.
-                        Text {
-                            objectName: typeof(model.display) != "undefined" ? "expandIcon_" + model.display : "expandIcon"
-                            color: iconArea.__hasChildren ? iconArea.__expanded ? palette.textColor : palette.neutralTextColor : "transparent"
-                            font.family : "Marlett"
-                            text : iconArea.__expanded ? "\uF036" : "\uF034"
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: iconArea.__hasChildren
-                                onPressed: {
-                                    expanded = !expanded;
-                                }
-                            }
-                        }
-                    }
-                    /**/
-
-                    // Actual columns added after arrow
-                    Loader {
-                        id: columnDelegateLoader
-                        property var itemData: model
-                        property int itemWidth: columnWidths[index] - x
-                        sourceComponent: itemRow.columnDelegates[index]
-                        onLoaded: itemRow.implicitColumnWidths[index] = item.implicitWidth;
-                    }
+                    property bool isSelected: view.selectionModel.isSelected(modelIndex)
+                    property bool isCurrent: view.selectionModel.currentIndex === modelIndex
 
                     Connections {
-                        target: columnDelegateLoader.item
-                        onImplicitWidthChanged: itemRow.implicitColumnWidths[index] = columnDelegateLoader.item.implicitWidth;
+                        target: view.selectionModel
+                        onSelectionChanged: {
+                            columnBackground.isSelected = view.selectionModel.isSelected(modelIndex)
+                        }
+                    }
+
+                    Loader {
+                        id: columnBackground
+                        objectName: "ColumnBackground"
+                        anchors.fill: column
+		                asynchronous: itemRow.asynchronous
+
+                        property bool isSelected: columnContainer.isSelected
+                        property bool isCurrent: columnContainer.isCurrent
+
+                        sourceComponent: view.style.columnBackground
+                    }
+
+                    MouseArea {
+                        id: columnMouseArea
+                        objectName: "ColumnMouseArea"
+                        width: view.columnWidths[index]
+                        height: row.height
+                        acceptedButtons: Qt.RightButton | Qt.LeftButton;
+
+                        /*! Pass parameters from mouse events up to parent.
+                            \param mouse the KeyEvent that triggered the signal.
+                            \param itemIndex comes from C++.
+                                   Call to modelIndex() automatically looks up the
+                                   "C++ model index" from the row and column.
+                                   Index of items inside the WGItemRow.
+                         */
+                        onPressed: itemPressed(mouse, modelIndex)
+                        onClicked: itemClicked(mouse, modelIndex)
+                        onDoubleClicked: itemDoubleClicked(mouse, modelIndex)
+                    }
+
+                    // Actual columns added after arrow
+                    Item {
+                        id: column
+                        objectName: "Column"
+                        x: Math.max(row.minX - columnContainer.x, 0)
+                        width: Math.max(Math.min(row.maxX - columnContainer.x, columnContainer.width) - x, 0)
+                        height: childrenRect.height
+                        clip: true
+
+                        property var minX: columnHeader.width
+                        property var maxX: columnFooter.x
+
+                        Item {
+                            id: itemContainer
+                            objectName: "ItemContainer"
+                            x: column.minX
+                            width: Math.max(column.maxX - x, 0)
+                            height: childrenRect.height
+                            clip: true
+
+                            Loader {
+                                id: itemDelegate
+                                objectName: "ItemDelegate"
+                                property var itemValue: model[view.columnRoles[index]]
+                                property var itemData: model
+                                property var itemDepth: depth
+		                        asynchronous: itemRow.asynchronous
+                                property int itemWidth: column.width
+                                property bool isSelected: columnContainer.isSelected
+                                property bool isCurrent: columnContainer.isCurrent
+                                sourceComponent: view.columnDelegates[index]
+                                onLoaded: itemContainer.updateImplicitWidths();
+                            }
+
+                            Connections {
+                                target: itemDelegate.item
+                                onImplicitWidthChanged: {
+                                    if (itemDelegate.status === Loader.Ready) {
+                                        itemContainer.updateImplicitWidths();
+                                    }
+                                }
+                            }
+
+                            function updateImplicitWidths()
+                            {
+                                var implicitWidths = internal.implicitColumnWidths;
+                                implicitWidths[index] = itemDelegate.item.implicitWidth;
+
+                                if (index === 0) {
+                                    implicitWidths[index] += row.minX;
+                                }
+
+                                internal.implicitColumnWidths = implicitWidths;
+                            }
+                        }
+
+                        Loader {
+                            id: columnHeader
+                            objectName: "ColumnHeader"
+                            property var itemData: model
+                            property var itemDepth: depth
+		                    asynchronous: itemRow.asynchronous
+                            height: column.height
+                            width: sourceComponent.width
+                            sourceComponent: view.style.columnHeader
+                        }
+
+                        Loader {
+                            id: columnFooter
+                            objectName: "ColumnFooter"
+                            property var itemData: model
+                            property var itemDepth: depth
+                            asynchronous: itemRow.asynchronous
+                            x: column.width - width
+                            height: column.height
+                            width: sourceComponent.width
+                            sourceComponent: view.style.columnFooter
+                        }
                     }
                 }
             }
         }
+
+        Item {
+            id: lastColumnHandleSpacer
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: view.clamp ? 0 : columnSpacing
+        }
+    }
+
+    Loader {
+        id: rowHeader
+        objectName: "RowHeader"
+        property var itemData: model
+        property var itemDepth: depth
+		asynchronous: itemRow.asynchronous
+        height: row.height
+        width: sourceComponent.width
+        sourceComponent: view.style.rowHeader
+    }
+
+    Loader {
+        id: rowFooter
+        objectName: "RowFooter"
+        property var itemData: model
+        property var itemDepth: depth
+		asynchronous: itemRow.asynchronous
+        x: row.width - width
+        height: row.height
+        width: sourceComponent.width
+        sourceComponent: view.style.rowFooter
     }
 }

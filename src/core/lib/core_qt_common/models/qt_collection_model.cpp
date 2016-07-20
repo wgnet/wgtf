@@ -1,7 +1,7 @@
 #include "qt_collection_model.hpp"
 
 #include "helpers/qt_helpers.hpp"
-
+#include "core_qt_script/qt_script_object.hpp"
 
 
 namespace wgt
@@ -11,8 +11,9 @@ ITEMROLE( key )
 ITEMROLE( valueType )
 ITEMROLE( keyType )
 
-QtCollectionModel::QtCollectionModel( std::unique_ptr<CollectionModel>&& source )
-	: QtListModel( *source.get() ), model_( std::move( source ) )
+QtCollectionModel::QtCollectionModel( IComponentContext & context,
+	std::unique_ptr< CollectionModel > && source )
+	: QtListModel( context, *source.get() ), model_( std::move( source ) )
 {
 }
 
@@ -93,7 +94,7 @@ bool QtCollectionModel::removeRows( int row,
 	{
 		// Repeatedly removing items at the same key
 		// should remove count items after the first
-		const auto erasedCount = collection.erase( key );
+		const auto erasedCount = collection.eraseKey( key );
 		success &= (erasedCount > 0);
 	}
 	return success;
@@ -139,7 +140,9 @@ QObject * QtCollectionModel::item( const QVariant & key ) const
 	}
 
 	assert( QtItemModel::hasIndex( row, 0 ) );
-	return QtItemModel::item( row, 0, nullptr );
+	auto value = collection.find(variantKey).value();
+	auto qValue = QtHelpers::toQVariant(value, const_cast<QtCollectionModel*>(this));
+	return qValue.value<QObject*>();
 }
 
 
@@ -160,7 +163,7 @@ bool QtCollectionModel::removeItem( const QVariant & key )
 	auto & collection = collectionModel.getSource();
 
 	const auto variantKey = QtHelpers::toVariant( key );
-	const auto erasedCount = collection.erase( variantKey );
+	const auto erasedCount = collection.eraseKey( variantKey );
 	return (erasedCount > 0);
 }
 

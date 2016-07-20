@@ -108,7 +108,7 @@ WGAbstractCheckable {
         The \l {AbstractCheckable::checked}{checked} property also determines whether
         this property is \c Qt.Checked or \c Qt.UnChecked, and vice versa.
     */
-    property int checkedState: checked ? Qt.Checked : Qt.Unchecked
+    property int checkedState: multipleValues ? Qt.PartiallyChecked : checked ? Qt.Checked : Qt.Unchecked
 
     /*!
         This property determines whether the \c Qt.PartiallyChecked state is

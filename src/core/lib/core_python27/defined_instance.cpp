@@ -58,9 +58,9 @@ DefinedInstance::DefinedInstance(
 		fullPath_ = pParentInstance->fullPath();
 		if (!fullPath_.empty() && !childPath.empty())
 		{
-			if (childPath[0] != INDEX_OPEN)
+			if (childPath[0] != IClassDefinition::INDEX_OPEN)
 			{
-				fullPath_ += DOT_OPERATOR;
+				fullPath_ += IClassDefinition::DOT_OPERATOR;
 			}
 		}
 	}
@@ -196,6 +196,21 @@ ObjectHandle DefinedInstance::getDerivedType()
 
 	const auto & id = registry.getID( pythonObject_ );
 	return objectManager.getObject( id );
+}
+
+
+TextStream& operator<<( TextStream& stream, const DefinedInstance& value )
+{
+	if(auto definition = value.getDefinition())
+	{
+		stream << definition->getName();
+	}
+	else
+	{
+		stream << "<empty DefinedInstance>";
+	}
+
+	return stream;
 }
 
 

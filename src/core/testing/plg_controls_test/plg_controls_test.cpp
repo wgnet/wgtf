@@ -2,14 +2,22 @@
 
 #include "controls_test_panel.hpp"
 
-#include "core_variant/variant.hpp"
-
 
 #include <memory>
 
 
 namespace wgt
 {
+/**
+* A plugin which creates a panel to test various components and subpanels
+*
+* @ingroup plugins
+* @image html plg_controls_test_1.png
+* @image html plg_controls_test_2.png
+* @image html plg_controls_test_3.png
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class ControlsTestUIPlugin
 	: public PluginMain
 {
@@ -21,8 +29,6 @@ public:
 
 	bool PostLoad( IComponentContext & componentContext ) override
 	{
-		Variant::setMetaTypeManager(
-			componentContext.queryInterface< IMetaTypeManager >() );
 		controlsTestPanel_.reset( new ControlsTestPanel( componentContext ) );
 		return true;
 	}

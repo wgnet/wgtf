@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 
+#include "reflection_dll.hpp"
+
 namespace wgt
 {
 class IClassDefinition;
@@ -12,7 +14,7 @@ typedef std::shared_ptr< IBaseProperty > IBasePropertyPtr;
 class PropertyIteratorImplBase;
 typedef std::shared_ptr< PropertyIteratorImplBase > PropertyIteratorImplPtr;
 
-class PropertyIteratorImplBase
+class REFLECTION_DLL PropertyIteratorImplBase
 {
 public:
 	virtual ~PropertyIteratorImplBase() {}
@@ -21,7 +23,7 @@ public:
 	virtual bool next() = 0;
 };
 
-class PropertyIterator
+class REFLECTION_DLL PropertyIterator
 {
 public:
 	enum IterateStrategy
@@ -51,10 +53,9 @@ private:
 	PropertyIteratorImplPtr						currentIterator_;
 };
 
-
 // Helper class for use with range-based-for loops and STL algorithms
 // Allows std::begin() and std::end() to work for PropertyIterators.
-class PropertyIteratorRange
+class REFLECTION_DLL PropertyIteratorRange
 {
 public:
 	PropertyIteratorRange( PropertyIterator::IterateStrategy strategy, const IClassDefinition & definition );

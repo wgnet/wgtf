@@ -1,11 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  <Type Name="ObjectHandle">
-        <DisplayString Condition="storage_._Ptr == 0">ObjectHandle(empty)</DisplayString>
-        <DisplayString Condition="storage_._Ptr != 0">ObjectHandleT&lt;&gt;></DisplayString>
 
-      <Expand>
-        <ExpandedItem Condition="storage_._Ptr != 0"> *storage_._Ptr </ExpandedItem>
-      </Expand>
-  </Type>
+	<Type Name="wgt::ObjectHandle">
+		<DisplayString Condition="storage_._Ptr == 0">ObjectHandle(empty)</DisplayString>
+		<DisplayString Condition="storage_._Ptr != 0">ObjectHandleT&lt;&gt;</DisplayString>
+		<Expand>
+			<ExpandedItem Condition="storage_._Ptr != 0"> *storage_._Ptr </ExpandedItem>
+		</Expand>
+	</Type>
+
+	<Type Name="wgt::Variant">
+		<DisplayString>{{ {(StorageKind)(((uintptr_t)type_)&amp;0x03),en}: {((wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~0x03))-&gt;type_-&gt;name_,sb} }}</DisplayString>
+		<Expand>
+			<Item Name="[storage]">(StorageKind)(((uintptr_t)type_)&amp;0x03),en</Item>
+			<Item Name="[type]">((wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~((uintptr_t)0x03)))-&gt;type_</Item>
+			<Item Name="[qualifiers]">((wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~((uintptr_t)0x03))) - ((wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~((uintptr_t)0x03)))-&gt;type_-&gt;qualified_</Item>
+			<!--Item Name="payload">(((wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~((uintptr_t)0x03)))-&gt;type_-&gt;data_.size_ &lt;= sizeof( std::shared_ptr< void > ) &amp;&amp; ((((wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~((uintptr_t)0x03)))-&gt;type_-&gt;data_.flags_ &amp; wgt::MetaType::ForceShared) == 0))?((void*)data_.inline_):((void*)(data_.cow_+1))</Item-->
+		</Expand>
+	</Type>
+
+	<Type Name="wgt::Collection">
+		<DisplayString Condition="impl_._Ptr == 0">empty</DisplayString>
+		<DisplayString Condition="impl_._Ptr != 0">{*impl_._Ptr}</DisplayString>
+		<Expand>
+			<Item Name="[impl]" Condition="impl_._Ptr != 0">*impl_._Ptr</Item>
+		</Expand>
+	</Type>
+
 </AutoVisualizer>

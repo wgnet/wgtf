@@ -8,6 +8,14 @@
 
 namespace wgt
 {
+
+
+ModelQtTypeConverter::ModelQtTypeConverter( IComponentContext & context )
+	: context_( context )
+{
+}
+
+
 bool ModelQtTypeConverter::toVariant( const QVariant & qVariant, Variant & o_variant ) const
 {
 	if (qVariant.canConvert< QtTableModel * >())
@@ -59,7 +67,7 @@ bool ModelQtTypeConverter::toQVariant(const Variant & variant, QVariant & o_qVar
 		if (source != nullptr)
 		{
 			assert( parent != nullptr );
-			auto model = new QtItemModel( *source );
+			auto model = new QtItemModel( context_, *source );
 			model->setParent( parent );
 			o_qVariant = QVariant::fromValue( model );
 			return true;
@@ -71,7 +79,7 @@ bool ModelQtTypeConverter::toQVariant(const Variant & variant, QVariant & o_qVar
 		if (source != nullptr)
 		{
 			assert( parent != nullptr );
-			auto model = new QtListModel( *source );
+			auto model = new QtListModel( context_, *source );
 			model->setParent( parent );
 			o_qVariant = QVariant::fromValue( model );
 			return true;
@@ -83,7 +91,7 @@ bool ModelQtTypeConverter::toQVariant(const Variant & variant, QVariant & o_qVar
 		if (source != nullptr)
 		{
 			assert( parent != nullptr );
-			auto model = new QtTreeModel( *source );
+			auto model = new QtTreeModel( context_, *source );
 			model->setParent( parent );
 			o_qVariant = QVariant::fromValue( model );
 			return true;
@@ -95,7 +103,7 @@ bool ModelQtTypeConverter::toQVariant(const Variant & variant, QVariant & o_qVar
 		if (source != nullptr)
 		{
 			assert( parent != nullptr );
-			auto model = new QtTableModel( *source );
+			auto model = new QtTableModel( context_, *source );
 			model->setParent(parent);
 			o_qVariant = QVariant::fromValue( model );
 			return true;

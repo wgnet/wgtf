@@ -8,6 +8,10 @@
 
 namespace wgt
 {
+ITEMROLE(readOnly)
+ITEMROLE(enabled)
+ITEMROLE(multipleValues)
+
 ValueExtension::ValueExtension()
 {
 	
@@ -41,6 +45,9 @@ QHash< int, QByteArray > ValueExtension::roleNames() const
 	registerRole( UrlDialogSelectedNameFilterRole::roleName_, roleNames );
 	registerRole( UrlDialogModalityRole::roleName_, roleNames );
 	registerRole( IsReadOnlyRole::roleName_, roleNames );
+	registerRole( ItemRole::readOnlyName, roleNames );
+	registerRole( ItemRole::enabledName, roleNames );
+	registerRole( ItemRole::multipleValuesName, roleNames );
 	for (auto i = 0; i < roles_.count(); ++i)
 	{
 		registerRole( roles_[i].toUtf8().constData(), roleNames );
@@ -84,7 +91,10 @@ QVariant ValueExtension::data( const QModelIndex &index, int role ) const
 		roleId == UrlDialogNameFiltersRole::roleId_ ||
 		roleId == UrlDialogSelectedNameFilterRole::roleId_ ||
 		roleId == UrlDialogModalityRole::roleId_ ||
-		roleId == IsReadOnlyRole::roleId_)
+		roleId == IsReadOnlyRole::roleId_ ||
+		roleId == ItemRole::readOnlyId ||
+		roleId == ItemRole::enabledId ||
+		roleId == ItemRole::multipleValuesId)
 	{
 		return QtHelpers::toQVariant( item->getData( column, roleId ), const_cast<QAbstractItemModel*>(index.model()));
 	}

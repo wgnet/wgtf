@@ -41,14 +41,19 @@ public:
 		return elems;
 	}
 
-	template<class TDelimiter>
-	static std::string join(const std::vector<std::string>& strings, const TDelimiter& delim)
+	template<class TCollection, class TDelimiter>
+	static std::string join(const TCollection& values, const TDelimiter& delim)
 	{
+		auto iter = std::begin(values);
+		auto sentinel = std::end(values);
+		if(iter == sentinel)
+			return "";
 		std::stringstream stream;
-		for ( auto& str : strings )
+		for (; iter < sentinel - 1; ++iter )
 		{
-			stream << str << delim;
+			stream << *iter << delim;
 		}
+			stream << *iter;
 		return stream.str();
 	}
 

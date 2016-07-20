@@ -5,6 +5,10 @@ import QtQuick.Window 2.1
 
 import WGControls 1.0
 
+/*!
+    A context right click menu for the Timeline control
+*/
+
 WGContextArea {
     Action {
         id: showFullAction

@@ -27,48 +27,54 @@ class Property::Implementation
 public:
 	Implementation( IComponentContext & context,
 		const char * key,
-		const PyScript::ScriptObject & pythonObject );
+		const PyScript::ScriptObject & pythonObject, MetaHandle metaData );
 
 	Implementation( IComponentContext & context,
 		const char * key,
 		const TypeId & typeId,
-		const PyScript::ScriptObject & pythonObject );
+		const PyScript::ScriptObject & pythonObject, MetaHandle metaData );
 
 	bool setValue( const Variant & value );
 	Variant getValue( const ObjectHandle & handle );
+    void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
 
 
 	// Need to store a copy of the string
 	std::string key_;
 	TypeId type_;
 	PyScript::ScriptObject pythonObject_;
+    MetaHandle metaData_;
 	uint64_t hash_;
+
+private:
+    void updatePropertyType();
 };
 
 
 Property::Implementation::Implementation( IComponentContext & context,
 	const char * key,
-	const PyScript::ScriptObject & pythonObject )
+	const PyScript::ScriptObject & pythonObject,
+    MetaHandle metaData )
 	: ImplementationDepends( context )
 	, key_( key )
 	, pythonObject_( pythonObject )
+    , metaData_(metaData)
 	, hash_( HashUtilities::compute( key_ ) )
 {
-	const auto attribute = pythonObject_.getAttribute( key_.c_str(),
-		PyScript::ScriptErrorPrint() );
-	assert( attribute.exists() );
-	type_ = PythonType::scriptTypeToTypeId( attribute );
+	updatePropertyType();
 }
 
 
 Property::Implementation::Implementation( IComponentContext & context,
 	const char * key,
 	const TypeId & typeId,
-	const PyScript::ScriptObject & pythonObject )
+	const PyScript::ScriptObject & pythonObject,
+    MetaHandle metaData )
 	: ImplementationDepends( context )
 	, key_( key )
 	, type_( typeId )
 	, pythonObject_( pythonObject )
+    , metaData_(metaData)
 	, hash_( HashUtilities::compute( key_ ) )
 {
 	// TODO: set a default value of type_ on the attribute
@@ -121,12 +127,32 @@ Variant Property::Implementation::getValue( const ObjectHandle & handle )
 	return value;
 }
 
+void Property::Implementation::updatePropertyData(const char* name, 
+                                                  const PyScript::ScriptObject& pythonObject, 
+                                                  MetaHandle metaData)
+{
+    key_ = name;
+    metaData_ = metaData;
+    pythonObject_ = pythonObject;
+    hash_ = HashUtilities::compute(key_);
+    updatePropertyType();
+}
+
+void Property::Implementation::updatePropertyType()
+{
+    const auto attribute = pythonObject_.getAttribute(key_.c_str(),
+        PyScript::ScriptErrorPrint());
+    assert(attribute.exists());
+    type_ = PythonType::scriptTypeToTypeId(attribute);
+}
+
 
 Property::Property( IComponentContext & context,
 	const char * key,
-	const PyScript::ScriptObject & pythonObject )
+	const PyScript::ScriptObject & pythonObject,
+    MetaHandle metaData )
 	: IBaseProperty()
-	, impl_( new Implementation( context, key, pythonObject ) )
+	, impl_( new Implementation( context, key, pythonObject, metaData ) )
 {
 }
 
@@ -134,9 +160,10 @@ Property::Property( IComponentContext & context,
 Property::Property( IComponentContext & context,
 	const char * key,
 	const TypeId & typeId,
-	const PyScript::ScriptObject & pythonObject )
+	const PyScript::ScriptObject & pythonObject,
+    MetaHandle metaData )
 	: IBaseProperty()
-	, impl_( new Implementation( context, key, typeId, pythonObject ) )
+	, impl_( new Implementation( context, key, typeId, pythonObject, metaData ) )
 {
 }
 
@@ -161,7 +188,7 @@ uint64_t Property::getNameHash() const /* override */
 
 MetaHandle Property::getMetaData() const /* override */
 {
-	return nullptr;
+	return impl_->metaData_;
 }
 
 
@@ -425,6 +452,11 @@ size_t Property::parameterCount() const /* override */
 
 	// Default __init__(self)
 	return 0;
+}
+
+void Property::updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
+{
+    impl_->updatePropertyData(name, pythonObject, metaData);
 }
 
 

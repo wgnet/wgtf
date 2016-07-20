@@ -26,6 +26,7 @@ class IQtFramework;
 class QmlView : public QObject, public IQtView
 {
 	Q_OBJECT
+	Q_PROPERTY(bool needsToLoad READ getNeedsToLoad NOTIFY needsToLoadChanged)
 public:
 	QmlView( const char * id, IQtFramework & qtFramework, QQmlEngine & qmlEngine );
 	virtual ~QmlView();
@@ -44,13 +45,20 @@ public:
 	void setContextProperty( const QString & name, const QVariant & property );
 
 	bool load(const QUrl & qUrl, 
-		std::function< void() > loadedHandler = [] {}, bool async = true );
+		std::function< void() > loadedHandler = [] {}, 
+        std::function< void() > errorHandler = [] {}, bool async = true );
 
 	virtual void focusInEvent() override;
 	virtual void focusOutEvent() override;
 
 	virtual void registerListener( IViewEventListener* listener ) override;
 	virtual void deregisterListener( IViewEventListener* listener ) override;
+
+	void setNeedsToLoad(bool load);
+	bool getNeedsToLoad() const;
+
+signals:
+	void needsToLoadChanged();
 
 public slots:
 	void error( QQuickWindow::SceneGraphError error, const QString &message );
@@ -59,6 +67,7 @@ public slots:
 private:
 	struct Impl;
 	std::unique_ptr< Impl > impl_;
+	bool needLoad_;
 };
 } // end namespace wgt
 #endif//QML_VIEW_HPP

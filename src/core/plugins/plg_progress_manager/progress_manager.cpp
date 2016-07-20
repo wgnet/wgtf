@@ -8,6 +8,7 @@
 #include "core_logging_system/log_level.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/helpers/qml_component_loader_helper.hpp"
 
 #include <QAbstractButton>
 #include <QApplication>
@@ -23,45 +24,47 @@
 
 namespace wgt
 {
-ProgressManager::ProgressManager()
-	: rootObject_( nullptr )
+ProgressManager::ProgressManager( IComponentContext & contextManager )
+	: Depends( contextManager )
+	, rootObject_( nullptr )
 	, progressValue_( 0 )
 	, isMultiCommandProgress_( false )
 	, view_( nullptr )
-	, contextManager_( nullptr )
 	, isViewVisible_( false )
 	, timer_( nullptr )
-	, loggingSystem_( nullptr )
 	, prevFocusedWindow_( nullptr )
 {
 }
 
-
 ProgressManager::~ProgressManager()
 {
-	view_->removeEventFilter( this );
+    if( view_ != nullptr )
+    {
+        view_->removeEventFilter( this );
+        view_->hide();
 
-	view_->hide();
-	delete view_;
-	view_ = nullptr;
+        delete view_;
+        view_ = nullptr;
+    }
 
-	timer_->stop();
-	delete timer_;
-	timer_ = nullptr;
+    if( timer_ != nullptr )
+    {
+        timer_->stop();
+
+        delete timer_;
+        timer_ = nullptr;
+    }
 }
 
-
 /// Cache the context manager and register command status listener
-void ProgressManager::init( IComponentContext & contextManager )
+void ProgressManager::init()
 {
-	contextManager_ = &contextManager;
-
-	ICommandManager * commandSystemProvider = contextManager_->queryInterface< ICommandManager >();
+	ICommandManager * commandSystemProvider = get< ICommandManager >();
 	assert ( nullptr != commandSystemProvider );
 
 	commandSystemProvider->registerCommandStatusListener( this );
 
-	auto qtFramework = contextManager_->queryInterface< IQtFramework >();
+	auto qtFramework = get< IQtFramework >();
 	if (qtFramework == nullptr)
 	{
 		return;
@@ -80,37 +83,41 @@ void ProgressManager::init( IComponentContext & contextManager )
 
 	QUrl qurl = QtHelpers::resolveQmlPath( *engine, "WGProgressManager/progress_manager.qml" );
 
-	auto qmlComponent = new QQmlComponent( engine, qurl, view_ );
+	auto qmlComponent = new QQmlComponent( engine, view_ );
 
-	rootObject_ = qmlComponent->create( context );
+	QmlComponentLoaderHelper helper(qmlComponent, qurl );
+	using namespace std::placeholders;
+	helper.data_->sig_Loaded_.connect([ this, qurl, context ] ( QQmlComponent * component )
+	{
+		rootObject_ = component->create( context );
 
-	view_->setContent( qurl, qmlComponent, rootObject_ );
-	view_->setResizeMode( QQuickView::SizeRootObjectToView );
-	view_->setModality( Qt::ApplicationModal );
+		view_->setContent( qurl, component, rootObject_ );
+		view_->setResizeMode( QQuickView::SizeRootObjectToView );
+		view_->setModality( Qt::ApplicationModal );
 
-	QObject::connect( rootObject_, SIGNAL( progressCancelled( bool ) ), this, SLOT( onProgressCancelled( bool ) ) );
+		QObject::connect( rootObject_, SIGNAL( progressCancelled( bool ) ), this, SLOT( onProgressCancelled( bool ) ) );
 
-	// TODO: Need a way to detect the thread changed event (back to the main thread) and
-	//		 replace this polling to hide the view_.
-	//
-	// Currently, using a timer here to make sure we are back to the main thread where we've
-	// created the view_ to avoid the thread warning when we try to send a message to
-	// the view_ from a different thread.
-	timer_ = new QTimer();
-	QObject::connect( timer_, SIGNAL( timeout() ), this, SLOT( timedUpdate() ) );
-	timer_->setInterval( 1000 );
-	timer_->start();
+		// TODO: Need a way to detect the thread changed event (back to the main thread) and
+		//		 replace this polling to hide the view_.
+		//
+		// Currently, using a timer here to make sure we are back to the main thread where we've
+		// created the view_ to avoid the thread warning when we try to send a message to
+		// the view_ from a different thread.
+		timer_ = new QTimer();
+		QObject::connect( timer_, SIGNAL( timeout() ), this, SLOT( timedUpdate() ) );
+		timer_->setInterval( 1000 );
+		timer_->start();
 
-	view_->installEventFilter( this );
-
-	loggingSystem_ = contextManager_->queryInterface< ILoggingSystem >();
+		view_->installEventFilter( this );
+	});
+	helper.load( true );
 }
 
 
 /// Deregister command status listener
 void ProgressManager::fini()
 {
-	ICommandManager * commandSystemProvider = contextManager_->queryInterface< ICommandManager >();
+	ICommandManager * commandSystemProvider = get< ICommandManager >();
 	assert ( nullptr != commandSystemProvider );
 	commandSystemProvider->deregisterCommandStatusListener( this );
 }
@@ -223,7 +230,8 @@ void ProgressManager::handleCommandQueued( const char * commandId ) const
 /// Present the non-blocking process to the user ( with the alert manager )
 void ProgressManager::onNonBlockingProcessExecution( const char * commandId ) const
 {
-	if ( loggingSystem_ == nullptr )
+	auto loggingSystem = get< ILoggingSystem >();
+	if ( loggingSystem == nullptr )
 	{
 		// Logging system is not available, nothing to handle.
 		assert( false && "Missing - plg_logging_system" );
@@ -233,10 +241,10 @@ void ProgressManager::onNonBlockingProcessExecution( const char * commandId ) co
 	}
 	else
 	{
-		AlertManager * alertManager = loggingSystem_->getAlertManager();
+		AlertManager * alertManager = loggingSystem->getAlertManager();
 		if ( alertManager != nullptr )
 		{
-			loggingSystem_->log( LOG_ALERT, "Command [ %s ] is executed!", commandId);
+			loggingSystem->log( LOG_ALERT, "Command [ %s ] is executed!", commandId);
 		}
 	}
 }
@@ -409,7 +417,7 @@ void ProgressManager::cancelCurrentCommand()
 	// Make sure the current command is in our list to cancel
 	if (isCurrentCommandActive())
 	{
-		ICommandManager * commandSystemProvider = contextManager_->queryInterface< ICommandManager >();
+		ICommandManager * commandSystemProvider = get< ICommandManager >();
 		assert(nullptr != commandSystemProvider);
 
 		// NOTE: By calling undo function here, the status changes to Complete which will trigger our

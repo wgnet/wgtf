@@ -19,7 +19,7 @@ class WGAction : public QQuickItem
 	Q_PROPERTY( bool checked READ getChecked WRITE setChecked )
 	Q_PROPERTY( bool enabled READ getEnabled WRITE setEnabled )
 	Q_PROPERTY( bool visible READ getVisible WRITE setVisible )
-
+	Q_PROPERTY( QVariant contextObject READ data WRITE setData NOTIFY dataChanged )
 	DECLARE_QT_MEMORY_HANDLER
 
 public:
@@ -47,8 +47,12 @@ protected:
 	bool getVisible() const;
 	void setVisible( bool visible );
 
+    QVariant data() const;
+    void setData(const QVariant& data);
+
 signals:
 	void triggered();
+	void dataChanged();
 
 private:
 	struct Implementation;

@@ -21,6 +21,12 @@ enum class CommandErrorCode : uint8_t
 	NOT_SUPPORTED
 };
 
+/**
+ *	@param errorCode code from command to be checked.
+ *	@return true if the command has completed successfully.
+ */
+bool isCommandSuccess( CommandErrorCode errorCode );
+
 enum class CommandThreadAffinity : uint8_t
 {
 	NO_THREAD = 0,
@@ -55,7 +61,7 @@ public:
 	virtual bool canUndo( const ObjectHandle & arguments ) const { return true; }
 	virtual bool undo( const ObjectHandle & arguments ) const { return false; }
 	virtual bool redo( const ObjectHandle & arguments ) const { return false; }
-    virtual ObjectHandle getCommandDescription(const ObjectHandle & arguments) const { return ObjectHandle(); }
+	virtual ObjectHandle getCommandDescription(const ObjectHandle & arguments) const { return ObjectHandle(); }
 
 	virtual void setCommandSystemProvider( ICommandManager * commandSystemProvider );
 	virtual void registerCommandStatusListener( ICommandEventListener * listener );
@@ -64,7 +70,7 @@ public:
 
 	virtual void fireCommandStatusChanged( const CommandInstance & command ) const;
 	virtual void fireProgressMade( const CommandInstance & command ) const;
-    virtual void fireCommandExecuted( const CommandInstance & command, CommandOperation operation) const;
+	virtual void fireCommandExecuted( const CommandInstance & command, CommandOperation operation) const;
 
 private:
 	typedef std::list< ICommandEventListener * > EventListenerCollection;

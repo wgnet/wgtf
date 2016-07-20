@@ -24,6 +24,10 @@ WGExpandingRowLayout {
     property var decimals: [3, 3, 3, 3]
     property var defaultValues: minimumValues
 
+    property bool multipleValues: false
+    property bool readOnly: false
+
+
     //binding changes in value back to data
     signal elementChanged (var value_, int index)
 
@@ -84,6 +88,9 @@ WGExpandingRowLayout {
                         Layout.preferredWidth: mainLayout.width / vectorData.length
                         implicitWidth:  contentWidth + defaultSpacing.doubleMargin
                         Layout.minimumWidth: numboxN.implicitWidth
+
+                        multipleValues: mainLayout.multipleValues
+                        readOnly: mainLayout.readOnly
 
                         number: spinnerLayout.value_
 

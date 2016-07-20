@@ -1,6 +1,8 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 
 #include "core_command_system/i_command_manager.hpp"
+#include "core_data_model_cmds/commands/set_item_data_command.hpp"
+#include "core_data_model_cmds/item_model_controller.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection_utils/commands/set_reflectedproperty_command.hpp"
@@ -11,19 +13,30 @@
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which allows UI code to communicate with reflected methods and variables.
+* Required to add undo/redo history to reflected property panels and custom data models.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class EditorInteractionPlugin
 	: public PluginMain
 {
 private:
 	std::unique_ptr< SetReflectedPropertyCommand > setReflectedPropertyCmd_;
+	std::unique_ptr< SetItemDataCommand > setItemDataCmd_;
 	std::unique_ptr< InvokeReflectedMethodCommand > invokeReflectedMethodCommand_;
 	std::unique_ptr< ReflectedCollectionInsertCommand > reflectedCollectionInsertCommand_;
 	std::unique_ptr< ReflectedCollectionEraseCommand > reflectedCollectionEraseCommand_;
+	IInterface * pItemModelController_;
 
 public:
 	//==========================================================================
 	EditorInteractionPlugin( IComponentContext & contextManager )
+		: pItemModelController_( nullptr )
 	{
 		
 	}
@@ -31,6 +44,8 @@ public:
 	//==========================================================================
 	bool PostLoad( IComponentContext & contextManager ) override
 	{
+		pItemModelController_ = contextManager.registerInterface(
+			new ItemModelController( contextManager ) );
 		return true;
 	}
 
@@ -38,10 +53,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		auto metaTypeMgr = contextManager.queryInterface<IMetaTypeManager>();
-		assert( metaTypeMgr != nullptr );
-		Variant::setMetaTypeManager( metaTypeMgr );
-
 		auto defManager = contextManager.queryInterface< IDefinitionManager >();
 		if (defManager == nullptr)
 		{
@@ -55,6 +66,9 @@ public:
 		{
 			setReflectedPropertyCmd_.reset( new SetReflectedPropertyCommand( definitionManager ) );
 			commandSystemProvider->registerCommand( setReflectedPropertyCmd_.get() );
+
+			setItemDataCmd_.reset( new SetItemDataCommand( contextManager ) );
+			commandSystemProvider->registerCommand( setItemDataCmd_.get() );
 
 			invokeReflectedMethodCommand_.reset( new InvokeReflectedMethodCommand( definitionManager ) );
 			commandSystemProvider->registerCommand( invokeReflectedMethodCommand_.get() );
@@ -77,6 +91,9 @@ public:
 			commandSystemProvider->deregisterCommand( setReflectedPropertyCmd_->getId() );
 			setReflectedPropertyCmd_ = nullptr;
 
+			commandSystemProvider->deregisterCommand( setItemDataCmd_->getId() );
+			setItemDataCmd_ = nullptr;
+
 			commandSystemProvider->deregisterCommand( invokeReflectedMethodCommand_->getId() );
 			invokeReflectedMethodCommand_ = nullptr;
 
@@ -93,6 +110,8 @@ public:
 	//==========================================================================
 	void Unload( IComponentContext & contextManager ) override
 	{
+		contextManager.deregisterInterface( pItemModelController_ );
+		pItemModelController_ = nullptr;
 	}
 };
 

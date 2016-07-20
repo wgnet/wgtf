@@ -25,4 +25,14 @@ void CustomUndoRedoData::redo()
 	auto commandArgs = commandInstance_.getArguments();
 	command->redo( commandArgs );
 }
+
+
+ObjectHandle CustomUndoRedoData::getCommandDescription() const /* override */
+{
+	const auto pCommand = commandInstance_.getCommand();
+	const auto commandArgs = commandInstance_.getArguments();
+	return pCommand->getCommandDescription( commandArgs );
+}
+
+
 } // end namespace wgt

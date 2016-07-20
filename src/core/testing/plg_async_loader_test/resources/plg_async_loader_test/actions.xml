@@ -1,0 +1,4 @@
+<Actions>
+	<OpenViews text="OpenViews" shortcut="" path="AsyncLoader"/>
+	<CloseViews text="CloseViews" shortcut="" path="AsyncLoader"/>
+</Actions>

@@ -24,9 +24,8 @@ BW_TARGET_LINK_LIBRARIES( plg_obj_handle_test PRIVATE
 	core_qt_common
 	core_reflection
 	core_ui_framework
-	core_variant
 	core_data_model
 	core_command_system
-	core_serialization )
+)
 
 BW_PROJECT_CATEGORY( plg_obj_handle_test "Plugins" )

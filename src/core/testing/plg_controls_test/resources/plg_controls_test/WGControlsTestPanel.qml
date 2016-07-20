@@ -1,7 +1,9 @@
 import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
+
 import WGControls 1.0
+import WGControls 2.0 as WG2
 
 /**
  *	Sample panel with all the available controls and styles.
@@ -78,8 +80,9 @@ Rectangle {
     WGBusyIndicator {
         id: busyIndicator1
         z:100
-        anchors.centerIn: parent
+        duration: 3000
         running: false
+        busyMessage: "WGBusyIndicator. This will disappear in 3 seconds."
     }
 
     WGScrollPanel {
@@ -816,18 +819,10 @@ It is recommended to look at the generic_app_test to view other controls such as
                     WGPushButton {
                         id: busyIndicatorButton
                         width: 150
-                        checkable: true
                         text: "Busy Indicator"
                         iconSource: "icons/close_16x16.png"
 
-                        onCheckedChanged: {
-                            if (busyIndicatorButton.checked == true){
-                                busyIndicator1.running = true
-                            }
-                            else {
-                                busyIndicator1.running = false
-                            }
-                        }
+                        onClicked: busyIndicator1.running = !busyIndicator1.running
                     }
 
                     WGPushButton {
@@ -948,6 +943,1275 @@ It is recommended to look at the generic_app_test to view other controls such as
                     Layout.fillWidth: true
                     vertical: false
                 }
+
+                WGMultiLineText {
+                    Layout.fillWidth: true
+                    text: "This section will tests all the readOnly, enabled combinations of WGControls
+Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleValues"
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGButtonBar"
+                    }
+
+                    WGButtonBar {
+                        implicitWidth: 400
+                        buttonList: [
+                            WGToolButton {
+                                iconSource: "icons/pause_16x16.png"
+                                text: "NA/enabled"
+                                enabled: true
+                            },
+                            WGToolButton {
+                                text: "NA/enabled"
+                                iconSource: "icons/play_16x16.png"
+                                enabled: true
+                            },
+                            WGToolButton {
+                                text: "NA/disabled"
+                                iconSource: "icons/loop_16x16.png"
+                                enabled: false
+                            },
+                            WGToolButton {
+                                text: "NA/disabled"
+                                iconSource: "icons/loop_16x16.png"
+                                enabled: false
+                            }
+                        ]
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGCheckBox"
+                    }
+                    WGCheckBox {
+                        text: "NA/enabled"
+                        enabled: true
+                    }
+                    WGCheckBox {
+                        text: "NA/enabled"
+                        enabled: true
+                    }
+                    WGCheckBox {
+                        text: "NA/disabled"
+                        enabled: false
+                    }
+                    WGCheckBox {
+                        text: "NA/disabled"
+                        enabled: false
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WGCheckBox {
+                        text: "NA/enabled - Multiple"
+                        enabled: true
+                        multipleValues: true
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGColorButton"
+                    }
+                    WGColorButton {
+                        //text: "NA/enabled"
+                        enabled: true
+                    }
+                    WGColorButton {
+                        //text: "NA/enabled"
+                        enabled: true
+                    }
+                    WGColorButton {
+                        //text: "NA/disabled"
+                        enabled: false
+                    }
+                    WGColorButton {
+                        //text: "NA/disabled"
+                        enabled: false
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WGColorButton {
+                        enabled: true
+                        multipleValues: true
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGColorSlider"
+                    }
+                    WGColorSlider {
+                        enabled: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 0.1
+                        colorData: [Qt.rgba(1,0,0,1), Qt.rgba(1,1,0,1), Qt.rgba(1,1,1,1)]
+                        positionData: [25, 50, 75]
+                        linkColorsToHandles: true
+                    }
+                    WGColorSlider {
+                        enabled: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 0.1
+                        colorData: [Qt.rgba(1,0,0,1), Qt.rgba(1,1,0,1), Qt.rgba(1,1,1,1)]
+                        positionData: [25, 50, 75]
+                        linkColorsToHandles: true
+                    }
+                    WGColorSlider {
+                        enabled: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 0.1
+                        colorData: [Qt.rgba(1,0,0,1), Qt.rgba(1,1,0,1), Qt.rgba(1,1,1,1)]
+                        positionData: [25, 50, 75]
+                        linkColorsToHandles: true
+                    }
+                    WGColorSlider {
+                        enabled: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 0.1
+                        colorData: [Qt.rgba(1,0,0,1), Qt.rgba(1,1,0,1), Qt.rgba(1,1,1,1)]
+                        positionData: [25, 50, 75]
+                        linkColorsToHandles: true
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGColorSlider20"
+                    }
+                    WG2.WGColorSlider {
+                        enabled: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 255
+                        stepSize: 1
+                        value: 128
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 0
+                                color: "#000000"
+                            }
+                            GradientStop {
+                                position: 1
+                                color: "#FFFFFF"
+                            }
+                        }
+                    }
+                    WG2.WGColorSlider {
+                        enabled: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 255
+                        stepSize: 1
+                        value: 128
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 0
+                                color: "#000000"
+                            }
+                            GradientStop {
+                                position: 1
+                                color: "#FFFFFF"
+                            }
+                        }
+                    }
+                    WG2.WGColorSlider {
+                        enabled: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 255
+                        stepSize: 1
+                        value: 128
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 0
+                                color: "#000000"
+                            }
+                            GradientStop {
+                                position: 1
+                                color: "#FFFFFF"
+                            }
+                        }
+                    }
+                    WG2.WGColorSlider {
+                        enabled: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 255
+                        stepSize: 1
+                        value: 128
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 0
+                                color: "#000000"
+                            }
+                            GradientStop {
+                                position: 1
+                                color: "#FFFFFF"
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    z: 5
+                    WGMultiLineText {
+                        text: "WGDropDownBox"
+                    }
+                    WGDropDownBox {
+                        //text: "NA/enabled"
+                        enabled: true
+
+                        model: ListModel {
+                            ListElement { text: "Option 1" }
+                            ListElement { text: "Option 2" }
+                            ListElement { text: "Option 3 Has a Really long Name" }
+                            ListElement { text: "Option 4" }
+                            ListElement { text: "Option 5" }
+                        }
+                    }
+                    WGDropDownBox {
+                        //text: "NA/enabled"
+                        enabled: true
+
+                        model: ListModel {
+                            ListElement { text: "Option 1" }
+                            ListElement { text: "Option 2" }
+                            ListElement { text: "Option 3 Has a Really long Name" }
+                            ListElement { text: "Option 4" }
+                            ListElement { text: "Option 5" }
+                        }
+                    }
+                    WGDropDownBox {
+                        //text: "NA/disabled"
+                        enabled: false
+
+                        model: ListModel {
+                            ListElement { text: "Option 1" }
+                            ListElement { text: "Option 2" }
+                            ListElement { text: "Option 3 Has a Really long Name" }
+                            ListElement { text: "Option 4" }
+                            ListElement { text: "Option 5" }
+                        }
+                    }
+                    WGDropDownBox {
+                        //text: "NA/disabled"
+                        enabled: false
+
+                        model: ListModel {
+                            ListElement { text: "Option 1" }
+                            ListElement { text: "Option 2" }
+                            ListElement { text: "Option 3 Has a Really long Name" }
+                            ListElement { text: "Option 4" }
+                            ListElement { text: "Option 5" }
+                        }
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WGDropDownBox {
+                        //text: "MultipleValues"
+                        enabled: true
+                        multipleValues: true
+
+                        model: ListModel {
+                            ListElement { text: "Option 1" }
+                            ListElement { text: "Option 2" }
+                            ListElement { text: "Option 3 Has a Really long Name" }
+                            ListElement { text: "Option 4" }
+                            ListElement { text: "Option 5" }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGFileSelectBox"
+                    }
+                    WGFileSelectBox {
+                        text: "write/enabled"
+                        readOnly: false
+                        enabled: true
+                    }
+                    WGFileSelectBox {
+                        text: "readOnly/enabled"
+                        readOnly: true
+                        enabled: true
+                    }
+                    WGFileSelectBox {
+                        text: "write/disabled"
+                        readOnly: false
+                        enabled: false
+                    }
+                    WGFileSelectBox {
+                        text: "readOnly/disabled"
+                        readOnly: true
+                        enabled: false
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WGFileSelectBox {
+                        enabled: true
+                        multipleValues: true
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGFrame"
+                    }
+                    WGFrame {
+                        text: "NA/enabled"
+                        enabled: true
+
+                        dark: false
+                        shade: true
+
+                        label: "File Options:"
+
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/enabled"
+                            }
+                        }
+                    }
+                    WGFrame {
+                        text: "NA/enabled"
+                        enabled: true
+
+                        dark: false
+                        shade: true
+
+                        label: "File Options:"
+
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/enabled"
+                            }
+                        }
+                    }
+                    WGFrame {
+                        text: "NA/disabled"
+                        enabled: false
+
+                        dark: false
+                        shade: true
+
+                        label: "File Options:"
+
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/disabled"
+                            }
+                        }
+                    }
+                    WGFrame {
+                        text: "NA/disabled"
+                        enabled: false
+
+                        dark: false
+                        shade: true
+
+                        label: "File Options:"
+
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/disabled"
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGGradientSlider20"
+                    }
+                    WG2.WGGradientSlider {
+                        //text: "NA/enabled"
+                        enabled: true
+
+                        Layout.fillWidth: true
+
+                        WG2.WGGradientSliderHandle {
+                            value: 0.25
+                            color: "red"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.5
+                            color: "yellow"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.75
+                            color: "white"
+                        }
+                    }
+                    WG2.WGGradientSlider {
+                        //text: "NA/enabled"
+                        enabled: true
+
+                        Layout.fillWidth: true
+
+                        WG2.WGGradientSliderHandle {
+                            value: 0.25
+                            color: "red"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.5
+                            color: "yellow"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.75
+                            color: "white"
+                        }
+                    }
+                    WG2.WGGradientSlider {
+                        //text: "NA/disabled"
+                        enabled: false
+
+                        Layout.fillWidth: true
+
+                        WG2.WGGradientSliderHandle {
+                            value: 0.25
+                            color: "red"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.5
+                            color: "yellow"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.75
+                            color: "white"
+                        }
+                    }
+                    WG2.WGGradientSlider {
+                        //text: "NA/disabled"
+                        enabled: false
+
+                        Layout.fillWidth: true
+
+                        WG2.WGGradientSliderHandle {
+                            value: 0.25
+                            color: "red"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.5
+                            color: "yellow"
+                        }
+                        WG2.WGGradientSliderHandle {
+                            value: 0.75
+                            color: "white"
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGGroupBox"
+                    }
+                    WGGroupBox {
+                        //text: "NA/enabled"
+                        enabled: true
+
+                        text: "WGGroupBox toggle"
+
+                        toggleable: true
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/enabled"
+                            }
+                        }
+                    }
+                    WGGroupBox {
+                        //text: "NA/enabled"
+                        enabled: true
+
+                        text: "WGGroupBox toggle"
+
+                        toggleable: true
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/enabled"
+                            }
+                        }
+                    }
+                    WGGroupBox {
+                        //text: "NA/disabled"
+                        enabled: false
+
+                        text: "WGGroupBox toggle"
+
+                        toggleable: true
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/disabled"
+                            }
+                        }
+                    }
+                    WGGroupBox {
+                        //text: "NA/disabled"
+                        enabled: false
+
+                        text: "WGGroupBox toggle"
+
+                        toggleable: true
+                        childObject:
+                        WGColumnLayout {
+
+                            TextField {
+                                text: "NA/disabled"
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGMultiLineText"
+                    }
+                    WGMultiLineText {
+                        text: "   NA/enabled   "
+                        enabled: true
+                    }
+                    WGMultiLineText {
+                        text: "   NA/enabled   "
+                        enabled: true
+                    }
+                    WGMultiLineText {
+                        text: "   NA/disabled   "
+                        enabled: false
+                    }
+                    WGMultiLineText {
+                        text: "   NA/disabled   "
+                        enabled: false
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGNumberBox"
+                    }
+                    WGNumberBox {
+                        enabled: true
+                        readOnly: false
+
+                        value: 25
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+                    WGNumberBox {
+                        enabled: true
+                        readOnly: true
+
+                        value: 25
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+                    WGNumberBox {
+                        enabled: false
+                        readOnly: false
+
+                        value: 25
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+                    WGNumberBox {
+                        enabled: false
+                        readOnly: true
+
+                        value: 25
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WGNumberBox {
+                        enabled: true
+                        readOnly: false
+                        multipleValues: true
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGSliderControl20"
+                    }
+                    WG2.WGSliderControl {
+                        enabled: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WG2.WGSliderControl {
+                        enabled: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WG2.WGSliderControl {
+                        enabled: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WG2.WGSliderControl {
+                        enabled: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WG2.WGSliderControl {
+                        enabled: true
+                        multipleValues: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+
+
+
+                }
+
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGSpinBox"
+                    }
+                    WGSpinBox {
+                        enabled: true
+                        readOnly: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WGSpinBox {
+                        enabled: true
+                        readOnly: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WGSpinBox {
+                        enabled: false
+                        readOnly: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WGSpinBox {
+                        enabled: false
+                        readOnly: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGSpinBox"
+                    }
+                    WGSpinBox {
+                        enabled: true
+                        readOnly: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WGSpinBox {
+                        enabled: true
+                        readOnly: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WGSpinBox {
+                        enabled: false
+                        readOnly: false
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+                    WGSpinBox {
+                        enabled: false
+                        readOnly: true
+
+                        Layout.fillWidth: true
+                        minimumValue: 0
+                        maximumValue: 100
+                        stepSize: 1
+                        value: 40
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGTextBox"
+                    }
+                    WGTextBox {
+                        enabled: true
+                        readOnly: false
+
+                        placeholderText: "write/enabled"
+                        Layout.fillWidth: true
+                    }
+                    WGTextBox {
+                        enabled: true
+                        readOnly: true
+
+                        placeholderText: "readOnly/enabled"
+                        Layout.fillWidth: true
+                    }
+                    WGTextBox {
+                        enabled: false
+                        readOnly: false
+
+                        placeholderText: "write/disabled"
+                        Layout.fillWidth: true
+                    }
+                    WGTextBox {
+                        enabled: false
+                        readOnly: true
+
+                        placeholderText: "readOnly/disabled"
+                        Layout.fillWidth: true
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGThumbnailButton"
+                    }
+                    WGThumbnailButton {
+                        enabled: true
+
+                        source: "icons/diffuse1.png"
+                        defaultText: "NA/enabled"
+                    }
+                    WGThumbnailButton {
+                        enabled: true
+
+                        source: "icons/diffuse1.png"
+                        defaultText: "NA/enabled"
+                    }
+                    WGThumbnailButton {
+                        enabled: false
+
+                        source: "icons/diffuse1.png"
+                        defaultText: "NA/disabled"
+                    }
+                    WGThumbnailButton {
+                        enabled: false
+
+                        source: "icons/diffuse1.png"
+                        defaultText: "NA/disabled"
+                    }
+                }
+
+                WGExpandingRowLayout {
+
+                    WGMultiLineText {
+                        text: "WGThumbnail"
+                    }
+                    WGThumbnail {
+                        enabled: true
+
+                        source: "icons/diffuse1.png"
+                    }
+                    WGThumbnail {
+                        enabled: true
+
+                        source: "icons/diffuse1.png"
+                    }
+                    WGThumbnail {
+                        enabled: false
+
+                        source: "icons/diffuse1.png"
+                    }
+                    WGThumbnail {
+                        enabled: false
+
+                        source: "icons/diffuse1.png"
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WGThumbnail {
+                        enabled: true
+                        source: ""
+                    }
+
+                    WGThumbnail {
+                        enabled: true
+                        multipleValues: true
+                        source: ""
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGToolButton"
+                    }
+                    ExclusiveGroup { id: toolbarGroup2 }
+                    WGToolButton {
+                        enabled: true
+                        text: "enabled, checked"
+
+                        checkable: true
+                        checked: true
+                        exclusiveGroup: toolbarGroup2
+                        iconSource: "icons/pause_16x16.png"
+                    }
+                    WGToolButton {
+                        enabled: true
+                        text: "enabled, unchecked"
+
+                        checkable: true
+                        checked: false
+                        exclusiveGroup: toolbarGroup2
+                        iconSource: "icons/pause_16x16.png"
+                    }
+                    WGToolButton {
+                        enabled: false
+                        text: "disabled, checked"
+
+                        checkable: true
+                        checked: true
+                        exclusiveGroup: toolbarGroup2
+                        iconSource: "icons/pause_16x16.png"
+                    }
+                    WGToolButton {
+                        enabled: false
+                        text: "disabled, unchecked"
+
+                        checkable: true
+                        checked: false
+                        exclusiveGroup: toolbarGroup2
+                        iconSource: "icons/pause_16x16.png"
+                    }
+                }
+
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGDropDownBox20"
+                    }
+                    WG2.WGDropDownBox {
+                        enabled: true
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGDropDownBox {
+                        enabled: true
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGDropDownBox {
+                        enabled: false
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "disabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGDropDownBox {
+                        enabled: false
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "disabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WG2.WGDropDownBox {
+                        enabled: true
+                        multipleValues: true
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    //No image role testing variation
+                    WG2.WGDropDownBox {
+                        enabled: true
+
+                        textRole: "label"
+                        //imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGImageDropDownBox20"
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: true
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: true
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: false
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "disabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: false
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "disabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WG2.WGImageDropDown {
+                        enabled: true
+                        multipleValues: true
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGImageDropDownBox20 - big"
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: true
+
+                        implicitHeight: 100
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: true
+
+                        implicitHeight: 100
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: false
+
+                        implicitHeight: 100
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "disabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                    WG2.WGImageDropDown {
+                        enabled: false
+
+                        implicitHeight: 100
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "disabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WG2.WGImageDropDown {
+                        enabled: true
+                        multipleValues: true
+
+                        implicitHeight: 100
+
+                        textRole: "label"
+                        imageRole: "icon"
+
+                        model: ListModel {
+                            ListElement { label: "enabled"; icon: "icons/diffuse1.png"}
+                            ListElement { label: "Option 2"; icon: "icons/diffuse2.png"}
+                            ListElement { label: "Option 3"; icon: "icons/diffuse3.png"}
+                        }
+                    }
+                }
+
             }
         }
     }

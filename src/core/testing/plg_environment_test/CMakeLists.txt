@@ -57,7 +57,6 @@ BW_TARGET_LINK_LIBRARIES( plg_environment_test PRIVATE
 	core_qt_common
 	core_reflection
 	core_command_system
-	core_serialization
 	core_ui_framework
     Qt5::Core
 	${PLATFORM_LIBRARIES}

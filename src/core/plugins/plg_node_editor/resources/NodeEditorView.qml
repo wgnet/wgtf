@@ -2,7 +2,7 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 import WGControls 1.0
- 
+
 Rectangle
 {
     id: nodeEditorView
@@ -24,9 +24,9 @@ Rectangle
         model: graphListModel
         delegate: GraphView
         {
-            nodesModel : Value.nodesModel
-            connectionsModel: Value.connectionsModel
-            nodeClassesModel: Value.nodeClassesModel
+            nodesModel : value.nodesModel
+            connectionsModel: value.connectionsModel
+            nodeClassesModel: value.nodeClassesModel
         }
     }
 }

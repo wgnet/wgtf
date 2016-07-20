@@ -8,6 +8,7 @@ Details: Search for NGT Reflection System on the Wargaming Confluence
 
 #include "../reflected_object.hpp"
 #include "../object_handle.hpp"
+#include "core_reflection/reflection_dll.hpp"
 
 namespace wgt
 {
@@ -31,7 +32,7 @@ namespace MetaParamTypes
 	};
 }
 
-class MetaBase
+class REFLECTION_DLL MetaBase
 {
 	DECLARE_REFLECTED
 
@@ -45,10 +46,10 @@ private:
 
 	mutable MetaHandle nextMetaData_;
 
-	friend const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & right );
-	friend MetaHandle findFirstMetaData( const TypeId & typeId, const MetaHandle & metaData, const IDefinitionManager & definitionManager );
+	friend REFLECTION_DLL const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & right );
+	friend REFLECTION_DLL MetaHandle findFirstMetaData( const TypeId & typeId, const MetaHandle & metaData, const IDefinitionManager & definitionManager );
 };
 
-const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & right );
+REFLECTION_DLL const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & right );
 } // end namespace wgt
 #endif

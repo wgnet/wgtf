@@ -57,6 +57,28 @@ public:
 	{
 	}
 
+	FilePath(const FilePath& other) : fullPath_(other.fullPath_), directorySeparator_(other.directorySeparator_)
+	{
+	}
+
+	FilePath(FilePath&& other) : fullPath_(std::move(other.fullPath_)), directorySeparator_(other.directorySeparator_)
+	{
+	}
+
+	FilePath& operator=(const FilePath& rhs)
+	{
+		fullPath_ = rhs.fullPath_;
+		directorySeparator_ = rhs.directorySeparator_;
+		return *this;
+	}
+
+	FilePath& operator=( FilePath&& rhs )
+	{
+		fullPath_ = std::move(rhs.fullPath_);
+		directorySeparator_ = rhs.directorySeparator_;
+		return *this;
+	}
+
 	/*! Gets the full path as a string
 	*/
 	const std::string& str() const
@@ -77,7 +99,7 @@ public:
 	std::string getFolder() const
 	{
 		auto pos = fullPath_.rfind(directorySeparator_);
-		return fullPath_.substr(0, pos);
+		return fullPath_.substr(0, pos + 1);
 	}
 
 	/*! Gets the file of the path including the extension
@@ -137,7 +159,7 @@ public:
 	}
 private:
 	std::string fullPath_;
-	const char directorySeparator_;
+	char directorySeparator_;
 };
 
 FilePath operator+(const FilePath& lhs, const FilePath& rhs);

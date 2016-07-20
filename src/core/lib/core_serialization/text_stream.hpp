@@ -3,13 +3,14 @@
 
 #include "basic_stream.hpp"
 #include "datastreambuf.hpp"
+#include "serialization_dll.hpp"
 #include <iostream>
 #include <string>
 #include <cstring>
 
 namespace wgt
 {
-class TextStream:
+class SERIALIZATION_DLL TextStream:
 	public BasicStream
 {
 	typedef BasicStream base;
@@ -109,8 +110,8 @@ TextStream& >::type operator>>( TextStream& stream, T& v )
 
 
 // pointer serialization
-TextStream& operator<<( TextStream& stream, void* value );
-TextStream& operator>>( TextStream& stream, void*& value );
+SERIALIZATION_DLL TextStream& operator<<( TextStream& stream, void* value );
+SERIALIZATION_DLL TextStream& operator>>( TextStream& stream, void*& value );
 
 template< typename T >
 typename std::enable_if< std::is_pointer< T >::value, TextStream& >::type

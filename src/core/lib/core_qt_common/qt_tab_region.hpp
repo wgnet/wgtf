@@ -4,7 +4,7 @@
 #include "core_ui_framework/i_region.hpp"
 #include "core_ui_framework/layout_tags.hpp"
 #include "core_ui_framework/i_view.hpp"
-
+#include "core_dependency_system/depends.hpp"
 #include <QMetaObject>
 
 class QWidget;
@@ -13,11 +13,12 @@ class QTabWidget;
 namespace wgt
 {
 class IQtFramework;
-
+class IComponentContext;
 class QtTabRegion : public IRegion
+				  , public Depends<IQtFramework>
 {
 public:
-	QtTabRegion( IQtFramework & qtFramework, QTabWidget & qTabWidget );
+	QtTabRegion( IComponentContext & context, QTabWidget & qTabWidget );
 	~QtTabRegion();
 
 	const LayoutTags & tags() const override;
@@ -26,7 +27,6 @@ public:
 	void removeView( IView & view ) override;
 
 private:
-	IQtFramework & qtFramework_;
 	QTabWidget & qTabWidget_;
 	LayoutTags tags_;
 	typedef std::vector<std::pair<QWidget*, IView*>> Tabs;

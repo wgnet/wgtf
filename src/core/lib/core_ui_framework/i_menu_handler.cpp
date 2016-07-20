@@ -34,7 +34,7 @@ IMenuHandler::~IMenuHandler()
 
 	if(!uiApplication)
 		return;
-	
+
 	for ( auto itr = actions_.begin(); itr != actions_.end(); ++itr )
 	{
 		uiApplication->removeAction(**itr);
@@ -52,11 +52,43 @@ void IMenuHandler::registerActions()
 		return;
 
 	registerActions(*uiFramework, actions_);
-	
+
 	// Add the actions to the application
 	for ( auto itr = actions_.cbegin(); itr != actions_.cend(); ++itr )
 	{
 		uiApplication->addAction(**itr);
 	}
 }
+
+void IMenuHandler::addAction(std::unique_ptr<IAction> action)
+{
+	auto uiApplication = contextManager_.queryInterface< IUIApplication >();
+	if(uiApplication)
+	{
+		actions_.emplace_back(std::move(action));
+
+		// Add the action to the application
+		uiApplication->addAction(**actions_.rbegin());
+	}
+}
+
+void IMenuHandler::removeAction(IAction& action)
+{
+	auto found = std::find_if(actions_.begin(), actions_.end(), [&action](const std::unique_ptr<IAction>& cur){
+		return cur.get() == &action;
+	});
+
+	if(found == actions_.end())
+		return;
+
+	auto uiApplication = contextManager_.queryInterface< IUIApplication >();
+	if ( uiApplication )
+	{
+		// Remove the action from the application
+		uiApplication->removeAction(action);
+	}
+
+	actions_.erase(found);
+}
+
 } // end namespace wgt

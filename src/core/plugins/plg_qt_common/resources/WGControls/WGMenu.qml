@@ -22,96 +22,118 @@ WGContextMenu {
     id: menu
     objectName: "WGMenu"
     path: "WGMenu"
-
-    property var title: ""
+    property alias title: menu.path
 
     property list<QtObject> items
     default property alias itemsProperty : menu.items
 
     property var actions : []
+	property var fullPath: path
 
     onAboutToShow : {
-        for (var action in actions) {
-            actions[action].active = true;
-        }
+        activate();
     }
 
     onAboutToHide : {
-        for (var action in actions) {
-            actions[action].active = false;
-        }
+        deactivate();
     }
 
     Component.onCompleted : {
         for (var i=0; i<items.length; i++) {
-            createAction(items[i], path);
+            createAction(items[i], menu);
         }
+		
+		if (fullPath == path) {
+			fullPath = fullPath + "|";
+		}
     }
 
     Component.onDestruction : {
         for (var i=0; i<items.length; i++) {
-            destroyAction(items[i], path);
+            destroyAction(items[i], menu);
         }
     }
 
+	function activate() {
+		for (var action in actions) {
+            actions[action].active = true;
+        }
+
+		for (var i=0; i<items.length; i++) {
+			if (isMenu(items[i])) {
+				items[i].activate();
+			}
+        }
+	}
+
+	function deactivate() {
+		for (var action in actions) {
+            actions[action].active = false;
+        }
+
+		for (var i=0; i<items.length; i++) {
+			if (isMenu(items[i])) {
+				items[i].deactivate();
+			}
+        }
+	}
+
     function insertItem(index, object) {
-        createAction(object, path);
+        createAction(object, menu);
     }
 
     function removeItem(object) {
-        destroyAction(object, path);
+        destroyAction(object, menu);
     }
 
-    function createAction(object, menuPath) {
+    function isMenuItem(object) {
+        if(object == null)
+        {
+            return false;
+        }
+        var text = object.text;
+        var trigger = object.trigger;
+        return (typeof text !== "undefined" && typeof trigger !== "undefined");
+    }
+
+    function isMenu(object) {
+        if(object == null)
+        {
+            return false;
+        }
+        var path = object.path;
+        var items = object.items;
+		var actions = object.actions;
+        return (typeof path !== "undefined" && typeof items !== "undefined" && typeof items !== "undefined");
+    }
+
+    function createAction(object, menu) {
         //Automatically convert all MenuItem children into WGActions that we add to
         //the application just before we show the menu, and remove after we hide it
-        var text = object.text;
-        var trigger = object.trigger;
-        if (typeof text !== "undefined" && typeof trigger !== "undefined") {
-            var actionPath = menuPath + "|." + object.text;
-            var qmlString = "import QtQuick 2.3; import QtQuick.Controls 1.2; import WGControls 1.0; ";
-            qmlString += "WGAction { actionId: \"" + actionPath + "\"; }";
-            var action = Qt.createQmlObject( qmlString, menu );
-			actions.checkable = Qt.binding( function() { return object.checkable; } );
-			actions.checked = Qt.binding( function() { return object.checked; } );
-			actions.enabled = Qt.binding( function() { return object.enabled; } );
-			actions.visible = Qt.binding( function() { return object.visible; } );
-            action.triggered.connect(object.trigger);
-            actions[actionPath] = action;
-            return;
-        }
+        if (isMenuItem(object)) {
+			var qmlString = "import QtQuick 2.3; import QtQuick.Controls 1.2; import WGControls 1.0; WGAction {}";
+			var action = Qt.createQmlObject( qmlString, menu );
+			action.actionId = Qt.binding( function() { return menu.fullPath + "." + object.text; } );
+			action.checkable = Qt.binding( function() { return object.checkable; } );
+			action.checked = Qt.binding( function() { return object.checked; } );
+			action.enabled = Qt.binding( function() { return object.enabled; } );
+			action.visible = Qt.binding( function() { return object.visible; } );
+			action.triggered.connect(object.trigger);
+			actions[object.text] = action;
+			return;
+		}
 
-        //Iterate all sub menu children for more MenuItems to convert to WGActions
-        var title = object.title;
-        var items = object.items;
-        if (typeof title !== "undefined" && typeof items !== "undefined")
-        {
-            var subMenuPath = menuPath + "|." + title;
-            for (var i=0; i<items.length; i++) {
-                createAction(items[i], subMenuPath);
-            }
-        }
+		if (isMenu(object)) {
+			object.fullPath = Qt.binding( function() { return menu.fullPath + "." + object.path; } )
+		}
     }
 
-    function destroyAction(object, menuPath) {
-        var text = object.text;
-        var trigger = object.trigger;
-        if (typeof text !== "undefined" && typeof trigger !== "undefined") {
-            var actionPath = menuPath + "|." + object.text;
-            var action = actions[actionPath];
-            action.destroy();
-            actions[actionPath] = null;
-            return;
-        }
-
-        var title = object.title;
-        var items = object.items;
-        if (typeof title !== "undefined" && typeof items !== "undefined")
-        {
-            var subMenuPath = menuPath + "|." + title;
-            for (var i=0; i<items.length; i++) {
-                destroyAction(items[i], subMenuPath);
-            }
-        }
+    function destroyAction(object, menu) {
+         if (isMenuItem(object)) {
+			var action = actions[object.text];
+			action.destroy();
+			actions[object.text] = null;
+			return;
+		}
     }
 }

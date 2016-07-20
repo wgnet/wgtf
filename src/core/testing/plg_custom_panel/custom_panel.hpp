@@ -16,7 +16,6 @@ namespace wgt
 class CustomPanel
 	: Depends< IUIApplication, IViewCreator >
 {
-	typedef Depends< IUIFramework, IUIApplication > DepsBase;
 public:
 	CustomPanel( IComponentContext & context );
 
@@ -24,7 +23,7 @@ public:
 	void removePanel();
 
 private:
-	std::unique_ptr< IView > customView_;
+	wg_future<std::unique_ptr< IView >> customView_;
 };
  
  

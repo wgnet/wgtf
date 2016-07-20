@@ -124,6 +124,11 @@ Control {
 
     property real value: 0
 
+    /*! property indicates if the control represetnts multiple data values */
+
+    property bool multipleValues: false
+
+
     /*!
         This property determines if the handles should be constrained within the length of the slider.
 

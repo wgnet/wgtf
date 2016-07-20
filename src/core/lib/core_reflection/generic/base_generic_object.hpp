@@ -2,6 +2,7 @@
 #define BASE_GENERIC_OBJECT_HPP
 
 #include "core_reflection/utilities/reflection_utilities.hpp"
+#include "core_reflection/reflection_dll.hpp"
 
 namespace wgt
 {
@@ -18,7 +19,7 @@ class PropertyAccessor;
  *	definition or be per instance because they can dynamically
  *	add and remove members.
  */
-class BaseGenericObject
+class REFLECTION_DLL BaseGenericObject
 {
 public:
 	BaseGenericObject();

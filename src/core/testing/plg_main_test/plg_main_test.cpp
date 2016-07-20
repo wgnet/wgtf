@@ -65,7 +65,11 @@ public:
 	}
 };
 
-//==============================================================================
+/**
+* A plugin which creates and registers an IUIApplication interface for testing plugins that implement TestInterface
+*
+* @ingroup plugins
+*/
 class MainTestPlugin
 	: public PluginMain
 {

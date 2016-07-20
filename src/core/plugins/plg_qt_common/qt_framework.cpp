@@ -2,6 +2,7 @@
 #include "qt_preferences.hpp"
 #include "core_data_model/i_item_role.hpp"
 
+#include "core_qt_common/qt_types.hpp"
 #include "core_qt_common/i_qt_type_converter.hpp"
 #include "core_qt_common/qml_component.hpp"
 #include "core_qt_common/qml_view.hpp"
@@ -28,12 +29,14 @@
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_serialization/serializer/i_serialization_manager.hpp"
 #include "core_serialization/i_file_system.hpp"
+#include "core_serialization/fixed_memory_stream.hpp"
 #include "core_command_system/i_command_event_listener.hpp"
 #include "core_command_system/i_command_manager.hpp"
 
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_component_provider.hpp"
 #include "core_ui_framework/generic_component_provider.hpp"
+#include "qt_action_manager.hpp"
 
 #include "core_data_model/i_tree_model.hpp"
 #include "core_data_model/i_list_model.hpp"
@@ -42,6 +45,7 @@
 #include "wg_types/string_ref.hpp"
 #include "core_common/ngt_windows.hpp"
 
+#include "private/qt_ui_worker.hpp"
 #include <array>
 #include <QApplication>
 #include <QFile>
@@ -52,6 +56,8 @@
 #include <QWidget>
 #include <QDir>
 #include <QMessageBox>
+#include <algorithm>
+#include <QQmlIncubationController>
 
 #ifdef QT_NAMESPACE
 namespace QT_NAMESPACE {
@@ -83,25 +89,34 @@ namespace QtFramework_Locals
 }
 
 QtFramework::QtFramework( IComponentContext & contextManager )
-	: qmlEngine_( new QQmlEngine() )
+	: Depends( contextManager )
+	, qmlEngine_( new QQmlEngine() )
 	, scriptingEngine_( new QtScriptingEngine() )
 	, palette_( new QtPalette() )
 	, defaultQmlSpacing_( new QtDefaultSpacing() )
 	, globalQmlSettings_( new QtGlobalSettings() )
+	, actionManager_( new QtActionManager( contextManager ) )
+	, context_( contextManager )
+	, worker_( new QtUIWorker() )
+	, incubationTime_( 50 )
+	, incubationController_( new QQmlIncubationController )
 	, preferences_( nullptr )
-	, commandManager_ ( contextManager )
+	, useAsyncViewLoading_ (true)
 {
 
-	char ngtHome[MAX_PATH];
-	if (Environment::getValue<MAX_PATH>( "NGT_HOME", ngtHome ))
+	char wgtHome[MAX_PATH];
+	if (Environment::getValue<MAX_PATH>( "WGT_HOME", wgtHome ))
 	{
-		qmlEngine_->addPluginPath( ngtHome );
-		qmlEngine_->addImportPath( ngtHome );
+		qmlEngine_->addPluginPath( wgtHome );
+		qmlEngine_->addImportPath( wgtHome );
 	}
 
 	// Search Qt resource path or Url by default
 	qmlEngine_->addImportPath("qrc:/");
 	qmlEngine_->addImportPath(":/");
+	qmlEngine_->setIncubationController(incubationController_.get());
+
+	qRegisterMetaType<QtUIFunctionWrapper*>("QtUIFunctionWrapper*");
 }
 
 QtFramework::~QtFramework()
@@ -138,46 +153,139 @@ void QtFramework::initialise( IComponentContext & contextManager )
 	qmlEngine_->addImageProvider( QtImageProvider::providerId(), new QtImageProvider() );
 	qmlEngine_->addImageProvider( QtImageProviderOld::providerId(), new QtImageProviderOld() );
 
-	if (commandManager_ != nullptr)
+	auto commandManager = get< ICommandManager >();
+	if (commandManager != nullptr)
 	{
 		commandEventListener_.reset( new QtFramework_Locals::QtCommandEventListener );
-		commandManager_->registerCommandStatusListener( commandEventListener_.get() );
+		commandManager->registerCommandStatusListener( commandEventListener_.get() );
 	}
 
-	auto definitionManager = contextManager.queryInterface< IDefinitionManager >();
-	preferences_.reset( new QtPreferences() );
-    preferences_->init( contextManager );
+    preferences_ = contextManager.registerInterface( new QtPreferences( contextManager ) );
 
+	auto definitionManager = contextManager.queryInterface< IDefinitionManager >();
+	actionManager_->init();
 	SharedControls::initDefs( *definitionManager );
+	auto uiApplication = get< IUIApplication >();
+	assert( uiApplication != nullptr );
+	connections_ += uiApplication->signalStartUp.connect( std::bind( &QtFramework::onApplicationStartUp, this ) );
+}
+
+QMetaObject* QtFramework::constructMetaObject( QMetaObject* original )
+{
+	if ( original == nullptr ) 
+	{
+		return original;
+	}
+
+	char* originalName = (char*)original->d.stringdata->data();
+	
+	bool found = 
+		std::binary_search( qtNames, qtNames + qtTypeCount, originalName, 
+		[]( const char * const a, const char* const b )
+	{
+		return strcmp( a, b ) < 0;
+	});
+
+
+	if ( found )
+	{
+		return original;
+	}
+
+	for (size_t i = 0; i < registeredTypes_.size(); ++i)
+	{
+		char* name = (char*)registeredTypes_[i].get()->d.stringdata->data();
+		if ( strcmp( name, originalName ) == 0)
+		{
+			return registeredTypes_[i].get();
+		}
+	}
+
+	std::unique_ptr<QMetaObject> createdMeta( new QMetaObject );
+	*createdMeta = *original;
+	createdMeta->d.superdata = constructMetaObject( (QMetaObject*)createdMeta->d.superdata);
+	registeredTypes_.push_back( std::move( createdMeta ) );
+
+	return registeredTypes_.back().get();
+}
+
+void QtFramework::registerQmlType( ObjectHandle type )
+{
+	QQmlPrivate::RegisterType* qtype = type.getBase<QQmlPrivate::RegisterType>();
+	assert( qtype != nullptr );
+
+
+	if (qtype)
+	{
+		qtype->metaObject = constructMetaObject( (QMetaObject*)qtype->metaObject );
+		qtype->extensionMetaObject = constructMetaObject( (QMetaObject*)qtype->extensionMetaObject );
+		qtype->attachedPropertiesMetaObject = constructMetaObject( (QMetaObject*)qtype->attachedPropertiesMetaObject );
+
+		QQmlPrivate::qmlregister( QQmlPrivate::TypeRegistration, qtype );
+	}
 }
 
 void QtFramework::finalise()
 {
-	if (commandManager_ != nullptr)
-	{
-		commandManager_->deregisterCommandStatusListener( commandEventListener_.get() );
-	}
+    auto commandManager = get< ICommandManager >();
+    if (commandManager != nullptr)
+    {
+        commandManager->deregisterCommandStatusListener( commandEventListener_.get() );
+    }
+    if(shortcutDialog_ != nullptr)
+    {
+        auto uiApplication = get< IUIApplication >();
+        assert( uiApplication != nullptr );
+        uiApplication->removeWindow( *shortcutDialog_ );
+    }
 
-	unregisterResources();
-    preferences_->fini();
-	qmlEngine_->removeImageProvider( QtImageProviderOld::providerId() );
-	qmlEngine_->removeImageProvider( QtImageProvider::providerId() );
-	scriptingEngine_->finalise();
-	globalQmlSettings_ = nullptr;
-	defaultQmlSpacing_ = nullptr;
-	palette_ = nullptr;
-	qmlEngine_ = nullptr;
-	scriptingEngine_ = nullptr;
-	preferences_ = nullptr;
+    unregisterResources();
+    actionManager_->fini();
+    shortcutDialog_ = nullptr;
+    qmlEngine_->removeImageProvider( QtImageProviderOld::providerId() );
+    qmlEngine_->removeImageProvider( QtImageProvider::providerId() );
+    scriptingEngine_->finalise();
+    qmlEngine_->setIncubationController( nullptr );
+    incubationController_ = nullptr;
+    globalQmlSettings_ = nullptr;
+    defaultQmlSpacing_ = nullptr;
+    palette_ = nullptr;
+    qmlEngine_.reset();
+    scriptingEngine_ = nullptr;
 
-	defaultTypeConverters_.clear();
-	defaultComponentProviders_.clear();
-	defaultComponents_.clear();
+    context_.deregisterInterface( preferences_ );
+    preferences_ = nullptr;
+
+    defaultTypeConverters_.clear();
+    defaultComponentProviders_.clear();
+    defaultComponents_.clear();
+    connections_.clear();
 }
 
 QQmlEngine * QtFramework::qmlEngine() const
 {
 	return qmlEngine_.get();
+}
+
+void QtFramework::setIncubationTime( int msecs )
+{
+	incubationTime_ = msecs;
+}
+
+void QtFramework::incubate()
+{
+	if(qmlEngine_ == nullptr)
+	{
+		return;
+	}
+	auto incubationCtrl = qmlEngine_->incubationController();
+	if(incubationCtrl != nullptr)
+	{
+		if(incubationCtrl->incubatingObjectCount() > 0)
+		{
+			incubationCtrl->incubateFor( incubationTime_ );
+		}
+	}
 }
 
 const QtPalette * QtFramework::palette() const
@@ -284,7 +392,7 @@ std::unique_ptr< IAction > QtFramework::createAction(
 	std::function<bool( const IAction* )> enableFunc,
 	std::function<bool( const IAction* )> checkedFunc )
 {
-	return actionManager_.createAction( id, func, enableFunc, checkedFunc );
+	return actionManager_->createAction( id, func, enableFunc, checkedFunc );
 }
 
 std::unique_ptr< IComponent > QtFramework::createComponent( 
@@ -324,21 +432,27 @@ QmlComponent * QtFramework::createComponent( const QUrl & resource )
 
 
 //------------------------------------------------------------------------------
+void QtFramework::enableAsynchronousViewCreation( bool enabled )
+{
+	this->useAsyncViewLoading_ = enabled;
+}
+
+
+//------------------------------------------------------------------------------
 std::unique_ptr< IView > QtFramework::createView(
 	const char * resource, ResourceType type,
 	const ObjectHandle & context)
 {
 	NGT_WARNING_MSG("Deprecated function call, please use async version instead" );
-	std::unique_ptr< IView > returnView;
-	createViewInternal(
+	auto returnView = createViewInternal(
 		nullptr,
 		resource, type,
 		context,
-		[ &returnView ] ( std::unique_ptr< IView > & view )
+		[] ( IView & view )
 	{
-		returnView = std::move( view );
+
 	}, false);
-	return returnView;
+	return returnView.get();
 }
 
 
@@ -348,38 +462,33 @@ std::unique_ptr< IView > QtFramework::createView(const char* uniqueName,
 	const ObjectHandle & context)
 {
 	NGT_WARNING_MSG("Deprecated function call, please use async version instead");
-	std::unique_ptr< IView > returnView;
-	createViewInternal(
+	auto returnView = createViewInternal(
 		uniqueName,
 		resource, type,
 		context,
-		[&returnView](std::unique_ptr< IView > & view)
+		[](IView & view)
 	{
-		returnView = std::move(view);
 	}, false);
-	return returnView;
+	return returnView.get();
 }
 
 //------------------------------------------------------------------------------
-void QtFramework::createViewAsync(
+wg_future< std::unique_ptr< IView > > QtFramework::createViewAsync(
 	const char* uniqueName,
 	const char * resource, ResourceType type,
 	const ObjectHandle & context,
-	std::function< void(std::unique_ptr< IView > &) > loadedHandler)
+	std::function< void( IView &) > loadedHandler)
 {
-	createViewInternal(
-		uniqueName,
-		resource, type,
-		context,
-		loadedHandler, true);
+    return createViewInternal( uniqueName, resource, type, context, loadedHandler
+    , true );
 }
 
 //------------------------------------------------------------------------------
-void QtFramework::createViewInternal(
+wg_future< std::unique_ptr< IView > > QtFramework::createViewInternal(
 	const char * uniqueName,
 	const char * resource, ResourceType type,
 	const ObjectHandle & context,
-	std::function< void ( std::unique_ptr< IView > & ) > loadedHandler, bool async )
+	std::function< void ( IView & ) > loadedHandler, bool async )
 {
 	// TODO: This function assumes the resource is a qml file
 
@@ -396,7 +505,7 @@ void QtFramework::createViewInternal(
 		break;
 
 	default:
-		return;
+		return std::future<std::unique_ptr<IView>>();
 	}
 
 	// by default using resource path as qml view id
@@ -412,17 +521,28 @@ void QtFramework::createViewInternal(
 		auto source = toQVariant( context, view->view() );
 		view->setContextProperty( QString( "source" ), source );
 	}
-
-    view->load(qUrl, [loadedHandler, view ]()
+    std::shared_ptr<std::promise< std::unique_ptr< IView > >> promise = std::make_shared<std::promise< std::unique_ptr< IView > >>();
+    wg_future<std::unique_ptr<IView>> wgFuture(promise->get_future(), 
+        []()
+    {
+        QApplication::processEvents(QEventLoop::AllEvents, 1);
+    });
+    view->load(qUrl, [loadedHandler, view, promise ]()
 	{
-        std::unique_ptr< IView > localView( view );
-		loadedHandler( localView );
-	}, async );
+		loadedHandler( *view );
+        promise->set_value( std::unique_ptr<IView>(view) );
+    }, [view, promise ]()
+    {
+        promise->set_value( std::unique_ptr<IView>() );
+        view->deleteLater();
+    }, this->useAsyncViewLoading_ ? async : false );
+	
+	return wgFuture;
 }
 
 QmlWindow * QtFramework::createQmlWindow()
 {
-	return new QmlWindow( *this, *qmlEngine() );
+	return new QmlWindow( context_, *qmlEngine() );
 }
 
 QtWindow * QtFramework::createQtWindow( QIODevice & source )
@@ -430,13 +550,46 @@ QtWindow * QtFramework::createQtWindow( QIODevice & source )
 	return new QtWindow( *this, source );
 }
 
+
+//------------------------------------------------------------------------------
+void QtFramework::createWindowAsync( 
+	const char * resource, ResourceType type,
+	const ObjectHandle & context,
+	std::function< void(std::unique_ptr< IWindow > & ) > loadedHandler )
+{
+	createWindowInternal(
+		resource, type,
+		context,
+		loadedHandler, true);
+}
+
+
+//------------------------------------------------------------------------------
 std::unique_ptr< IWindow > QtFramework::createWindow( 
 	const char * resource, ResourceType type,
 	const ObjectHandle & context )
 {
-	// TODO: This function assumes the resource is a ui file containing a QMainWindow
+	NGT_WARNING_MSG("Deprecated function call, please use async version instead" );
+	std::unique_ptr< IWindow > returnWindow;
+	createWindowInternal(
+		resource, type,
+		context,
+		[ &returnWindow ] ( std::unique_ptr< IWindow > & window )
+	{
+		returnWindow = std::move( window );
+	}, false);
+	return returnWindow;
+}
 
-	IWindow* window = nullptr;
+
+//------------------------------------------------------------------------------
+void QtFramework::createWindowInternal( 
+	const char * resource, ResourceType type,
+	const ObjectHandle & context,
+	std::function< void(std::unique_ptr< IWindow > &) > loadedHandler, 
+	bool async )
+{
+	// TODO: This function assumes the resource is a ui file containing a QMainWindow
 	switch (type)
 	{
 	case IUIFramework::ResourceType::File:
@@ -444,7 +597,8 @@ std::unique_ptr< IWindow > QtFramework::createWindow(
 			std::unique_ptr< QFile > device( new QFile( resource ) );
 			device->open( QFile::ReadOnly );
 			assert( device != nullptr );
-			window = createQtWindow( *device );
+			std::unique_ptr< IWindow > window( createQtWindow( *device ) );
+			loadedHandler( window );
 			device->close();
 		}
 		break;
@@ -465,16 +619,18 @@ std::unique_ptr< IWindow > QtFramework::createWindow(
 				qmlWindow->setContextProperty( QString( "source" ), source );
 			}
 
-			qmlWindow->load( qUrl );
-			window = qmlWindow;
+			qmlWindow->load( qUrl, async, 
+				[loadedHandler, qmlWindow ]()
+			{
+				std::unique_ptr< IWindow > localWindow( qmlWindow );
+				loadedHandler( localWindow );
+			});
 		}
 		break;
 
 	default:
-		return nullptr;
+		return;
 	}
-
-	return std::unique_ptr< IWindow >( window );
 }
 
 void QtFramework::loadActionData( const char * resource, ResourceType type )
@@ -495,8 +651,17 @@ void QtFramework::loadActionData( const char * resource, ResourceType type )
 	}
 
 	assert( device != nullptr );
-	actionManager_.loadActionData( *device );
+	auto size = device->size();
+	auto data = device->readAll();
 	device->close();
+	if(data.isEmpty())
+	{
+		NGT_WARNING_MSG( "Read action data error from %s.\n", resource );
+		return;
+	}
+	auto buffer = data.constData();
+	FixedMemoryStream dataStream(buffer, size);
+	actionManager_->loadActionData( dataStream );
 }
 
 void QtFramework::registerComponent( const char * id, IComponent & component )
@@ -723,8 +888,51 @@ void QtFramework::unregisterResources()
 	}
 	registeredResources_.clear();
 }
+
+//------------------------------------------------------------------------------
 IPreferences * QtFramework::getPreferences()
 {
-	return preferences_.get();
+	return context_.queryInterface< IPreferences >();
+}
+
+//------------------------------------------------------------------------------
+void QtFramework::doOnUIThread( std::function< void() > action ) 
+{
+	QMetaObject::invokeMethod(
+		worker_.get(), "doJob", Qt::QueuedConnection, Q_ARG( QtUIFunctionWrapper*, new QtUIFunctionWrapper( action ) ) );
+}
+
+//------------------------------------------------------------------------------
+void QtFramework::showShortcutConfig() const 
+{
+	if (shortcutDialog_ == nullptr)
+	{
+		return;
+	}
+	shortcutDialog_->showModal();
+}
+
+//------------------------------------------------------------------------------
+void QtFramework::onApplicationStartUp()
+{
+    auto preferences = context_.queryInterface< IPreferences >();
+    if( preferences )
+    {
+        preferences->loadDefaultPreferences();
+    }
+
+	auto context = actionManager_->getContextObject();
+	auto viewCreator = get< IViewCreator >();
+	viewCreator->createWindow( 
+		"private/shortcut_dialog.qml",context,
+		[ this ]( std::unique_ptr< IWindow > & window )
+	{
+		shortcutDialog_ = std::move( window );
+		if (shortcutDialog_ != nullptr)
+		{
+			shortcutDialog_->hide();
+			actionManager_->registerEventHandler( shortcutDialog_.get() );
+		}
+	});
 }
 } // end namespace wgt
