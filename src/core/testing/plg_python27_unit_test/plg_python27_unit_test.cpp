@@ -5,7 +5,6 @@
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/interfaces/i_command_line_parser.hpp"
 #include "core_unit_test/unit_test.hpp"
-#include "core_variant/variant.hpp"
 
 #include "python27_unit_test.hpp"
 
@@ -70,8 +69,6 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager(
-			contextManager.queryInterface< IMetaTypeManager >() );
 	}
 
 

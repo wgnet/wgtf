@@ -10,25 +10,15 @@ find_package( Qt5Quick REQUIRED )
 BW_QT_ADD_QRC(plg_alert_ui resources/plg_alert_ui)
 BW_GLOB_RESOURCE_FILES()
 
-SET( DISPLAY
+SET( ALL_SRCS
 	alert_models.cpp
 	alert_models.hpp
-)
-SOURCE_GROUP( "Display Page" FILES ${DISPLAY} )
-
-SET( DISPLAY_METADATA
 	metadata/alert_models.mpp
-)
-SOURCE_GROUP( "Display Page\\Metadata" FILES ${DISPLAY_METADATA} )
-
-SET( ALL_SRCS
-	${DISPLAY}
-	${DISPLAY_METADATA}
 	plg_alert_ui.cpp
 	popup_alert_presenter.cpp
 	popup_alert_presenter.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}

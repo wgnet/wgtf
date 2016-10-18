@@ -104,6 +104,7 @@ SET( NGT_SUPPORT OFF )
 SET( CORE_PYTHON_SUPPORT OFF )
 SET( DEPLOY_QT_SUPPORT OFF )
 SET( DEPLOY_PYTHON_SUPPORT OFF )
+SET( ALL_THIRD_PARTY_REQUIRED OFF )
 
 # Include target specific configuration
 INCLUDE( WGConfiguration_${BW_CMAKE_TARGET} )
@@ -156,6 +157,9 @@ IF( BW_UMBRA_SUPPORT )
 ENDIF()
 IF( NGT_SUPPORT )
 	ADD_DEFINITIONS( -DENABLE_NGT_SUPPORT )
+ENDIF()
+IF( DEPLOY_PYTHON_SUPPORT )
+	ADD_DEFINITIONS( -DENABLE_DEPLOY_PYTHON_SUPPORT )
 ENDIF()
 # Default exe with which Qt will be deployed
 SET( DEPLOY_QT_TARGET_PROJECT generic_app )
@@ -211,6 +215,50 @@ ARRAY2D_BEGIN_LOOP( _islooping "${BW_PLUGIN_PROJECTS}" 2 "plugname;plugpath" )
 	WHILE( _islooping )
 		MESSAGE( STATUS "Adding plugin: ${plugname} from ${plugpath}" )
 		ADD_SUBDIRECTORY( ${plugpath} )
+
+		# Always generate debug symbols, even in Release builds
+		IF( MSVC )
+			BW_APPEND_TARGET_PROPERTIES( ${plugname} LINK_FLAGS_HYBRID "/DEBUG" )
+			BW_APPEND_TARGET_PROPERTIES( ${plugname} LINK_FLAGS_RELEASE "/DEBUG" )
+			BW_APPEND_TARGET_PROPERTIES( ${plugname} LINK_FLAGS_CONSUMER_RELEASE "/DEBUG" )
+		ENDIF( MSVC )
+
+		# Always set the working directory to bin for every project
+		BW_SET_WORKING_DIRECTORY( ${plugname} ${plugpath} "$(TargetDir)" )
+
+		ARRAY2D_ADVANCE()
+	ENDWHILE()
+ARRAY2D_END_LOOP()
+
+# Add external libraries
+ARRAY2D_BEGIN_LOOP( _islooping "${BW_EXTERN_LIBRARY_PROJECTS}" 2 "libname;libpath" )
+	WHILE( _islooping )
+		MESSAGE( STATUS "Adding library: ${libname} from ${libpath}" )
+
+		ADD_SUBDIRECTORY( ${libpath} ./core/extern_libs/${libname})
+		ARRAY2D_ADVANCE()
+	ENDWHILE()
+ARRAY2D_END_LOOP()
+
+# Add external executables
+INCLUDE( WGProjectUserFile )
+ARRAY2D_BEGIN_LOOP( _islooping "${BW_EXTERN_BINARY_PROJECTS}" 2 "projname;projpath" )
+	WHILE( _islooping )
+		MESSAGE( STATUS "Adding executable: ${projname} from ${projpath}" )
+		ADD_SUBDIRECTORY( ${projpath} ./core/extern_bin/${projname})
+
+		# Always set the working directory to bin for every project
+		BW_SET_WORKING_DIRECTORY( ${projname} ${projpath} "$(TargetDir)" )
+
+		ARRAY2D_ADVANCE()
+	ENDWHILE()
+ARRAY2D_END_LOOP()
+
+# Add external plugins
+ARRAY2D_BEGIN_LOOP( _islooping "${BW_EXTERN_PLUGIN_PROJECTS}" 2 "plugname;plugpath" )
+	WHILE( _islooping )
+		MESSAGE( STATUS "Adding plugin: ${plugname} from ${plugpath}" )
+		ADD_SUBDIRECTORY( ${plugpath} ./core/custom_plugins/${plugname} )
 
 		# Always generate debug symbols, even in Release builds
 		IF( MSVC )

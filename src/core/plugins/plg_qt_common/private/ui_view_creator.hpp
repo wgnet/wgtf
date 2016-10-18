@@ -20,17 +20,22 @@ class UIViewCreator
 public:
 	UIViewCreator(IComponentContext & context);
 
-	void createView(
-		const char * path,
-		const ObjectHandle & context,
-		std::unique_ptr< IView > & o_ResultView,
-		const char * uniqueName ) override;
+	wg_future<std::unique_ptr<IView>> createView(
+	const char* path,
+	const Variant& context,
+	const char* uniqueName) override;
 
-	void createView(
-		const char * path,
-		const ObjectHandle & context,
-		std::function< void(std::unique_ptr< IView > &) >,
-		const char * uniqueName ) override;
+	wg_future<std::unique_ptr<IView>> createView(
+	const char* path,
+	const Variant& context,
+	std::function<void(IView&)>,
+	const char* uniqueName) override;
+
+	void createWindow(
+	const char* path,
+	const Variant& context,
+	std::function<void(std::unique_ptr<IWindow>&)>,
+	IUIFramework::ResourceType type) override;
 };
 } // end namespace wgt
 #endif //UI_VIEW_CREATOR_HPP

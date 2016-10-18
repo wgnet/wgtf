@@ -31,6 +31,7 @@ void initReflectedTypes( IDefinitionManager & definitionManager )
 	REGISTER_DEFINITION( MetaSelectedObj );
 	REGISTER_DEFINITION( MetaHiddenObj );
 	REGISTER_DEFINITION( MetaPanelLayoutObj );
+	REGISTER_DEFINITION(MetaActionObj);
 	REGISTER_DEFINITION( MetaCommandObj );
 	REGISTER_DEFINITION( MetaNoSerializationObj );
 	REGISTER_DEFINITION( MetaUniqueIdObj );
@@ -38,6 +39,8 @@ void initReflectedTypes( IDefinitionManager & definitionManager )
 	REGISTER_DEFINITION( MetaInPlacePropertyNameObj );
 	REGISTER_DEFINITION( MetaReadOnlyObj );
 	REGISTER_DEFINITION( MetaUrlObj );
+	REGISTER_DEFINITION(MetaOnPropertyChangedObj);
+	REGISTER_DEFINITION(MetaDirectInvokeObj);
 }
 
 }

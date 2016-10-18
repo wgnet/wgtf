@@ -1,9 +1,11 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.0
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 import WGControls 1.0
+import WGControls.Layouts 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A control used to represent breadcrumb navigation of a tree view
 
 Example:
@@ -18,6 +20,7 @@ WGBreadcrumbs {
 Rectangle {
     id: rootFrame
     objectName: "WGBreadCrumbs"
+    WGComponent { type: "WGBreadcrumbs" }
 
     // Public properties
     /*! This property holds the dataModel containing all breadcrumbs data */
@@ -123,6 +126,7 @@ Rectangle {
 
                     Layout.fillWidth: true
                     Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                    Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
 
                     elide: Text.ElideRight
 
@@ -130,6 +134,8 @@ Rectangle {
 
                     font.bold: true
                     font.pointSize: 11
+
+                    verticalAlignment: Text.AlignVCenter
 
                     color: breadcrumbMouseArea.containsMouse ? palette.textColor : palette.neutralTextColor;
 

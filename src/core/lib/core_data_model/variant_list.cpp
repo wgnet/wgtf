@@ -17,11 +17,13 @@ public:
 	// IItem
 	const char * getDisplayText( int column ) const override;
 	ThumbnailData getThumbnail( int column ) const override;
-	Variant getData( int column, size_t roleId ) const override;
-	bool setData( int column, size_t roleId, const Variant & data ) override;
+	Variant getData( int column, ItemRole::Id roleId ) const override;
+	bool setData( int column, ItemRole::Id roleId, const Variant & data ) override;
 	//
 
 private:
+	void initDisplayName();
+
 	Variant value_;
 	std::string displayName_;
 
@@ -32,14 +34,14 @@ private:
 VariantListItem::VariantListItem( const Variant& value )
 	: value_( value )
 {
-	displayName_ = getData( 0, ValueTypeRole::roleId_ ).value< std::string >();
+	initDisplayName();
 }
 
 
 VariantListItem::VariantListItem( Variant&& value )
 	: value_( std::move( value ) )
 {
-	displayName_ = getData( 0, ValueTypeRole::roleId_ ).value< std::string >();
+	initDisplayName();
 }
 
 
@@ -55,7 +57,7 @@ ThumbnailData VariantListItem::getThumbnail( int column ) const
 }
 
 
-Variant VariantListItem::getData( int column, size_t roleId ) const
+Variant VariantListItem::getData( int column, ItemRole::Id roleId ) const
 {
 	if (roleId == ValueTypeRole::roleId_)
 	{
@@ -95,7 +97,7 @@ Variant VariantListItem::getData( int column, size_t roleId ) const
 }
 
 
-bool VariantListItem::setData( int column, size_t roleId, const Variant & data )
+bool VariantListItem::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	if (roleId != ValueRole::roleId_)
 	{
@@ -103,7 +105,14 @@ bool VariantListItem::setData( int column, size_t roleId, const Variant & data )
 	}
 
 	value_ = data;
+	initDisplayName();
 	return true;
+}
+
+
+void VariantListItem::initDisplayName()
+{
+	displayName_ = getData( 0, ValueTypeRole::roleId_ ).value< std::string >();
 }
 
 
@@ -384,7 +393,7 @@ VariantList::Iterator VariantList::insert(
 
 	signalPreItemsInserted( index, 1 );
 	auto it = items_.emplace(
-		position.iterator(), new VariantListItem( value ) );
+		position.iterator(), createItem( value ) );
 	signalPostItemsInserted( index, 1 );
 
 	return it;
@@ -433,7 +442,7 @@ void VariantList::push_back( const Variant & value )
 	auto index = items_.size();
 
 	signalPreItemsInserted( index, 1 );
-	items_.emplace( items_.end(), new VariantListItem( value ) );
+	items_.emplace( items_.end(), createItem( value ) );
 	signalPostItemsInserted( index, 1 );
 }
 
@@ -443,7 +452,7 @@ void VariantList::push_front( const Variant & value )
 	auto index = 0;
 
 	signalPreItemsInserted( index, 1 );
-	items_.emplace( items_.begin(), new VariantListItem( value ) );
+	items_.emplace( items_.begin(), createItem( value ) );
 	signalPostItemsInserted( index, 1 );
 }
 
@@ -511,5 +520,11 @@ const Variant & VariantList::operator[](size_t index) const
 	const Variant & value = item->value_;
 
 	return value;
+}
+
+
+IItem* VariantList::createItem( const Variant& value )
+{
+	return new VariantListItem( value );
 }
 } // end namespace wgt

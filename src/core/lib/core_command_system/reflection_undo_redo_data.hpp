@@ -25,12 +25,13 @@ public:
 	void undo() override;
 	void redo() override;
 
-	ObjectHandle getCommandDescription() const;
+	ObjectHandle getCommandDescription() const override;
 
-    std::shared_ptr<BinaryBlock> getUndoData() const;
-    std::shared_ptr<BinaryBlock> getRedoData() const;
-    void setUndoData( const std::shared_ptr<BinaryBlock> & undoData );
-    void setRedoData( const std::shared_ptr<BinaryBlock> & redoData );
+	BinaryBlock getUndoData() const;
+	BinaryBlock getRedoData() const;
+	void setUndoData(const BinaryBlock& undoData);
+	void setRedoData(const BinaryBlock& redoData);
+	const CommandInstance& getCommandInstance() const;
 
 private:
 	CommandInstance &			commandInstance_;

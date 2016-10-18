@@ -21,7 +21,6 @@ BW_ADD_EXECUTABLE( core_command_system_unit_test ${BLOB_SRCS} )
 BW_TARGET_LINK_LIBRARIES( core_command_system_unit_test PRIVATE
 	core_reflection
 	core_reflection_utils
-	core_serialization
 	core_command_system
 	core_unit_test
 )

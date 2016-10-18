@@ -22,9 +22,9 @@ bool CustomPanel::addPanel()
 		return false;
 	}
 
-	viewCreator->createView(
+	customView_ = viewCreator->createView(
 		"plg_custom_panel/custom_panel.qml",
-		ObjectHandle(), customView_ );
+		ObjectHandle() );
 	return true;
 }
  
@@ -37,10 +37,11 @@ void CustomPanel::removePanel()
 		return;
 	}
 
-	if (customView_ != nullptr)
+	if (customView_.valid())
 	{
-		uiApplication->removeView( *customView_ );
-		customView_ = nullptr;
+        auto view = customView_.get();
+		uiApplication->removeView( *view );
+		view = nullptr;
 	}
 }
 } // end namespace wgt

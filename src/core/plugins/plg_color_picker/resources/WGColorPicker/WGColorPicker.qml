@@ -2,9 +2,8 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 
-
 import WGControls 2.0
-import WGColorPicker 1.0
+import WGColorPicker 2.0
 
 /*!
  \A fully featured color picker that can be used in a dialog or as a stand alone control.
@@ -37,6 +36,7 @@ TODO: Performance pass
 Rectangle {
     id: basePanel
     objectName: "WGColorPicker"
+    WGComponent { type: "WGColorPicker" }
 
     /*!
         The color before any changes are made or accepted with the color picker.
@@ -633,8 +633,6 @@ Rectangle {
                                 anchors.fill: secondSquareBorder
                                 anchors.margins: defaultSpacing.standardMargin
                                 color: previewColorActive ? previewColor : currentColor
-
-                                z: 5
 
                                 // Dummy mouseover to mask cursor change on inital square
                                 MouseArea {

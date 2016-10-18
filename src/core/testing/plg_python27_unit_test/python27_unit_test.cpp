@@ -125,6 +125,40 @@ TEST( Python27 )
 		}
 	}
 
+	// Import a builtin module that uses py files
+	{
+		ObjectHandle module = scriptingEngine->import( "os" );
+		CHECK( module.isValid() );
+		// Python test failed to import os
+		if (!module.isValid())
+		{
+			return;
+		}
+	}
+
+	// Import a builtin module which will then import a submodule
+	// encodings.aliases
+	{
+		ObjectHandle module = scriptingEngine->import("encodings");
+		CHECK(module.isValid());
+		// Python test failed to import encodings or encodings.aliases
+		if (!module.isValid())
+		{
+			return;
+		}
+	}
+
+	// Import a builtin module that uses pyd files
+	{
+		ObjectHandle module = scriptingEngine->import("md5");
+		CHECK(module.isValid());
+		// Python test failed to import md5
+		if (!module.isValid())
+		{
+			return;
+		}
+	}
+
 	// Register the test module
 	// The scripting engine must be shut down to de-register it.
 	ReflectionTestModule reflectionModule( contextManager,
@@ -133,8 +167,8 @@ TEST( Python27 )
 
 	// Import the test module and run it
 	{
-		const wchar_t * sourcePath = L"../../../src/core/testing/plg_python27_unit_test/scripts";
-		const wchar_t * deployPath = L"./scripts/plg_python27_unit_test";
+		const wchar_t * sourcePath = L"../../../src/core/testing/plg_python27_unit_test/resources/Scripts";
+		const wchar_t * deployPath = L":/Scripts";
 		const char * moduleName = "python27_test";
 		const bool sourcePathSet = scriptingEngine->appendSourcePath( sourcePath );
 		CHECK( sourcePathSet );

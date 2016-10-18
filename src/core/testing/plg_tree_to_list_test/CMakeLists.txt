@@ -18,7 +18,7 @@ SET( ALL_SRCS
 	test_tree_model.cpp
 	test_tree_model.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(plg_tree_to_list_test resources/plg_tree_to_list_test)
 BW_GLOB_RESOURCE_FILES()

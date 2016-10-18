@@ -8,9 +8,12 @@
 #include "i_definition_manager.hpp"
 #include "utilities/reflection_utilities.hpp"
 #include "metadata/meta_base.hpp"
+#include "core_reflection/base_property_with_metadata.hpp"
 
 #include <unordered_map>
 #include "core_variant/variant.hpp"
+#include "metadata/meta_utilities.hpp"
+#include "metadata/meta_impl.hpp"
 
 namespace wgt
 {
@@ -171,6 +174,12 @@ bool PropertyAccessor::setValue( const Variant & value ) const
 	{
 		parentAccessor_->setValue( object_ );
 	}
+	// Call the property changed callback if it exists
+	auto metaPropertyChanged = findFirstMetaData<MetaOnPropertyChangedObj>(*getProperty(), *definitionManager_);
+	if (metaPropertyChanged)
+	{
+		metaPropertyChanged->onPropertyChanged(object_);
+	}
 	for( auto it = itBegin; it != itEnd; ++it )
 	{
 		auto listener = it->lock();
@@ -254,6 +263,23 @@ void PropertyAccessor::invokeUndoRedo( const ReflectedMethodParameters & paramet
 		return;
 	}
 
+	auto method = dynamic_cast<ReflectedMethod*>(getProperty().get());
+	if (method == nullptr)
+	{
+		// Check if a method with meta data
+		auto methodWithMetaData = dynamic_cast<BasePropertyWithMetaData*>(getProperty().get());
+		if (methodWithMetaData != nullptr && methodWithMetaData->baseProperty())
+		{
+			method = dynamic_cast<ReflectedMethod*>(methodWithMetaData->baseProperty().get());
+		}
+	}
+
+	if (method == nullptr)
+	{
+		NGT_WARNING_MSG("Could not invoke undo/redo for property");
+		return;
+	}
+
 	const auto& listeners = definitionManager_->getPropertyAccessorListeners();
 
 	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
@@ -265,7 +291,6 @@ void PropertyAccessor::invokeUndoRedo( const ReflectedMethodParameters & paramet
 		listener->preInvoke( *this, parameters, undo );
 	}
 
-	ReflectedMethod* method = static_cast<ReflectedMethod*>( getProperty().get() );
 	method = undo ? method->getUndoMethod() : method->getRedoMethod();
 	assert( method != nullptr );
 	ReflectedMethodParameters paramsUndoRedo;
@@ -338,8 +363,7 @@ bool PropertyAccessor::insert( const Variant & key, const Variant & value ) cons
 		}
 	} );
 
-	auto it = collection.insert( key );
-	it.setValue( value );
+	auto it = collection.insertValue(key, value);
 
 	preInsert.disconnect();
 	postInserted.disconnect();
@@ -404,7 +428,7 @@ bool PropertyAccessor::erase( const Variant & key ) const
 		}
 	} );
 
-	auto count = collection.erase( key );
+	auto count = collection.eraseKey( key );
 
 	preErase.disconnect();
 	postErased.disconnect();

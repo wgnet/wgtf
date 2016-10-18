@@ -13,6 +13,7 @@ class ICommandManager;
 enum class CommandErrorCode : uint8_t
 {
 	COMMAND_NO_ERROR = 0,
+	BATCH_NO_ERROR,
 	ABORTED,
 	FAILED,
 	INVALID_VALUE,
@@ -20,6 +21,12 @@ enum class CommandErrorCode : uint8_t
 	INVALID_OPERATIONS,
 	NOT_SUPPORTED
 };
+
+/**
+ *	@param errorCode code from command to be checked.
+ *	@return true if the command has completed successfully.
+ */
+bool isCommandSuccess( CommandErrorCode errorCode );
 
 enum class CommandThreadAffinity : uint8_t
 {
@@ -38,6 +45,13 @@ class Command
 public:
 	virtual ~Command();
 	virtual const char * getId() const = 0;
+
+	/**
+	 *	Run the command.
+	 *	@param arguments command data.
+	 *	@return the CommandErrorCode or the return value.
+	 *		Not returning a CommandErrorCode assumes the code is COMMAND_NO_ERROR.
+	 */
 	virtual ObjectHandle execute(const ObjectHandle & arguments) const = 0;
 
 
@@ -55,7 +69,7 @@ public:
 	virtual bool canUndo( const ObjectHandle & arguments ) const { return true; }
 	virtual bool undo( const ObjectHandle & arguments ) const { return false; }
 	virtual bool redo( const ObjectHandle & arguments ) const { return false; }
-    virtual ObjectHandle getCommandDescription(const ObjectHandle & arguments) const { return ObjectHandle(); }
+	virtual ObjectHandle getCommandDescription(const ObjectHandle & arguments) const { return ObjectHandle(); }
 
 	virtual void setCommandSystemProvider( ICommandManager * commandSystemProvider );
 	virtual void registerCommandStatusListener( ICommandEventListener * listener );
@@ -64,7 +78,7 @@ public:
 
 	virtual void fireCommandStatusChanged( const CommandInstance & command ) const;
 	virtual void fireProgressMade( const CommandInstance & command ) const;
-    virtual void fireCommandExecuted( const CommandInstance & command, CommandOperation operation) const;
+	virtual void fireCommandExecuted( const CommandInstance & command, CommandOperation operation) const;
 
 private:
 	typedef std::list< ICommandEventListener * > EventListenerCollection;

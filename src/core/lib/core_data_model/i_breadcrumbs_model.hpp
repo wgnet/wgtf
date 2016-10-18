@@ -1,5 +1,5 @@
-#ifndef I_BREADCRUMBS_MODEL_HPP
-#define I_BREADCRUMBS_MODEL_HPP
+#ifndef I_BREADCRUMBS_MODEL_OLD_HPP
+#define I_BREADCRUMBS_MODEL_OLD_HPP
 
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/object_handle.hpp"
@@ -24,28 +24,33 @@ class BaseBreadcrumbItem
 	DECLARE_REFLECTED
 
 public:
+	BaseBreadcrumbItem()
+	    : fullPath_("")
+	    , displayValue_("")
+	{
+	}
 
-	BaseBreadcrumbItem() : fullPath_( "" ), displayValue_( "" ) {}
+	virtual ~BaseBreadcrumbItem()
+	{
+	}
 
-	virtual ~BaseBreadcrumbItem() {}
-
-	virtual void initialise( const IItem & item ) 
+	virtual void initialise(const IItem& item)
 	{
 		item_ = &item;
-		assert( item_ != nullptr );
-		
-		displayValue_ = item_->getDisplayText( 0 );
+		assert(item_ != nullptr);
 
-		auto fullPathVar = item_->getData( 0, IndexPathRole::roleId_ );
-		fullPathVar.tryCast< std::string >( fullPath_ );
+		displayValue_ = item_->getDisplayText(0);
+
+		auto fullPathVar = item_->getData(0, IndexPathRole::roleId_);
+		fullPathVar.tryCast<std::string>(fullPath_);
 	}
 
-	virtual void addSubItem( const Variant & breadcrumb )
+	virtual void addSubItem(const Variant& breadcrumb)
 	{
-		subItems_.push_back( breadcrumb );
+		subItems_.push_back(breadcrumb);
 	}
 
-	virtual const Variant* getSubItem( unsigned int index ) const
+	virtual const Variant* getSubItem(unsigned int index) const
 	{
 		if (index < subItems_.size())
 		{
@@ -55,17 +60,28 @@ public:
 		return nullptr;
 	}
 
-	virtual const std::string & getDisplayValue() const { return displayValue_; }
-	virtual const std::string & getFullPath() const { return fullPath_; }
-	virtual const IItem * getItem() const { return item_; }
-	virtual const IListModel * getSubItems() const { return &subItems_; }
+	virtual const std::string& getDisplayValue() const
+	{
+		return displayValue_;
+	}
+	virtual const std::string& getFullPath() const
+	{
+		return fullPath_;
+	}
+	virtual const IItem* getItem() const
+	{
+		return item_;
+	}
+	virtual const IListModel* getSubItems() const
+	{
+		return &subItems_;
+	}
 
 protected:
-	
 	std::string fullPath_;
 	std::string displayValue_;
 	VariantList subItems_;
-	const IItem * item_;
+	const IItem* item_;
 };
 
 //------------------------------------------------------------------------------
@@ -79,7 +95,6 @@ class IBreadcrumbsModel
 	DECLARE_REFLECTED
 
 public:
-
 	//-------------------------------------
 	// Lifecycle
 	//-------------------------------------
@@ -90,27 +105,43 @@ public:
 		// allows abstract classes.
 	}
 
-	virtual ~IBreadcrumbsModel() {}
-	
+	virtual ~IBreadcrumbsModel()
+	{
+	}
+
 	//-------------------------------------
 	// Data Model Accessors
 	//-------------------------------------
-	
+
 	// Returns the breadcrumb items
 	// Expected: IListModel of IBreadcrumbItem objects
-	virtual IListModel * getBreadcrumbs() const { return nullptr; }
+	virtual IListModel* getBreadcrumbs() const
+	{
+		return nullptr;
+	}
 
 	// Returns the full path of the breadcrumbs in a format that may be presented as a string
-	virtual const char * getPath() const { return nullptr; }
+	virtual const char* getPath() const
+	{
+		return nullptr;
+	}
 
 	// Returns the IItem tied to the breadcrumb at the specified index
-	virtual Variant getItemAtIndex( unsigned int index, int childIndex ) { return Variant(); }
+	virtual Variant getItemAtIndex(unsigned int index, int childIndex)
+	{
+		return Variant();
+	}
 
 	// Clears the current set of breadcrumbs
-	virtual void clear() {}
+	virtual void clear()
+	{
+	}
 
 	// Returns the number of top-level breadcrumbs stored in the model
-	virtual size_t size() const { return 0; }
+	virtual size_t size() const
+	{
+		return 0;
+	}
 };
 } // end namespace wgt
 #endif //I_BREADCRUMBS_MODEL_HPP

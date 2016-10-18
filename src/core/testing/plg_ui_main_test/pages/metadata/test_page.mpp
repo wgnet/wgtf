@@ -64,6 +64,9 @@ BEGIN_EXPOSE( TestPage, MetaNone() )
 	EXPOSE( "UseAssetBrowserDialog",
 		getAssetUrl, setAssetUrl,
 		MetaGroup( s_Group1 ) + MetaUrl( true, "AssetBrowser") )
+	EXPOSE_METHOD( "BUG MethodOnly should not be visible in the UI",
+		methodOnly,
+		MetaGroup( s_Group1 ) )
 	EXPOSE( "TestIntStringVectorMap", testVectorMap_, MetaNone() )
 	EXPOSE( "TestIntStringMap", testMap_, MetaNone() )
 	EXPOSE( "TestStringMap", testStringMap_, MetaNone() )

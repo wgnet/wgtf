@@ -28,7 +28,7 @@ namespace
 			return nullptr;
 		}
 
-		Variant getData( int column, size_t roleId ) const 
+		Variant getData( int column, ItemRole::Id roleId ) const
 		{ 
 			if (roleId == ValueRole::roleId_)
 			{
@@ -42,7 +42,7 @@ namespace
 			return Variant();
 		}	
 		
-		bool setData( int column, size_t roleId, const Variant & data ) 
+		bool setData( int column, ItemRole::Id roleId, const Variant & data )
 		{ 
 			return false; 
 		}

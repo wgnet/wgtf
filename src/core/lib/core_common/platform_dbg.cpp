@@ -13,11 +13,13 @@ namespace wgt
 {
 bool FormatLastErrorMessage(std::string& errorMsg)
 {
+	// Must be called first
+	const unsigned int lastError = GetLastError();
+
 	static const size_t errorMsgLength = 4096;
 	errorMsg.resize(errorMsgLength);
 
 	bool hadError = false;
-	unsigned int lastError = GetLastError();
 
 	if (lastError != ERROR_SUCCESS)
 	{
@@ -25,6 +27,11 @@ bool FormatLastErrorMessage(std::string& errorMsg)
 		hadError = true;
 	}
 	return hadError;
+}
+
+void FlushDebugString()
+{
+	// Do nothing
 }
 } // end namespace wgt
 #endif
@@ -46,6 +53,11 @@ bool FormatLastErrorMessage(std::string& errorMsg)
 	}
 
 	return !errorMsg.empty();
+}
+
+void FlushDebugString()
+{
+	fflush(stdout);
 }
 } // end namespace wgt
 

@@ -3,6 +3,8 @@
 
 #include <cstddef>
 
+#include "core_reflection/reflection_dll.hpp"
+
 namespace wgt
 {
 class ObjectHandle;
@@ -10,7 +12,7 @@ class IDefinitionManager;
 class ReflectedMethodParameters;
 class Variant;
 
-class IMethod
+class REFLECTION_DLL IMethod
 {
 public:
 	virtual ~IMethod() {}

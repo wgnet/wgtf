@@ -3,15 +3,25 @@
 
 namespace wgt
 {
-ChildListAdapter::ChildListAdapter( const QModelIndex & parent )
+ChildListAdapter::ChildListAdapter( const QModelIndex & parent, bool connect )
 	: parent_( parent )
+	, connect_( connect )
 {
-	connect();
+	if (connect_)
+	{
+		this->connect();
+	}
+	else
+	{
+		connections_ += QObject::connect( 
+			this->model(), &QAbstractItemModel::dataChanged,
+			this, &ChildListAdapter::onParentDataChanged );
+	}
 }
 
 ChildListAdapter::~ChildListAdapter()
 {
-	disconnect();
+	this->disconnect();
 }
 
 QAbstractItemModel * ChildListAdapter::model() const
@@ -74,7 +84,6 @@ void ChildListAdapter::onParentLayoutAboutToBeChanged(const QList<QPersistentMod
 	}
 	if (resetLayout)
 	{
-		reset();
 		emit layoutAboutToBeChanged();
 	}
 }
@@ -97,6 +106,7 @@ void ChildListAdapter::onParentLayoutChanged(const QList<QPersistentModelIndex> 
 	}
 	if (resetLayout)
 	{
+		reset();
 		emit layoutChanged();
 	}
 }
@@ -144,4 +154,31 @@ void ChildListAdapter::onParentRowsRemoved(const QModelIndex & parent, int first
 	reset();
 	endRemoveRows();
 }
+
+
+void ChildListAdapter::onParentRowsAboutToBeMoved( const QModelIndex & sourceParent,
+	int sourceFirst,
+	int sourceLast,
+	const QModelIndex & destinationParent,
+	int destinationRow ) /* override */
+{
+	beginMoveRows( sourceParent,
+		sourceFirst,
+		sourceLast,
+		destinationParent,
+		destinationRow );
+}
+
+
+void ChildListAdapter::onParentRowsMoved( const QModelIndex & sourceParent,
+	int sourceFirst,
+	int sourceLast,
+	const QModelIndex & destinationParent,
+	int destinationRow ) /* override */
+{
+	this->reset();
+	endMoveRows();
+}
+
+
 } // end namespace wgt

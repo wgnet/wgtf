@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //
-//  asset_browser_view_model.h
+//  asset_browser_view_model_old.h
 //
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //  Copyright (c) Wargaming.net. All rights reserved.
@@ -23,32 +23,32 @@ class AssetBrowserViewModel : public IAssetBrowserViewModel
 {
 public:
 	AssetBrowserViewModel(
-		IDefinitionManager& definitionManager_,
-		ObjectHandleT<IAssetBrowserModel> data,
-		ObjectHandleT<IAssetBrowserEventModel> events );
+	IDefinitionManager& definitionManager_,
+	ObjectHandleT<IAssetBrowserModel> data,
+	ObjectHandleT<IAssetBrowserEventModel> events);
 
 	virtual ObjectHandle data() const override;
 
 	virtual ObjectHandle events() const override;
 
-	virtual IBreadcrumbsModel * getBreadcrumbsModel() const override;
+	virtual IBreadcrumbsModel* getBreadcrumbsModel() const override;
 
-	virtual const int & currentSelectedAssetIndex() const override;
+	virtual const int& currentSelectedAssetIndex() const override;
 
-	virtual void currentSelectedAssetIndex( const int & index ) override;
+	virtual void currentSelectedAssetIndex(const int& index) override;
 
-	virtual IAssetObjectItem * getSelectedAssetData() const override;
+	virtual IAssetObjectItem* getSelectedAssetData() const override;
 
 	virtual bool refreshData() const override;
 
-	virtual ISelectionHandler * getFolderSelectionHandler() const override;
-	virtual ISelectionHandler * getFolderContentSelectionHandler() const override;
+	virtual ISelectionHandler* getFolderSelectionHandler() const override;
+	virtual ISelectionHandler* getFolderContentSelectionHandler() const override;
 
-	virtual const char * getSelectedTreeItemName() override;
+	virtual const char* getSelectedTreeItemName() override;
 
 private:
-	void onUseSelectedAsset( const IAssetObjectItem& selectedAsset );
-	void updateFolderContentsFilter( const Variant& filter );
+	void onUseSelectedAsset(const IAssetObjectItem& selectedAsset);
+	void updateFolderContentsFilter(const Variant& filter);
 
 	struct AssetBrowserViewModelImplementation;
 	std::unique_ptr<AssetBrowserViewModelImplementation> impl_;

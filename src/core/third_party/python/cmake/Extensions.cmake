@@ -126,11 +126,11 @@ function(add_python_extension name)
     else(BUILTIN_${upper_name})
         add_library(${target_name} SHARED ${absolute_sources})
         include_directories(${ADD_PYTHON_EXTENSION_INCLUDEDIRS})
-        target_link_libraries(${target_name} ${ADD_PYTHON_EXTENSION_LIBRARIES})
+        target_link_libraries(${target_name} PRIVATE ${ADD_PYTHON_EXTENSION_LIBRARIES})
 
         if(WIN32)
             #list(APPEND ADD_PYTHON_EXTENSION_DEFINITIONS Py_NO_ENABLE_SHARED)
-            target_link_libraries(${target_name} libpython-shared)
+            target_link_libraries(${target_name} PRIVATE libpython-shared)
             if(MINGW)
                 set_target_properties(${target_name} PROPERTIES
                     LINK_FLAGS -Wl,--enable-auto-import

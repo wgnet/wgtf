@@ -4,6 +4,7 @@
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_dependency_system/depends.hpp"
+#include "core_common/wg_future.hpp"
 
 
 #include <memory>
@@ -48,7 +49,7 @@ private:
 
 
 	IComponentContext& context_;
-	std::unique_ptr<IView> pythonView_;
+	wg_future<std::unique_ptr< IView >> pythonView_;
 	ObjectHandle contextObject_;
 };
 } // end namespace wgt

@@ -23,20 +23,19 @@ SET( ALL_SRCS
 )
 
 BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
-BW_ADD_EXECUTABLE( reflection_unit_test ${BLOB_SRCS} )
+BW_ADD_EXECUTABLE(  ${PROJECT_NAME} ${BLOB_SRCS} )
 
-BW_TARGET_LINK_LIBRARIES( reflection_unit_test PRIVATE
+BW_TARGET_LINK_LIBRARIES(  ${PROJECT_NAME} PRIVATE
 	core_reflection
 	reflection_objects_test
-	core_serialization
 	core_unit_test
 	core_reflection_utils
 	core_command_system
 	core_data_model
 )
 
-BW_ADD_TOOL_TEST( reflection_unit_test )
+BW_ADD_TOOL_TEST(  ${PROJECT_NAME} )
 
-BW_PRECOMPILED_HEADER( reflection_unit_test pch.hpp )
-BW_PROJECT_CATEGORY( reflection_unit_test "Unit Tests" )
+BW_PRECOMPILED_HEADER(  ${PROJECT_NAME} pch.hpp )
+BW_PROJECT_CATEGORY(  ${PROJECT_NAME} "Unit Tests" )
 

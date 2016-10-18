@@ -27,12 +27,15 @@
 #include "core_ui_framework/i_preferences.hpp"
 #include "core_ui_framework/i_window.hpp"
 #include "core_data_model/i_list_model.hpp"
+#include "core_qt_common/helpers/qt_helpers.hpp"
 
 #include <private/qmetaobjectbuilder_p.h>
 #include <QVariant>
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <QPointer>
+#include <QMouseEvent>
+#include <QApplication>
 
 Q_DECLARE_METATYPE( wgt::ObjectHandle );
 
@@ -68,7 +71,7 @@ struct QtScriptingEngine::Implementation
 
 	void initialise( IQtFramework& qtFramework, IComponentContext& contextManager );
 
-	QtScriptObject* createScriptObject( const ObjectHandle& object, QObject * parent );
+	QtScriptObject* createScriptObject(const Variant& object, QObject* parent);
 	QMetaObject* getMetaObject( const IClassDefinition& classDefinition );
 
 	QtScriptingEngine& self_;
@@ -130,11 +133,11 @@ void QtScriptingEngine::Implementation::initialise( IQtFramework& qtFramework, I
 	assert( uiFramework_ );
 
 	// TODO: All but the scriptTypeConverter need to be moved to the qt app plugin.
-	qtTypeConverters_.emplace_back( new GenericQtTypeConverter< ObjectHandle >() );
+	qtTypeConverters_.emplace_back(new GenericQtTypeConverter<ObjectHandle>());
 	qtTypeConverters_.emplace_back( new ImageQtTypeConverter() );
-	qtTypeConverters_.emplace_back( new ModelQtTypeConverter() );
+	qtTypeConverters_.emplace_back( new ModelQtTypeConverter( contextManager ) );
 	qtTypeConverters_.emplace_back( new QObjectQtTypeConverter() );
-	qtTypeConverters_.emplace_back( new CollectionQtTypeConverter() );
+	qtTypeConverters_.emplace_back( new CollectionQtTypeConverter( contextManager ) );
 	qtTypeConverters_.emplace_back( new ScriptQtTypeConverter( self_ ) );
 
 	QMetaType::registerComparators<ObjectHandle>();
@@ -193,14 +196,27 @@ void QtScriptingEngine::Implementation::PropertyListener::postInvoke(
     }
 }
 
-
-QtScriptObject* QtScriptingEngine::Implementation::createScriptObject( const ObjectHandle& object, QObject* parent )
+QtScriptObject* QtScriptingEngine::Implementation::createScriptObject(const Variant& variant, QObject* parent)
 {
+	ObjectHandle object;
+	if (variant.typeIs<ObjectHandle>())
+	{
+		object = variant.cast<ObjectHandle>();
+	}
+	else
+	{
+		auto typeId = variant.type()->typeId();
+		auto definition = defManager_->getDefinition(typeId.getName());
+		if (definition != nullptr)
+		{
+			ObjectHandle obj(variant, definition);
+			object = obj;
+		}
+	}
 	if (!object.isValid())
 	{
 		return nullptr;
 	}
-
 	auto root = reflectedRoot( object, *defManager_ );
 
     auto parentItr = scriptObjects_.find( root );
@@ -396,8 +412,8 @@ void QtScriptingEngine::deregisterScriptObject( QtScriptObject & scriptObject )
     }
 }
 
-QtScriptObject * QtScriptingEngine::createScriptObject( 
-	const ObjectHandle & object, QObject* parent )
+QtScriptObject* QtScriptingEngine::createScriptObject(
+const Variant& object, QObject* parent)
 {
 	return impl_->createScriptObject( object, parent );
 }
@@ -452,6 +468,18 @@ bool QtScriptingEngine::queueCommand( QString command )
 	return true;
 }
 
+//NOTE(aidan): Qt doesn't send mouse release events correctly when a drag completes. To workaround,
+//			   a fake event is posted when the drag is completed
+//TODO(aidan): This bug might be specific to Qt's win32 message handling implementation. Test on Mac, Maya
+void QtScriptingEngine::makeFakeMouseRelease()
+{
+	QMouseEvent* releaseEvent = 
+		new QMouseEvent( QEvent::MouseButtonRelease, QPointF( 0, 0 ), Qt::MouseButton::LeftButton, 0, 0 );
+
+	//NOTE(aidan): postEvent takes ownership of the release event
+	QApplication::postEvent( (QObject*)QApplication::focusWidget(), releaseEvent );
+}
+
 void QtScriptingEngine::beginUndoFrame()
 {
 	impl_->commandSystemProvider_->beginBatchCommand();
@@ -479,12 +507,12 @@ void QtScriptingEngine::deleteMacro( QString command )
 	impl_->commandSystemProvider_->deleteMacroByName( commandId.c_str() );
 }
 
-void QtScriptingEngine::selectControl( WGCopyController* control, bool append )
+void QtScriptingEngine::selectControl( wgt::WGCopyController* control, bool append )
 {
 	impl_->copyPasteManager_->onSelect( control, append );
 }
 
-void QtScriptingEngine::deselectControl( WGCopyController* control, bool reset )
+void QtScriptingEngine::deselectControl( wgt::WGCopyController* control, bool reset )
 {
 	impl_->copyPasteManager_->onDeselect( control, reset );
 }
@@ -497,25 +525,61 @@ QObject * QtScriptingEngine::iterator( const QVariant & collection )
 		typeId = collection.userType();
 	}
 
-	if (typeId != qMetaTypeId< ObjectHandle >())
+	if (typeId == qMetaTypeId<Variant>())
 	{
-		return nullptr;
+		auto variant = collection.value<Variant>();
+		if (!variant.typeIs<IListModel>())
+		{
+			return nullptr;
+		}
+
+		auto listModel = const_cast<IListModel*>(variant.cast<const IListModel*>());
+		if (listModel == nullptr)
+		{
+			return nullptr;
+		}
+
+		// QML will take ownership of this object
+		return new WGListIterator(*listModel);
 	}
 
-	auto handle = collection.value< ObjectHandle >();
-	if (!handle.isValid())
+	if (typeId == qMetaTypeId<ObjectHandle>())
 	{
-		return nullptr;
+		auto handle = collection.value<ObjectHandle>();
+		if (!handle.isValid())
+		{
+			return nullptr;
+		}
+
+		auto listModel = handle.getBase<IListModel>();
+		if (listModel == nullptr)
+		{
+			return nullptr;
+		}
+
+		// QML will take ownership of this object
+		return new WGListIterator(*listModel);
 	}
 
-	auto listModel = handle.getBase< IListModel >();
-	if (listModel == nullptr)
-	{
-		return nullptr;
-	}
+	return nullptr;
+}
 
-	// QML will take ownership of this object
-	return new WGListIterator( *listModel );
+QVariant QtScriptingEngine::getProperty( const QVariant & object, QString propertyPath )
+{
+	ObjectHandle handle;
+	if(QtHelpers::toVariant(object).tryCast(handle))
+	{
+		auto definition = handle.getDefinition(*getDefinitionManager());
+		if(definition != nullptr)
+		{
+			auto accessor = definition->bindProperty(propertyPath.toLocal8Bit().data(), handle);
+			if(accessor.isValid())
+			{
+				return QtHelpers::toQVariant(accessor.getValue(), nullptr);
+			}
+		}
+	}
+	return QVariant();
 }
 
 bool QtScriptingEngine::setValueHelper( QObject * object, QString property, QVariant value )

@@ -1,15 +1,13 @@
 #include "qt_model_helpers.hpp"
 
-#include "core_qt_common/models/extensions/i_model_extension.hpp"
+#include "core_qt_common/models/extensions/deprecated/i_model_extension_old.hpp"
 
 
 namespace wgt
 {
 namespace QtModelHelpers
 {
-
-
-int encodeRole( size_t roleId, const Extensions& extensions )
+int encodeRole(ItemRole::Id roleId, const Extensions& extensions)
 {
 	int role = 0;
 	for (const auto& extension : extensions)

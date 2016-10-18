@@ -8,6 +8,14 @@
 
 namespace wgt
 {
+
+
+ModelQtTypeConverter::ModelQtTypeConverter( IComponentContext & context )
+	: context_( context )
+{
+}
+
+
 bool ModelQtTypeConverter::toVariant( const QVariant & qVariant, Variant & o_variant ) const
 {
 	if (qVariant.canConvert< QtTableModel * >())
@@ -43,65 +51,109 @@ bool ModelQtTypeConverter::toVariant( const QVariant & qVariant, Variant & o_var
 
 bool ModelQtTypeConverter::toQVariant(const Variant & variant, QVariant & o_qVariant, QObject* parent) const
 {
-	if (!variant.typeIs< ObjectHandle >())
+	if (variant.typeIs<AbstractItemModel>())
 	{
-		return false;
-	}
-	
-	ObjectHandle provider;
-	if (!variant.tryCast( provider ))
-	{
-		return false;
-	}
-
-	{
-		auto source = provider.getBase< AbstractItemModel >();
+		auto source = variant.cast<const AbstractItemModel*>();
 		if (source != nullptr)
 		{
-			assert( parent != nullptr );
-			auto model = new QtItemModel( *source );
-			model->setParent( parent );
-			o_qVariant = QVariant::fromValue( model );
-			return true;
-		}
-	}
-
-	{
-		auto source = provider.getBase< AbstractListModel >();
-		if (source != nullptr)
-		{
-			assert( parent != nullptr );
-			auto model = new QtListModel( *source );
-			model->setParent( parent );
-			o_qVariant = QVariant::fromValue( model );
-			return true;
-		}
-	}
-
-	{
-		auto source = provider.getBase< AbstractTreeModel >();
-		if (source != nullptr)
-		{
-			assert( parent != nullptr );
-			auto model = new QtTreeModel( *source );
-			model->setParent( parent );
-			o_qVariant = QVariant::fromValue( model );
-			return true;
-		}
-	}
-
-	{
-		auto source = provider.getBase< AbstractTableModel >();
-		if (source != nullptr)
-		{
-			assert( parent != nullptr );
-			auto model = new QtTableModel( *source );
+			assert(parent != nullptr);
+			auto model = new QtItemModel(context_, const_cast<AbstractItemModel&>(*source));
 			model->setParent(parent);
-			o_qVariant = QVariant::fromValue( model );
+			o_qVariant = QVariant::fromValue(model);
 			return true;
 		}
 	}
+	if (variant.typeIs<AbstractListModel>())
+	{
+		auto source = variant.cast<const AbstractListModel*>();
+		if (source != nullptr)
+		{
+			assert(parent != nullptr);
+			auto model = new QtListModel(context_, const_cast<AbstractListModel&>(*source));
+			model->setParent(parent);
+			o_qVariant = QVariant::fromValue(model);
+			return true;
+		}
+	}
+	if (variant.typeIs<AbstractTreeModel>())
+	{
+		auto source = variant.cast<const AbstractTreeModel*>();
+		if (source != nullptr)
+		{
+			assert(parent != nullptr);
+			auto model = new QtTreeModel(context_, const_cast<AbstractTreeModel&>(*source));
+			model->setParent(parent);
+			o_qVariant = QVariant::fromValue(model);
+			return true;
+		}
+	}
+	if (variant.typeIs<AbstractTableModel>())
+	{
+		auto source = variant.cast<const AbstractTableModel*>();
+		if (source != nullptr)
+		{
+			assert(parent != nullptr);
+			auto model = new QtTableModel(context_, const_cast<AbstractTableModel&>(*source));
+			model->setParent(parent);
+			o_qVariant = QVariant::fromValue(model);
+			return true;
+		}
+	}
+	if (variant.typeIs<ObjectHandle>())
+	{
+		auto provider = variant.cast<ObjectHandle>();
+		if (provider == nullptr)
+		{
+			return false;
+		}
+		{
+			auto source = provider.getBase<AbstractItemModel>();
+			if (source != nullptr)
+			{
+				assert(parent != nullptr);
+				auto model = new QtItemModel(context_, *source);
+				model->setParent(parent);
+				o_qVariant = QVariant::fromValue(model);
+				return true;
+			}
+		}
 
+		{
+			auto source = provider.getBase<AbstractListModel>();
+			if (source != nullptr)
+			{
+				assert(parent != nullptr);
+				auto model = new QtListModel(context_, *source);
+				model->setParent(parent);
+				o_qVariant = QVariant::fromValue(model);
+				return true;
+			}
+		}
+
+		{
+			auto source = provider.getBase<AbstractTreeModel>();
+			if (source != nullptr)
+			{
+				assert(parent != nullptr);
+				auto model = new QtTreeModel(context_, *source);
+				model->setParent(parent);
+				o_qVariant = QVariant::fromValue(model);
+				return true;
+			}
+		}
+
+		{
+			auto source = provider.getBase<AbstractTableModel>();
+			if (source != nullptr)
+			{
+				assert(parent != nullptr);
+				auto model = new QtTableModel(context_, *source);
+				model->setParent(parent);
+				o_qVariant = QVariant::fromValue(model);
+				return true;
+			}
+		}
+	}
 	return false;
 }
 } // end namespace wgt

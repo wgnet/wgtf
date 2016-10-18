@@ -6,7 +6,7 @@
 #if defined(_MSC_VER)
 #define DEPRECATED __declspec(deprecated)
 #elif defined(__GNUC__) || defined(__clang__)
-#define DEPRECATED __attribute__ ((deprecated))
+#define DEPRECATED __attribute__((deprecated))
 #else
 #pragma message("WARNING: You need to implement DEPRECATED for this compiler")
 #define DEPRECATED

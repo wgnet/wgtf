@@ -200,8 +200,7 @@ namespace Reflection
 		const Variant * variant )
 	{
 		std::pair< std::string, std::string > debugData;
-		if(	variant == nullptr||
-			Variant::getMetaTypeManager() == nullptr)
+		if(	variant == nullptr )
 		{
 			return std::make_pair( "Empty variant", "Empty variant" );
 		}
@@ -239,23 +238,26 @@ IInterface * ReflectionSystemContextManager::createContext(
 	return new InterfaceHolder< ContextDefinitionManager >( contextManager, true );
 }
 
-
-//==============================================================================
+/** 
+* A plugin which registers an IDefinitionManager interface to allow reflection 
+* on class members for easy and unified serialization of data and exposing to UI code
+* 
+* @ingroup plugins
+* @ingroup coreplugins
+*/
 class ReflectionPlugin
 	: public PluginMain
 {
 private:
 	std::vector< IInterface * >					types_;
-	std::unique_ptr< MetaTypeImpl< ObjectHandle > >			baseProviderMetaType_;
 	std::unique_ptr< ReflectionComponentProvider > reflectionComponentProvider_;
 	std::unique_ptr< ReflectionSystemHolder >	reflectionSystemHolder_;
 	
 public:
 	//==========================================================================
 	ReflectionPlugin( IComponentContext & contextManager )
-		: baseProviderMetaType_( new MetaTypeImpl<ObjectHandle>() )
-        , reflectionSystemHolder_( new ReflectionSystemHolder )
-     	{
+		: reflectionSystemHolder_( new ReflectionSystemHolder )
+	{ 
 		//Force linkage
 		Reflection::inspect();
 		Reflection::inspectVariant();
@@ -274,12 +276,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		auto metaTypeMgr = contextManager.queryInterface<IMetaTypeManager>();
-		if(metaTypeMgr)
-		{
-			Variant::setMetaTypeManager( metaTypeMgr );
-			metaTypeMgr->registerType( baseProviderMetaType_.get() );
-		}
 		auto uiFramework = contextManager.queryInterface<IUIFramework>();
 		if (uiFramework)
 		{

@@ -1,6 +1,8 @@
-import QtQuick 2.3
+import QtQuick 2.5
+import WGControls.Styles 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A scrollbar used within WGScrollPanel.
  The scrollbar acts as both a flickable position indicator and a conventional click and drag scrollbar.
  When the mouse cursor is positioned over the flickable indicator a conventional scrollbar is revealed.
@@ -9,6 +11,7 @@ import QtQuick 2.3
 Item {
     id: scrollBar
     objectName: "WGScrollBar"
+    WGComponent { type: "WGScrollBar" }
 
     /*! The properties that define the scrollbar's state.
         position and pageSize are in the range 0.0 - 1.0.  They are relative to the
@@ -171,6 +174,20 @@ Item {
                  if (!scrollBarArea.drag.active && !scrollBarArea.containsMouse && expandableScrollBar)
                  {
                      __expanded = false
+                 }
+             }
+         }
+
+         onWheel: {
+             if (orientation = Qt.Vertical)
+             {
+                 if (wheel.angleDelta.y > 0)
+                 {
+                     scrollFlickable.flick(0,1000)
+                 }
+                 else
+                 {
+                     scrollFlickable.flick(0,-1000)
                  }
              }
          }

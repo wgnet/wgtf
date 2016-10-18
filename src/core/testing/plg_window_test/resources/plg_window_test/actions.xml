@@ -1,7 +1,5 @@
 <Actions>
 	<Exit text="E&amp;xit" shortcut="Alt+F4" path="File" icon=":/plg_window_test/icons/exit_16x16.png"/>
-	<Open text="Open" shortcut="Ctrl+O" path="TestData"/>
-	<Close text="Close" shortcut="Ctrl+W" path="TestData"/>
 	<Undo shortcut="Ctrl+Z" path="ToolBar|" icon=":/plg_window_test/icons/undo_16x16.png"/>
 	<Redo shortcut="Ctrl+Y" path="ToolBar|" icon=":/plg_window_test/icons/redo_16x16.png"/>
 	<AddTestAlert path="ToolBar.Test|"/>

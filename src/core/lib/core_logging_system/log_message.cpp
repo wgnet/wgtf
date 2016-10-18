@@ -83,6 +83,11 @@ const char* LogMessage::c_str()
 	return message_.c_str();
 }
 
+const std::string& LogMessage::str()
+{
+	return message_;
+}
+
 LogLevel LogMessage::getLevel()
 {
 	return level_;

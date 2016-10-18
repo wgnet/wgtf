@@ -1,8 +1,7 @@
 #include "qt_menu.hpp"
-
 #include "core_ui_framework/i_action.hpp"
 #include "core_logging/logging.hpp"
-
+#include "core_common/signal.hpp"
 #include <QApplication>
 #include <QAction>
 #include <QObject>
@@ -82,9 +81,10 @@ void QtMenu::update()
 		action.second->setEnabled( action.first->enabled() );
 		if (action.second->isCheckable())
 		{
-			action.second->setChecked( action.first->checked() );
+			action.second->setChecked(action.second->actionGroup() ?
+			                          action.second->actionGroup()->checkedAction() == action.second.data() :
+			                          action.first->checked());
 		}
-		
 	}
 }
 
@@ -165,7 +165,26 @@ void QtMenu::destroyQAction( IAction & action )
 	auto it = actions_.find( &action );
 	if (it != actions_.end())
 	{
+		const std::string groupID(action.group());
+		if (!groupID.empty())
+		{
+			auto groupItr = groups_.find(groupID);
+			if (groupItr != groups_.end())
+			{
+				groupItr->second->removeAction(it->second.data());
+				if (groupItr->second->actions().empty())
+				{
+					groups_.erase(groupItr);
+				}
+			}
+		}
 		actions_.erase( it );
+	}
+
+	auto findIt = connections_.find( &action );
+	if (findIt != connections_.end())
+	{
+		 connections_.erase( findIt );
 	}
 }
 
@@ -206,7 +225,12 @@ void QtMenu::addMenuAction( QMenu & qMenu, QAction & qAction, const char * path 
 	}
 
 	assert( menu != nullptr );
-	menu->addAction( &qAction );
+	auto order = qAction.property( "order" ).toInt();
+
+	auto actions = menu->actions();
+	auto it = std::find_if( actions.begin(), actions.end(), 
+		[&](QAction * action) { return action->property( "order" ).toInt() > order; } );
+	menu->insertAction( it == actions.end() ? nullptr : *it, &qAction );
 }
 
 void QtMenu::removeMenuAction( QMenu & qMenu, QAction & qAction )
@@ -218,7 +242,7 @@ void QtMenu::removeMenuAction( QMenu & qMenu, QAction & qAction )
 		removeMenuAction( *child, qAction );
 		if (child->isEmpty())
 		{
-			delete child;
+            child->deleteLater();
 		}
 	}
 }
@@ -233,25 +257,51 @@ QSharedPointer< QAction > QtMenu::createSharedQAction( IAction & action )
 
 	qAction.reset( new QAction( action.text(), QApplication::instance() ), &QObject::deleteLater );
 	sharedQActions_[&action] = qAction;
-
-	qAction->setIcon( QtMenu_Locals::generateIcon( action ) );
-	qAction->setShortcut( QKeySequence( action.shortcut() ) );
-	qAction->setEnabled( action.enabled() );
-	if ( action.isCheckable() )
+	qAction->setProperty("order", action.order());
+	if (action.isSeparator())
 	{
-		qAction->setCheckable( true );
-		qAction->setChecked( action.checked() );
+		qAction->setSeparator(true);
 	}
-
-	QObject::connect( qAction.data(), &QAction::triggered, 
-		[&action]() 
+	else
+	{
+		qAction->setIcon(QtMenu_Locals::generateIcon(action));
+		qAction->setShortcut(QKeySequence(action.shortcut()));
+		qAction->setEnabled(action.enabled());
+		if (action.isCheckable())
 		{
-			if (!action.enabled())
-			{
-				return;
-			}
-			action.execute();
+			qAction->setCheckable(true);
+			qAction->setChecked(action.checked());
+		}
+
+		QObject::connect(qAction.data(), &QAction::triggered,
+		                 [&action]()
+		                 {
+			                 if (!action.enabled())
+			                 {
+				                 return;
+			                 }
+			                 action.execute();
+			             });
+
+		connections_[&action] = action.signalShortcutChanged.connect(
+		[qAction](const char* shortcut)
+		{
+			assert(qAction != nullptr);
+			qAction->setShortcut(QKeySequence(shortcut));
 		});
+		const std::string groupID(action.group());
+		if (!groupID.empty())
+		{
+			auto itr = groups_.find(groupID);
+			if (itr == groups_.end())
+			{
+				groups_[groupID].reset(new QActionGroup(&menu_));
+			}
+
+			groups_.at(groupID)->addAction(qAction.data());
+			assert(qAction->actionGroup());
+		}
+	}
 
 	return qAction;
 }

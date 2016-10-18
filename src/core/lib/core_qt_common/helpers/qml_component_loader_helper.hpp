@@ -23,6 +23,7 @@ public:
 		std::string urlString_;
 		QUrl url_;
 		Signal< void ( QQmlComponent * ) > sig_Loaded_;
+        Signal< void ( QQmlComponent * ) > sig_Error_;
 		ConnectionHolder connections_;
 	};
 

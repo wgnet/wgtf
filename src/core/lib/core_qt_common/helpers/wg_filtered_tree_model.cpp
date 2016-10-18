@@ -93,8 +93,13 @@ void WGFilteredTreeModel::onSourceChanged()
 	ITreeModel * source = nullptr;
 
 	Variant variant = QtHelpers::toVariant( getSource() );
-	if (variant.typeIs< ObjectHandle >())
+	if (variant.typeIs<ITreeModel>())
 	{
+		source = const_cast<ITreeModel*>(variant.cast<const ITreeModel*>());
+	}
+	else if (variant.typeIs<ObjectHandle>())
+	{
+		NGT_WARNING_MSG("Double wrapping found, please wrap ITreeModel pointer as Variant directly.\n");
 		ObjectHandle provider;
 		if (variant.tryCast( provider ))
 		{

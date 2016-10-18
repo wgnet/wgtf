@@ -1,7 +1,8 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 
 /*!
+ \ingroup wgcontrols
  \brief Scrolling Panel. Recommend childObject_ be a WGColumnLayout or similar
  Use this class for a scroll panel intended to fill the area, eg. the ApplicationWindow
  Use WGSubScrollPanel if the parent depends on this height eg in a WGSubPanel
@@ -31,6 +32,7 @@ WGScrollPanel{
 Item {
     id: scrollableFrame
     objectName: "WGScrollPanel"
+    WGComponent { type: "WGScrollPanel" }
 
     property Component childObject:
         Text {
@@ -67,9 +69,7 @@ Item {
         Loader {
             id: scrollContent
 
-            property int barMargin: verticalScrollBar.visible ? defaultSpacing.rightMargin : 0
-
-            width: scrollableFrame.vertical ? scrollableFrame.width - defaultSpacing.leftMargin - barMargin : undefined
+            width: scrollableFrame.vertical ? scrollableFrame.width - defaultSpacing.leftMargin - defaultSpacing.rightMargin : undefined
             height: !scrollableFrame.vertical ? scrollableFrame.height : undefined
 
             sourceComponent: childObject

@@ -44,8 +44,8 @@ public:
 
 	// IItem
 	ThumbnailData getThumbnail( int column ) const { return nullptr; }
-	Variant getData( int column, size_t roleId ) const { return Variant(); }
-	bool setData( int column, size_t roleId, const Variant & data ) { return false; }
+	Variant getData( int column, ItemRole::Id roleId ) const { return Variant(); }
+	bool setData( int column, ItemRole::Id roleId, const Variant & data ) { return false; }
 
 	// GenericTreeItem
 	GenericTreeItem * getParent() const { return parent_; }

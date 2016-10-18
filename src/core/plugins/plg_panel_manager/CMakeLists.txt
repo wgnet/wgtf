@@ -14,7 +14,7 @@ SET( ALL_SRCS
 	panel_manager.hpp
 	plg_panel_manager.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(plg_panel_manager resources/plg_panel_manager)
 BW_GLOB_RESOURCE_FILES()

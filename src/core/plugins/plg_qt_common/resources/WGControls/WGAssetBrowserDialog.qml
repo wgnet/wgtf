@@ -1,16 +1,18 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.2
 
 
 
 /*!
+ \ingroup wgcontrols
  \brief An AssetBrowser specific file dialog
 */
 
 WGFileDialog {
     id: mainDialog
     objectName: "WGAssetBrowserDialog"
+    WGComponent { type: "WGAssetBrowserDialog" }
 
     onOpen: {
         abInstance.width = dWidth

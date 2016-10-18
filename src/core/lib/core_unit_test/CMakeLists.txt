@@ -17,8 +17,7 @@ SET( ALL_SRCS
 	unit_test.cpp
 	unit_test.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
-
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_LIBRARY( core_unit_test
 	${ALL_SRCS}

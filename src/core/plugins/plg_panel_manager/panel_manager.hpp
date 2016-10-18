@@ -12,18 +12,21 @@
 namespace wgt
 {
 class PanelManager
-	: public Implements<IPanelManager>
-	, public Depends< IViewCreator >
+: public Implements<IPanelManager>
+  ,
+  public Depends<IViewCreator>
 {
 public:
-
-	PanelManager( IComponentContext & contextManager );
+	PanelManager(IComponentContext& contextManager);
 	virtual ~PanelManager();
 
-	void createAssetBrowser(
-		ObjectHandleT<IAssetBrowserModel> dataModel,
-		std::unique_ptr< IView > & o_AssetBrowser,
-		std::unique_ptr<IAssetBrowserEventModel> eventModel = nullptr ) override;
+	wg_future<std::unique_ptr<IView>> createAssetBrowser(
+	ObjectHandleT<IAssetBrowserModel> dataModel,
+	std::unique_ptr<IAssetBrowserEventModel> eventModel = nullptr) override;
+
+	wg_future<std::unique_ptr<IView>> createAssetBrowser20(
+	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel,
+	std::unique_ptr<AssetBrowser20::IAssetBrowserEventModel> eventModel = nullptr) override;
 
 private:
 	IComponentContext& contextManager_;

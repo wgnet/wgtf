@@ -232,6 +232,26 @@ END_EXPOSE()
 
 
 //==============================================================================
+MetaActionObj::MetaActionObj()
+{
+}
+
+//==============================================================================
+void MetaActionObj::execute(ObjectHandle handle)
+{
+	if (action_)
+	{
+		action_(handle);
+	}
+}
+
+//==============================================================================
+BEGIN_EXPOSE(MetaActionObj, MetaBase, MetaNone())
+EXPOSE("actionName", getActionName)
+EXPOSE_METHOD("execute", execute)
+END_EXPOSE()
+
+//==============================================================================
 MetaCommandObj::MetaCommandObj()
 	: commandName_( nullptr )
 	, commandExecutable_( nullptr )
@@ -348,13 +368,21 @@ const char * MetaUrlObj::getDialogSelectedNameFilter() const
 BEGIN_EXPOSE( MetaUrlObj, MetaBase, MetaNone() )
 END_EXPOSE()
 
-
 //==============================================================================
 BEGIN_EXPOSE(MetaPasswordObj, MetaBase, MetaNone())
 END_EXPOSE()
 
-
 //==============================================================================
 BEGIN_EXPOSE(MetaMultilineObj, MetaBase, MetaNone())
 END_EXPOSE()
+
+//==============================================================================
+BEGIN_EXPOSE(MetaDirectInvokeObj, MetaBase, MetaNone())
+END_EXPOSE()
+
+//==============================================================================
+BEGIN_EXPOSE(MetaOnPropertyChangedObj, MetaBase, MetaNone())
+EXPOSE_METHOD("onPropertyChanged", onPropertyChanged)
+END_EXPOSE()
+
 } // end namespace wgt

@@ -1,7 +1,5 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_logging/logging.hpp"
-#include "core_variant/variant.hpp"
-#include "core_variant/default_meta_type_manager.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
@@ -20,11 +18,14 @@
 
 namespace wgt
 {
-//------------------------------------------------------------------------------
-// Plugin Class
-// Spins up an instance of the plugin and creates the panel with the view
-// model being passed is as source.
-//------------------------------------------------------------------------------
+/**
+* A plugin which creates an expanding list in a panel that can be filtered with multiple text choices
+*
+* @ingroup plugins
+* @image html plg_test_active_filters.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TestActiveFiltersPlugin
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -39,9 +40,6 @@ public:
 	//==========================================================================
 	void Initialise(IComponentContext & contextManager) override
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto defManager = contextManager.queryInterface< IDefinitionManager >();
 		if (defManager == nullptr)
 		{
@@ -64,9 +62,13 @@ public:
 		{
 			return;
 		}
-		viewCreator->createView( 
+		testView_ = viewCreator->createView( 
 			"TestActiveFilters/ActiveFiltersTestPanel.qml",
-			testViewModel, testView_ );
+			testViewModel );
+
+		testView2_ = viewCreator->createView( 
+			"TestActiveFilters/ActiveFiltersTestPanel20.qml",
+			testViewModel );
 	}
 
 	bool Finalise( IComponentContext & contextManager ) override
@@ -77,16 +79,26 @@ public:
 			return true;
 		}
 
-		if (testView_ != nullptr)
+		if (testView2_.valid())
 		{
-			uiApplication->removeView( *testView_ );
-			testView_ = nullptr;
+			auto view = testView2_.get();
+			uiApplication->removeView( *view );
+			view = nullptr;
 		}
+
+		if (testView_.valid())
+		{
+            auto view = testView_.get();
+			uiApplication->removeView( *view );
+			view = nullptr;
+		}
+
 		return true;
 	}
 
 private:
-	std::unique_ptr< IView > testView_;
+	wg_future<std::unique_ptr< IView >> testView_;
+	wg_future<std::unique_ptr< IView >> testView2_;
 };
 
 PLG_CALLBACK_FUNC( TestActiveFiltersPlugin )

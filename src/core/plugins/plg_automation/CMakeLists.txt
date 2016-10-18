@@ -7,7 +7,7 @@ INCLUDE( WGToolsCoreLibrary )
 SET( ALL_SRCS
 	plg_automation.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_automation SHARED
 	${ALL_SRCS}

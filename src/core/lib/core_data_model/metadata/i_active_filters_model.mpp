@@ -8,6 +8,7 @@
 namespace wgt
 {
 BEGIN_EXPOSE( ActiveFilterTerm, MetaNone() )
+	EXPOSE( "display", getDisplay, setDisplay, MetaDisplayName( L"Display" ) )
 	EXPOSE( "value", getValue, setValue, MetaDisplayName( L"Value" ) )
 	EXPOSE( "active", isActive, setActive, MetaDisplayName( L"Active" ) )
 END_EXPOSE()

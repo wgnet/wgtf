@@ -36,7 +36,7 @@ QString QtImageProvider::encode( const QImage &image )
 	{
 		imageCache_[key] = image;
 	}
-	return "image://" + QString( providerId() ) + "/" + key;
+	return "image://" + QString(providerId()) + "/" + QString(std::to_string(key).c_str());
 }
 
 QImage QtImageProvider::requestImage(const QString &id, QSize *size, const QSize& requestedSize)
@@ -53,7 +53,7 @@ QImage QtImageProvider::requestImage(const QString &id, QSize *size, const QSize
 		return QImage( requestedSize.width(), requestedSize.height(), QImage::Format_ARGB32 );
 	}
 
-	return it.value().scaled( requestedSize );
+	return requestedSize.isValid() ? it.value().scaled(requestedSize) : it.value();
 }
 
 const char * QtImageProvider::providerId()

@@ -34,7 +34,7 @@ public:
 private:
 	
 	mutable IComponentContext* contextManager_;
-	std::unique_ptr<IView> alertWindow_;
+	wg_future<std::unique_ptr< IView >> alertWindow_;
 	ObjectHandleT< AlertPageModel > alertPageModel_;
 
 	std::unique_ptr< IAction > testAddAlert_;

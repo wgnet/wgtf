@@ -67,59 +67,80 @@ private:
 		}
 	};
 
-	template<typename _dummy>
-	struct set_Value<false, _dummy>
-	{
-		static bool set(
-			const ObjectHandle & provider,
-			SetterFunc setter,
-			const Variant & value,
-			const IDefinitionManager & definitionManager )
-		{
-			return set_impl< Variant::traits< TargetType >::can_downcast >::set(
-						provider, setter, value, definitionManager );
-		}
-	};
+    template<typename _dummy>
+    struct set_Value<false, _dummy>
+    {
+        static bool set(
+            const ObjectHandle & provider,
+            SetterFunc setter,
+            const Variant & value,
+            const IDefinitionManager & definitionManager )
+        {
+            auto pBase = reflectedCast< BaseType >(provider.data(), provider.type(), definitionManager);
+            if (pBase == nullptr || setter == nullptr)
+            {
+                return false;
+            }
 
-	template<bool can_set, typename _dummy = void>
-	struct set_impl
-	{
-		static bool set(
-			const ObjectHandle & provider,
-			SetterFunc setter,
-			const Variant & value,
-			const IDefinitionManager & definitionManager )
-		{
-			typedef typename std::decay<TargetType>::type value_type;
-			auto pBase = reflectedCast< BaseType >( provider.data(), provider.type(), definitionManager );
-			if(pBase == nullptr || setter == nullptr)
-			{
-				return false;
-			}
-			value_type v;
-			if (!ReflectionUtilities::extract( value, v, definitionManager ))
-			{
-				return false;
-			}
-			(pBase->*setter)( v );
-			return true;
-		}
-	};
+            const bool is_reference = std::is_reference< TargetType >::value;
+            const bool can_set = !std::is_same< TargetType, const char* >::value && 
+                                 !std::is_same< TargetType, const wchar_t* >::value;
 
-	template<typename _dummy>
-	struct set_impl<false, _dummy>
-	{
-		static bool set(
-			const ObjectHandle &,
-			SetterFunc,
-			const Variant &,
-			const IDefinitionManager & )
-		{
-			// nop
-			return false;
-		}
-	};
+            return set_impl< can_set, is_reference >::set( setter, value, definitionManager, pBase );
+        }
+    };
 
+    template< bool can_set, bool is_reference, typename _dummy = void >
+    struct set_impl
+    {
+        static bool set(
+            SetterFunc,
+            const Variant &,
+            const IDefinitionManager &,
+            BaseType*)
+        {
+            const std::string type( typeid( TargetType ).name() );
+            NGT_WARNING_MSG( ( "Type " + type + " not supported\n" ).c_str() );
+            return false;
+        }
+    };
+
+    template< typename _dummy >
+    struct set_impl< true, false, _dummy >
+    {
+        static bool set(
+            SetterFunc setter,
+            const Variant & value,
+            const IDefinitionManager & definitionManager,
+            BaseType* pBase )
+        {
+            typedef typename std::decay< TargetType >::type value_type;
+
+            value_type v;
+            if ( ReflectionUtilities::extract( value, v, definitionManager ) )
+            {
+                (pBase->*setter)( v );
+                return true;
+            }
+            return false;
+        }
+    };
+
+    template< typename _dummy >
+    struct set_impl< true, true, _dummy >
+    {
+        static bool set(
+            SetterFunc setter,
+            const Variant & value,
+            const IDefinitionManager & definitionManager,
+            BaseType* pBase)
+        {
+            typedef typename std::function< void( TargetType ) > fn_type;
+
+			fn_type fn = std::bind( setter, pBase, std::placeholders::_1 );
+            return ReflectionUtilities::extract( value, fn, definitionManager );
+        }
+    };
 };
 
 template< typename TargetType, typename BaseType, bool ByValue, bool ByArg >

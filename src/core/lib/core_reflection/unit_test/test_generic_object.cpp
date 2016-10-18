@@ -38,7 +38,7 @@ TEST_F( TestDefinitionFixture, createGenericObject )
 	{
 		Vector3 value;
 		CHECK( genericObj->get( "vector3Value", value ) );
-		CHECK_EQUAL( vector3Value, value );
+		CHECK( vector3Value == value );
 	}
 
 	std::string stringValue = "Hello World";
@@ -104,7 +104,7 @@ TEST_F( TestDefinitionFixture, createMultipleGenericObjects )
 	{
 		Vector3 value;
 		CHECK( genericObj->get( "vector3Value", value ) );
-		CHECK_EQUAL( vector3Value, value );
+		CHECK( vector3Value == value );
 	}
 	{
 		std::string value;

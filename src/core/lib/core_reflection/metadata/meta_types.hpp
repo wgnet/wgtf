@@ -4,21 +4,21 @@
 #include "meta_base.hpp"
 
 #include "../types/reflected_collection.hpp"
-
+#include "../reflection_dll.hpp"
 namespace wgt
 {
 class IEnumGenerator;
 typedef std::unique_ptr<IEnumGenerator> IEnumGeneratorPtr;
+typedef std::function<void(ObjectHandle)> Action;
 
 /**
- *	Depricated: only for use with EXPOSE macros.
+ *	Deprecated: only for use with EXPOSE macros.
  *	Use nullptr for no metadata where possible.
  */
-MetaHandle MetaNone();
-MetaHandle MetaMinMax( float min, float max );
-MetaHandle MetaStepSize( float stepSize );
-MetaHandle MetaDecimals( int decimals );
-
+REFLECTION_DLL MetaHandle MetaNone();
+REFLECTION_DLL MetaHandle MetaMinMax( float min, float max );
+REFLECTION_DLL MetaHandle MetaStepSize( float stepSize );
+REFLECTION_DLL MetaHandle MetaDecimals( int decimals );
 
 #define MetaEnumFunc( getterFunc ) \
 	MetaEnum(\
@@ -28,38 +28,63 @@ MetaHandle MetaDecimals( int decimals );
 					"EnumTypes", &SelfType::getterFunc, NULL,\
 					TypeId::getType< std::map< int, std::wstring > >() ) ) ) ) )
 
-MetaHandle MetaEnum( IEnumGeneratorPtr enumGenerator );
-MetaHandle MetaEnum( const wchar_t * enumString );
+REFLECTION_DLL MetaHandle MetaEnum( IEnumGeneratorPtr enumGenerator );
+REFLECTION_DLL MetaHandle MetaEnum( const wchar_t * enumString );
 
-MetaHandle MetaSlider();
+/**
+* Notifies that the property is a slider
+*/
+REFLECTION_DLL MetaHandle MetaSlider();
 
-MetaHandle MetaGroup( const wchar_t * groupName );
+REFLECTION_DLL MetaHandle MetaGroup( const wchar_t * groupName );
 
-MetaHandle MetaAttributeDisplayName( const char * attributePath );
+REFLECTION_DLL MetaHandle MetaAttributeDisplayName( const char * attributePath );
 
-MetaHandle MetaDisplayName( const wchar_t * displayName );
+REFLECTION_DLL MetaHandle MetaDisplayName( const wchar_t * displayName );
 
-MetaHandle MetaDescription( const wchar_t * displayName );
+/**
+* User defined description
+* @note used for displaying history for a reflected method call
+*/
+REFLECTION_DLL MetaHandle MetaDescription( const wchar_t * displayName );
 
-MetaHandle MetaPanelLayout( const char * layoutFile, const char * bindingsFile = NULL );
+REFLECTION_DLL MetaHandle MetaPanelLayout( const char * layoutFile, const char * bindingsFile = NULL );
 
-MetaHandle MetaNoNull();
+REFLECTION_DLL MetaHandle MetaNoNull();
 
-MetaHandle MetaColor();
+/**
+* Notifies that the property is a colour
+*/
+REFLECTION_DLL MetaHandle MetaColor();
 
-MetaHandle MetaHidden();
+/**
+* Allows large or blocking function calls to bypass the command system
+* @note bypassing means no history is saved for the call
+*/
+REFLECTION_DLL MetaHandle MetaDirectInvoke();
 
-MetaHandle MetaThumbnail( int width = -1, int height = -1 );
+/**
+* Notifies that the property should not be displayed
+*/
+REFLECTION_DLL MetaHandle MetaHidden();
 
-MetaHandle MetaInPlace( const char * propertyName = NULL );
+/**
+* Notifies that the property is a thumbnail image
+*/
+REFLECTION_DLL MetaHandle MetaThumbnail( int width = -1, int height = -1 );
 
-MetaHandle MetaSelected( const char * propertyName );
+REFLECTION_DLL MetaHandle MetaInPlace( const char * propertyName = NULL );
 
-MetaHandle MetaInPlacePropertyName( const char * propertyName );
+REFLECTION_DLL MetaHandle MetaSelected( const char * propertyName );
 
-MetaHandle MetaReadOnly();
+REFLECTION_DLL MetaHandle MetaInPlacePropertyName( const char * propertyName );
 
-MetaHandle MetaUrl(bool isAssetBrowserDialog = false,
+/**
+* Notifies that the property cannot be interacted with
+*/
+REFLECTION_DLL MetaHandle MetaReadOnly();
+
+REFLECTION_DLL MetaHandle MetaUrl(bool isAssetBrowserDialog = false,
 				   const char * urlDlgTitle = nullptr, 
 				   const char * urlDlgDefaultFolder = nullptr,
 				   int urlDlgModality = 1,
@@ -97,35 +122,39 @@ private:
 	CommandExecuteFunc commandExecuteFunc_;
 };
 
+REFLECTION_DLL MetaHandle MetaAction(const char* actionName, Action action);
+
 #define MetaCommand( commandName, executeFunc ) \
 	MetaCommandBase( commandName,\
 		new MetaCommandExecutableImpl< SelfType >(\
 			reinterpret_cast< MetaCommandExecutableImpl< SelfType >::CommandExecuteFunc >(\
 			&SelfType::executeFunc ) ) )
 
-MetaHandle MetaCommandBase(
+REFLECTION_DLL MetaHandle MetaCommandBase(
 	const wchar_t * commandName, const IMetaCommandExecutable * executeFunc );
 
-MetaHandle MetaNoSerialization();
+REFLECTION_DLL MetaHandle MetaNoSerialization();
 
-MetaHandle MetaUniqueId( const char * id );
+REFLECTION_DLL MetaHandle MetaUniqueId( const char * id );
 
-MetaHandle MetaOnStack();
+REFLECTION_DLL MetaHandle MetaOnStack();
 
-MetaHandle MetaUnique();
+REFLECTION_DLL MetaHandle MetaUnique();
 
-MetaHandle MetaParamHelp( const char* paramName, const MetaParamTypes::MetaParamType paramType, const char* paramDesc );
+REFLECTION_DLL MetaHandle MetaParamHelp( const char* paramName, const MetaParamTypes::MetaParamType paramType, const char* paramDesc );
 
-MetaHandle MetaReturnHelp( const char* returnName, const MetaParamTypes::MetaParamType returnType, const char* returnDesc );
+REFLECTION_DLL MetaHandle MetaReturnHelp( const char* returnName, const MetaParamTypes::MetaParamType returnType, const char* returnDesc );
 
-MetaHandle MetaConsoleHelp( const char* text );
+REFLECTION_DLL MetaHandle MetaConsoleHelp( const char* text );
 
-MetaHandle MetaScriptFunctionHelp( const char* name );
+REFLECTION_DLL MetaHandle MetaScriptFunctionHelp( const char* name );
 
-MetaHandle MetaTooltip( const char* tooltip );
+REFLECTION_DLL MetaHandle MetaTooltip( const char* tooltip );
 
-MetaHandle MetaPassword();
+REFLECTION_DLL MetaHandle MetaPassword();
 
-MetaHandle MetaMultiline();
+REFLECTION_DLL MetaHandle MetaMultiline();
+
+REFLECTION_DLL MetaHandle MetaOnPropertyChanged(Action action);
 } // end namespace wgt
 #endif //META_TYPES_HPP

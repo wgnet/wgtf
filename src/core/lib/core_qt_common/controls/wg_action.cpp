@@ -12,7 +12,7 @@ namespace wgt
 {
 struct WGAction::Implementation
 {
-	Implementation()
+	Implementation(WGAction* self)
 		: uiFramework_( nullptr )
         , uiApplication_( nullptr )
         , func_( nullptr )
@@ -23,6 +23,7 @@ struct WGAction::Implementation
 		, enabled_( true )
 		, visible_( true )
 		, active_( false )
+		, self_(self)
 	{
 	}
 
@@ -44,9 +45,7 @@ struct WGAction::Implementation
 		assert( componentContextProperty.isValid() );
 		auto componentContextVariant = QtHelpers::toVariant( componentContextProperty );
 		assert( !componentContextVariant.isVoid() );
-		auto componentContextHandle = componentContextVariant.value< ObjectHandle >();
-		assert( componentContextHandle != nullptr );
-		auto componentContext = componentContextHandle.getBase< IComponentContext >();
+		auto componentContext = componentContextVariant.value<IComponentContext*>();
 		assert( componentContext != nullptr );
 
 		uiApplication_ = componentContext->queryInterface< IUIApplication >();
@@ -143,6 +142,27 @@ struct WGAction::Implementation
 		visible_ ? uiApplication_->addAction( *action_ ) : uiApplication_->removeAction( *action_ );
 	}
 
+    QVariant data()
+    {
+		if (action_ && self_)
+		{
+			auto qdata = QtHelpers::toQVariant( action_->getData(), this->self_ );
+			return qdata;
+		}
+
+		return QVariant();
+    }
+
+	void setData( const QVariant& qdata )
+	{
+		if (action_)
+		{
+			auto data = QtHelpers::toVariant( qdata );
+			action_->setData( data );
+			emit self_->dataChanged();
+		}
+    }
+
 	void createAction()
 	{
 		if (actionId_.empty())
@@ -180,6 +200,7 @@ struct WGAction::Implementation
 		action_.reset();
 	}
 
+    WGAction* self_;
 	IUIFramework * uiFramework_;
 	IUIApplication * uiApplication_;
 	std::function<void(IAction*)> func_;
@@ -197,7 +218,7 @@ struct WGAction::Implementation
 WGAction::WGAction( QQuickItem * parent )
 	: QQuickItem( parent )
 {
-	impl_.reset( new Implementation() );
+	impl_.reset( new Implementation(this) );
 }
 
 
@@ -272,12 +293,20 @@ void WGAction::setEnabled( bool enabled )
 	impl_->setEnabled( enabled );
 }
 
-
 bool WGAction::getVisible() const
 {
 	return impl_->getVisible();
 }
 
+QVariant WGAction::data() const
+{
+	return impl_->data();
+}
+
+void WGAction::setData(const QVariant& userData)
+{
+	impl_->setData(userData);
+}
 
 void WGAction::setVisible( bool visible )
 {

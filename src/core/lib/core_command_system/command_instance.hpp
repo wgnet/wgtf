@@ -64,7 +64,6 @@ public:
 	typedef XMLSerializer UndoRedoSerializer;
 
 	CommandInstance();
-	CommandInstance( const CommandInstance& );
 	virtual ~CommandInstance();
 
 	void cancel();
@@ -78,7 +77,12 @@ public:
 
 	CommandErrorCode getErrorCode() const;
 
-	bool isMultiCommand() const;
+	/**
+	 *	Check if this command contains child commands.
+	 *	@note an empty BatchCommand will return false for hasChildren().
+	 *	@return if the command contains any children.
+	 */
+	bool hasChildren() const;
 
 	void undo();
 	void redo();
@@ -88,11 +92,17 @@ public:
 
 	ICommandManager * getCommandSystemProvider() { return pCmdSysProvider_; }
 
-    ObjectHandle getCommandDescription() const;
+	ObjectHandle getCommandDescription() const;
 
 	void consolidateUndoRedoData( CommandInstance * parentInstance );
 
 private:
+	// Disable copy and move
+	CommandInstance( const CommandInstance & );
+	CommandInstance( CommandInstance && );
+	CommandInstance & operator=( const CommandInstance & );
+	CommandInstance & operator=( CommandInstance && );
+
 	void waitForCompletion();
 
 	Command * getCommand();

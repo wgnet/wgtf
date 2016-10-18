@@ -1,9 +1,7 @@
 #include "variant.hpp"
-#include "interfaces/i_meta_type_manager.hpp"
 #include "core_string_utils/string_utils.hpp"
 #include "core_serialization/text_stream.hpp"
 #include "core_serialization/fixed_memory_stream.hpp"
-#include "core_serialization/resizing_memory_stream.hpp"
 #include "core_serialization/std_data_stream.hpp"
 
 #include <stdexcept>
@@ -15,13 +13,10 @@
 #include <cassert>
 
 
-#ifndef _DUMMY_
 namespace wgt
 {
 namespace
 {
-
-	static IMetaTypeManager * s_metaTypeManager = nullptr;
 
 	bool wtoutf8( const wchar_t * wsrc, std::string& output )
 	{
@@ -31,14 +26,11 @@ namespace
 			return true;
 		}
 
-		std::wstring_convert< Utf16to8Facet > conversion(
-			Utf16to8Facet::create() );
+	    output = StringUtils::to_string(wsrc);
+	    return true;
+    }
 
-		output = conversion.to_bytes( wsrc );
-		return true;
-	}
-
-	bool utf8tow( const char * src, std::wstring& output )
+    bool utf8tow( const char * src, std::wstring& output )
 	{
 		if (src == nullptr)
 		{
@@ -46,12 +38,9 @@ namespace
 			return true;
 		}
 
-		std::wstring_convert< Utf16to8Facet > conversion(
-			Utf16to8Facet::create() );
-
-		output = conversion.from_bytes( src );
-		return true;
-	}
+	    output = StringUtils::to_wstring(src);
+	    return true;
+    }
 }
 
 
@@ -87,20 +76,20 @@ bool downcast(std::wstring* v, const std::string& storage)
 ////////////////////////////////////////////////////////////////////////////////
 
 
-Variant::DynamicData* Variant::DynamicData::allocate(size_t payloadSize)
+Variant::COWData* Variant::COWData::allocate(size_t payloadSize)
 {
-	char* data = new char[sizeof(DynamicData) + payloadSize];
-	return new (data) DynamicData();
+	char* data = new char[sizeof(COWData) + payloadSize];
+	return new (data) COWData();
 }
 
 
-void Variant::DynamicData::decRef(const MetaType* type)
+void Variant::COWData::decRef(const MetaType* type)
 {
 	if (refs_.fetch_sub( 1 ) == 0)
 	{
 		assert(type);
 		type->destroy(payload());
-		this->~DynamicData();
+		this->~COWData();
 		delete[] reinterpret_cast<char*>(this);
 	}
 }
@@ -127,47 +116,48 @@ Variant::Variant(Variant&& value)
 }
 
 
-Variant::Variant(const MetaType* type):
-	type_(type)
+Variant::Variant( const MetaType* type )
 {
-	assert(type_);
+	assert( type );
 
+	auto qualifiedType = type->qualified( 0 );
 	void* p;
-	if(isInline())
+	if( isInline( type ) )
 	{
-		p = data_.payload_;
+		setTypeInternal( qualifiedType, Inline );
+		p = data_.inline_;
 	}
 	else
 	{
-		data_.dynamic_ = DynamicData::allocate(type_->size());
-		p = data_.dynamic_->payload();
+		setTypeInternal( qualifiedType, COW );
+		data_.cow_ = COWData::allocate( type->size() );
+		p = data_.cow()->payload();
 	}
 
-	type_->init(p);
+	type->init(p);
 }
 
 
-Variant::Variant(const MetaType* type, const Variant& value):
-	type_(type)
+Variant::Variant(const MetaType* type, const Variant& value)
 {
-	assert(type_);
-
-	void* p;
-	if(isInline())
+	if( !convertInit( type, value ) )
 	{
-		p = data_.payload_;
+		castError();
 	}
-	else
+}
+
+
+Variant::Variant(const MetaType* type, const Variant& value, bool* succeeded)
+{
+	bool r = convertInit( type, value );
+	if( !r )
 	{
-		data_.dynamic_ = DynamicData::allocate(type_->size());
-		p = data_.dynamic_->payload();
+		initVoid();
 	}
 
-	type_->init(p);
-
-	if( !type_->convertFrom( payload(), value.type_, value.payload() ) )
+	if( succeeded )
 	{
-		typeInitError();
+		*succeeded = r;
 	}
 }
 
@@ -181,11 +171,38 @@ Variant& Variant::operator=( const Variant& value )
 
 	if( type_ == value.type_ )
 	{
-		detach( false );
-		type_->copy( payload(), value.payload() );
+		// both types and storages match
+		switch(storageKind())
+		{
+		case Inline:
+			type()->copy(data_.inline_, value.data_.inline_);
+			break;
+
+		case RawPointer:
+			data_.rawPointer_ = value.data_.rawPointer_;
+			break;
+
+		case SharedPointer:
+			data_.sharedPointer() = value.data_.sharedPointer();
+			break;
+
+		case COW:
+			if(data_.cow_ != value.data_.cow_)
+			{
+				data_.cow_->decRef(type());
+				data_.cow_ = value.data_.cow_;
+				data_.cow_->incRef();
+			}
+			break;
+
+		default:
+			assert(false);
+			break;
+		}
 	}
 	else
 	{
+		// common case
 		destroy();
 		init( value );
 	}
@@ -203,11 +220,38 @@ Variant& Variant::operator=( Variant&& value )
 
 	if( type_ == value.type_ )
 	{
-		detach( false );
-		type_->move( payload(), value.payload() );
+		// both types and storages match
+		switch(storageKind())
+		{
+		case Inline:
+			type()->move(data_.inline_, value.data_.inline_);
+			break;
+
+		case RawPointer:
+			data_.rawPointer_ = value.data_.rawPointer_;
+			break;
+
+		case SharedPointer:
+			data_.sharedPointer() = std::move( value.data_.sharedPointer() );
+			break;
+
+		case COW:
+			if(data_.cow_ != value.data_.cow_)
+			{
+				data_.cow_->decRef(type());
+				data_.cow_ = value.data_.cow_;
+				data_.cow_->incRef();
+			}
+			break;
+
+		default:
+			assert(false);
+			break;
+		}
 	}
 	else
 	{
+		// common case
 		destroy();
 		init( std::move( value ) );
 	}
@@ -216,50 +260,55 @@ Variant& Variant::operator=( Variant&& value )
 }
 
 
-bool Variant::operator==(const Variant& v) const
+bool Variant::operator==(const Variant& that) const
 {
-	if(type_ == v.type_)
+	if( this == &that )
 	{
-		const void* lp = payload();
-		const void* rp = v.payload();
+		return true;
+	}
+
+	auto thisType = type();
+	auto thatType = that.type();
+
+	if(thisType == thatType)
+	{
+		auto lp = value< const void* >();
+		auto rp = that.value< const void* >();
 
 		return
 			lp == rp ||
-			type_->equal(lp, rp);
+			thisType->equal(lp, rp);
 	}
 
-	Variant tmp(type_);
-	if(!type_->convertFrom(tmp.payload(), v.type_, v.payload()))
+	bool succeeded = false;
+	Variant tmp = that.convert(thisType, &succeeded);
+	if(!succeeded)
 	{
 		return false;
 	}
 
-	assert(type_ == tmp.type_);
+	auto lp = value< const void* >();
+	auto rp = tmp.value< const void* >();
 
-	const void* lp = payload();
-	const void* rp = tmp.payload();
-
-	return
-		lp == rp ||
-		type_->equal(lp, rp);
+	return thisType->equal(lp, rp);
 }
 
 
-bool Variant::convert(const MetaType* type)
+bool Variant::setType( const MetaType* type )
 {
-	if(!type)
+	if( type == this->type() )
+	{
+		return true;
+	}
+
+	bool succeeded = false;
+	Variant tmp( type, *this, &succeeded );
+	if( !succeeded )
 	{
 		return false;
 	}
 
-	Variant tmp(type);
-
-	if(!type->convertFrom(tmp.payload(), type_, payload()))
-	{
-		return false;
-	}
-
-	*this = std::move(tmp);
+	*this = std::move( tmp );
 
 	return true;
 }
@@ -267,23 +316,55 @@ bool Variant::convert(const MetaType* type)
 
 bool Variant::isVoid() const
 {
-	return typeIs<void>();
+	return typeIs<void>() && !isPointer();
 }
 
 
 bool Variant::isPointer() const
 {
-	return type_->pointedType() != nullptr;
+	switch( storageKind() )
+	{
+	case RawPointer:
+	case SharedPointer:
+		return true;
+
+	case Inline:
+	case COW: // note that COW acts as value, so we don't consider it as pointer
+		return false;
+
+	default:
+		assert( false );
+		return false;
+	};
+}
+
+
+bool Variant::isNullPointer() const
+{
+	switch( storageKind() )
+	{
+	case RawPointer:
+		return data_.rawPointer_ == nullptr;
+
+	case SharedPointer:
+		return data_.sharedPointer().get() == nullptr;
+
+	case Inline:
+	case COW: // note that COW acts as value, so we don't consider it as pointer
+		return false;
+
+	default:
+		assert( false );
+		return false;
+	};
 }
 
 
 void Variant::initVoid()
 {
-	type_ = findType<void>();
-	if(!type_)
-	{
-		typeInitError();
-	}
+	setTypeInternal( getQualifiedType< void >(), Inline );
+
+	// no payload initialization
 }
 
 
@@ -298,15 +379,28 @@ void Variant::init(const Variant& value)
 	type_ = value.type_;
 	assert(type_);
 
-	if(isInline())
+	switch(storageKind())
 	{
-		type_->init(data_.payload_);
-		type_->copy(data_.payload_, value.data_.payload_);
-	}
-	else
-	{
-		data_.dynamic_ = value.data_.dynamic_;
-		data_.dynamic_->incRef();
+	case Inline:
+		{
+			auto thisType = type();
+			thisType->init(data_.inline_);
+			thisType->copy(data_.inline_, value.data_.inline_);
+		}
+		break;
+
+	case RawPointer:
+		data_.rawPointer_ = value.data_.rawPointer_;
+		break;
+
+	case SharedPointer:
+		new (data_.sharedPointer_) std::shared_ptr< void >( value.data_.sharedPointer() );
+		break;
+
+	case COW:
+		data_.cow_ = value.data_.cow_;
+		data_.cow_->incRef();
+		break;
 	}
 }
 
@@ -316,16 +410,69 @@ void Variant::init(Variant&& value)
 	type_ = value.type_;
 	assert(type_);
 
-	if(isInline())
+	switch(storageKind())
 	{
-		type_->init(data_.payload_);
-		type_->move(data_.payload_, value.data_.payload_);
+	case Inline:
+		{
+			auto thisType = type();
+			thisType->init(data_.inline_);
+			thisType->move(data_.inline_, value.data_.inline_);
+		}
+		break;
+
+	case RawPointer:
+		data_.rawPointer_ = value.data_.rawPointer_;
+		break;
+
+	case SharedPointer:
+		new (data_.sharedPointer_) std::shared_ptr< void >( std::move( value.data_.sharedPointer() ) );
+		break;
+
+	case COW:
+		data_.cow_ = value.data_.cow_;
+		data_.cow_->incRef();
+		break;
+	}
+}
+
+
+bool Variant::convertInit( const MetaType* type, const Variant& that )
+{
+	if( !type )
+	{
+		return false;
+	}
+
+	if( type == that.type() )
+	{
+		init( that );
+		return true;
+	}
+
+	auto qualifiedType = type->qualified( 0 );
+
+	void* p;
+	if( isInline( type ) )
+	{
+		setTypeInternal( qualifiedType, Inline );
+		p = data_.inline_;
 	}
 	else
 	{
-		data_.dynamic_ = value.data_.dynamic_;
-		data_.dynamic_->incRef();
+		setTypeInternal( qualifiedType, COW );
+		data_.cow_ = COWData::allocate( type->size() );
+		p = data_.cow()->payload();
 	}
+
+	type->init(p);
+
+	if( !type->convertFrom( p, that.type(), that.value< const void* >() ) )
+	{
+		destroy();
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -337,13 +484,23 @@ breaks invariants, so it should be used with care.
 */
 void Variant::destroy()
 {
-	if( isInline() )
+	switch(storageKind())
 	{
-		type_->destroy( data_.payload_ );
-	}
-	else
-	{
-		data_.dynamic_->decRef( type_ );
+	case Inline:
+		type()->destroy( data_.inline_ );
+		break;
+
+	case RawPointer:
+		// we do not own the pointer, so no-op
+		break;
+
+	case SharedPointer:
+		data_.sharedPointer().~shared_ptr();
+		break;
+
+	case COW:
+		data_.cow_->decRef( type() );
+		break;
 	}
 }
 
@@ -356,22 +513,24 @@ should be copied to a new one. Otherwise new value is left default-initialized.
 */
 void Variant::detach( bool copy )
 {
-	if( isInline() || data_.dynamic_->isExclusive() )
+	assert( storageKind() == COW );
+	if( data_.cow_->isExclusive() )
 	{
 		return;
 	}
 
 	// allocate and initialize new payload copy
-	DynamicData* newDynamic = DynamicData::allocate( type_->size() );
-	type_->init( newDynamic->payload() );
+	auto thisType = type();
+	COWData* newCow = COWData::allocate( thisType->size() );
+	thisType->init( newCow->payload() );
 	if( copy )
 	{
-		type_->copy( newDynamic->payload(), data_.dynamic_->payload() );
+		thisType->copy( newCow->payload(), data_.cow()->payload() );
 	}
 
 	// substitute payload with the new one (which is obviously exclusive)
-	data_.dynamic_->decRef( type_ );
-	data_.dynamic_ = newDynamic;
+	data_.cow_->decRef( thisType );
+	data_.cow_ = newCow;
 }
 
 
@@ -389,51 +548,12 @@ void Variant::castError()
 }
 
 
-void Variant::typeInitError()
-{
-#ifdef _WIN32
-#if ( _MSC_VER >= 1900 )
-	throw std::bad_cast::__construct_from_string_literal("type is not registered in Variant");
-#else
-	throw std::bad_cast("type is not registered in Variant");
-#endif
-#else
-	throw std::bad_cast();
-#endif
-}
-
-
-void Variant::setMetaTypeManager( IMetaTypeManager* metaTypeManager)
-{
-	s_metaTypeManager = metaTypeManager;
-}
-
-
-IMetaTypeManager * Variant::getMetaTypeManager()
-{
-	return s_metaTypeManager;
-}
-
-
-bool Variant::registerType(const MetaType* type)
-{
-	if(s_metaTypeManager)
-	{
-		return s_metaTypeManager->registerType(type);
-	}
-	else
-	{
-		return false;
-	}
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////
 
 
-TextStream& operator<<(TextStream& stream, const Variant& value)
+TextStream& operator<<(TextStream& stream, StrongType< const Variant& > value)
 {
-	value.type()->streamOut(stream, value.payload());
+	value.value().type()->streamOut(stream, value.value().value< const void* >());
 	return stream;
 }
 
@@ -447,8 +567,16 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 
 	if(!value.isVoid())
 	{
-		value.type()->streamIn(stream, value.payload());
-		stream.peek();
+		if (auto ptr = value.value<const void*>())
+		{
+			value.type()->streamIn(stream, const_cast<void*>(ptr));
+			stream.peek();
+		}
+		else
+		{
+			// can't modify value (is it const?)
+			stream.setState(std::ios_base::failbit);
+		}
 		return stream;
 	}
 
@@ -489,13 +617,15 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			case '"': // string
 				{
 					stream.unget();
-					auto stringType = Variant::findType<std::string>();
-					assert(stringType);
-					Variant tmp(stringType);
-					stringType->streamIn(stream, tmp.payload());
-					if(!stream.fail())
+					auto stringType = MetaType::get< std::string >();
+					assert( stringType );
+					Variant tmp( stringType );
+					auto ptr = tmp.value< void* >();
+					assert( ptr );
+					stringType->streamIn( stream, ptr );
+					if( !stream.fail() )
 					{
-						value = std::move(tmp);
+						value = std::move( tmp );
 					}
 				}
 				//calling peek here is trying to set eofbit
@@ -506,13 +636,15 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			case 'v':
 				{
 					stream.unget();
-					auto voidType = Variant::findType<void>();
-					assert(voidType);
-					Variant tmp(voidType);
-					voidType->streamIn(stream, tmp.payload());
-					if(!stream.fail())
+					auto voidType = MetaType::get< void >();
+					assert( voidType );
+					Variant tmp( voidType );
+					auto ptr = tmp.value< void* >();
+					assert( ptr );
+					voidType->streamIn( stream, ptr );
+					if( !stream.fail() )
 					{
-						value = std::move(tmp);
+						value = std::move( tmp );
 					}
 				}
 				//calling peek here is trying to set eofbit
@@ -940,25 +1072,33 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 }
 
 
-BinaryStream& operator<<( BinaryStream& stream, const Variant& value )
+BinaryStream& operator<<( BinaryStream& stream, StrongType< const Variant& > value )
 {
-	value.type()->streamOut( stream, value.payload() );
+	value.value().type()->streamOut( stream, value.value().value< const void* >() );
 	return stream;
 }
 
 
 BinaryStream& operator>>( BinaryStream& stream, Variant& value )
 {
-	value.type()->streamIn( stream, value.payload() );
+	if( auto ptr = value.value< void* >() )
+	{
+		value.type()->streamIn( stream, ptr );
+	}
+	else
+	{
+		// cant' modify value (is it const?)
+		stream.setState( std::ios_base::failbit );
+	}
 	return stream;
 }
 
 
-std::ostream& operator<<( std::ostream& stream, const Variant& value )
+std::ostream& operator<<( std::ostream& stream, StrongType< const Variant& > value )
 {
 	StdDataStream dataStream( stream.rdbuf() );
 	TextStream textStream( dataStream );
-	textStream << value;
+	textStream << value.value();
 	stream.setstate( textStream.state() );
 	return stream;
 }
@@ -974,4 +1114,3 @@ std::istream& operator>>( std::istream& stream, Variant& value )
 }
 } // end namespace wgt
 
-#endif

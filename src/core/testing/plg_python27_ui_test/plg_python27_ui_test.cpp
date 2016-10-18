@@ -3,11 +3,8 @@
 #include "ui_test_panel_context.hpp"
 #include "python_panel.hpp"
 
-#include "core_data_model/reflection/reflected_tree_model.hpp"
 #include "core_python_script/i_scripting_engine.hpp"
-#include "core_reflection/interfaces/i_reflection_controller.hpp"
 #include "core_reflection/reflection_macros.hpp"
-#include "core_variant/variant.hpp"
 
 #include <memory>
 
@@ -26,25 +23,26 @@ ObjectHandle createContextObject( IComponentContext& componentContext,
 	}
 	auto & definitionManager = (*pDefinitionManager);
 
-	auto controller = componentContext.queryInterface< IReflectionController >();
-	if (controller == nullptr)
+	const bool managed = true;
+	auto contextObject = pDefinitionManager->create<PanelContext>(managed);
+	if (!contextObject->initialize(componentContext, panelName, pythonObject))
 	{
-		NGT_ERROR_MSG( "Failed to find IReflectionController\n" );
+		NGT_ERROR_MSG("Failed to initialise context object\n");
 		return false;
 	}
-
-	const bool managed = true;
-	auto contextObject = pDefinitionManager->create< PanelContext >( managed );
-	contextObject->pContext_ = &componentContext;
-	contextObject->panelName_ = panelName;
-	contextObject->pythonObject_ = pythonObject;
-	contextObject->treeModel_.reset(
-		new ReflectedTreeModel( pythonObject, definitionManager, controller ) );
 
 	return contextObject;
 }
 
-
+/**
+* A plugin which queries the IPythonScriptingEngine to test adding and modifying components through python scripts
+*
+* @ingroup plugins
+* @image html plg_python27_ui_test.png
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - Python27Plugin
+*/
 struct Python27TestUIPlugin
 	: public PluginMain
 {
@@ -61,10 +59,6 @@ struct Python27TestUIPlugin
 
 	void Initialise( IComponentContext& componentContext ) override
 	{
-		// Initialise variant system; this is required for every plugin that uses Variant.
-		auto metaTypeManager = componentContext.queryInterface<IMetaTypeManager>();
-		Variant::setMetaTypeManager( metaTypeManager );
-
 		auto pDefinitionManager = componentContext.queryInterface< IDefinitionManager >();
 		if (pDefinitionManager == nullptr)
 		{
@@ -82,8 +76,8 @@ struct Python27TestUIPlugin
 		}
 		auto & scriptingEngine = (*pScriptingEngine);
 
-		const wchar_t * sourcePath = L"../../../src/core/testing/plg_python27_ui_test/scripts";
-		const wchar_t * deployPath = L"./scripts/plg_python27_ui_test";
+		const wchar_t * sourcePath = L"../../../src/core/testing/plg_python27_ui_test/resources/Scripts";
+		const wchar_t * deployPath = L":/Scripts";
 		const char * moduleName = "test_objects";
 		const bool sourcePathSet = scriptingEngine.appendSourcePath( sourcePath );
 		assert( sourcePathSet );
@@ -95,7 +89,6 @@ struct Python27TestUIPlugin
 			NGT_ERROR_MSG( "Could not load from scripts\n" );
 			return;
 		}
-
 
 		const char * panelName1 = "Python Test 1";
 		auto contextObject1 = createContextObject( componentContext, panelName1, module );

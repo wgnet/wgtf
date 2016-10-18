@@ -1,9 +1,13 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Controls.Styles 1.2
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Controls.Styles 1.4
+import QtQuick.Layouts 1.3
+
+import WGControls 1.0
+import WGControls.Styles 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief An expanding progress bar that fills up as an action is completed.
  It can have a % complete, an indeterminate style or even a fake completion animation.
 
@@ -20,6 +24,7 @@ WGProgressControl {
 Rectangle {
     id: progControl
     objectName: "WGProgressControl"
+    WGComponent { type: "WGProgressControl" }
 
     /*!
         This property toggles the display of the percentage complete indicator

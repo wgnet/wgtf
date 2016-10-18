@@ -88,15 +88,6 @@ TEST_F( TestMethodsFixture, methods )
 	CHECK( testResult == "test5" );
 	CHECK( parameterString == "test5" );
 
-	auto metaTypeManager = Variant::getMetaTypeManager();
-	MetaType* stringMetaType = nullptr;
-
-	if (metaTypeManager->findType<std::string*>() == nullptr)
-	{
-		stringMetaType = new MetaTypeImpl<std::string*>();
-		metaTypeManager->registerType( stringMetaType );
-	}
-
 	pa = klass_->bindProperty( "TestMethod6", object );
 	CHECK( pa.isValid() );
 	parameters = Variant( &parameterString );
@@ -106,11 +97,6 @@ TEST_F( TestMethodsFixture, methods )
 	CHECK( parameterString == "test6" );
 
 	parameters.clear();
-
-	if (stringMetaType != nullptr)
-	{
-		delete stringMetaType;
-	}
 
 	pa = klass_->bindProperty( "TestMethod7", object );
 	CHECK( pa.isValid() );
@@ -123,5 +109,35 @@ TEST_F( TestMethodsFixture, methods )
 	result = pa.invoke( Variant( int( 5 ) ) );
 	double testDoubleResult = result.value<double>();
 	CHECK( testDoubleResult == 5.0 );
+
+	pa = klass_->bindProperty("TestMethod9", object);
+	CHECK(pa.isValid());
+	const std::string& constParameterString = parameterString;
+	parameters = Variant(constParameterString);
+	result = pa.invoke(parameters);
+	const std::string& testConstStrResult = result.cast<const std::string&>();
+	CHECK(testConstStrResult == parameterString);
+
+	pa = klass_->bindProperty("TestMethod10", object);
+	CHECK(pa.isValid());
+	const std::string* constParameterPtrString = &parameterString;
+	parameters = Variant(constParameterPtrString);
+	result = pa.invoke(parameters);
+	const std::string* testConstStrPtrResult = result.cast<const std::string*>();
+	CHECK(*testConstStrPtrResult == parameterString);
+
+	pa = klass_->bindProperty("TestMethod11", object);
+	CHECK(pa.isValid());
+	parameters = Variant(parameterString);
+	result = pa.invoke(parameters);
+	std::string& testStrResult = result.cast<std::string&>();
+	CHECK(testStrResult == parameterString);
+
+	pa = klass_->bindProperty("TestMethod12", object);
+	CHECK(pa.isValid());
+	parameters = Variant(&parameterString);
+	result = pa.invoke(parameters);
+	std::string* testStrPtrResult = result.cast<std::string*>();
+	CHECK(*testStrPtrResult == parameterString);
 }
 } // end namespace wgt

@@ -4,10 +4,9 @@
 
 namespace wgt
 {
-#define SET_UP_OBJECT( type, ctor_parameters ) \
-	ObjectHandleT< type > handle( std::move( new type ctor_parameters ) ); \
-	return staticCast< MetaBase, type >( handle );
-
+#define SET_UP_OBJECT(type, ctor_parameters) \
+	ObjectHandleT<type> handle(std::unique_ptr<type>(new type ctor_parameters)); \
+	return staticCast<MetaBase, type>(handle);
 
 //==============================================================================
 MetaHandle MetaNone()
@@ -90,6 +89,11 @@ MetaHandle MetaColor()
 	SET_UP_OBJECT( MetaColorObj, () )
 }
 
+//==============================================================================
+MetaHandle MetaDirectInvoke()
+{
+	SET_UP_OBJECT(MetaDirectInvokeObj, ())
+}
 
 //==============================================================================
 MetaHandle MetaStepSize(float stepSize)
@@ -139,6 +143,12 @@ MetaHandle MetaInPlacePropertyName( const char * propertyName )
 }
 
 //==============================================================================
+MetaHandle MetaAction(const char* actionName, Action action)
+{
+	SET_UP_OBJECT(MetaActionObj, (actionName, action));
+}
+
+//==============================================================================
 MetaHandle MetaCommandBase(
 	const wchar_t * commandName, const IMetaCommandExecutable * commandExecutable )
 {
@@ -166,7 +176,7 @@ MetaHandle MetaOnStack()
 //==============================================================================
 MetaHandle MetaReadOnly()
 {
-	SET_UP_OBJECT( MetaReadOnlyObj, () );
+	SET_UP_OBJECT(MetaReadOnlyObj, ());
 }
 
 //==============================================================================
@@ -228,5 +238,10 @@ MetaHandle MetaPassword()
 MetaHandle MetaMultiline()
 {
 	SET_UP_OBJECT(MetaMultilineObj, ( ));
+}
+
+MetaHandle MetaOnPropertyChanged(Action action)
+{
+	SET_UP_OBJECT(MetaOnPropertyChangedObj, (action));
 }
 } // end namespace wgt

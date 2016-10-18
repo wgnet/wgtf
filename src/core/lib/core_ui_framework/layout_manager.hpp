@@ -43,7 +43,15 @@ private:
 	std::vector< IMenu * > findAllMenus( IWindow & window, const char * path );
 	IRegion * findBestRegion( IWindow & window, const LayoutHint & hint );
 
-	void addAction( IAction & action, IWindow & window );
+	struct ManagedAction
+	{
+		ManagedAction( IAction * action ) : action_( action ) {}
+
+		IAction * action_;
+		std::set< IMenu * > menus_;
+	};
+
+	void addAction( ManagedAction & action, IWindow & window );
 	void addView( IView & view, IWindow & window );
 
 	void refreshActions( IWindow & window );
@@ -54,7 +62,7 @@ private:
 
 	IWindow * getWindow( const char * windowId );
 
-	std::map< IAction *, std::set<IMenu *> > actions_;
+	std::vector< ManagedAction > actions_;
 	std::map< IView *, IRegion * > views_;
 	std::vector< IMenu * > dynamicMenus_;
 	Windows windows_;

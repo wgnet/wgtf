@@ -7,7 +7,7 @@ INCLUDE( WGToolsCoreLibrary )
 SET( ALL_SRCS
 	type_converter_queue.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 # Use ADD_CUSTOM_TARGET because this target has no cpp files
 ADD_CUSTOM_TARGET( ${PROJECT_NAME} SOURCES

@@ -21,18 +21,22 @@ bool ImageQtTypeConverter::toVariant( const QVariant & qVariant, Variant & o_var
 
 bool ImageQtTypeConverter::toQVariant( const Variant & variant, QVariant & o_qVariant, QObject* parent ) const
 {
-	if (!variant.typeIs< ObjectHandle >())
+	BinaryBlock* data = nullptr;
+
+	if (variant.typeIs<ObjectHandle>())
 	{
-		return false;
+		ObjectHandle provider;
+		if (!variant.tryCast(provider))
+		{
+			return false;
+		}
+		data = provider.getBase<BinaryBlock>();
+	}
+	else if (variant.canCast<std::shared_ptr<BinaryBlock>>())
+	{
+		data = variant.cast<std::shared_ptr<BinaryBlock>>().get();
 	}
 
-	ObjectHandle provider;
-	if (!variant.tryCast( provider ))
-	{
-		return false;
-	}
-
-	auto data = provider.getBase< BinaryBlock >();
 	if (data == nullptr)
 	{
 		return false;

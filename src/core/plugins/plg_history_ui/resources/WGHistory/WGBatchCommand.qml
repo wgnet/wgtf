@@ -1,13 +1,16 @@
 import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
+
 import WGControls 1.0
+import WGControls.Layouts 1.0
 
 
 // Component for dislaying batch commands
 ColumnLayout {
     id: batchCommand
     objectName: "batchCommand"
+    WGComponent { type: "WGBatchCommand" }
 
     // -- Begin Interface
     property variant displayObject: null
@@ -33,7 +36,9 @@ ColumnLayout {
     WGListModel {
         id: batchModel
 
-        source: displayObject.Children
+        source: ((typeof displayObject !== 'undefined') && (typeof displayObject !== 'undefined')) ?
+            displayObject.Children :
+            null
 
         ValueExtension {}
     }

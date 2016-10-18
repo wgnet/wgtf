@@ -1,0 +1,34 @@
+module WGControls.Views
+
+# 2.0 New Controls
+WGFooterRow 2.0 WGFooterRow20.qml
+WGItemRow 2.0 WGItemRow20.qml
+WGItemViewCommon 2.0 WGItemViewCommon.qml
+WGListViewBase 2.0 WGListViewBase20.qml
+WGPropertyTreeView 2.0 WGPropertyTreeView20.qml
+WGScrollView 2.0 WGScrollView20.qml
+WGTreeViewBase 2.0 WGTreeViewBase20.qml
+
+# 2.0 Updated Controls
+WGColumnsFrame 2.0 WGColumnsFrame20.qml
+WGHeaderRow 2.0 WGHeaderRow20.qml
+WGListView 2.0 WGListView20.qml
+WGTableView 2.0 WGTableView20.qml
+WGTreeView 2.0 WGTreeView20.qml
+
+# 2.0 Unchanged Controls
+TreeItem 2.0 TreeItem.qml
+TreeView 2.0 TreeView.qml
+WGListViewRowDelegate 2.0 WGListViewRowDelegate.qml
+WGTreeItem 2.0 WGTreeItem.qml
+
+# 1.0 Controls
+TreeItem 1.0 TreeItem.qml
+TreeView 1.0 TreeView.qml
+WGColumnsFrame 1.0 WGColumnsFrame.qml
+WGHeaderRow 1.0 WGHeaderRow.qml
+WGListView 1.0 WGListView.qml
+WGListViewRowDelegate 1.0 WGListViewRowDelegate.qml
+WGTableView 1.0 WGTableView.qml
+WGTreeItem 1.0 WGTreeItem.qml
+WGTreeView 1.0 WGTreeView.qml

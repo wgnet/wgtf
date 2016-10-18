@@ -33,9 +33,6 @@ SET( BW_COMPILER_FLAGS_DEBUG
 # Flags used by C and C++ compilers for Hybrid Consumer_Release builds
 SET( BW_COMPILER_FLAGS_OPTIMIZED
 	${BW_COMPILER_FLAGS}
-	# Preprocessor definitions
-	-DNDEBUG
-	
 	# Optimization
 	-O3
 	)

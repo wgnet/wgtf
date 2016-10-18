@@ -10,43 +10,30 @@
 
 namespace wgt
 {
-/**
- *	Create an item in a ReflectedTreeModel from an IBaseProperty on an ObjectHandle.
- *	Must be a child item.
- *	Via a parent+string or via a parent+child property pair.
- *	E.g. strings "parent.child" or "parent.child[0]"
- *		or pair (*parent, *child)
- */
+/** Represents a reflected property in a ReflectedTreeModelNew.
+Must be a child item.
+Create an item in a ReflectedTreeModel from an IBaseProperty on an ObjectHandle
+via a parent+string or via a parent+child property pair.
+E.g. strings "parent.child" or "parent.child[0]" or pair (*parent, *child) */
 class ReflectedPropertyItemNew : public ReflectedTreeItemNew
 {
 public:
-
-	/**
-	 *	Construct a data model by reflecting over the given property.
-	 *	
-	 *	@pre parent must not be null.
-	 *	
-	 *	@param property the property to use for the data for this item.
-	 *	@param parent the parent of this property.
-	 *		Cannot be null.
-	 *		@warning the parent *must* correspond to the property.
-	 */
+	/** Creates a reflected tree item to represent a reflected property.
+	@note parent must not be null.
+	@param property the property to use for the data for this item.
+	@param parent the parent of this property. Cannot be null.
+	@warning the parent *must* correspond to the property. */
 	ReflectedPropertyItemNew( IComponentContext & contextManager,
 		const IBasePropertyPtr & property,
 		ReflectedTreeItemNew * parent,
 		size_t index,
 		const std::string & inPlacePath );
 
-	/**
-	 *	Construct a data model by reflecting over the given property.
-	 *	
-	 *	@pre parent must not be null.
-	 *	
-	 *	@param propertyName the name of the property on the parent.
-	 *	@param displayName the name used for display in the UI.
-	 *	@param parent the parent of this property.
-	 *		Cannot be null.
-	 */
+	/** Creates a reflected tree item to represent a reflected property.
+	@note parent must not be null.
+	@param propertyName the name of the property on the parent.
+	@param displayName the name used for display in the UI.
+	@param parent the parent of this property. Cannot be null. */
 	ReflectedPropertyItemNew( IComponentContext & contextManager,
 		const std::string & propertyName,
 		std::string displayName,
@@ -55,8 +42,8 @@ public:
 	virtual ~ReflectedPropertyItemNew();
 
 	// AbstractItem
-	virtual Variant getData( int column, size_t roleId ) const override;
-	virtual bool setData( int column, size_t roleId, const Variant & data ) override;
+	virtual Variant getData( int column, ItemRole::Id roleId ) const override;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data ) override;
 
 	// ReflectedTreeItemNew
 	virtual const ObjectHandle & getRootObject() const override;

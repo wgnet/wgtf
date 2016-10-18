@@ -1,0 +1,37 @@
+module WGControls.Private
+
+# 2.0 New Controls
+WGDropDownDelegate 2.0 WGDropDownDelegate20.qml
+WGGradientSliderHandle 2.0 WGGradientSliderHandle20.qml
+
+# 2.0 Updated Controls
+WGColorSliderHandle 2.0 WGColorSliderHandle20.qml
+WGRangeSliderHandle 2.0 WGRangeSliderHandle20.qml
+WGSlider 2.0 WGSlider20.qml
+WGSliderHandle 2.0 WGSliderHandle20.qml
+WGSpinBox 2.0 WGSpinBox20.qml
+
+# 2.0 Unchanged Controls
+WGAbstractButton 2.0 WGAbstractButton.qml
+WGAbstractCheckable 2.0 WGAbstractCheckable.qml
+WGCheckBase 2.0 WGCheckBase.qml
+WGColorSliderArrowHandle 2.0 WGColorSliderArrowHandle.qml
+WGDragHandle 2.0 WGDragHandle.qml
+WGVectorN 2.0 WGVectorN.qml
+
+# 1.0 Controls
+WGAbstractButton 1.0 WGAbstractButton.qml
+WGAbstractCheckable 1.0 WGAbstractCheckable.qml
+WGCheckBase 1.0 WGCheckBase.qml
+WGColorSliderArrowHandle 1.0 WGColorSliderArrowHandle.qml
+WGColorSliderHandle 1.0 WGColorSliderHandle.qml
+WGDragHandle 1.0 WGDragHandle.qml
+WGRangeSliderHandle 1.0 WGRangeSliderHandle.qml
+WGSlider 1.0 WGSlider.qml
+WGSliderHandle 1.0 WGSliderHandle.qml
+WGSpinBox 1.0 WGSpinBox.qml
+WGVectorN 1.0 WGVectorN.qml
+
+# Component Controls
+WGComponent 2.0 WGComponent.qml
+WGComponent 1.0 WGComponent.qml

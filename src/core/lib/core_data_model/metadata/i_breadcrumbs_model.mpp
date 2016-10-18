@@ -7,14 +7,14 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( BaseBreadcrumbItem, MetaNone() )
-	EXPOSE( "displayValue", getDisplayValue, MetaDisplayName( L"DisplayValue" ) )
-	EXPOSE( "subItems", getSubItems, MetaDisplayName( L"SubItems" ) )
+BEGIN_EXPOSE(BaseBreadcrumbItem, MetaNone())
+EXPOSE("displayValue", getDisplayValue, MetaDisplayName(L"DisplayValue"))
+EXPOSE("subItems", getSubItems, MetaDisplayName(L"SubItems"))
 END_EXPOSE()
 
-BEGIN_EXPOSE( IBreadcrumbsModel, MetaNone() )
-	EXPOSE( "crumbs", getBreadcrumbs, MetaDisplayName( L"Breadcrumbs" ) )
-	EXPOSE( "path", getPath, MetaDisplayName( L"Path" ) )
-	EXPOSE_METHOD( "getItemAtIndex", getItemAtIndex )
+BEGIN_EXPOSE(IBreadcrumbsModel, MetaNone())
+EXPOSE("crumbs", getBreadcrumbs, MetaDisplayName(L"Breadcrumbs"))
+EXPOSE("path", getPath, MetaDisplayName(L"Path"))
+EXPOSE_METHOD("getItemAtIndex", getItemAtIndex)
 END_EXPOSE()
 } // end namespace wgt

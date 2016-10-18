@@ -2,6 +2,7 @@
 #define I_LIST_MODEL_HPP
 
 #include "core_common/signal.hpp"
+#include "core_data_model/i_item_role.hpp"
 
 namespace wgt
 {
@@ -16,8 +17,8 @@ class Variant;
  */
 class IListModel
 {
-	typedef Signal< void( int, size_t, const Variant & ) > SignalModelData;
-	typedef Signal< void( const IItem *, int, size_t, const Variant & ) > SignalItemData;
+	typedef Signal< void( int, ItemRole::Id, const Variant & ) > SignalModelData;
+	typedef Signal< void( const IItem *, int, ItemRole::Id, const Variant & ) > SignalItemData;
 	typedef Signal< void( size_t, size_t ) > SignalCount;
 	typedef Signal< void( void ) > SignalVoid;
 
@@ -48,8 +49,8 @@ public:
 	 */
 	virtual void clear() {}
 
-	virtual Variant getData( int column, size_t roleId ) const;
-	virtual bool setData( int column, size_t roleId, const Variant & data );
+	virtual Variant getData( int column, ItemRole::Id roleId ) const;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data );
 
 	SignalModelData signalModelDataChanged;
 	SignalItemData signalPreItemDataChanged;

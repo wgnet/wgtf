@@ -2,6 +2,7 @@
 #include "core_dependency_system/i_interface.hpp"
 #include "core_generic_plugin/env_context.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
+#include "core_generic_plugin/interfaces/i_command_line_parser.hpp"
 #include "core_generic_plugin/interfaces/i_component_context_creator.hpp"
 #include "core_generic_plugin/interfaces/i_memory_allocator.hpp"
 #include "notify_plugin.hpp"
@@ -27,7 +28,7 @@ namespace wgt
 //==============================================================================
 GenericPluginManager::GenericPluginManager(bool applyDebugPostfix_)
 	: contextManager_( new PluginContextManager() )
-    , applyDebugPostfix(applyDebugPostfix_)
+	, applyDebugPostfix(applyDebugPostfix_)
 {
 }
 
@@ -72,8 +73,9 @@ void GenericPluginManager::unloadPlugins(
 	PluginList plgs;
 	for ( auto & filename : plugins )
 	{
-		auto it = std::find_if( plugins_.begin(), plugins_.end(),
-			[&](PluginMap::value_type& p) { return filename == p.first; } );
+		auto processedFileName = processPluginFilename(filename);
+		auto it = std::find_if(plugins_.begin(), plugins_.end(),
+		                       [&](PluginMap::value_type& p) { return processedFileName == p.first; });
 
 		if (it != plugins_.end())
 		{
@@ -106,12 +108,16 @@ void GenericPluginManager::unloadPlugins( const PluginList& plugins )
 	std::for_each( std::begin( plugins ), std::end( plugins ), std::bind(
 		&GenericPluginManager::unloadContext, this, std::placeholders::_1 ) );
 
+	for (auto it = memoryContext_.begin(); it != memoryContext_.end(); ++it)
+	{
+		it->second->fini();
+	}
+
 	// Calls FreeLibrary - matches loadPlugin() LoadLibraryW
 	std::for_each( std::begin( plugins ), std::end( plugins ), std::bind(
 		&GenericPluginManager::unloadPlugin, this, std::placeholders::_1 ) );
 
-	auto it = memoryContext_.begin();
-	for( ; it != memoryContext_.end(); ++it )
+	for (auto it = memoryContext_.begin(); it != memoryContext_.end(); ++it)
 	{
 		::OutputDebugString( it->first.c_str() );
 		::OutputDebugString( L"\n" );
@@ -132,27 +138,40 @@ void GenericPluginManager::notifyPlugins(
 //==============================================================================
 HMODULE GenericPluginManager::loadPlugin( const std::wstring & filename )
 {
+	std::string errorMsg;
 	auto processedFileName = processPluginFilename( filename );
 
-	setEnvContext( contextManager_->createContext( filename ) );
+	setEnvContext(contextManager_->createContext(processedFileName, filename));
 	HMODULE hPlugin = ::LoadLibraryW( processedFileName.c_str() );
+	// Must get last error before doing anything else
+	const bool hadError = FormatLastErrorMessage( errorMsg );
 	setEnvContext( nullptr );
 
 	if (hPlugin != nullptr)
 	{
-		plugins_.push_back( PluginMap::value_type(filename, hPlugin) );
+		plugins_.push_back(PluginMap::value_type(processedFileName, hPlugin));
 	}
 	else
 	{
-		contextManager_->destroyContext( filename );
-
-		std::string errorMsg;
-		bool hadError = FormatLastErrorMessage(errorMsg);
+		contextManager_->destroyContext(processedFileName);
 
 		NGT_ERROR_MSG( "Could not load plugin %S (from %S): %s\n",
 			filename.c_str(),
 			processedFileName.c_str(),
 			hadError ? errorMsg.c_str() : "Unknown error" );
+
+#if defined( _DEBUG )
+		// Fail automated tests
+		const auto pCommandLine = this->queryInterface< ICommandLineParser >();
+		const auto requireAllSpecifiedPlugins = (pCommandLine == nullptr) ?
+			true :
+			pCommandLine->getFlag( "-unattended" );
+
+		if (requireAllSpecifiedPlugins)
+		{
+			assert( false && "Could not load plugin" );
+		}
+#endif // defined( _DEBUG )
 	}
 	return hPlugin;
 }

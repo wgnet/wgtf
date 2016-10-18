@@ -1,6 +1,9 @@
 #include "role_provider.hpp"
 #include "core_logging/logging.hpp"
 
+#include <limits>
+#include <type_traits>
+
 namespace wgt
 {
 void RoleProvider::registerRole( const char * roleName, 
@@ -9,7 +12,9 @@ void RoleProvider::registerRole( const char * roleName,
 	auto roleId = ItemRole::compute( roleName );
 
 	// TODO: Need to move this out of roleNames() and into a modelReset callback
-	int role = ( roleId % ( INT_MAX - Qt::UserRole ) ) + Qt::UserRole;
+	const auto roleMax = std::numeric_limits< int >::max();
+	const int role =
+		static_cast< int >( (roleId % (roleMax - DynamicRole)) + DynamicRole );
 
 	auto it = o_RoleNames.find( role );
 	if (it != o_RoleNames.end())
@@ -42,7 +47,7 @@ void RoleProvider::registerRole( const char * roleName,
 	roleMap_[ role ] = roleId;
 }
 
-bool RoleProvider::encodeRole( size_t roleId, int & o_Role ) const
+bool RoleProvider::encodeRole( ItemRole::Id roleId, int & o_Role ) const
 {
 	for (auto it = roleMap_.begin(); it != roleMap_.end(); ++it)
 	{
@@ -56,7 +61,7 @@ bool RoleProvider::encodeRole( size_t roleId, int & o_Role ) const
 	return false;
 }
 
-bool RoleProvider::decodeRole( int role, size_t & o_RoleId ) const
+bool RoleProvider::decodeRole( int role, ItemRole::Id & o_RoleId ) const
 {
 	auto roleIt = roleMap_.find( role );
 	if (roleIt == roleMap_.end())

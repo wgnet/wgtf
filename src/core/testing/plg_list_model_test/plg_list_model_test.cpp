@@ -3,7 +3,6 @@
 
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
-#include "core_variant/variant.hpp"
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
@@ -15,18 +14,25 @@
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which creates various styles of lists with sample data
+*
+* @ingroup plugins
+* @image html plg_list_model_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class ListModelTestPlugin
 	: public PluginMain
 	, public Depends< IViewCreator >
 {
 private:
 	std::vector<IInterface*> types_;
-	std::unique_ptr<IView> oldListView_;
-	std::unique_ptr<IView> oldShortListView_;
-	std::unique_ptr<IView> listView_;
-	std::unique_ptr<IView> shortListView_;
-	std::unique_ptr<IView> multiColumnListView_;
+	wg_future<std::unique_ptr< IView >> oldListView_;
+	wg_future<std::unique_ptr< IView >> oldShortListView_;
+	wg_future<std::unique_ptr< IView >> listView_;
+	wg_future<std::unique_ptr< IView >> shortListView_;
+	wg_future<std::unique_ptr< IView >> multiColumnListView_;
 	std::shared_ptr<AbstractListModel> listModel_;
 
 public:
@@ -46,31 +52,29 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		auto uiFramework = contextManager.queryInterface< IUIFramework >();
 		assert( (uiFramework != nullptr) && (uiApplication != nullptr) );
 		
 		std::unique_ptr< IListModel > oldListModel( new OldTestListModel() );
-		std::unique_ptr< IListModel > oldShortListModel(new OldTestListModel(true));
+		std::unique_ptr< IListModel > oldShortListModel( new OldTestListModel( true ) );
 		listModel_ = std::make_shared<TestListModel>();
 
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
-			viewCreator->createView(
+			oldListView_ = viewCreator->createView(
 				"plg_list_model_test/test_list_panel_old.qml",
-				std::move(oldListModel), oldListView_ );
+				std::move( oldListModel ) );
 
-			viewCreator->createView(
+			oldShortListView_ = viewCreator->createView(
 				"plg_list_model_test/test_short_list_panel_old.qml",
-				std::move(oldShortListModel), oldShortListView_ );
+				std::move( oldShortListModel ) );
 
-			viewCreator->createView(
+			listView_ = viewCreator->createView(
 				"plg_list_model_test/test_list_panel.qml",
-				listModel_, listView_ );
+				listModel_ );
+
 		}
 	}
 
@@ -80,24 +84,25 @@ public:
 	{
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		assert( uiApplication != nullptr );
-		if (listView_ != nullptr)
+		if (listView_.valid())
 		{
-			uiApplication->removeView( *listView_ );
+			auto view = listView_.get();
+			uiApplication->removeView( *view );
+			view = nullptr;
 		}
-		if (oldShortListView_ != nullptr)
+		if (oldShortListView_.valid())
 		{
-			uiApplication->removeView( *oldShortListView_ );
+            auto view = oldShortListView_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
 		}
-		if (oldListView_ != nullptr)
+		if (oldListView_.valid())
 		{
-			uiApplication->removeView( *oldListView_ );
+            auto view = oldListView_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
 		}
 		listModel_ = nullptr;
-		listView_ = nullptr;
-		shortListView_ = nullptr;
-		multiColumnListView_ = nullptr;
-		oldListView_ = nullptr;
-		oldShortListView_ = nullptr;
 		return true;
 	}
 	//==========================================================================

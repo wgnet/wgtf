@@ -4,16 +4,17 @@ INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 PROJECT( core_data_model )
 
-SET( METADATA_SRCS
+SET( ALL_SRCS
 	metadata/i_active_filters_model.mpp
+	metadata/i_breadcrumbs_model_new.mpp
 	metadata/i_breadcrumbs_model.mpp
+	asset_browser/metadata/i_asset_browser_event_model20.mpp
+	asset_browser/metadata/i_asset_browser_model20.mpp
+	asset_browser/metadata/i_asset_browser_view_model20.mpp
 	asset_browser/metadata/i_asset_browser_event_model.mpp
 	asset_browser/metadata/i_asset_browser_model.mpp
 	asset_browser/metadata/i_asset_browser_view_model.mpp
-)
-SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
-
-SET( MODEL_SRCS
+	dialog/dialog_model.mpp
 	abstract_item.hpp
 	abstract_item_model.hpp
 	collection_model.cpp
@@ -33,6 +34,7 @@ SET( MODEL_SRCS
 	generic_tree_item.hpp
 	i_active_filters_model.hpp
 	i_breadcrumbs_model.hpp
+	i_breadcrumbs_model_new.hpp
 	i_list_model.cpp
 	i_list_model.hpp
 	i_tree_model.cpp
@@ -46,10 +48,7 @@ SET( MODEL_SRCS
 	value_change_notifier.hpp
 	selection_handler.cpp
 	selection_handler.hpp
-)
-SOURCE_GROUP( "DataModel" FILES ${MODEL_SRCS} )
-
-SET( MODEL_REFLECTION_SRCS
+	common_data_roles.hpp
 	reflection/class_definition_model.cpp
 	reflection/class_definition_model.hpp
 	reflection/class_definition_model_new.cpp
@@ -80,74 +79,96 @@ SET( MODEL_REFLECTION_SRCS
 	reflection/reflected_tree_model_new.hpp
 	reflection/reflected_list.cpp
 	reflection/reflected_list.hpp
+	reflection/reflected_property_model.hpp
+	reflection/reflected_property_model.cpp
+	reflection/default_property_model_extensions.cpp
+	reflection/default_property_model_extensions.hpp
+	reflection/property_model_extensions.hpp
+	reflection/property_model_extensions.cpp
+	reflection/reflected_collection_item.hpp
+	reflection/reflected_collection_item.cpp
+	reflection/child_creator.hpp
+	reflection/child_creator.cpp
 	reflection/reflected_collection.cpp
 	reflection/reflected_collection.hpp
-)
-SOURCE_GROUP( "DataModel\\Reflection"
-	FILES ${MODEL_REFLECTION_SRCS} )
-
-SET( MODEL_ASSET_BROWSER_SRCS
+	reflection_proto/property_list_model.cpp
+	reflection_proto/property_list_model.hpp
+	reflection_proto/property_tree_model.cpp
+	reflection_proto/property_tree_model.hpp
+	reflection_proto/reflected_tree_model.cpp
+	reflection_proto/reflected_tree_model.hpp
+	reflection_proto/reflected_property_item.cpp
+	reflection_proto/reflected_property_item.hpp
 	asset_browser/asset_browser_breadcrumbs_model.cpp
 	asset_browser/asset_browser_breadcrumbs_model.hpp
+	asset_browser/asset_browser_breadcrumbs_model20.cpp
+	asset_browser/asset_browser_breadcrumbs_model20.hpp
 	asset_browser/asset_browser_event_model.cpp
 	asset_browser/asset_browser_event_model.hpp
+	asset_browser/asset_browser_event_model20.cpp
+	asset_browser/asset_browser_event_model20.hpp
 	asset_browser/asset_browser_view_model.cpp
 	asset_browser/asset_browser_view_model.hpp
+	asset_browser/asset_browser_view_model20.cpp
+	asset_browser/asset_browser_view_model20.hpp
 	asset_browser/asset_list_model.cpp
 	asset_browser/asset_list_model.hpp
+	asset_browser/asset_list_model20.cpp
+	asset_browser/asset_list_model20.hpp
 	asset_browser/base_asset_object_item.cpp
 	asset_browser/base_asset_object_item.hpp
+	asset_browser/base_asset_object_item20.cpp
+	asset_browser/base_asset_object_item20.hpp
 	asset_browser/file_system_asset_browser_model.cpp
 	asset_browser/file_system_asset_browser_model.hpp
+	asset_browser/file_system_asset_browser_model20.cpp
+	asset_browser/file_system_asset_browser_model20.hpp
 	asset_browser/file_system_asset_presentation_provider.cpp
 	asset_browser/file_system_asset_presentation_provider.hpp
+	asset_browser/file_system_asset_presentation_provider20.cpp
+	asset_browser/file_system_asset_presentation_provider20.hpp
 	asset_browser/folder_tree_model.cpp
 	asset_browser/folder_tree_model.hpp
+	asset_browser/folder_tree_model20.cpp
+	asset_browser/folder_tree_model20.hpp
 	asset_browser/i_asset_object_item.hpp
 	asset_browser/i_asset_browser_event_model.hpp
 	asset_browser/i_asset_browser_model.hpp
 	asset_browser/i_asset_browser_view_model.hpp
 	asset_browser/i_asset_presentation_provider.hpp
-)
-SOURCE_GROUP( "DataModel\\Asset Browser"
-	FILES ${MODEL_ASSET_BROWSER_SRCS} )
-
-SET( MODEL_FILTERING_SRCS
+	asset_browser/i_asset_object_item20.hpp
+	asset_browser/i_asset_browser_event_model20.hpp
+	asset_browser/i_asset_browser_model20.hpp
+	asset_browser/i_asset_browser_view_model20.hpp
+	asset_browser/i_asset_presentation_provider20.hpp
+	dialog/dialog_model.hpp
+	dialog/dialog_model.cpp
 	filtering/i_item_filter.hpp
 	filtering/string_filter.hpp
 	filtering/string_filter.cpp
 	filtering/tokenized_string_filter.hpp
 	filtering/tokenized_string_filter.cpp
-)
-SOURCE_GROUP( "DataModel\\Filtering"
-	FILES ${MODEL_FILTERING_SRCS} )
-
-SET( MODEL_FILE_SYSTEM_SRCS
 	file_system/file_system_model.cpp
 	file_system/file_system_model.hpp
 )
-SOURCE_GROUP( "DataModel\\File System"
-	FILES ${MODEL_FILE_SYSTEM_SRCS} )
 
-SET( ALL_SRCS
-	${METADATA_SRCS}
-	${MODEL_SRCS}
-	${MODEL_ASSET_BROWSER_SRCS}
-	${MODEL_REFLECTION_SRCS}
-	${MODEL_FILTERING_SRCS}
-	${MODEL_FILE_SYSTEM_SRCS}
-)
+FILE( GLOB LIBRARY_RESOURCES asset_browser/resources/* )
+
+WG_AUTO_SOURCE_GROUPS(${ALL_SRCS})
 
 BW_BLOB_SOURCES( BLOB_SRCS 
-	${ALL_SRCS} 
+	${ALL_SRCS}
+	${LIBRARY_RESOURCES} 
 )
 
 BW_ADD_LIBRARY( core_data_model  ${BLOB_SRCS} )
+
+BW_COPY_LIBRARY_RESOURCES( "${LIBRARY_RESOURCES}" )
 
 BW_TARGET_LINK_LIBRARIES( core_data_model INTERFACE
 	core_reflection
 	core_reflection_utils
 )
 
-BW_PROJECT_CATEGORY( core_data_model "WGT Libs" )
+BW_PROJECT_CATEGORY( core_data_model "WGT Libs/Data Model" )
 

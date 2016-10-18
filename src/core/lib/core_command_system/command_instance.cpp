@@ -38,13 +38,6 @@ CommandInstance::CommandInstance()
 
 
 //==============================================================================
-CommandInstance::CommandInstance( const CommandInstance& )
-{
-	assert(!"Not copyable");
-}
-
-
-//==============================================================================
 CommandInstance::~CommandInstance()
 {
 }
@@ -76,30 +69,38 @@ void CommandInstance::waitForCompletion()
 //==============================================================================
 CommandErrorCode CommandInstance::getErrorCode() const
 {
-	if (errorCode_ != CommandErrorCode::COMMAND_NO_ERROR)
+	// Non-batch command
+	if (errorCode_ != CommandErrorCode::BATCH_NO_ERROR)
 	{
 		return errorCode_;
 	}
 
+	// Empty batch command
 	if (children_.empty())
 	{
-		return CommandErrorCode::COMMAND_NO_ERROR;
+		return CommandErrorCode::ABORTED;
 	}
 
+	// Check children in batch command
 	for (const auto & child : children_)
 	{
-        if (child->getErrorCode() == CommandErrorCode::COMMAND_NO_ERROR)
+		// A batch command is just a group of commands,
+		// if one item in the group succeeded, then the batch performed an operation
+		// so mark the whole batch as succeeded
+		const auto childError = child->getErrorCode();
+		if (wgt::isCommandSuccess( childError ))
 		{
-			return CommandErrorCode::COMMAND_NO_ERROR;
+			return childError;
 		}
 	}
 
-	return CommandErrorCode::ABORTED;
+	// Successful batch command
+	return CommandErrorCode::BATCH_NO_ERROR;
 }
 
 
 //==============================================================================
-bool CommandInstance::isMultiCommand() const
+bool CommandInstance::hasChildren() const
 {
 	return !children_.empty();
 }
@@ -176,8 +177,8 @@ void CommandInstance::undo()
 	{
 		(*it)->undo();
 	}
-    const Command * command = getCommand();
-    command->fireCommandExecuted(*this, CommandOperation::UNDO);
+	const Command * command = getCommand();
+	command->fireCommandExecuted(*this, CommandOperation::UNDO);
 }
 
 
@@ -188,15 +189,15 @@ void CommandInstance::redo()
 	{
 		(*it)->redo();
 	}
-    const Command * command = getCommand();
-    command->fireCommandExecuted(*this, CommandOperation::REDO);
+	const Command * command = getCommand();
+	command->fireCommandExecuted(*this, CommandOperation::REDO);
 }
 
 
 //==============================================================================
 void CommandInstance::execute()
 {
-    const Command * command = getCommand();
+	const Command * command = getCommand();
 	if (command->customUndo())
 	{
 		returnValue_ = command->execute( arguments_ );
@@ -210,11 +211,17 @@ void CommandInstance::execute()
 		undoRedoData->disconnect();
 		undoRedoData_.emplace_back( undoRedoData );
 	}
-    command->fireCommandExecuted(*this, CommandOperation::EXECUTE);
+	command->fireCommandExecuted(*this, CommandOperation::EXECUTE);
 	auto errorCode = returnValue_.getBase<CommandErrorCode>();
 	if (errorCode != nullptr)
 	{
 		errorCode_ = *errorCode;
+	}
+	else
+	{
+		// Not returning a CommandErrorCode assumes the code is COMMAND_NO_ERROR.
+		// @see Command::execute()
+		errorCode_ = CommandErrorCode::COMMAND_NO_ERROR;
 	}
 }
 
@@ -243,24 +250,57 @@ void CommandInstance::setContextObject( const ObjectHandle & contextObject )
 //==============================================================================
 ObjectHandle CommandInstance::getCommandDescription() const
 {
-    auto description = getCommand()->getCommandDescription(getArguments());
+	auto description = getCommand()->getCommandDescription(getArguments());
 	if (description != nullptr)
 	{
 		return description;
 	}
 
-	if (undoRedoData_.size() != 1)
+	if (undoRedoData_.empty())
 	{
 		return nullptr;
 	}
-
-	auto reflectionUndoRedoData = dynamic_cast< ReflectionUndoRedoData * >( undoRedoData_[0].get() );
-	if (reflectionUndoRedoData == nullptr)
+	
+	// Single command
+	// OR
+	// Batch command with one child
+	// - getCommandDescription() returns the same as a single command
+	const auto commandCount = undoRedoData_.size();
+	if ((commandCount == 1) || (commandCount == 2))
 	{
-		return nullptr;
+		return undoRedoData_.begin()->get()->getCommandDescription();
 	}
 
-	return reflectionUndoRedoData->getCommandDescription();
+	// Batch command with multiple children
+	// This is expected to have a "Children" collection attached
+	auto itr = undoRedoData_.begin();
+
+	// First item is the batch itself
+	auto batchHandle = itr->get()->getCommandDescription();
+	auto pBatchDescription = batchHandle.getBase< GenericObject >();
+	assert( pBatchDescription != nullptr );
+	auto & genericObject = *pBatchDescription;
+
+	// Get copy of children
+	Collection childrenCollection;
+	const auto getCollection = genericObject.get( "Children", childrenCollection );
+	assert( getCollection );
+
+	// Latter items are children of the batch
+	++itr;
+	for (; itr != undoRedoData_.end(); ++itr)
+	{
+		auto childHandle = itr->get()->getCommandDescription();
+		auto collectionItem = childrenCollection.insert( childrenCollection.size() );
+		const auto setValue = collectionItem.setValue( childHandle );
+		assert( setValue );
+	}
+
+	// Copy back to batch
+	const auto setCollection = genericObject.set( "Children", childrenCollection );
+	assert( setCollection );
+
+	return batchHandle;
 }
 
 

@@ -1,12 +1,16 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.2
 
 import WGControls 1.0
 
+/*!
+ \ingroup wgcontrols
+*/
 Item {
     id: mainDialog
     objectName: "WGFileDialog"
+    WGComponent { type: "WGFileDialog" }
 
     /*! The folder the fileDialog will open to by default.
 

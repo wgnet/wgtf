@@ -7,7 +7,6 @@ namespace wgt
 GenericTreeModel::GenericTreeModel( int columnCount/* = 1 */ )
 	:columnCount_( columnCount )
 {
-
 }
 
 void GenericTreeModel::addRootItem( GenericTreeItem * item )

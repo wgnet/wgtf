@@ -15,6 +15,7 @@ class IComponentContext;
 class IDefinitionManager;
 class IReflectionController;
 class IListModel;
+class ITreeModel;
 class Vector3;
 class IFileSystem;
 
@@ -28,12 +29,20 @@ public:
 	bool init( IComponentContext & contextManager );
 	bool fini();
 
-	ObjectHandle getTreeModel() const;
+	const ITreeModel* getTreeModel() const;
 	const IListModel * getListModel() const;
 	void updateRootObject( int index );
-	int rootObjectIndex();
-	size_t getObjectCount();
-	Vector3 getObjectPosition( int index );
+	const int rootObjectIndex() const;
+	void setTexture( int index, std::string currfilePath, std::string newFilePath );
+	void undoSetTexture( const ObjectHandle& params, Variant result );
+	void redoSetTexture( const ObjectHandle& params, Variant result );
+
+	/**
+	* @return the path of the current texture attached to the object
+	* @note will return an empty string if the object does not support textures
+	*/
+	std::string getObjectTexture( int index );
+
 	const IValueChangeNotifier * currentIndexSource() const;
 	const IValueChangeNotifier * currentListSource() const;
 
@@ -45,11 +54,8 @@ public:
 	virtual void onAddEnv( IEnvState* state ) override;
 	virtual void onRemoveEnv( IEnvState* state ) override;
 	virtual void onSelectEnv( IEnvState* state ) override;
-    virtual void onSaveEnvState( IEnvState* state ) override;
-    virtual void onLoadEnvState( IEnvState* state ) override;
 
 	bool loadDemoData( const char* name, DemoObjectsEnvCom* objects );
-	void automationUpdate();
 
 private:
 	void populateDemoObject( GenericObjectPtr & genericObject, const tinyxml2::XMLNode& objectNode );
@@ -64,6 +70,7 @@ private:
 	ObjectHandle nullSelection_;
 
 	DemoObjectsEnvCom* objects_;
+	mutable std::shared_ptr<ITreeModel> treeModel_;
 };
 } // end namespace wgt
 #endif //DEMO_OBJECTS_HPP

@@ -3,6 +3,7 @@
 #include "core_data_model/simple_active_filters_model.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_data_model/i_item_role.hpp"
+#include "testing/data_model_test/test_tree_model.hpp"
 
 
 namespace wgt
@@ -17,14 +18,16 @@ struct ActiveFiltersTestViewModel::Implementation
 
 	ActiveFiltersTestViewModel& self_;
 	std::unique_ptr<IActiveFiltersModel> simpleActiveFiltersModel_;
-	std::unique_ptr<ITreeModel> sampleDataToFilter_;
+	std::unique_ptr<ITreeModel> sampleDataToFilterOld_;
+	std::unique_ptr<AbstractTreeModel> sampleDataToFilterNew_;
 };
 
 ActiveFiltersTestViewModel::Implementation::Implementation( 
 	ActiveFiltersTestViewModel& self )
 	: self_( self )
 	, simpleActiveFiltersModel_( nullptr )
-	, sampleDataToFilter_( new SampleActiveFiltersTreeModel() )
+	, sampleDataToFilterOld_( new SampleActiveFiltersTreeModel() )
+	, sampleDataToFilterNew_( new TestTreeModel() )
 {
 }
 
@@ -64,9 +67,14 @@ IActiveFiltersModel * ActiveFiltersTestViewModel::getSimpleActiveFiltersModel() 
 	return impl_->simpleActiveFiltersModel_.get();
 }
 
-ITreeModel * ActiveFiltersTestViewModel::getSampleDataToFilter() const 
+ITreeModel * ActiveFiltersTestViewModel::getSampleDataToFilterOld() const 
 {
-	return impl_->sampleDataToFilter_.get();
+	return impl_->sampleDataToFilterOld_.get();
+}
+
+AbstractTreeModel * ActiveFiltersTestViewModel::getSampleDataToFilterNew() const 
+{
+	return impl_->sampleDataToFilterNew_.get();
 }
 //------------------------------------------------------------------------------
 
@@ -134,7 +142,7 @@ ThumbnailData SampleActiveFiltersTreeItem::getThumbnail( int column ) const
 	return nullptr;
 }
 
-Variant SampleActiveFiltersTreeItem::getData( int column, size_t roleId ) const
+Variant SampleActiveFiltersTreeItem::getData( int column, ItemRole::Id roleId ) const
 {
 	if (roleId == IndexPathRole::roleId_)
 	{
@@ -144,7 +152,7 @@ Variant SampleActiveFiltersTreeItem::getData( int column, size_t roleId ) const
 	return Variant();
 }
 
-bool SampleActiveFiltersTreeItem::setData( int column, size_t roleId, const Variant& data )
+bool SampleActiveFiltersTreeItem::setData( int column, ItemRole::Id roleId, const Variant& data )
 {
 	return false;
 }

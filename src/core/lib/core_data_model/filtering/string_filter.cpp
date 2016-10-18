@@ -10,7 +10,7 @@ struct StringFilter::Implementation
 	
 	StringFilter & self_;
 	std::string filterText_;
-	unsigned int roleId_;
+	ItemRole::Id roleId_;
 };
 
 StringFilter::Implementation::Implementation( StringFilter & self )
@@ -39,7 +39,7 @@ const char* StringFilter::getFilterText()
 	return impl_->filterText_.c_str();
 }
 
-void StringFilter::setRole( unsigned int roleId )
+void StringFilter::setRole( ItemRole::Id roleId )
 {
 	impl_->roleId_ = roleId;
 }

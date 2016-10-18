@@ -1,10 +1,12 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtGraphicalEffects 1.0
 
-//
+import WGControls 1.0
+import WGControls.Styles 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Button with no frame until pressed or hovered. Generally intended not to have text.
 
 \code{.js}
@@ -19,6 +21,8 @@ WGToolButton {
 
 WGPushButton {
     objectName: "WGToolButton"
+    WGComponent { type: "WGToolButton" }
+    
     implicitHeight: defaultSpacing.minimumRowHeight
     text: ""
     style: WGToolButtonStyle {}

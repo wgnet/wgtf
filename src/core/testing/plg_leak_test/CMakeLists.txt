@@ -1,0 +1,18 @@
+CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
+PROJECT( plg_leak_test )
+
+INCLUDE( WGToolsCoreProject )
+
+SET( ALL_SRCS
+	plg_leak_test.cpp
+)
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
+
+BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
+	${ALL_SRCS}
+)
+
+BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
+	core_generic_plugin )
+
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Failure Test Plugins" )

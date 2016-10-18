@@ -23,7 +23,7 @@ SET( ALL_SRCS
 	mainwindow/mainwindow.hpp
 	plg_progress_manager_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(plg_progress_manager_test resources/plg_progress_manager_test)
 BW_GLOB_RESOURCE_FILES()
@@ -40,9 +40,6 @@ BW_TARGET_LINK_LIBRARIES( plg_progress_manager_test PRIVATE
 	core_generic_plugin
 	core_ui_framework
     Qt5::Core
-    Qt5::Gui
-    Qt5::Quick
-    Qt5::Widgets
 )
 
 BW_PROJECT_CATEGORY( plg_progress_manager_test "Plugins" )

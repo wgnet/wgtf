@@ -1,7 +1,8 @@
-import QtQuick 2.3
+import QtQuick 2.5
 import WGControls 1.0
 
 /*!
+    \ingroup wgcontrols
     \brief An item that acts as a selectable border for copy/paste type functionality
     Not intended for use as a control on its own
 
@@ -44,6 +45,7 @@ WGCopyable {
 Rectangle {
     id: copyable
     objectName: "WGCopyable"
+    WGComponent { type: "WGCopyable" }
 
     //----------------------------------
     // Property Declarations

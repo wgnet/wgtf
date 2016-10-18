@@ -6,6 +6,15 @@
 namespace wgt
 {
 //------------------------------------------------------------------------------
+BinaryBlock::BinaryBlock()
+	: data_( nullptr )
+	, length_( 0 )
+	, externallyOwned_( false )
+{
+}
+
+
+//------------------------------------------------------------------------------
 BinaryBlock::BinaryBlock( const void * data, size_t len, bool externallyOwned )
 	: data_( nullptr )
 	, length_( len )
@@ -14,10 +23,7 @@ BinaryBlock::BinaryBlock( const void * data, size_t len, bool externallyOwned )
 	if (externallyOwned == false)
 	{
 		data_ = new char[ len ];
-		if(data)
-		{
-			memcpy( data_, data, len );
-		}
+		memcpy( data_, data, len );
 	}
 	else
 	{
@@ -27,13 +33,101 @@ BinaryBlock::BinaryBlock( const void * data, size_t len, bool externallyOwned )
 
 
 //------------------------------------------------------------------------------
-BinaryBlock::~BinaryBlock()
+BinaryBlock::BinaryBlock( const BinaryBlock& that )
+	: data_( nullptr )
+	, length_( that.length_ )
+	, externallyOwned_( that.externallyOwned_ )
 {
 	if (externallyOwned_)
 	{
-		return;
+		data_ = that.data_;
 	}
-	delete[] ( char * ) data_;
+	else
+	{
+		data_ = new char[ length_ ];
+		memcpy( data_, that.data_, length_ );
+	}
+}
+
+
+//------------------------------------------------------------------------------
+BinaryBlock::BinaryBlock( BinaryBlock&& that )
+	: data_( that.data_ )
+	, length_( that.length_ )
+	, externallyOwned_( that.externallyOwned_ )
+{
+	if (!that.externallyOwned_)
+	{
+		that.data_ = nullptr;
+		that.length_ = 0;
+	}
+}
+
+
+//------------------------------------------------------------------------------
+BinaryBlock::~BinaryBlock()
+{
+	if (!externallyOwned_)
+	{
+		delete[] ( char * ) data_;
+	}
+}
+
+
+//------------------------------------------------------------------------------
+BinaryBlock& BinaryBlock::operator=( const BinaryBlock& that )
+{
+	if (this == &that)
+	{
+		return *this;
+	}
+
+	if (!externallyOwned_)
+	{
+		delete[] ( char * ) data_;
+	}
+
+	length_ = that.length_;
+	externallyOwned_ = that.externallyOwned_;
+
+	if (externallyOwned_)
+	{
+		data_ = that.data_;
+	}
+	else
+	{
+		data_ = new char[ length_ ];
+		memcpy( data_, that.data_, length_ );
+	}
+
+	return *this;
+}
+
+
+//------------------------------------------------------------------------------
+BinaryBlock& BinaryBlock::operator=( BinaryBlock&& that )
+{
+	if (this == &that)
+	{
+		return *this;
+	}
+
+	if (!externallyOwned_)
+	{
+		delete[] ( char * ) data_;
+	}
+
+	data_ = that.data_;
+	length_ = that.length_;
+	externallyOwned_ = that.externallyOwned_;
+
+	if (!that.externallyOwned_)
+	{
+		that.data_ = nullptr;
+		that.length_ = 0;
+	}
+
+	return *this;
 }
 
 
@@ -59,7 +153,7 @@ size_t BinaryBlock::length() const
 
 
 //------------------------------------------------------------------------------
-int BinaryBlock::compare( BinaryBlock& that ) const
+int BinaryBlock::compare( const BinaryBlock& that ) const
 {
 	if (!this->data_ && !that.data_)
 	{

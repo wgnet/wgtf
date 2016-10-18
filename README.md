@@ -1,5 +1,5 @@
-WGTF
-===========
+Wargaming Tools Framework
+=========================
 WGTF stands for "Wargaming Tools Framework" It is a global tools initiative to
 rebuild Wargaming tools on a new framework that is driven by a plug-in based
 architecture. This architecture would allow for greater flexibility in sharing
@@ -7,11 +7,11 @@ code and common functionality across multiple projects as well as supporting
 cross-platform development. The project uses a combination of C++ and Qt.
 
 Introduction
------------
+------------
 This guide is for building and running the WGTF test app.
 
 Step-by-Step Guide
------------
+------------------
 
 After pulling down the repository, you will need to add several dependancies.
 The version of Qt you plan to use must be in the wgtf/src/core/third_party/Qt
@@ -20,9 +20,9 @@ directory and cmake must be in the wgtf/src/core/third_party/cmake directory
 
 ### On Windows
 
-1.  Run **wgtf\build\wg_cmake.bat**
+1.  Run **wgtf/build/wg_cmake.bat**
 
-    a. Select **Visual Studio &lt;version&gt; &lt;arch&gt; - &lt;Qt version&gt;**
+    a. Select **Visual Studio [version] [arch] - [Qt version]**
 
     The version of Qt depends on the age of the branch. As of writing **VS2012,
     Win64, Qt 5.6.0** is used on **develop**. **VS2013** and **Win32** should
@@ -32,24 +32,25 @@ directory and cmake must be in the wgtf/src/core/third_party/cmake directory
     targets should be used for development.
 
     b. The solution will be generated to
-    **wgtf\build_generic_app_test_vc11_win64_qt5.6.0\generic_app_test_win64.sln**
+    **wgtf/build_generic_app_test_vc11_win64_qt5.6.0/generic_app_test_win64.sln**
 
     If you want an out-of-tree build, pass in the desired output path to
     **wg_cmake.bat** E.g. Edit **wg_cmake.bat**
 
-    ```bat
-    @python wg_cmake.py D:\build\wgtf
+```
+    bat
+    @python wg_cmake.py D:/build/wgtf
     @pause
-    ```
+```
 
 ```
-    Qt and cmake are required to build WGTF. Read wgtf\src\core\third_party\qt_readme.txt and
-    wgtf\src\core\third_party\cmake_readme.txt for instructions on using them.
+    Qt and cmake are required to build WGTF. Read wgtf/src/core/third_party/qt_readme.txt and
+    wgtf/src/core/third_party/cmake_readme.txt for instructions on using them.
 
     Some projects will be ignored if 3rd party libraries are not available.
     Add any other 3rd party dependencies if needed. For Python support, follow
-    the instructions in wgtf\src\core\third_party\python_readme.txt, for Perforce
-    support, read wgtf\src\core\third_party\perforce_readme.txt
+    the instructions in wgtf/src/core/third_party/python_readme.txt, for Perforce
+    support, read wgtf/src/core/third_party/perforce_readme.txt
 ```
 
 2. Open the generated solution (**generic_app_test_win64.sln**) in _Visual
@@ -63,7 +64,7 @@ Studio 2012 Update 4._
 project and select **Set As Startup Project**.
 
 6. Select the plugins config you want to run. The plugins configs can be found
-in **wgtf\bin\generic_app_test\win64\plugins**. For this example we will use
+in **wgtf/bin/generic_app_test/win64/plugins**. For this example we will use
 **plugins_ui.txt**.
 
 7. In the **Solution Explorer**, right click on the **Executables/generic_app**
@@ -72,9 +73,9 @@ project and select **Properties**
 8. In the **generic_app Property Pages** dialog, find **Configuration Properties
 -> Debugging -> Command Arguments** and enter
 
-    ```
+```
     --config plugins_ui.txt
-    ```
+```
 
 9. Press **OK**
 
@@ -82,12 +83,13 @@ project and select **Properties**
 
 11. If it asks about building **ZERO_CHECK** press **OK**
 
-    ```
+```
     Building ZERO_CHECK basically re-runs the CMake script with some cached
     settings. You can build it if you have added/deleted a file and want to
     update the sln.  Sometimes Visual Studio isn't very good at detecting
     if it should build it.
-    ```
+```
+
 12. The Generic App UI Test should start. It has all of the features core to
 the WGTF framework.
 
@@ -100,11 +102,11 @@ without debugging, open
 
 ### On OSX
 
-1. Run **wgtf\build\wg_cmake.sh**
+1. Run **wgtf/build/wg_cmake.sh**
 
     a. Select **XCode**
 
-    b. Select **&lt;Qt version&gt;**
+    b. Select **[Qt version]**
 
     The version of Qt depends on the age of the branch. As of writing Qt
     **5.6.0** is used on **develop**.
@@ -115,17 +117,17 @@ without debugging, open
     only **bin**. The **non-deploy** targets should be used for development.
 
     d. The Xcode project will be generated to
-    **wgtf\build_generic_app_test_xcode_qt5.6.0\generic_app_test_mac.xcodeproj**
+    **wgtf/build_generic_app_test_xcode_qt5.6.0/generic_app_test_mac.xcodeproj**
     (depending on the selected Qt version).
 
 ```
-    Qt and cmake are required to build WGTF. Read wgtf\src\core\third_party\qt_readme.txt and
-    wgtf\src\core\third_party\cmake_readme.txt for instructions on using them.
+    Qt and cmake are required to build WGTF. Read wgtf/src/core/third_party/qt_readme.txt and
+    wgtf/src/core/third_party/cmake_readme.txt for instructions on using them.
 
     Some projects will be ignored if 3rd party libraries are not available.
     Add any other 3rd party dependencies if needed. For Python support, follow
-    the instructions in wgtf\src\core\third_party\python_readme.txt, for Perforce
-    support, read wgtf\src\core\third_party\perforce_readme.txt
+    the instructions in wgtf/src/core/third_party/python_readme.txt, for Perforce
+    support, read wgtf/src/core/third_party/perforce_readme.txt
 ```
 
 2. Open the generated solution (**generic_app_test_mac.xcodeproj**) in _OSX El
@@ -155,7 +157,7 @@ the top.
 7. Change schemes to **generic_app**
 
 8. Find the plugins config you want to run. The plugins configs can be found in
-**wgtf\bin\generic_app_test\mac\generic_app.app\Contents\Resources\plugins**
+**wgtf/bin/generic_app_test/mac/generic_app.app/Contents/Resources/plugins**
 (Show Package Contents in Finder). For this example we will use **plugins_ui.txt**.
 
 9. Edit the scheme
@@ -164,9 +166,9 @@ the top.
 
     b. In the **Edit Scheme** dialog, find **Run -> Arguments -> Arguments ->
     Arguments Passed On Launch** and enter
-    ```
+```
     --config plugins_ui.txt
-    ```
+```
 
 10. Press **Close**.
 
@@ -184,7 +186,7 @@ Maya Plugin
 
 Building the Maya Plug-in
 
-1. Go to the wgtf\build folder.
+1. Go to the wgtf/build folder.
 
 2. Double click on wg_cmake.bat.
 
@@ -205,7 +207,7 @@ Running the Maya Plug-in
 
 3. Select Browse at the bottom of the Plug-in Manager window.
 
-4. Browse to wgtf\bin\generic_app_test\win64 folder and select wgtf_maya_plugin.mll
+4. Browse to wgtf/bin/generic_app_test/win64 folder and select wgtf_maya_plugin.mll
 
 5. Select Open
 

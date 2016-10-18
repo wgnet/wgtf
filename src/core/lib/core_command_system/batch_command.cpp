@@ -7,7 +7,7 @@ namespace wgt
 {
 //--------------------------------------------------------------------------
 BatchCommand::BatchCommand( CommandManager * pCommandManager )
-    : pCommandManager_( pCommandManager )
+	: pCommandManager_( pCommandManager )
 {
 }
 
@@ -15,15 +15,15 @@ BatchCommand::BatchCommand( CommandManager * pCommandManager )
 //--------------------------------------------------------------------------
 const char * BatchCommand::getId() const
 {
-    static const char * s_id = typeid( BatchCommand ).name();
-    return s_id;
+	static const char * s_id = typeid( BatchCommand ).name();
+	return s_id;
 }
 
 
 //--------------------------------------------------------------------------
 ObjectHandle BatchCommand::execute( const ObjectHandle & arguments ) const
 {
-    assert( pCommandManager_ != nullptr );
+	assert( pCommandManager_ != nullptr );
 	auto stage = arguments.getBase<BatchCommandStage>();
 	assert( stage != nullptr );
 	switch( *stage )
@@ -39,7 +39,7 @@ ObjectHandle BatchCommand::execute( const ObjectHandle & arguments ) const
 		assert( false );
 		break;
 	}
-    return nullptr;
+	return CommandErrorCode::BATCH_NO_ERROR;
 }
 
 

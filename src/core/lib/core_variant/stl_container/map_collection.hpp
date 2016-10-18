@@ -25,7 +25,7 @@ namespace collection_details
 
 		static const bool is_const_container = std::is_const< container_type >::value;
 		static const bool can_set =
-			Variant::traits< value_type >::can_downcast &&
+			Variant::traits< value_type >::can_cast &&
 			!is_const_container &&
 			!std::is_const< value_type >::value;
 
@@ -128,7 +128,7 @@ namespace collection_details
 					return false;
 				}
 
-				return v.with< value_type >( [ impl, &v ]( const value_type& val )
+				return v.visit< value_type >( [ impl, &v ]( const value_type& val )
 				{
 					auto pos = impl->collectionImpl_.makeIterator( impl->iterator_ );
 					impl->collectionImpl_.onPreChange_( pos, v );
@@ -226,15 +226,42 @@ namespace collection_details
 				return result_type( collectionImpl.container_.end(), false );
 			}
 		}
-	};
 
+	    static std::pair<iterator_type, bool> get_new(
+	    collection_impl& collectionImpl,
+	    const key_type& key,
+	    const Variant& value)
+	    {
+		    typedef std::pair<iterator_type, bool> result_type;
 
-	template< typename IteratorImpl >
-	struct MapCollectionGetNew< IteratorImpl, true >
-	{
-		typedef typename IteratorImpl::collection_impl collection_impl;
-		typedef typename IteratorImpl::key_type key_type;
-		typedef typename IteratorImpl::value_type value_type;
+		    auto range = collectionImpl.container_.equal_range(key);
+		    if (range.first == range.second)
+		    {
+			    value_type val;
+			    if (!value.tryCast(val))
+			    {
+				    return result_type(collectionImpl.container_.end(), false);
+			    }
+
+			    collectionImpl.onPreInsert_(collectionImpl.makeIterator(range.first), 1);
+			    auto r = collectionImpl.container_.emplace_hint(range.first, key, val);
+			    collectionImpl.onPostInserted_(collectionImpl.makeIterator(r), 1);
+
+			    return result_type(r, true);
+		    }
+		    else
+		    {
+			    return result_type(collectionImpl.container_.end(), false);
+		    }
+	    }
+    };
+
+    template <typename IteratorImpl>
+    struct MapCollectionGetNew<IteratorImpl, true>
+    {
+	    typedef typename IteratorImpl::collection_impl collection_impl;
+	    typedef typename IteratorImpl::key_type key_type;
+	    typedef typename IteratorImpl::value_type value_type;
 		typedef typename IteratorImpl::iterator_type iterator_type;
 
 		static std::pair< iterator_type, bool > get_new(
@@ -249,17 +276,35 @@ namespace collection_details
 			collectionImpl.onPostInserted_( collectionImpl.makeIterator( r ), 1 );
 			return result_type( r, true );
 		}
-	};
 
+	    static std::pair<iterator_type, bool> get_new(
+	    collection_impl& collectionImpl,
+	    const key_type& key,
+	    const Variant& value)
+	    {
+		    typedef std::pair<iterator_type, bool> result_type;
 
-	template< typename Container, bool resizable, bool ordered, bool non_unique_keys >
-	class MapCollectionImpl;
+		    value_type val;
+		    if (!value.tryCast(val))
+		    {
+			    return result_type(collectionImpl.container_.end(), false);
+		    }
 
+		    auto range = collectionImpl.container_.equal_range(key);
+		    collectionImpl.onPreInsert_(collectionImpl.makeIterator(range.first), 1);
+		    auto r = collectionImpl.container_.emplace_hint(range.first, key, val);
+		    collectionImpl.onPostInserted_(collectionImpl.makeIterator(r), 1);
+		    return result_type(r, true);
+	    }
+    };
 
-	template< typename Container, bool ordered, bool non_unique_keys >
-	class MapCollectionImpl< Container, true, ordered, non_unique_keys >:
-		public CollectionImplBase
-	{
+    template <typename Container, bool resizable, bool ordered, bool non_unique_keys>
+    class MapCollectionImpl;
+
+    template <typename Container, bool ordered, bool non_unique_keys>
+    class MapCollectionImpl<Container, true, ordered, non_unique_keys> :
+    public CollectionImplBase
+    {
 	public:
 		typedef Container container_type;
 		typedef typename container_type::key_type key_type;
@@ -433,11 +478,25 @@ namespace collection_details
 			}
 		}
 
-		CollectionIteratorImplPtr erase( const CollectionIteratorImplPtr& pos ) override
-		{
-			iterator_impl_type* ii = dynamic_cast< iterator_impl_type* >( pos.get() );
-			assert( ii );
-			assert( &ii->container() == &container_ );
+	    CollectionIteratorImplPtr insert(const Variant& key,
+	                                     const Variant& value) override
+	    {
+		    key_type k;
+		    if (!key.tryCast(k))
+		    {
+			    return end();
+		    }
+
+		    // Insert a new one
+		    auto r = map_collection_get_new::get_new(*this, k, value);
+		    return makeIterator(r.first);
+	    }
+
+	    CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) override
+	    {
+		    iterator_impl_type* ii = dynamic_cast<iterator_impl_type*>(pos.get());
+		    assert(ii);
+		    assert( &ii->container() == &container_ );
 
 			onPreErase_( pos, 1 );
 			auto r = container_.erase( ii->base() );
@@ -445,7 +504,7 @@ namespace collection_details
 			return makeIterator( r );
 		}
 
-		size_t erase( const Variant& key ) override
+		size_t eraseKey( const Variant& key ) override
 		{
 			key_type k;
 			if( !key.tryCast( k ) )
@@ -624,12 +683,18 @@ namespace collection_details
 			}
 		}
 
-		CollectionIteratorImplPtr erase( const CollectionIteratorImplPtr& pos ) override
-		{
-			return end();
-		}
+	    CollectionIteratorImplPtr insert(const Variant& key,
+	                                     const Variant& value) override
+	    {
+		    return end();
+	    }
 
-		size_t erase( const Variant& key ) override
+	    CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) override
+	    {
+		    return end();
+	    }
+
+	    size_t eraseKey( const Variant& key ) override
 		{
 			return 0;
 		}

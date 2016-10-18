@@ -16,13 +16,13 @@ bool ITreeModel::empty( const IItem * item ) const
 }
 
 
-Variant ITreeModel::getData( int column, size_t roleId ) const
+Variant ITreeModel::getData( int column, ItemRole::Id roleId ) const
 {
 	return Variant();
 }
 
 
-bool ITreeModel::setData( int column, size_t roleId, const Variant & data )
+bool ITreeModel::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	return false;
 }

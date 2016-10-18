@@ -146,6 +146,9 @@ static PyObject * wrap_setattr( PyObject * self, PyObject * args, void * wrapped
 	auto propertyAccessor = pDefinition->bindProperty( childPath.c_str(), handle );
 #endif // ENABLE_FULL_PATH_PYTHON_LISTENER_HOOKS
 
+	// Property may not be valid if a new property is being created
+	const bool isValidProperty = propertyAccessor.isValid();
+
 	Variant variantValue;
 	const bool success = pTypeConverters->toVariant( valueObject,
 		variantValue,
@@ -156,11 +159,15 @@ static PyObject * wrap_setattr( PyObject * self, PyObject * args, void * wrapped
 	auto& listeners = pDefinitionManager->getPropertyAccessorListeners();
 	const auto itBegin = listeners.cbegin();
 	const auto itEnd = listeners.cend();
-	for (auto it = itBegin; it != itEnd; ++it)
+
+	if (isValidProperty)
 	{
-		auto listener = it->lock();
-		assert( listener != nullptr );
-		listener->preSetValue( propertyAccessor, variantValue );
+		for (auto it = itBegin; it != itEnd; ++it)
+		{
+			auto listener = it->lock();
+			assert(listener != nullptr);
+			listener->preSetValue(propertyAccessor, variantValue);
+		}
 	}
 
 	// -- Set attribute using default hook
@@ -169,11 +176,14 @@ static PyObject * wrap_setattr( PyObject * self, PyObject * args, void * wrapped
 	const int res = (*func)(self, name, value);
 
 	// -- Post-notify UI
-	for (auto it = itBegin; it != itEnd; ++it)
+	if (isValidProperty)
 	{
-		auto listener = it->lock();
-		assert( listener != nullptr );
-		listener->postSetValue( propertyAccessor, variantValue );
+		for (auto it = itBegin; it != itEnd; ++it)
+		{
+			auto listener = it->lock();
+			assert(listener != nullptr);
+			listener->postSetValue(propertyAccessor, variantValue);
+		}
 	}
 
 	if (res < 0)

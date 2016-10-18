@@ -18,7 +18,7 @@ SET( ALL_SRCS
 	notify_plugin.hpp
 	notify_plugin.cpp
 )
-SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
 BW_BLOB_SOURCES( BLOB_SRCS
@@ -35,7 +35,7 @@ ENDIF()
 
 BW_TARGET_LINK_LIBRARIES( core_generic_plugin_manager INTERFACE
 	core_common
-	core_variant
+	core_reflection
 	core_dependency_system
 	core_logging
 

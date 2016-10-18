@@ -10,20 +10,14 @@ namespace wgt
 {
 namespace PythonType
 {
-
-
-namespace Detail
+namespace Mapping_Detail
 {
-
-
- Mapping::result_type insert( const ObjectHandle & containerHandle,
-	Mapping::container_type & container,
-	const Mapping::key_type key,
-	const CollectionIteratorImplPtr & end,
-	const Converters & typeConverters )
+CollectionIteratorImplPtr insert(const ObjectHandle& containerHandle,
+                                 Mapping::container_type& container,
+                                 const Mapping::key_type key,
+                                 const CollectionIteratorImplPtr& end,
+                                 const Converters& typeConverters)
 {
-	typedef std::pair< CollectionIteratorImplPtr, bool > result_type;
-
 	auto noneType = PyScript::ScriptObject( Py_None,
 		PyScript::ScriptObject::FROM_BORROWED_REFERENCE );
 
@@ -32,20 +26,16 @@ namespace Detail
 		PyScript::ScriptErrorPrint() );
 	if (success)
 	{
-		return result_type(
-			std::make_shared< Mapping::iterator_impl_type >(
-				containerHandle,
-				container,
-				key,
-				typeConverters ),
-			true );
+		return std::make_shared<Mapping::iterator_impl_type>(
+		containerHandle,
+		container,
+		key,
+		typeConverters);
 	}
-	return result_type( end, false );
+	return end;
 }
 
-
-} // namespace Detail
-
+} // namespace Mapping_Detail
 
 Mapping::Mapping( const Mapping::container_type & container,
 	const ObjectHandle & containerHandle,
@@ -105,11 +95,12 @@ Mapping::result_type Mapping::get( const Variant & key,
 	}
 	else if (policy == GET_NEW)
 	{
-		return Detail::insert( containerHandle_,
-			container_,
-			scriptKey,
-			this->end(),
-			typeConverters_ );
+		auto itr = Mapping_Detail::insert(containerHandle_,
+		                                  container_,
+		                                  scriptKey,
+		                                  this->end(),
+		                                  typeConverters_);
+		return result_type(itr, itr != this->end());
 	}
 	else if (policy == GET_AUTO)
 	{
@@ -127,11 +118,12 @@ Mapping::result_type Mapping::get( const Variant & key,
 		}
 
 		// Insert new at start or end
-		return Detail::insert( containerHandle_,
-			container_,
-			scriptKey,
-			this->end(),
-			typeConverters_ );
+		return result_type(Mapping_Detail::insert(containerHandle_,
+		                                          container_,
+		                                          scriptKey,
+		                                          this->end(),
+		                                          typeConverters_),
+		                   true);
 	}
 	else
 	{
@@ -140,6 +132,27 @@ Mapping::result_type Mapping::get( const Variant & key,
 	}
 }
 
+CollectionIteratorImplPtr Mapping::insert(const Variant& key,
+                                          const Variant& value) /* override */
+{
+	PyScript::ScriptObject scriptKey;
+	const bool success = typeConverters_.toScriptType(key, scriptKey);
+	if (!success)
+	{
+		return this->end();
+	}
+
+	const auto insertItr = Mapping_Detail::insert(containerHandle_,
+	                                              container_,
+	                                              scriptKey,
+	                                              this->end(),
+	                                              typeConverters_);
+	if (insertItr != this->end())
+	{
+		insertItr->setValue(value);
+	}
+	return insertItr;
+}
 
 CollectionIteratorImplPtr Mapping::erase(
 	const CollectionIteratorImplPtr & pos ) /* override */
@@ -178,7 +191,7 @@ CollectionIteratorImplPtr Mapping::erase(
 }
 
 
-size_t Mapping::erase( const Variant & key ) /* override */
+size_t Mapping::eraseKey( const Variant & key ) /* override */
 {
 	PyScript::ScriptObject scriptKey;
 	const bool success = typeConverters_.toScriptType( key, scriptKey );

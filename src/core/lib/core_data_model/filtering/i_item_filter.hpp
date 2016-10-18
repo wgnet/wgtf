@@ -2,6 +2,7 @@
 #define I_ITEM_FILTER_HPP
 
 #include "core_common/signal.hpp"
+#include "core_data_model/i_item_role.hpp"
 
 namespace wgt
 {
@@ -22,7 +23,7 @@ public:
 	
 	virtual bool checkFilter( const IItem * item ) = 0;
 
-	virtual void setRole( unsigned int roleId ) = 0;
+	virtual void setRole( ItemRole::Id roleId ) = 0;
 
 	virtual bool filterDescendantsOfMatchingItems() { return false; }
 

@@ -20,15 +20,25 @@ ELSEIF( BW_PLATFORM_MAC )
 	INCLUDE( "CMakeLists.mac.txt" )
 ENDIF()
 
-BW_ADD_EXECUTABLE( serialization_unit_test ${BLOB_SRCS} )
-BW_TARGET_LINK_LIBRARIES( serialization_unit_test PRIVATE
-	core_serialization
+BW_ADD_EXECUTABLE( ${PROJECT_NAME} ${BLOB_SRCS} )
+
+IF(BW_PLATFORM_WINDOWS)
+	SET(PLATFORM_LIBRARIES shlwapi)
+ELSE()
+	SET(PLATFORM_LIBRARIES)
+ENDIF()
+
+BW_TARGET_LINK_LIBRARIES(  ${PROJECT_NAME} PRIVATE
+	core_common
 	core_reflection
 	core_string_utils
 	core_unit_test
+
+	# external libraries
+	${PLATFORM_LIBRARIES}
 )
 
-BW_ADD_TOOL_TEST( serialization_unit_test )
+BW_ADD_TOOL_TEST( ${PROJECT_NAME} )
 
-BW_PRECOMPILED_HEADER( serialization_unit_test pch.hpp )
-BW_PROJECT_CATEGORY( serialization_unit_test "Unit Tests" )
+BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Unit Tests" )

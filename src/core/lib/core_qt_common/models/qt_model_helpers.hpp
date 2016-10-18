@@ -5,17 +5,18 @@
 #include <memory>
 #include <vector>
 
+#include "core_data_model/i_item_role.hpp"
 
 namespace wgt
 {
-class IModelExtension;
+class IModelExtensionOld;
 
 namespace QtModelHelpers
 {
 
-typedef std::vector< IModelExtension * > Extensions;
+typedef std::vector< IModelExtensionOld * > Extensions;
 
-int encodeRole( size_t roleId, const Extensions& extensions );
+int encodeRole(ItemRole::Id roleId, const Extensions& extensions);
 int calculateFirst( const size_t start );
 int calculateLast( const size_t start, const size_t count );
 

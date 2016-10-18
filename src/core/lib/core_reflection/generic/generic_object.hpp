@@ -3,7 +3,7 @@
 
 
 #include "base_generic_object.hpp"
-
+#include "core_reflection/reflection_dll.hpp"
 
 #include <unordered_map>
 
@@ -17,12 +17,11 @@ class GenericDefinition;
 class GenericProperty;
 class TypeId;
 
-
 /**
  *	GenericObject is an object that has a "generic type".
  *	And it has storage for any properties that are added/removed.
  */
-class GenericObject : public BaseGenericObject
+class REFLECTION_DLL GenericObject : public BaseGenericObject
 {
 public:
 	/// Only GenericDefinition::create should use this function

@@ -21,8 +21,8 @@ public:
 
 	virtual const char* getDisplayText( int column ) const override;
 	virtual ThumbnailData getThumbnail( int column ) const override;
-	virtual Variant getData( int column, size_t roleId ) const override;
-	virtual bool setData( int column, size_t roleId, const Variant& data ) override;
+	virtual Variant getData( int column, ItemRole::Id roleId ) const override;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant& data ) override;
 
 private:
 	struct Implementation;
@@ -39,8 +39,8 @@ public:
 
 	TestListItem& operator=( const TestListItem& rhs );
 
-	virtual Variant getData( int column, size_t roleId ) const override;
-	virtual bool setData( int column, size_t roleId, const Variant & data ) override;
+	virtual Variant getData( int column, ItemRole::Id roleId ) const override;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data ) override;
 
 	virtual Connection connectPreDataChanged( DataCallback callback ) override;
 	virtual Connection connectPostDataChanged( DataCallback callback ) override;

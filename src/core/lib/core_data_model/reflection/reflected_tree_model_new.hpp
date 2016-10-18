@@ -9,41 +9,86 @@ namespace wgt
 class IComponentContext;
 class ObjectHandle;
 
-/**
- *	Construct a tree data model by reflecting over the given objects.
- *	Tree may have zero or multiple "root" objects.
- */
+/** Construct a tree data model by reflecting over the given objects.
+Tree may have zero or multiple "root" objects.
+This tree uses the notion of in place items to hide certain group levels from view.
+An item's children include direct (not in place) children as well as
+(not in place) children of the in place children.
+For example:
+> group1
+>> group2 (in place)
+>>> item1
+>>> item2
+>> item4
+Is transformed into:
+> group1
+>> item1
+>> item2
+>> item4
+*/
 class ReflectedTreeModelNew
 	: public AbstractTreeModel
 {
 public:
-
 	ReflectedTreeModelNew( IComponentContext & contextManager, const ObjectHandle & object );
 	virtual ~ReflectedTreeModelNew();
-	
 
+	/** Gets the item at an index position.
+	@note The children for the index's parent includes children of in place items.
+	For example, the index (2, group1) will return item4 for this tree:
+	> group1
+	>> group2 (in place)
+	>>> item1
+	>>> item2
+	>>> item3 (hidden)
+	>> item4
+	@param item The index used to look for the item.
+	@return The item found. */
 	virtual AbstractItem * item( const ItemIndex & index ) const override;
+
+	/** Returns the index to locate an item in the tree.
+	@note The item's parent might not be its direct parent, as in place parents are skipped over.
+	For example, the following will yield the index (1, group1) for item2:
+	> group1
+	>> group2 (in place)
+	>>> item1
+	>>> item2
+	>>> item3 (hidden)
+	>> item4
+	@param item The item to locate in the tree.
+	@return The index to locate the item. */
 	virtual ItemIndex index( const AbstractItem * item ) const override;
 
-	/**
-	 *	Get the number of child items, excluding hidden items, including null items
-	 *	E.g.
-	 *	> group1
-	 *	>> group2 <- hidden
-	 *	>>> item1 - count
-	 *	>>> item2 - count
-	 *	>>> item3 - count
-	 *	>> item4 - count
-	 *	getChildCount( group1 ) == 4
-	 *	E.g.
-	 *	> group1
-	 *	>> group2 <- hidden
-	 *	>> group3 <- hidden
-	 *	getChildCount( group1 ) == 0
-	 */
+	/** Gets the number of leaf nodes.
+	@note This excludes in place items, but includes descendants of in place items.
+	@note This excludes hidden items.
+	For example, the following results in a count of 3 (at group1):
+	> group1
+	>> group2 (in place)
+	>>> item1
+	>>> item2
+	>>> item3 (hidden)
+	>> item4
+	@param item The parent item under which to look for descendants.
+	@return The number of items found. */
 	virtual int rowCount( const AbstractItem * item ) const override;
+
 	virtual int columnCount() const override;
+
+	/** Determines whether an item has any child items under it.
+	@note If a child is in place, that child is excluded, but its children are considered.
+	@note Hidden children are excluded.
+	For example, the following results in true (at group1):
+	> group1
+	>> group2 (in place)
+	>>> item1
+	@param item The parent item under which to look for children.
+	@return True if at least one child found. */
 	virtual bool hasChildren( const AbstractItem * item ) const override;
+
+	virtual std::vector< std::string > roles() const override;
+
+	virtual bool hasController() const override;
 
 	virtual Connection connectPreItemDataChanged(
 		AbstractTreeModel::DataCallback callback ) override;

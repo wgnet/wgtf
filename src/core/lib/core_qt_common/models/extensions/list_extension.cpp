@@ -12,11 +12,6 @@ ListExtension::~ListExtension()
 
 }
 
-QHash< int, QByteArray > ListExtension::roleNames() const
-{
-	return QHash< int, QByteArray >();
-}
-
 QItemSelection ListExtension::itemSelection( const QModelIndex & first, const QModelIndex & last ) const
 {
 	if (!first.isValid() && !last.isValid())
@@ -31,9 +26,6 @@ QItemSelection ListExtension::itemSelection( const QModelIndex & first, const QM
 	{
 		return QItemSelection( first, first );
 	}
-
-	assert( first.column() == 0 && !first.parent().isValid() );
-	assert( last.column() == 0 && !last.parent().isValid() );
 
 	auto begin = first;
 	auto end = last;

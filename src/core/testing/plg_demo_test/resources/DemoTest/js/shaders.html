@@ -1,0 +1,88 @@
+<!------------------------------------------------------------------
+Supported Vertex Attributes:
+    aVertexPosition
+    aVertexColor
+    aVertexUV
+    aVertexNormal
+Supported Vertex Uniforms:
+    uWorldMat
+    uViewProjMat
+    uLightDirection
+    uColor
+    uSampler0 -> uSampler7
+-------------------------------------------------------------------->
+
+<!-- Diagnostic shader -->
+<script id="diagnostic-shader-vs" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec4 aVertexColor;
+    uniform mat4 uViewProjMat;
+    varying vec4 vVertexColor;
+    
+    void main(void) 
+    {
+        gl_Position = uViewProjMat * vec4(aVertexPosition, 1.0);
+        vVertexColor = aVertexColor;
+    }
+</script>
+<script id="diagnostic-shader-fs" type="x-shader/x-fragment">
+    varying vec4 vVertexColor;
+
+    void main(void) 
+    {
+        gl_FragColor = vVertexColor;
+    }
+</script>
+
+<!-- Unlit colour shader used to ID meshes -->
+<script id="id-shader-vs" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    uniform mat4 uWorldMat;
+    uniform mat4 uViewProjMat;
+    
+    void main(void) 
+    {
+        gl_Position = uViewProjMat * uWorldMat * vec4(aVertexPosition, 1.0);
+    }
+</script>
+<script id="id-shader-fs" type="x-shader/x-fragment">
+    uniform vec4 uColor;
+
+    void main(void) 
+    {
+        gl_FragColor = uColor;
+    }
+</script>
+
+<!-- Diffuse lighting shader with a texture -->
+<script id="diffuse-shader-vs" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aVertexUV;
+    uniform mat4 uWorldMat;
+    uniform mat4 uViewProjMat;
+    varying vec2 vVertexUV;
+    varying vec3 vVertexNormal;
+
+    void main(void) 
+    {
+        gl_Position = uViewProjMat * uWorldMat * vec4(aVertexPosition, 1.0);
+        vVertexNormal = (uWorldMat * vec4(aVertexNormal, 1.0)).xyz;
+        vVertexUV = aVertexUV;
+    }
+</script>
+<script id="diffuse-shader-fs" type="x-shader/x-fragment">
+    varying vec2 vVertexUV;
+    varying vec3 vVertexNormal;
+    uniform vec4 uColor;
+    uniform vec3 uLightDirection;
+    uniform sampler2D uSampler0;
+
+    void main(void) 
+    {
+        vec3 normal = normalize(vVertexNormal);
+        float diffuse = (dot(-uLightDirection, normal) + 1.0) * 0.5; 
+        vec4 tex = texture2D(uSampler0, vec2(vVertexUV.x, vVertexUV.y));
+        gl_FragColor = tex * diffuse * uColor;
+    }
+</script>

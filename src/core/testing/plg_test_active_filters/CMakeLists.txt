@@ -9,22 +9,17 @@ SET( CMAKE_INCLUDE_CURRENT_DIR ON )
 
 SET( ALL_SRCS
 	metadata/active_filters_test_view_model.mpp
-)
-SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
-
-SET( ALL_SRCS
 	active_filters_test_view_model.cpp
 	active_filters_test_view_model.hpp
 	plugin_main.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC( TestActiveFilters resources/TestActiveFilters )
 BW_GLOB_RESOURCE_FILES()
 
 BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 	${ALL_SRCS}
-	${METADATA_SRCS}
 	${COMPILED_RESOURCES}
 	${RESOURCE_FILES}
 )
@@ -36,6 +31,7 @@ BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_qt_script
 	core_reflection
 	core_ui_framework
+	data_model_test
 	Qt5::Core
 	Qt5::Gui
 	Qt5::Quick

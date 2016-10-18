@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //
-//  asset_browser_event_model.h
+//  asset_browser_event_model_old.h
 //
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //  Copyright (c) Wargaming.net. All rights reserved.
@@ -12,6 +12,7 @@
 #pragma once
 
 #include "i_asset_browser_event_model.hpp"
+#include "core_dependency_system/i_interface.hpp"
 #include "core_common/signal.hpp"
 
 #include <vector>

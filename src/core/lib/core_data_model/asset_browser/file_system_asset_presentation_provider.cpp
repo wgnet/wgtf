@@ -4,19 +4,20 @@
 
 namespace wgt
 {
-void FileSystemAssetPresentationProvider::generateData()
+void FileSystemAssetPresentationProvider::generateData(std::string directory)
 {
 	testThumbnails_.clear();
 
-	addThumbnail(CACHED_DEFAULT, "plugins/test_resources/test_thumbnail_default.png");
-	addThumbnail(CACHED_SCRIPT, "plugins/test_resources/test_thumbnail_script.png");
-	addThumbnail(CACHED_XML, "plugins/test_resources/test_thumbnail_xml.png");
-	addThumbnail(CACHED_DECAL, "plugins/test_resources/test_thumbnail_decal.png");
+	const std::string folder(directory + PROJECT_RESOURCE_FOLDER);
+	addThumbnail(CACHED_DEFAULT, (folder + "thumbnail_default.png").c_str());
+	addThumbnail(CACHED_SCRIPT, (folder + "thumbnail_script.png").c_str());
+	addThumbnail(CACHED_XML, (folder + "thumbnail_xml.png").c_str());
+	addThumbnail(CACHED_DECAL, (folder + "thumbnail_decal.png").c_str());
 
-	testStatusIcon_ = getBinaryDataFromFile("plugins/test_resources/test_status_readonly.png");
+	testStatusIcon_ = getBinaryDataFromFile((folder + "status_readonly.png").c_str());
 }
 
-ThumbnailData FileSystemAssetPresentationProvider::getBinaryDataFromFile(const char * filename)
+ThumbnailData FileSystemAssetPresentationProvider::getBinaryDataFromFile(const char* filename)
 {
 	if (filename == nullptr)
 	{
@@ -37,14 +38,14 @@ ThumbnailData FileSystemAssetPresentationProvider::getBinaryDataFromFile(const c
 		return nullptr;
 	}
 
-	char * buffer = new char[length];
+	char* buffer = new char[length];
 	input.read(buffer, length);
 	input.close();
 
-	return std::make_shared< BinaryBlock >(buffer, length, false);
+	return std::make_shared<BinaryBlock>(buffer, length, false);
 }
 
-void FileSystemAssetPresentationProvider::addThumbnail(int index, const char * filename)
+void FileSystemAssetPresentationProvider::addThumbnail(int index, const char* filename)
 {
 	if (filename == nullptr)
 	{
@@ -60,7 +61,7 @@ void FileSystemAssetPresentationProvider::addThumbnail(int index, const char * f
 	testThumbnails_.insert(std::make_pair(index, binaryData));
 }
 
-ThumbnailData FileSystemAssetPresentationProvider::getThumbnail(const IAssetObjectItem * asset)
+ThumbnailData FileSystemAssetPresentationProvider::getThumbnail(const IAssetObjectItem* asset)
 {
 	if (asset == nullptr || asset->getAssetName() == nullptr)
 	{
@@ -68,8 +69,8 @@ ThumbnailData FileSystemAssetPresentationProvider::getThumbnail(const IAssetObje
 	}
 
 	// Assumes the use of the BaseAssetObjectItem, whose asset name includes the extension
-	const char * extStart = strchr(asset->getAssetName(), '.');
-	if(!extStart)
+	const char* extStart = strchr(asset->getAssetName(), '.');
+	if (!extStart)
 		return nullptr;
 
 	extStart++;
@@ -92,7 +93,7 @@ ThumbnailData FileSystemAssetPresentationProvider::getThumbnail(const IAssetObje
 	return testThumbnails_[type];
 }
 
-ThumbnailData FileSystemAssetPresentationProvider::getStatusIconData(const IAssetObjectItem * asset)
+ThumbnailData FileSystemAssetPresentationProvider::getStatusIconData(const IAssetObjectItem* asset)
 {
 	if (asset != nullptr && asset->isReadOnly())
 	{
@@ -102,7 +103,7 @@ ThumbnailData FileSystemAssetPresentationProvider::getStatusIconData(const IAsse
 	return nullptr;
 }
 
-const char* FileSystemAssetPresentationProvider::getTypeIconResourceString(const IAssetObjectItem * asset) const
+const char* FileSystemAssetPresentationProvider::getTypeIconResourceString(const IAssetObjectItem* asset) const
 {
 	if (asset == nullptr || asset->getAssetName() == nullptr)
 	{
@@ -110,8 +111,8 @@ const char* FileSystemAssetPresentationProvider::getTypeIconResourceString(const
 	}
 
 	// Assumes the use of the BaseAssetObjectItem, whose asset name includes the extension
-	const char * extStart = strchr(asset->getAssetName(), '.');
-	if(!extStart)
+	const char* extStart = strchr(asset->getAssetName(), '.');
+	if (!extStart)
 		return nullptr;
 
 	extStart++;

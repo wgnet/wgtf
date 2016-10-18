@@ -1,7 +1,8 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 
 /*!
+  \ingroup wgcontrols
  \brief WGlabel that wraps multiple lines.
 
 Example:
@@ -16,6 +17,8 @@ WGMultiLineText {
 WGLabel {
 	id: multiLineText
     objectName: "WGMultiLineText"
+    WGComponent { type: "WGMultiLineText" }
+    
     Layout.minimumHeight: lineCount * defaultSpacing.minimumRowHeight
     formLabel: false
     wrapMode: Text.WordWrap

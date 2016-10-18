@@ -1,6 +1,7 @@
 #include "file_system_model.hpp"
 #include "core_data_model/abstract_item.hpp"
 #include "core_data_model/i_item_role.hpp"
+#include "core_data_model/common_data_roles.hpp"
 #include "core_serialization/i_file_system.hpp"
 
 #include <string>
@@ -22,10 +23,9 @@ namespace
 
 		}
 
-		Variant getData( int column, size_t roleId ) const override
+		Variant getData( int column, ItemRole::Id roleId ) const override
 		{
-			static size_t displayRole = ItemRole::compute( "display" );
-			if (roleId == displayRole)
+			if (roleId == ItemRole::displayId)
 			{
 				return fileInfo_->name();
 			}
@@ -38,7 +38,7 @@ namespace
 			return Variant();
 		}
 
-		bool setData( int column, size_t roleId, const Variant & data ) override
+		bool setData( int column, ItemRole::Id roleId, const Variant & data ) override
 		{
 			throw std::logic_error("The method or operation is not implemented.");
 		}

@@ -1,9 +1,8 @@
 #include "ui_test_panel_context.hpp"
-#include "core_data_model/i_tree_model.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
-
+#include "core_data_model/reflection/reflected_tree_model_new.hpp"
+#include "core_reflection/interfaces/i_reflection_controller.hpp"
 #include "metadata/ui_test_panel_context.mpp"
-
 
 namespace wgt
 {
@@ -35,33 +34,42 @@ void callMethod( Variant & object,
 
 } // namespace
 
-
 PanelContext::PanelContext()
+    :
+    testScriptDescription_("<---- Click Me!")
 {
 }
 
-
-PanelContext::~PanelContext()
+bool PanelContext::initialize(IComponentContext& context,
+                              const char* panelName,
+                              const ObjectHandle& pythonObject)
 {
-}
+	context_ = &context;
+	panelName_ = panelName;
+	pythonObject_ = pythonObject;
 
+	treeModel_.reset(new ReflectedTreeModelNew(context, pythonObject));
+	return true;
+}
 
 const std::string & PanelContext::panelName() const
 {
 	return panelName_;
 }
 
-
-ITreeModel * PanelContext::treeModel() const
+AbstractTreeModel* PanelContext::treeModel() const
 {
 	return treeModel_.get();
 }
 
+const PanelContext* PanelContext::getSource() const
+{
+	return this;
+}
 
 void PanelContext::updateValues()
 {
-	assert( pContext_ != nullptr );
-	auto pDefinitionManager = pContext_->queryInterface< IDefinitionManager >();
+	auto pDefinitionManager = context_->queryInterface<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		NGT_ERROR_MSG( "Failed to find IDefinitionManager\n" );
@@ -81,5 +89,20 @@ void PanelContext::updateValues()
 	
 	callMethod( oldStylePythonObject_, definitionManager, methodName );
 	callMethod( newStylePythonObject_, definitionManager, methodName );
+
+	testScriptDescription_ = "Update Values Finished";
 }
+
+void PanelContext::undoUpdateValues(const ObjectHandle&, Variant)
+{
+	/*values automatically undone*/
+	testScriptDescription_ = "Update Values Undone";
+}
+
+void PanelContext::redoUpdateValues(const ObjectHandle&, Variant)
+{
+	/*values automatically redone*/
+	testScriptDescription_ = "Update Values Redone";
+}
+
 } // end namespace wgt

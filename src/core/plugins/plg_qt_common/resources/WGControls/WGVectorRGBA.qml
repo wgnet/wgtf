@@ -1,13 +1,16 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 
 
 /*!
+ \ingroup wgcontrols
  \brief A vectorRGBA variation of the vectorN control
 */
 
 WGVector4 {
     objectName: "WGVectorRGBA"
+    WGComponent { type: "WGVectorRGBA" }
+    
     vectorLabels: ["R:", "G:", "B:", "A:"]
     minimumValues: [0, 0, 0, 0]
     maximumValues: [255, 255, 255, 255]

@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <cctype> // for isspace
 
-
 namespace wgt
 {
 void TextStream::skipWhiteSpace()
@@ -11,14 +10,13 @@ void TextStream::skipWhiteSpace()
 	while (true)
 	{
 		int c = get();
-		if (isspace( c ) == 0)
+		if (isspace(c) == 0)
 		{
 			unget();
 			break;
 		}
 	}
 }
-
 
 bool TextStream::beginReadField()
 {
@@ -32,14 +30,13 @@ bool TextStream::beginReadField()
 	return good();
 }
 
-
-void TextStream::serializeString( IDataStream& dataStream )
+void TextStream::serializeString(IDataStream& dataStream)
 {
 	(*this) << '"';
 	while (true)
 	{
 		char c;
-		if (dataStream.read( &c, 1 ) <= 0)
+		if (dataStream.read(&c, 1) <= 0)
 		{
 			break;
 		}
@@ -69,14 +66,12 @@ void TextStream::serializeString( IDataStream& dataStream )
 		default:
 			(*this) << c;
 			break;
-
 		}
 	}
 	*this << '"';
 }
 
-
-void TextStream::deserializeString( IDataStream& dataStream )
+void TextStream::deserializeString(IDataStream& dataStream)
 {
 	if (!beginReadField())
 	{
@@ -86,17 +81,17 @@ void TextStream::deserializeString( IDataStream& dataStream )
 	if (get() != '"')
 	{
 		// string must begin from quote
-		setState( std::ios_base::failbit );
+		setState(std::ios_base::failbit);
 		return;
 	}
 
 	bool escape = false;
 	for (int c = get(); c != EOF; c = get())
 	{
-		char t = static_cast<char>( c );
+		char t = static_cast<char>(c);
 		if (!escape)
 		{
-			switch(t)
+			switch (t)
 			{
 			case '\\':
 				escape = true;
@@ -132,58 +127,55 @@ void TextStream::deserializeString( IDataStream& dataStream )
 
 			default:
 				// unexpected escape char
-				setState( std::ios_base::failbit );
+				setState(std::ios_base::failbit);
 				return;
-
 			}
 		}
-		
-		dataStream.write( &t, 1 );
+
+		dataStream.write(&t, 1);
 	}
 
 	// unexpected EOF
-	setState( std::ios_base::failbit );
+	setState(std::ios_base::failbit);
 }
 
-
-TextStream& operator<<( TextStream& stream, void* value )
+TextStream& operator<<(TextStream& stream, void* value)
 {
-	DataStreamBuf buf( stream );
-	std::ostream std_stream( &buf );
+	DataStreamBuf buf(stream);
+	std::ostream std_stream(&buf);
 
 	std_stream << "0x";
 
-	std_stream.setf( std::ios_base::hex, std::ios_base::basefield );
-	std_stream.setf( std::ios_base::right, std::ios_base::adjustfield );
+	std_stream.setf(std::ios_base::hex, std::ios_base::basefield);
+	std_stream.setf(std::ios_base::right, std::ios_base::adjustfield);
 
-	std_stream.width( sizeof( value ) * 2 );
-	std_stream.fill( '0' );
+	std_stream.width(sizeof(value) * 2);
+	std_stream.fill('0');
 
-	std_stream << reinterpret_cast<uintptr_t>( value );
+	std_stream << reinterpret_cast<uintptr_t>(value);
 
-	stream.setState( std_stream.rdstate() );
+	stream.setState(std_stream.rdstate());
 
 	return stream;
 }
 
-
-TextStream& operator>>( TextStream& stream, void*& value )
+TextStream& operator>>(TextStream& stream, void*& value)
 {
 	if (!stream.beginReadField())
 	{
 		return stream;
 	}
 
-	DataStreamBuf buf( stream );
-	std::istream std_stream( &buf );
+	DataStreamBuf buf(stream);
+	std::istream std_stream(&buf);
 
-	std_stream.unsetf( std::ios_base::basefield ); // detect base prefix
+	std_stream.unsetf(std::ios_base::basefield); // detect base prefix
 
 	uintptr_t tmp = 0;
 	std_stream >> tmp;
-	value = reinterpret_cast<void*>( tmp );
+	value = reinterpret_cast<void*>(tmp);
 
-	stream.setState( std_stream.rdstate() );
+	stream.setState(std_stream.rdstate());
 
 	return stream;
 }

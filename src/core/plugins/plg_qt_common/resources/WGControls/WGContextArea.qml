@@ -1,8 +1,9 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import WGControls 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Context sensitive Right Click Menu
 
 Example:
@@ -30,6 +31,7 @@ Component {
 
 MouseArea {
     objectName: "WGContextArea"
+    WGComponent { type: "WGContextArea" }
 
     property var popupPoint
     default property var contextMenu

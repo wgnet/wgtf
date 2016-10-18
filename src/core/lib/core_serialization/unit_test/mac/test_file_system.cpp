@@ -3,6 +3,7 @@
 #include "core_common/ngt_windows.hpp"
 #include "core_serialization/file_system.hpp"
 #include <unistd.h>
+#include <sys/stat.h>
 
 namespace wgt
 {
@@ -70,6 +71,26 @@ TEST(file_sytem)
 	CHECK(counter != 0);
 
 	CHECK(fileSystem.remove(filePath));
+    
+    char userDirectoryPath[MAX_PATH];
+    CHECK( GetUserDirectoryPath( userDirectoryPath ) );
+    CHECK( fileSystem.exists( userDirectoryPath ) );
+
+    std::string userToolsPath = userDirectoryPath;
+    userToolsPath += FilePath::kNativeDirectorySeparator;
+    userToolsPath += "wgtools_testing";
+
+    if( fileSystem.exists( userToolsPath.c_str() ) )
+    {
+        rmdir( userToolsPath.c_str() );
+    }
+
+    CHECK( !fileSystem.exists( userToolsPath.c_str() ) );
+    CHECK( CreateDirectoryPath( userToolsPath.c_str() ) );
+    CHECK( fileSystem.exists( userToolsPath.c_str() ) );
+    CHECK( CreateDirectoryPath( userToolsPath.c_str() ) ); // Ensure multiple calls return true
+    CHECK( rmdir( userToolsPath.c_str() ) == 0 );
+    CHECK( !fileSystem.exists( userToolsPath.c_str() ) );    
 
 	free(readedData);
 }

@@ -2,34 +2,35 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 import WGControls 1.0
-
+import WGControls.Views 1.0
+import WGControls.Layouts 1.0
 
 WGPanel {
-	title: "Active Filters Control Test"
-	layoutHints: { 'test': 0.1 }
+    title: "Active Filters Control Test"
+    layoutHints: { 'test': 0.1 }
 
-	property var activeFilters_: activeFilters
+    property var activeFilters_: activeFilters
 
     color: palette.mainWindowColor
-	
-	WGFilteredTreeModel {
-		id: sampleDataTreeModel
-		source: sampleDataToFilter
 
-		filter: WGTokenizedStringFilter {
-			id: stringFilter			
-			filterText: activeFilters_.stringValue
-			splitterChar: ","
-		}
+    WGFilteredTreeModel {
+        id: sampleDataTreeModel
+        source: sampleDataToFilterOld
 
-		ValueExtension {}
+        filter: WGTokenizedStringFilter {
+            id: stringFilter
+            filterText: activeFilters_.stringValue
+            splitterChar: ","
+        }
+
+        ValueExtension {}
         ColumnExtension {}
         ComponentExtension {}
         TreeExtension {}
         ThumbnailExtension {}
-		SelectionExtension {}
-	}
-	
+        SelectionExtension {}
+    }
+
     WGColumnLayout {
         anchors.fill: parent
 
@@ -42,24 +43,26 @@ WGPanel {
 
             WGActiveFilters {
                 id: activeFilters
-				objectName: "testActiveFilters"
+                objectName: "testActiveFilters"
                 anchors {left: parent.left; top: parent.top; right: parent.right}
                 height: childrenRect.height
                 inlineTags: true
-				splitterChar: ","
+                splitterChar: ","
                 dataModel: filtersModel
+
+                autoCompleteData: ["Animations", "Models", "Objects", "Skins", "Terrain"]
             }
         }
 
-		WGSeparator {
-			id: separator
-		}
+        WGSeparator {
+            id: separator
+        }
 
-		Rectangle {
-			anchors.top: separator.bottom
-			Layout.fillWidth: true
+        Rectangle {
+            anchors.top: separator.bottom
+            Layout.fillWidth: true
             Layout.fillHeight: true
-			color: "transparent"
+            color: "transparent"
 
             WGTreeView {
                 id: sampleDataListView
@@ -67,6 +70,6 @@ WGPanel {
                 anchors.fill: parent
                 columnDelegates : [defaultColumnDelegate]
             }
-		}
-	}
+        }
+    }
 }

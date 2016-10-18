@@ -377,7 +377,7 @@ void test_binary_data_property( FIXTURE* fixture, const char * m_name, TestResul
 		std::shared_ptr< BinaryBlock > value;
 		Variant variant = 
 			fixture->binaryDataProperty_->get( provider, fixture->getDefinitionManager() );
-		variant.tryCast( value );
+		CHECK( variant.tryCast( value ) );
 		CHECK(subject_.binary_data_->compare( *value ) == 0);
 	}
 
@@ -405,15 +405,8 @@ void test_exposed_struct_property( FIXTURE* fixture, const char * m_name, TestRe
 	Variant vStruct = fixture->exposedStructProperty_->get(
 		baseProvider, fixture->getDefinitionManager() );
 
-	ObjectHandle structProvider;
-	vStruct.tryCast( structProvider );
-
-	auto testStruct = reflectedCast< TestStruct >( structProvider, fixture->getDefinitionManager() );
-	CHECK( testStruct != nullptr );
-	if (testStruct == nullptr)
-	{
-		return;
-	}
+	auto testStruct = vStruct.value< const TestStruct* >();
+	RETURN_ON_FAIL_CHECK( testStruct != nullptr );
 	CHECK_EQUAL( subject_.exposedStruct_.boolean_, testStruct->boolean_ );
 
 	TestStruct value;

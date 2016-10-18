@@ -11,7 +11,7 @@ SET( ALL_SRCS
 	di_ref.cpp
 	depends.hpp
 )
-SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS 
 	${ALL_SRCS} 

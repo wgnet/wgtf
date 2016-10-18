@@ -10,13 +10,13 @@ bool IListModel::empty() const
 }
 
 
-Variant IListModel::getData( int column, size_t roleId ) const
+Variant IListModel::getData( int column, ItemRole::Id roleId ) const
 {
 	return Variant();
 }
 
 
-bool IListModel::setData( int column, size_t roleId, const Variant & data )
+bool IListModel::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	return false;
 }

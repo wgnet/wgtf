@@ -9,12 +9,12 @@ namespace wgt
 class BaseAssetObjectItem : public IAssetObjectItem
 {
 public:
-	BaseAssetObjectItem( const IFileInfoPtr & fileInfo, const IItem * parent, 
-		IFileSystem * fileSystem, IAssetPresentationProvider * presentationProvider );
-	BaseAssetObjectItem( const BaseAssetObjectItem & rhs );
+	BaseAssetObjectItem(const IFileInfoPtr& fileInfo, const IItem* parent,
+	                    IFileSystem* fileSystem, IAssetPresentationProvider* presentationProvider);
+	BaseAssetObjectItem(const BaseAssetObjectItem& rhs);
 	virtual ~BaseAssetObjectItem();
 
-	BaseAssetObjectItem& operator=( const BaseAssetObjectItem & rhs );
+	BaseAssetObjectItem& operator=(const BaseAssetObjectItem& rhs);
 
 	// File Information
 	// TODO: Remove dependency on the file system on low level models in the asset browser.
@@ -22,15 +22,15 @@ public:
 	IFileInfoPtr getFileInfo() const;
 
 	// IItem Implementation
-	virtual const char* getDisplayText( int column ) const override;
-	virtual ThumbnailData getThumbnail( int column ) const override;
-	virtual Variant getData( int column, size_t roleId ) const override;
-	virtual bool setData( int column, size_t roleId, const Variant& data ) override;
+	virtual const char* getDisplayText(int column) const override;
+	virtual ThumbnailData getThumbnail(int column) const override;
+	virtual Variant getData(int column, ItemRole::Id roleId) const override;
+	virtual bool setData(int column, ItemRole::Id roleId, const Variant& data) override;
 
-	// IAssetObjectItem Implementation
+	// IAssetObjectItemOld Implementation
 	virtual const IItem* getParent() const override;
-	virtual IItem* operator[]( size_t index ) const override;
-	virtual size_t indexOf( const IItem* item ) const override;
+	virtual IItem* operator[](size_t index) const override;
+	virtual size_t indexOf(const IItem* item) const override;
 	virtual bool empty() const override;
 	virtual size_t size() const override;
 
@@ -51,7 +51,6 @@ public:
 	virtual const char* getTypeIconResourceString() const;
 
 private:
-
 	struct Implementation;
 	std::unique_ptr<Implementation> impl_;
 };

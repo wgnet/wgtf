@@ -2,9 +2,8 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 
-
 import WGControls 2.0
-import WGColorPicker 1.0
+import WGColorPicker 2.0
 
 /*!
  \Three WGColorSliders with color gradients representing Red, Green and Blue color values. These values are always
@@ -24,6 +23,7 @@ WGRgbSlider {
 
 ColumnLayout {
     id: rgbSlider
+    WGComponent { type: "WGRgbSlider" }
 
     /*!
         The value of the red slider from 0 to 1

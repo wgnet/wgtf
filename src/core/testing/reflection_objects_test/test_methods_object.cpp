@@ -49,4 +49,28 @@ double TestMethodsObject::testMethod8( double parameter )
 {
 	return parameter;
 }
+
+const std::string& TestMethodsObject::testMethod9(const std::string& parameter)
+{
+	testMethod9Str_ = parameter;
+	return testMethod9Str_;
+}
+
+const std::string* TestMethodsObject::testMethod10(const std::string* parameter)
+{
+	testMethod10Str_ = *parameter;
+	return &testMethod10Str_;
+}
+
+std::string& TestMethodsObject::testMethod11(std::string& parameter)
+{
+	testMethod11Str_ = parameter;
+	return testMethod11Str_;
+}
+
+std::string* TestMethodsObject::testMethod12(std::string* parameter)
+{
+	testMethod12Str_ = *parameter;
+	return &testMethod12Str_;
+}
 } // end namespace wgt

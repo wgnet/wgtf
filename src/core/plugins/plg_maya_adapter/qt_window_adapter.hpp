@@ -9,12 +9,12 @@ class QIODevice;
 
 namespace wgt
 {
-class IQtFramework;
+class IComponentContext;
 
 class QtWindowAdapter : public QtWindow, public IWindowAdapter
 {
 public:
-	QtWindowAdapter( IQtFramework & qtFramework, QIODevice & source );
+	QtWindowAdapter( IComponentContext & context, QIODevice & source );
 	virtual ~QtWindowAdapter();
 	virtual void * nativeWindowId() const override;
 	virtual void makeFramelessWindow() override;

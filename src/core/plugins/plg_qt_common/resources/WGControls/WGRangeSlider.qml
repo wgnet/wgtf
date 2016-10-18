@@ -1,11 +1,15 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtQuick.Controls.Private 1.0
-import QtQuick.Layouts 1.1
+import QtQuick.Layouts 1.3
 
 import WGControls 1.0
+import WGControls.Styles 1.0
+import WGControls.Layouts 1.0
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Slider with two handles that encompasses a range of values.
 
 \code{.js}
@@ -24,6 +28,7 @@ WGRangeSlider {
 Item {
     id: sliderFrame
     objectName: "WGSliderControl"
+    WGComponent { type: "WGRangeSlider" }
 
     /*! This property holds the maximum value of the slider.
         The default value is \c{1.0}.

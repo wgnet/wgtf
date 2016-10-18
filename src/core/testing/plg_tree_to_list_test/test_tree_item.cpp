@@ -67,7 +67,7 @@ ThumbnailData TestTreeItem::getThumbnail( int column ) const
 	return nullptr;
 }
 
-Variant TestTreeItem::getData( int column, size_t roleId ) const
+Variant TestTreeItem::getData( int column, ItemRole::Id roleId ) const
 {
 	if (roleId == ValueRole::roleId_ && column == 0)
 	{
@@ -81,7 +81,7 @@ Variant TestTreeItem::getData( int column, size_t roleId ) const
 	return Variant();
 }
 
-bool TestTreeItem::setData( int column, size_t roleId, const Variant& data )
+bool TestTreeItem::setData( int column, ItemRole::Id roleId, const Variant& data )
 {
 	return false;
 }

@@ -1,8 +1,10 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import WGControls 1.0
+import WGControls.Styles 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Text entry field mostly intended for strings
 
 Example:
@@ -17,38 +19,59 @@ WGTextBox {
 TextField {
     id: textBox
     objectName: "WGTextBox"
+    WGComponent { type: "WGTextBox" }
 
     /*! This property is used to define the buttons label when used in a WGFormLayout
         The default value is an empty string
     */
     property string label: ""
 
+    /*! This property determines if the textBox has a context menu
+        The default value is \c true
+    */
+    property bool useContextMenu : true
+
     /*! This property determines if the context menu for this control contains the "Find In AssetBrowser" option
         The default value is \c false
     */
     property bool assetBrowserContextMenu : false
 
+    /*! This property determines if the text is selected when the user presses Enter or Return.
+        The default value is \c true
+    */
+    property bool selectTextOnAccepted: true
+
+    property bool multipleValues: false
+
     /*! This alias holds the width of the text entered into the textbox.
       */
-    property alias contentWidth: textBox.__contentWidth
+    property alias contentWidth: contentLengthHelper.contentWidth
 
     /*! This property is used by the setValueHelper function which requires documenting */
     property string oldText
 
-    /*! This signal is emitted when test field loses focus and text changes is accepted */
+    /*! This signal is emitted when text field loses focus and text changes is accepted */
     signal editAccepted();
+
+    /*! This signal is emitted when text field editing is cancelled */
+    signal editCancelled();
 
     Keys.onPressed: {
         if (activeFocus)
         {
             if(event.key == Qt.Key_Enter || event.key == Qt.Key_Return)
             {
-                textBox.focus = false;
+                textBox.focus = true;
+                if (selectTextOnAccepted) {
+                    selectAll();
+                }
+                editAccepted()
             }
             else if (event.key == Qt.Key_Escape)
             {
                 setValueHelper( textBox, "text", oldText );
-                textBox.focus = false;
+                editCancelled();
+                textBox.focus = true;
             }
         }
     }
@@ -75,13 +98,25 @@ TextField {
 
     // provide default heights
     implicitHeight: defaultSpacing.minimumRowHeight
-    implicitWidth: defaultSpacing.standardMargin
+    implicitWidth: contentLengthHelper.contentWidth + defaultSpacing.doubleMargin
 
     /*! This property denotes if the control's text should be scaled appropriately as it is resized */
     smooth: true
 
     //Placeholder text in italics
     font.italic: text == "" ? true : false
+
+    onEditAccepted: {
+        contentLengthHelper.text = textBox.text + "MM"
+    }
+
+    Text {
+        id: contentLengthHelper
+        visible: false
+        Component.onCompleted: {
+            contentLengthHelper.text = textBox.text + "MM"
+        }
+    }
 
     style: WGTextBoxStyle {
     }
@@ -125,8 +160,11 @@ TextField {
 
         cursorShape: Qt.IBeamCursor
         onClicked:{
-            var highlightedText = selectedText
-            contextMenu.popup()
+            if (textBox.useContextMenu)
+            {
+                var highlightedText = selectedText
+                contextMenu.popup()
+            }
         }
     }
 
@@ -192,4 +230,5 @@ TextField {
 
     /*! Deprecated */
     property alias label_: textBox.label
+
 }

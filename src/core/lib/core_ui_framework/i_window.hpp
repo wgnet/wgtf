@@ -35,13 +35,11 @@ public:
 	virtual void showMaximized( bool wait = false ) = 0;
 	virtual void showModal() {}
 	virtual void hide() = 0;
+	virtual void title(const char* title) = 0;
 
 	virtual const Menus & menus() const = 0;
 	virtual const Regions & regions() const = 0;
 	virtual IStatusBar* statusBar() const = 0;
-
-	virtual void setApplication( IUIApplication * application ) = 0;
-	virtual IUIApplication * getApplication() const = 0;
 
 	SignalVoid signalClose;
 	SignalConfirm signalTryClose;

@@ -44,7 +44,7 @@ const DataChangeNotifier::SourceType* DataChangeNotifier::source() const
 
 QVariant DataChangeNotifier::getSource() const
 {
-	Variant variant = ObjectHandle( const_cast< SourceType* >( source_ ) );
+	Variant variant = source_;
 	return QtHelpers::toQVariant(variant, const_cast<DataChangeNotifier*>(this) );
 }
 
@@ -52,20 +52,15 @@ QVariant DataChangeNotifier::getSource() const
 bool DataChangeNotifier::setSource( const QVariant& source )
 {
 	Variant variant = QtHelpers::toVariant( source );
-	if (variant.typeIs< ObjectHandle >())
+	if (variant.typeIs<SourceType>())
 	{
-		ObjectHandle provider;
-		if (variant.tryCast( provider ))
+		auto valueChangeNotifier = const_cast<SourceType*>(variant.cast<const SourceType*>());
+		if (valueChangeNotifier != nullptr)
 		{
-			auto valueChangeNotifier = provider.getBase< SourceType >();
-			if (valueChangeNotifier != nullptr)
-			{
-				this->source( valueChangeNotifier );
-				return true;
-			}
+			this->source(valueChangeNotifier);
+			return true;
 		}
 	}
-
 	return false;
 }
 

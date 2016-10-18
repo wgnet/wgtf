@@ -14,7 +14,7 @@ SET( ALL_SRCS
 	windows_debug_logger.cpp
 	windows_debug_logger.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}

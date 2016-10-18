@@ -184,6 +184,16 @@ elseif(WIN32)
     )
 endif(UNIX)
 
+# TODO NGT-2836 cannot pack scripts/common/Lib into qrc
+#FIND_PACKAGE( QT5 )
+#BW_QT_ADD_QRC( Scripts ${CORE_PYTHON_LIB_DIR} )
+#BW_GLOB_RESOURCE_FILES()
+#LIST( APPEND LIBPYTHON_SOURCES
+#	${ALL_SRCS}
+#	${RESOURCE_FILES}
+#	${COMPILED_RESOURCES} )
+# End WGT change
+
 # Create the parts of config.c for platform-specific and user-controlled
 # builtin modules.
 
@@ -204,16 +214,16 @@ configure_file(
 
 function(add_libpython name type)
     add_library(${name} ${type} ${LIBPYTHON_SOURCES} ${builtin_source})
-    target_link_libraries(${name}
+    target_link_libraries(${name} PRIVATE
         ${builtin_link_libraries}
         ${HAVE_LIBDL}
     )
     if(WITH_THREAD)
-        target_link_libraries(${name} ${CMAKE_THREAD_LIBS_INIT})
+        target_link_libraries(${name} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
     endif(WITH_THREAD)
 
     if(UNIX)
-        target_link_libraries(${name} ${HAVE_LIBUTIL} ${HAVE_LIBM})
+        target_link_libraries(${name} PRIVATE ${HAVE_LIBUTIL} ${HAVE_LIBM})
     endif(UNIX)
 
     set_target_properties(${name} PROPERTIES
@@ -257,12 +267,14 @@ if(BUILD_SHARED)
 #BW Change Begin	
 	ADD_DEFINITIONS(-DPy_ENABLE_SHARED)
 	
-	BW_TARGET_LINK_LIBRARIES( libpython-shared 
+	BW_TARGET_LINK_LIBRARIES( libpython-shared PRIVATE
 				#zip
 		)
 		
 	BW_PROJECT_CATEGORY( libpython-shared "ThirdParty" )
-	BW_SET_BINARY_DIR( libpython-shared "dll" INCLUDE_COMPILER_TOKEN )
+
+	BW_GET_EXECUTABLE_DST_DIR( EXE_DIR )
+	BW_SET_BINARY_DIR( libpython-shared ${EXE_DIR} INCLUDE_COMPILER_TOKEN )
 #BW Change End
 
     set_target_properties(libpython-shared PROPERTIES
@@ -279,7 +291,7 @@ if(BUILD_SHARED)
     endif(APPLE)
 elseif(BUILD_STATIC)
     add_libpython(libpython STATIC)
-    TARGET_LINK_LIBRARIES( libpython
+    TARGET_LINK_LIBRARIES( libpython PRIVATE
 		#zip
 	)
     add_definitions(-DPy_NO_ENABLE_SHARED)
@@ -296,10 +308,24 @@ endif(BUILD_SHARED)
 SET_SOURCE_FILES_PROPERTIES( ${SRC_DIR}/Python/marshal.c
        PROPERTIES COMPILE_FLAGS "-wd4819" )
 
-# NGT: Deploy *.pycs from Lib directory to <deployment_dir>/scripts/common/Lib
+# WGT: Deploy *.pycs from Lib directory to <deployment_dir>
+# TODO NGT-2836 cannot pack scripts/common/Lib into qrc
+#if(BUILD_STATIC)
+#	BW_TARGET_LINK_LIBRARIES( libpython PRIVATE
+#		Qt5::Core
+#	)
+#elseif(BUILD_SHARED)
+#	BW_TARGET_LINK_LIBRARIES( libpython-shared PRIVATE
+#		Qt5::Core
+#	)
+#endif(BUILD_STATIC)
+
+# TODO NGT-2836 Work-around
+# WGT: Deploy *.pycs from Lib directory to <deployment_dir>/scripts/common/Lib
 if(BUILD_STATIC)
 	WG_DEPLOY_PYTHON( libpython ${CORE_PYTHON_LIB_DIR} scripts/common/Lib )
 elseif(BUILD_SHARED)
 	WG_DEPLOY_PYTHON( libpython-shared ${CORE_PYTHON_LIB_DIR} scripts/common/Lib )
 endif(BUILD_STATIC)
+# End WGT change
 

@@ -4,6 +4,8 @@
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 
+#include <utility>
+
 namespace wgt
 {
 BEGIN_EXPOSE( TestBase, MetaNone() )
@@ -15,6 +17,11 @@ BEGIN_EXPOSE( TestClass, TestBase, MetaNone() )
 		MetaDisplayName( L"TestClassDisplayName" ) )
 	EXPOSE( "String", string_, MetaNone() )
 	EXPOSE( "StringFunc", getString, setString, MetaNone() )
+	EXPOSE_CALLABLE(
+		"StringLambda",
+		[](SelfType* object){ return object->string_; },
+		[](SelfType* object, std::string value){ object->string_ = std::move(value); },
+		MetaNone() )
 	EXPOSE( "InnerClass", innerClass_, MetaNone() )
 END_EXPOSE()
 BEGIN_EXPOSE( TestClass::InnerClass, MetaNone() )

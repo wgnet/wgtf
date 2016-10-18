@@ -17,6 +17,7 @@ public:
 	virtual ~LogMessage() {}
 
 	const char* c_str();
+	const std::string& str();
 
 	LogLevel getLevel();
 	const char* getLevelString();

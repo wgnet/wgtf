@@ -2,6 +2,7 @@
 #include "reflected_property_item_new.hpp"
 
 #include "core_data_model/i_item_role.hpp"
+#include "core_data_model/common_data_roles.hpp"
 
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
@@ -14,8 +15,6 @@
 
 namespace wgt
 {
-ITEMROLE( display )
-ITEMROLE( itemId )
 
 namespace
 {
@@ -79,10 +78,8 @@ ReflectedGroupItemNew::~ReflectedGroupItemNew()
 }
 
 
-Variant ReflectedGroupItemNew::getData( int column, size_t roleId ) const /* override */
+Variant ReflectedGroupItemNew::getData( int column, ItemRole::Id roleId ) const /* override */
 {
-	roleId = static_cast< unsigned int >( roleId );
-
 	auto obj = this->getRootObject();
 	if (obj == nullptr)
 	{
@@ -136,7 +133,7 @@ Variant ReflectedGroupItemNew::getData( int column, size_t roleId ) const /* ove
 
 
 bool ReflectedGroupItemNew::setData( int column,
-	size_t roleId,
+	ItemRole::Id roleId,
 	const Variant & data ) /* override */
 {
 	auto controller = this->getController();

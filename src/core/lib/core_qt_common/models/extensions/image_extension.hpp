@@ -5,23 +5,13 @@
 
 namespace wgt
 {
-class IQtFramework;
-
 class ImageExtension : public IModelExtension
 {
 public:
 	ImageExtension();
 	virtual ~ImageExtension();
 
-	QHash< int, QByteArray > roleNames() const override;
-	QVariant data( const QModelIndex &index,
-		int role ) const override;
-	bool setData( const QModelIndex &index,
-		const QVariant &value,
-		int role ) override;
-
-private:
-	IQtFramework * qtFramework_;
+	QVariant data( const QModelIndex &index, ItemRole::Id roleId ) const override;
 };
 } // end namespace wgt
 #endif // IMAGE_EXTENSION_HPP

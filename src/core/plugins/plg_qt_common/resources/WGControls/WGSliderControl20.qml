@@ -1,13 +1,14 @@
 import QtQuick 2.5
-import QtQuick.Controls 1.2
+import QtQuick.Controls 1.4
 import QtQuick.Controls.Private 1.0
-import QtQuick.Layouts 1.1
-import WGControls 2.0
+import QtQuick.Layouts 1.3
 
-//TODO: Test orientation = vertical. Create vertical slider. Remove option here
-//Resizing the slider could be smarter. Does not take into account content of spinner width
+import WGControls 2.0
+import WGControls.Styles 2.0
+import WGControls.Private 2.0
 
 /*!
+ \ingroup wgcontrols
  \brief Slider with value spinbox.
  Purpose: Provide the user with a single value clamped between min and max value
 
@@ -21,11 +22,16 @@ WGSliderControl {
     value: 40
 }
 \endcode
+
+ \todo Test orientation = vertical. Create vertical slider. Remove option here
+       Resizing the slider could be smarter. Does not take into account content of spinner width
+
 */
 
 Item {
     id: sliderFrame
     objectName: "WGSliderControl"
+    WGComponent { type: "WGSliderControl20" }
 
     /*! This property holds the maximum value of the slider.
         The default value is \c{1.0}.
@@ -68,6 +74,9 @@ Item {
 
     /*! This property defines what frame component will be used for the numberbox buttons */
     property alias buttonFrame: sliderValue.buttonFrame
+
+    /*! property indicates if the control represetnts multiple data values */
+    property bool multipleValues: false
 
     /*! This property defines the value indicated by the control
         The default value is \c 0.0
@@ -143,8 +152,8 @@ Item {
     /*! \internal */
     property bool __horizontal: orientation === Qt.Horizontal
 
-    implicitHeight: defaultSpacing.minimumRowHeight
-    implicitWidth: defaultSpacing.standardMargin
+    implicitHeight: __horizontal ? slider.implicitHeight : slider.implicitWidth + (sliderValue.implicitHeight * (fakeLowerValue ? 2 : 1)) + vertLayout.spacing
+    implicitWidth: __horizontal ? slider.implicitWidth + (sliderValue.implicitWidth * (fakeLowerValue ? 2 : 1)) + horizLayout.spacing : sliderValue.implicitWidth
 
     onValueChanged: {
         setValueHelper(slider, "value", sliderFrame.value);
@@ -191,6 +200,7 @@ Item {
         setValueHelper(sliderValue, "value", sliderFrame.value);
     }
     RowLayout {
+        id: horizLayout
         anchors.fill: parent
         visible: __horizontal
 
@@ -214,6 +224,7 @@ Item {
     }
 
     ColumnLayout {
+        id: vertLayout
         anchors.fill: parent
         visible: !__horizontal
 
@@ -268,6 +279,8 @@ Item {
         Layout.preferredHeight: __horizontal ? Math.round(sliderFrame.height) : -1
 
         value: sliderFrame.value;
+
+        multipleValues: sliderFrame.multipleValues
 
         onValueChanged: {
             if ( __handleMoving ) {
@@ -330,6 +343,7 @@ Item {
         suffix: sliderFrame.suffix
 
         value: sliderFrame.value
+        multipleValues: sliderFrame.multipleValues
 
         minimumValue: sliderFrame.minimumValue
         maximumValue: sliderFrame.maximumValue

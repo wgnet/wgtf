@@ -7,6 +7,7 @@
 #include "reflected_tree_model_new.hpp"
 
 #include "core_data_model/i_item_role.hpp"
+#include "core_data_model/common_data_roles.hpp"
 #include "core_reflection/interfaces/i_base_property.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
@@ -22,15 +23,14 @@
 
 namespace wgt
 {
-ITEMROLE( display )
-ITEMROLE( value )
-ITEMROLE( valueType )
 ITEMROLE( key )
 ITEMROLE( keyType )
 ITEMROLE( isCollection )
 ITEMROLE( elementValueType )
 ITEMROLE( elementKeyType )
-ITEMROLE( itemId )
+ITEMROLE( readOnly )
+ITEMROLE( enabled )
+ITEMROLE( multipleValues )
 
 namespace
 {
@@ -223,10 +223,8 @@ ReflectedPropertyItemNew::~ReflectedPropertyItemNew()
 }
 
 
-Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
+Variant ReflectedPropertyItemNew::getData( int column, ItemRole::Id roleId ) const
 {
-	roleId = static_cast< unsigned int >( roleId );
-
 	auto pDefinitionManager = this->getDefinitionManager();
 	if (pDefinitionManager == nullptr)
 	{
@@ -276,7 +274,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 		}
 
 		Collection collection;
-		const bool parentIsCollection = parent_->getData(0, static_cast< int >( ItemRole::valueId )).tryCast( collection );
+		const bool parentIsCollection = parent_->getData(0, ItemRole::valueId ).tryCast( collection );
 		if (!parentIsCollection)
 		{
 			return Variant();
@@ -308,7 +306,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 		}
 
 		Collection collection;
-		const bool parentIsCollection = parent_->getData(0, static_cast< int >( ItemRole::valueId )).tryCast( collection );
+		const bool parentIsCollection = parent_->getData(0, ItemRole::valueId ).tryCast( collection );
 		if (!parentIsCollection)
 		{
 			return Variant();
@@ -368,6 +366,10 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 	{
 		return getRootObject();
 	}
+	else if (roleId == NameRole::roleId_)
+	{
+		return propertyAccessor.getName();
+	}
 	else if (roleId == IsEnumRole::roleId_)
 	{
 		return findFirstMetaData< MetaEnumObj >( propertyAccessor, *pDefinitionManager ) != nullptr;
@@ -383,6 +385,10 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 	else if (roleId == IsColorRole::roleId_)
 	{
 		return findFirstMetaData< MetaColorObj >( propertyAccessor, *pDefinitionManager ) != nullptr;
+	}
+	else if (roleId == IsActionRole::roleId_)
+	{
+		return findFirstMetaData<MetaActionObj>(propertyAccessor, *pDefinitionManager) != nullptr;
 	}
 	else if (roleId == IsUrlRole::roleId_)
 	{
@@ -504,7 +510,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 			}
 			auto enumModel = std::unique_ptr< IListModel >( 
 				new ReflectedEnumModel( propertyAccessor, enumObj ) );
-			return ObjectHandle( std::move( enumModel ) );
+			return std::move(enumModel);
 		}
 	}
 	else if (roleId == DefinitionRole::roleId_)
@@ -532,7 +538,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 			{
 				auto definitionModel = std::unique_ptr< IListModel >(
 					new ClassDefinitionModel( definition, *pDefinitionManager ) );
-				return ObjectHandle( std::move( definitionModel ) );
+				return std::move(definitionModel);
 			}
 		}
 	}
@@ -549,7 +555,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 	}
 	else if (roleId == UrlDialogTitleRole::roleId_)
 	{
-		const char * title;
+		const char* title = nullptr;
 		auto urlObj =
 			findFirstMetaData< MetaUrlObj >( propertyAccessor, *pDefinitionManager );
 		if (urlObj != nullptr)
@@ -560,7 +566,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 	}
 	else if (roleId == UrlDialogDefaultFolderRole::roleId_)
 	{
-		const char * folder;
+		const char* folder = nullptr;
 		auto urlObj =
 			findFirstMetaData< MetaUrlObj >( propertyAccessor, *pDefinitionManager );
 		if (urlObj != nullptr)
@@ -571,7 +577,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 	}
 	else if (roleId == UrlDialogNameFiltersRole::roleId_)
 	{
-		const char * nameFilters;
+		const char* nameFilters = nullptr;
 		auto urlObj =
 			findFirstMetaData< MetaUrlObj >( propertyAccessor, *pDefinitionManager );
 		if (urlObj != nullptr)
@@ -582,7 +588,7 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 	}
 	else if (roleId == UrlDialogSelectedNameFilterRole::roleId_)
 	{
-		const char * selectedFilter;
+		const char* selectedFilter = nullptr;
 		auto urlObj =
 			findFirstMetaData< MetaUrlObj >( propertyAccessor, *pDefinitionManager );
 		if (urlObj != nullptr)
@@ -606,22 +612,31 @@ Variant ReflectedPropertyItemNew::getData( int column, size_t roleId ) const
 		}
 		return modality;
 	}
-	else if ( roleId == IsReadOnlyRole::roleId_ )
+	else if (roleId == ItemRole::readOnlyId)
 	{
 		TypeId typeId = propertyAccessor.getType();
 		auto readonly =
 			findFirstMetaData< MetaReadOnlyObj >( propertyAccessor, *pDefinitionManager );
-		if ( readonly != nullptr )
+		if (readonly)
 		{
 			return true;
 		}
 		return false;
 	}
+	else if (roleId == ItemRole::enabledId)
+	{
+		return Variant(true);
+	}
+	else if (roleId == ItemRole::multipleValuesId)
+	{
+		return Variant(false);
+	}
+
 	return Variant();
 }
 
 
-bool ReflectedPropertyItemNew::setData( int column, size_t roleId, const Variant & data )
+bool ReflectedPropertyItemNew::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto controller = getController();
 	if (controller == nullptr)
@@ -631,7 +646,7 @@ bool ReflectedPropertyItemNew::setData( int column, size_t roleId, const Variant
 	auto pDefinitionManager = this->getDefinitionManager();
 	if (pDefinitionManager == nullptr)
 	{
-		return 0;
+		return false;
 	}
 
 	auto obj = getObject();
@@ -864,9 +879,9 @@ bool ReflectedPropertyItemNew::preSetValue( const PropertyAccessor & accessor, c
 			{
 				const auto index = pModel->index( this );
 				const int column = 0;
-				const int role = DefinitionRole::roleId_;
+				const ItemRole::Id roleId = DefinitionRole::roleId_;
 				const Variant value = ObjectHandle( definition );
-				pModel->preItemDataChanged_( index, column, role, value );
+				pModel->preItemDataChanged_( index, column, roleId, value );
 			}
 			return true;
 		}
@@ -876,8 +891,8 @@ bool ReflectedPropertyItemNew::preSetValue( const PropertyAccessor & accessor, c
 		{
 			const auto index = pModel->index( this );
 			const int column = 0;
-			const int role = ValueRole::roleId_;
-			pModel->preItemDataChanged_( index, column, role, value );
+			const ItemRole::Id roleId = ValueRole::roleId_;
+			pModel->preItemDataChanged_( index, column, roleId, value );
 		}
 		return true;
 	}
@@ -931,9 +946,9 @@ bool ReflectedPropertyItemNew::postSetValue( const PropertyAccessor & accessor, 
 			{
 				const auto index = pModel->index( this );
 				const int column = 0;
-				const int role = DefinitionRole::roleId_;
+				const ItemRole::Id roleId = DefinitionRole::roleId_;
 				const Variant value = ObjectHandle( definition );
-				pModel->postItemDataChanged_( index, column, role, value );
+				pModel->postItemDataChanged_( index, column, roleId, value );
 			}
 			return true;
 		}
@@ -943,8 +958,8 @@ bool ReflectedPropertyItemNew::postSetValue( const PropertyAccessor & accessor, 
 		{
 			const auto index = pModel->index( this );
 			const int column = 0;
-			const int role = ValueRole::roleId_;
-			pModel->postItemDataChanged_( index, column, role, value );
+			const ItemRole::Id roleId = ValueRole::roleId_;
+			pModel->postItemDataChanged_( index, column, roleId, value );
 		}
 		return true;
 	}

@@ -22,7 +22,7 @@ SET( ALL_SRCS
 	test_list_model.hpp
 	plg_list_model_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC( plg_list_model_test resources/plg_list_model_test )
 

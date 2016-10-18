@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+ \ingroup wgcontrols
  \brief A scrollable sub panel to be used within controls like WGSubPanel that allow anchoring to top
  but bind to the size of their contents.
  Recommend NOT using scrollpanels within scrollpanels where possible.
@@ -30,6 +31,8 @@ WGSubScrollPanel {
 
 WGScrollPanel {
     objectName: "WGSubScrollPanel"
+    WGComponent { type: "WGSubScrollPanel" }
+    
     anchors.bottom: undefined
     implicitHeight: defaultSpacing.minimumRowHeight ? defaultSpacing.minimumRowHeight : 22
 

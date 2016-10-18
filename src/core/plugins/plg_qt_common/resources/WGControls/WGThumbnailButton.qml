@@ -1,15 +1,17 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.2
 import WGControls 1.0
+import WGControls.Styles 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Button that has an variable image as an icon.
  Intended for textures etc.
 
 \code{.js}
 WGThumbnailButton {
-    iconSource: "icons/file"
+    source: "icons/file"
     defaultText: "Click to Load an Image"
 }\endcode
 */
@@ -17,6 +19,7 @@ WGThumbnailButton {
 Button {
     id: thumbnailButton
     objectName: "WGThumbnailButton"
+    WGComponent { type: "WGThumbnailButton" }
 
     /*! This property contains the default text string that will be shown when \c iconSource: is an empty string.
         The default value is \c "Default text has not been set"*/
@@ -93,12 +96,6 @@ Button {
             opacity: enabled ? 1 : 0.4
 
             fillMode: Image.PreserveAspectFit
-
-            Component.onCompleted: {
-                if (icon.source == ""){
-                    defaulttext1.visible = true
-                }
-            }
         }
 
         WGLabel{
@@ -109,7 +106,7 @@ Button {
             horizontalAlignment: "AlignHCenter"
             verticalAlignment: "AlignVCenter"
             text: defaultText
-            visible: false
+            visible: icon.source == ""
             wrapMode: "Wrap"
         }
     }

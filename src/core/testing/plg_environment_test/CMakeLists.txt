@@ -27,7 +27,7 @@ BW_GLOB_RESOURCE_FILES()
 SET( ALL_SRCS
 	plg_environment_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_environment_test  SHARED
 	${ALL_SRCS}
@@ -57,7 +57,6 @@ BW_TARGET_LINK_LIBRARIES( plg_environment_test PRIVATE
 	core_qt_common
 	core_reflection
 	core_command_system
-	core_serialization
 	core_ui_framework
     Qt5::Core
 	${PLATFORM_LIBRARIES}

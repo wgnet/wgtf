@@ -7,8 +7,10 @@
 namespace wgt
 {
 BEGIN_EXPOSE( PanelContext, MetaNone() )
-	EXPOSE( "pythonObjects", treeModel, MetaNoSerialization() )
-	EXPOSE( "panelName", panelName, MetaNoSerialization() )
-	EXPOSE_METHOD( "runTestScript", updateValues )
+EXPOSE("sourceModel", getSource, MetaNoSerialization())
+EXPOSE("pythonObjects", treeModel, MetaNoSerialization())
+EXPOSE("panelName", panelName, MetaNoSerialization())
+EXPOSE("testScriptDescription", testScriptDescription_, MetaNoSerialization())
+EXPOSE_METHOD("runTestScript", updateValues, undoUpdateValues, redoUpdateValues, MetaDescription(L"Run Test Script"))
 END_EXPOSE()
 } // end namespace wgt

@@ -1,6 +1,6 @@
-plugins/plg_variant
 plugins/plg_reflection
 plugins/plg_object
+plugins/plg_qt_resource
 plugins/plg_python27
 plugins/plg_python27_interface_test
 

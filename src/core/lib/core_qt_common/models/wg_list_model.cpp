@@ -3,7 +3,7 @@
 #include "core_data_model/i_item.hpp"
 #include "core_qt_common/helpers/qt_helpers.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
-#include "core_qt_common/models/extensions/i_model_extension.hpp"
+#include "core_qt_common/models/extensions/deprecated/i_model_extension_old.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
 #include "core_qt_common/qt_image_provider_old.hpp"
 #include "qt_model_helpers.hpp"
@@ -185,41 +185,41 @@ QVariant WGListModel::data( const QModelIndex& index, QString roleName ) const
 	auto role = impl_->roleNames_.key( roleName.toUtf8(), -1 );
 	if (role < 0)
 	{
-		return QModelIndex();
+		return QVariant::Invalid;
 	}
 
 	return data( index, role );
 }
 
 
-void WGListModel::registerExtension( IModelExtension * extension )
+void WGListModel::registerExtension( IModelExtensionOld * extension )
 {
 	beginResetModel();
 	extension->init( impl_->qtFramework_ );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::itemDataAboutToBeChanged, 
-		extension, &IModelExtension::onDataAboutToBeChanged );
+		extension, &IModelExtensionOld::onDataAboutToBeChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::itemDataChanged, 
-		extension, &IModelExtension::onDataChanged );
+		extension, &IModelExtensionOld::onDataChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::layoutAboutToBeChanged, 
-		extension, &IModelExtension::onLayoutAboutToBeChanged );
+		extension, &IModelExtensionOld::onLayoutAboutToBeChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::layoutChanged, 
-		extension, &IModelExtension::onLayoutChanged );
+		extension, &IModelExtensionOld::onLayoutChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::rowsAboutToBeInserted, 
-		extension, &IModelExtension::onRowsAboutToBeInserted );
+		extension, &IModelExtensionOld::onRowsAboutToBeInserted );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::rowsInserted, 
-		extension, &IModelExtension::onRowsInserted );
+		extension, &IModelExtensionOld::onRowsInserted );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::rowsAboutToBeRemoved, 
-		extension, &IModelExtension::onRowsAboutToBeRemoved );
+		extension, &IModelExtensionOld::onRowsAboutToBeRemoved );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGListModel::rowsRemoved, 
-		extension, &IModelExtension::onRowsRemoved );
+		extension, &IModelExtensionOld::onRowsRemoved );
 	impl_->extensions_.emplace_back( extension );
 
 	QHashIterator<int, QByteArray> itr( extension->roleNames() );
@@ -234,7 +234,7 @@ void WGListModel::registerExtension( IModelExtension * extension )
 }
 
 
-bool WGListModel::decodeRole( int role, size_t & o_RoleId ) const
+bool WGListModel::decodeRole( int role, ItemRole::Id & o_RoleId ) const
 {
 	for (const auto& extension: impl_->extensions_)
 	{
@@ -292,7 +292,7 @@ QVariant WGListModel::headerData(
 		return QVariant::Invalid;
 	}
 
-	size_t roleId;
+	ItemRole::Id roleId;
 
 	if (!decodeRole( role, roleId ))
 	{
@@ -311,8 +311,8 @@ QVariant WGListModel::headerData( int column, QString roleName ) const
 		return QVariant::Invalid;
 	}
 
-	int roleId = roles.first();
-	return headerData( column, Qt::Horizontal, roleId );
+	int role = roles.first();
+	return headerData( column, Qt::Horizontal, role );
 }
 
 QVariant WGListModel::data( const QModelIndex &index, int role ) const
@@ -413,10 +413,15 @@ void WGListModel::onSourceChanged()
 	impl_->ownedModel_.reset();
 	
 	Variant variant = QtHelpers::toVariant( getSource() );
-	if (variant.typeIs< ObjectHandle >())
+	if (variant.typeIs<IListModel>())
 	{
+		source = const_cast<IListModel*>(variant.cast<const IListModel*>());
+	}
+	else if (variant.typeIs<ObjectHandle>())
+	{
+		NGT_WARNING_MSG("Double wrapping found, please wrap IListModel pointer as Variant directly.\n");
 		ObjectHandle provider;
-		if (variant.tryCast( provider ))
+		if (variant.tryCast(provider))
 		{
 			source = provider.getBase< IListModel >();
 		}
@@ -429,14 +434,13 @@ void WGListModel::onSourceChanged()
 		impl_->ownedModel_.reset( collectionModel );
 		source = impl_->ownedModel_.get();
 	}
-
 	impl_->model_ = source;
 }
 
 
-QQmlListProperty< IModelExtension > WGListModel::getExtensions() const
+QQmlListProperty< IModelExtensionOld > WGListModel::getExtensions() const
 {
-	return QQmlListProperty< IModelExtension >(
+	return QQmlListProperty< IModelExtensionOld >(
 		const_cast< WGListModel * >( this ),
 		nullptr,
 		&appendExtension, 
@@ -446,8 +450,8 @@ QQmlListProperty< IModelExtension > WGListModel::getExtensions() const
 }
 
 void WGListModel::appendExtension( 
-	QQmlListProperty< IModelExtension > * property, 
-	IModelExtension * value )
+	QQmlListProperty< IModelExtensionOld > * property, 
+	IModelExtensionOld * value )
 {
 	auto listModel = qobject_cast< WGListModel * >( property->object );
 	if (listModel == nullptr)
@@ -458,8 +462,8 @@ void WGListModel::appendExtension(
 	listModel->registerExtension( value );
 }
 
-IModelExtension * WGListModel::extensionAt( 
-	QQmlListProperty< IModelExtension > * property, 
+IModelExtensionOld * WGListModel::extensionAt( 
+	QQmlListProperty< IModelExtensionOld > * property, 
 	int index )
 {
 	auto listModel = qobject_cast< WGListModel * >( property->object );
@@ -472,7 +476,7 @@ IModelExtension * WGListModel::extensionAt(
 }
 
 void WGListModel::clearExtensions( 
-	QQmlListProperty< IModelExtension > * property )
+	QQmlListProperty< IModelExtensionOld > * property )
 {
 	auto listModel = qobject_cast< WGListModel * >( property->object );
 	if (listModel == nullptr)
@@ -488,7 +492,7 @@ void WGListModel::clearExtensions(
 }
 
 int WGListModel::countExtensions( 
-	QQmlListProperty< IModelExtension > * property )
+	QQmlListProperty< IModelExtensionOld > * property )
 {
 	auto listModel = qobject_cast< WGListModel * >( property->object );
 	if (listModel == nullptr)
@@ -504,14 +508,14 @@ void WGListModel::onDestructing()
 	setSource( QVariant() );
 }
 
-void WGListModel::onModelDataChanged( int column, size_t roleId, const Variant & data )
+void WGListModel::onModelDataChanged( int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto model = getModel();
 	assert( model != nullptr );
 	changeHeaderData( Qt::Orientation::Horizontal, column, column );
 }
 
-void WGListModel::onPreItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data )
+void WGListModel::onPreItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto model = getModel();
 	assert( model != nullptr );
@@ -531,7 +535,7 @@ void WGListModel::onPreItemDataChanged( const IItem * item, int column, size_t r
 	this->beginChangeData( index, role, value );
 }
 	
-void WGListModel::onPostItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data )
+void WGListModel::onPostItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto model = getModel();
 	assert( model != nullptr );

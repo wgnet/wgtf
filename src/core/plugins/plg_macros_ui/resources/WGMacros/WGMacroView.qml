@@ -2,12 +2,15 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 import WGControls 1.0
+import WGControls.Views 1.0
+import WGControls.Layouts 1.0
 
 // This component is for displaying the macro panel
 WGPanel {
     title: "Macros"
     objectName: "WGMacroView"
-
+    WGComponent { type: "WGMacroView" }
+    
     layoutHints: { 'macros': 1.0 }
 
     id: root

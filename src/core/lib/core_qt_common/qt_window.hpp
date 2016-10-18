@@ -22,15 +22,14 @@ class QEvent;
 namespace wgt
 {
 struct LayoutHint;
-class IUIApplication;
-class IQtFramework;
+class IComponentContext;
 
 class QtWindow : public QObject, public IWindow
 {
 	Q_OBJECT
 public:
-	QtWindow( IQtFramework & qtFramework, QIODevice & source );
-    QtWindow( IQtFramework & qtFramework, std::unique_ptr<QMainWindow> && mainWindow );
+	QtWindow( IComponentContext & context, QIODevice & source );
+    QtWindow( IComponentContext & context, std::unique_ptr<QMainWindow> && mainWindow );
 	virtual ~QtWindow();
 
 	const char * id() const override;
@@ -43,13 +42,11 @@ public:
 	void showMaximized( bool wait = false ) override;
 	void showModal() override;
 	void hide() override;
+	void title(const char* title);
 
 	const Menus & menus() const override;
 	const Regions & regions() const override;
 	IStatusBar* statusBar() const override;
-
-	void setApplication( IUIApplication * application ) override;
-	IUIApplication * getApplication() const override;
 
 	QMainWindow * window() const;
     QMainWindow * releaseWindow();
@@ -58,34 +55,19 @@ public:
 signals:
 	void windowReady();
 
-
-
 protected:
     void init();
 	bool eventFilter( QObject * obj, QEvent * event ) Q_DECL_OVERRIDE;
 
 private slots:
     void onPrePreferencesChanged();
-     void onPostPreferencesChanged();
+    void onPostPreferencesChanged();
     void onPrePreferencesSaved();
+	void onPaletteChanged();
 
 private:
-	void waitForWindowExposed();
-	void savePreference();
-	bool loadPreference();
-	IQtFramework & qtFramework_;
-	std::unique_ptr< QMainWindow > mainWindow_;
-
-	std::string id_;
-	Menus menus_;
-	Regions regions_;
-	std::unique_ptr<IStatusBar> statusBar_;
-	Qt::WindowModality modalityFlag_;
-	IUIApplication * application_;
-	bool isMaximizedInPreference_;
-	bool firstTimeShow_;
-    bool loadingPreferences_;
-    QtConnectionHolder qtConnections_;
+	struct Impl;
+	std::unique_ptr< Impl > impl_;
 };
 } // end namespace wgt
 #endif//QT_WINDOW_HPP

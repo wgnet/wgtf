@@ -10,7 +10,7 @@ IF( NOT PYTHON_FOUND )
 	RETURN()
 ENDIF()
 
-SET( TYPE_CONVERTER_SRCS
+SET( ALL_SRCS
 	type_converters/converter_queue.cpp
 	type_converters/converter_queue.hpp
 	type_converters/converters.cpp
@@ -37,10 +37,6 @@ SET( TYPE_CONVERTER_SRCS
 	type_converters/sequence_iterator.hpp
 	type_converters/tuple_converter.cpp
 	type_converters/tuple_converter.hpp
-)
-SOURCE_GROUP( "Type Converters" FILES ${TYPE_CONVERTER_SRCS} )
-
-SET( ALL_SRCS
 	defined_instance.cpp
 	defined_instance.hpp
 	definition_details.cpp
@@ -55,25 +51,27 @@ SET( ALL_SRCS
 	property.hpp
 	scripting_engine.cpp
 	scripting_engine.hpp
+    private/python_importer.cpp
+    private/python_importer.hpp
 	i_script_object_definition_registry.hpp
 	script_object_definition_registry.cpp
 	script_object_definition_registry.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
-	${METADATA_SRCS}
-	${TYPE_CONVERTER_SRCS}
 )
 BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )
  
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} INTERFACE
 	core_dependency_system
 	core_reflection
+	wg_types
 	wg_pyscript
 )
 WG_TARGET_LINK_PYTHON()
 
 BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
-BW_PROJECT_CATEGORY( ${PROJECT_NAME} "NGT Libs" )
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "WGT Libs" )

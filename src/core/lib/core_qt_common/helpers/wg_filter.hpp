@@ -51,7 +51,7 @@ signals:
 
 protected:
 	QString roleName_;
-	unsigned int roleId_;
+	ItemRole::Id roleId_;
 };
 } // end namespace wgt
 

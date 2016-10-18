@@ -1,0 +1,319 @@
+import QtQuick.tooling 1.1
+
+Module {
+    Component {
+        name: "WGListModel"
+        prototype: "QAbstractListModel"
+        defaultProperty: "extensions"
+
+        exports: [
+            "WGControls 2.0"
+        ]
+
+        exportMetaObjectRevisions: [0]
+
+        Property {
+            name: "source";
+            type: "QVariant"
+        }
+        Property {
+            name: "extensions";
+            type: "wgt::IModelExtension"
+            isReadonly: true
+            isList: true
+        }
+
+        Method {
+            name: "canClear"
+        }
+        Method {
+            name: "clear"
+        }
+        Method {
+            name: "index"
+        }
+        Method {
+            name: "indexRow"
+        }
+        Method {
+            name: "rowCount"
+        }
+        Method {
+            name: "columnCount"
+        }
+        Method {
+            name: "find"
+        }
+        Method {
+            name: "headerData"
+        }
+        Method {
+            name: "data"
+        }
+
+        Signal {
+            name: "sourceChanged"
+        }
+        Signal {
+            name: "headerDataChanged"
+        }
+        Signal {
+            name: "itemDataAboutToBeChanged"
+        }
+        Signal {
+            name: "itemDataChanged"
+        }
+        Signal {
+            name: "headerDataChangedThread"
+        }
+        Signal {
+            name: "itemDataAboutToBeChangedThread"
+        }
+        Signal {
+            name: "itemDataChangedThread"
+        }
+        Signal {
+            name: "rowsAboutToBeInsertedThread"
+        }
+        Signal {
+            name: "rowsInsertedThread"
+        }
+        Signal {
+            name: "rowsAboutToBeRemovedThread"
+        }
+        Signal {
+            name: "rowsRemovedThread"
+        }
+    }
+
+    Component {
+        name: "WGItemView"
+        prototype: "QQuickItem"
+
+        exports: [
+            "WGControls 2.0"
+        ]
+
+        exportMetaObjectRevisions: [0]
+
+        Property {
+            name: "model";
+            type: "QAbstractItemModel"
+        }
+        Property {
+            name: "roles";
+            type: "QStringList"
+        }
+        Property {
+            name: "extensions";
+            type: "wgt::IModelExtension"
+            isReadonly: true
+            isList: true
+        }
+        Property {
+            name: "extendedModel";
+            type: "QAbstractItemModel"
+            isReadonly: true
+            isPointer: true
+        }
+        Property {
+            name: "headerData";
+            type: "QObject"
+            isReadonly: true
+            isList: true
+            isPointer: true
+        }
+
+        Method {
+            name: "getRow"
+        }
+        Method {
+            name: "getColumn"
+        }
+        Method {
+            name: "getParent"
+        }
+
+        Signal {
+            name: "modelChanged"
+        }
+        Signal {
+            name: "extendedModelChanged"
+        }
+        Signal {
+            name: "headerDataChanged"
+        }
+        Signal {
+            name: "currentIndexChanged"
+        }
+    }
+
+    Component {
+        name: "wgt::QtAbstractItemModel"
+        prototype: "QAbstractItemModel"
+
+        exports: [
+            "WGControls 2.0"
+        ]
+
+        exportMetaObjectRevisions: [0]
+
+        Method {
+            name: "itemToIndex"
+        }
+        Method {
+            name: "indexToItem"
+        }
+        Method {
+            name: "item"
+        }
+        Method {
+            name: "parent"
+        }
+        Method {
+            name: "rowIndex"
+        }
+        Method {
+            name: "columnIndex"
+        }
+        Method {
+            name: "rowCount"
+        }
+        Method {
+            name: "columnCount"
+        }
+        Method {
+            name: "hasChildren"
+        }
+        Method {
+            name: "insertRow"
+        }
+        Method {
+            name: "insertColumn"
+        }
+        Method {
+            name: "removeRow"
+        }
+        Method {
+            name: "removeColumn"
+        }
+        Method {
+            name: "moveRow"
+        }
+    }
+
+    Component {
+        name: "wgt::QtItemModel"
+        prototype: "wgt::QtAbstractItemModel"
+
+        exports: [
+            "WGControls 2.0"
+        ]
+
+        exportMetaObjectRevisions: [0]
+
+        Method {
+            name: "flags"
+        }
+    }
+
+    Component {
+        name: "wgt::QtListModel"
+        prototype: "wgt::QtItemModel"
+
+        exports: [
+            "WGControls 2.0"
+        ]
+
+        exportMetaObjectRevisions: [0]
+
+        Method {
+            name: "item"
+        }
+        Method {
+            name: "count"
+        }
+        Method {
+            name: "insertItem"
+        }
+        Method {
+            name: "removeItem"
+        }
+        Method {
+            name: "moveItem"
+        }
+    }
+
+    Component {
+        name: "QtDefaultSpacing"
+        prototype: "QQuickItem"
+
+        exports: [
+            "WGControls 2.0"
+        ]
+
+        exportMetaObjectRevisions: [0]
+
+        Property {
+            name: "minimumRowHeight";
+            type: "int"
+        }
+        Property {
+            name: "rowSpacing";
+            type: "int"
+        }
+        Property {
+            name: "leftMargin";
+            type: "int"
+        }
+        Property {
+            name: "rightMargin";
+            type: "int"
+        }
+        Property {
+            name: "topBottomMargin";
+            type: "int"
+        }
+        Property {
+            name: "scrollBarSize";
+            type: "int"
+        }
+        Property {
+            name: "separatorWidth";
+            type: "int"
+        }
+        Property {
+            name: "childIndentation";
+            type: "int"
+        }
+        Property {
+            name: "standardBorderSize";
+            type: "int"
+        }
+        Property {
+            name: "standardRadius";
+            type: "int"
+        }
+        Property {
+            name: "halfRadius";
+            type: "int"
+        }
+        Property {
+            name: "standardMargin";
+            type: "int"
+        }
+        Property {
+            name: "doubleMargin";
+            type: "int"
+        }
+        Property {
+            name: "labelColumnWidth";
+            type: "int"
+        }
+
+        Signal {
+            name: "labelColumnWidthChanged"
+        }
+    }
+}
+

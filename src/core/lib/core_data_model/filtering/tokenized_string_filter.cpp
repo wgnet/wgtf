@@ -15,7 +15,7 @@ struct TokenizedStringFilter::Implementation
 	std::vector< std::string > filterTokens_;
 	std::string sourceFilterText_;
 	std::string splitter_;
-	unsigned int roleId_;
+	ItemRole::Id roleId_;
 	std::mutex filterTokensLock_;
 };
 
@@ -77,7 +77,7 @@ const char* TokenizedStringFilter::getSplitterChar()
 	return impl_->splitter_.c_str();
 }
 
-void TokenizedStringFilter::setRole( unsigned int roleId )
+void TokenizedStringFilter::setRole( ItemRole::Id roleId )
 {
 	impl_->roleId_ = roleId;
 }

@@ -2,9 +2,8 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 
-
-import WGControls 1.0
-import WGColorPicker 1.0
+import WGControls 2.0
+import WGColorPicker 2.0
 
 /*!
  \A grid of color swatches displaying variations in lightness and hue for the current color
@@ -35,6 +34,7 @@ WGShadeGrid {
 
 GridLayout {
     id: shadeGrid
+    WGComponent { type: "WGShadeGrid" }
 
     /*!
         The number of rows in the grid. This is best set to an odd number in order to have a center square.

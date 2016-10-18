@@ -3,12 +3,14 @@ import QtQuick.Window 2.2
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 
-import WGControls 1.0 as WGOne
 import WGControls 2.0
+import WGControls.Canvas 2.0
 
 
 Rectangle {
     id: curveEditor
+    WGComponent { type: "CurveEditor" }
+    
     property string title: "Curve Editor"
     property var layoutHints: { 'curveeditor': 1.0, 'bottom': 0.5 }
 
@@ -19,6 +21,22 @@ Rectangle {
 
     property bool showColorSlider: lockCurves && (curveRepeater.count == 3 || curveRepeater.count == 4)
     property bool alphaEnabled: true
+    property alias initialized: timeline.isInitialized
+
+    /* If true, shows non-linear gradients in the Gradient Slider (based off an approximation of the bezier curves)
+
+    The default depends on whether any curves have showControlPoints == true */
+    property bool showSubGradients: showColorSlider && (curveRepeater.itemAt(0).showControlPoints ||
+                                     curveRepeater.itemAt(1).showControlPoints || curveRepeater.itemAt(2).showControlPoints ||
+                                     (curveRepeater.count == 4 && curveRepeater.itemAt(3).showControlPoints))
+
+    /* How many subdivisions will be used to calculate the linear approximation for the color gradient
+
+    The default is 10*/
+    property int subGradientDetail: 10
+
+    /* Shows the linear approximation points for the gradient at a clicked point. (DEBUG ONLY)*/
+    property bool showDebugPoints: false
 
     Layout.fillHeight: true
     color: palette.mainWindowColor
@@ -28,6 +46,72 @@ Rectangle {
         {
             timeline.requestPaint();
             repaintCurves();
+        }
+    }
+
+    QtObject
+    {
+        id:_
+        property var addedPointIndexes: []
+        property var removedPointIndexes: []
+        property var updatedPointIndexes: []
+        property var handleIndexes: []
+        property bool resetAll: false
+
+        function clear()
+        {
+            addedPointIndexes = []
+            removedPointIndexes = []
+            updatedPointIndexes = []
+            handleIndexes = []
+        }
+
+        function addPoint(index)
+        {
+            // Ignore add requests if the handle has already been added
+            if(binarySearch(handleIndexes, index) < 0)
+            {
+                addIndex(addedPointIndexes, index)
+            }
+            else
+            {
+                addIndex(updatedPointIndexes, index)
+            }
+        }
+
+        function updatePoint(index)
+        {
+            addIndex(updatedPointIndexes, index)
+        }
+
+        function removePoint(index)
+        {
+            // Ignore remove requests if the handle has already been removed
+            if(binarySearch(handleIndexes, index) < 0)
+            {
+                addIndex(removedPointIndexes, index)
+            }
+            else
+            {
+                addIndex(updatedPointIndexes, index-1)
+            }
+        }
+
+        function handleModified(index)
+        {
+            addIndex(handleIndexes, index)
+        }
+
+        function addIndex(collection, index)
+        {
+            if(index >= 0)
+            {
+                var valueIndex = binarySearch(collection, index)
+                if(valueIndex < 0)
+                {
+                    collection.splice(-valueIndex-1, 0, index)
+                }
+            }
         }
     }
 
@@ -76,19 +160,16 @@ Rectangle {
     {
         if(valuesToDelete.length > 0)
         {
-            // Can't group multi-selection deletions because commands get consolidated
-            //beginUndoFrame();
-            for(var i = 0; i < valuesToDelete.length; ++i)
+            beginUndoFrame();
+            // Delete largest values first to enable easy indexing for undo
+            for(var i = valuesToDelete.length-1; i >= 0; --i)
             {
                 var curveIt = iterator(curves)
-                // TODO: Remove this grouping when methods no longer get grouped for undo
-                beginUndoFrame();
                 while(curveIt.moveNext()){
                     curveIt.current.removeAt( valuesToDelete[i], true );
                 }
-                endUndoFrame();
             }
-            // endUndoFrame();
+            endUndoFrame();
         }
     }
 
@@ -117,15 +198,15 @@ Rectangle {
     function getColorAt(index)
     {
         return Qt.rgba(
-            curveRepeater.itemAt(0).getPoint(index).pos.y,
-            curveRepeater.itemAt(1).getPoint(index).pos.y,
-            curveRepeater.itemAt(2).getPoint(index).pos.y,
-            ((curveRepeater.count == 4) ? curveRepeater.itemAt(3).getPoint(index).pos.y : 1))
+            curveRepeater.itemAt(0).getPoint(index).point.pos.y,
+            curveRepeater.itemAt(1).getPoint(index).point.pos.y,
+            curveRepeater.itemAt(2).getPoint(index).point.pos.y,
+            ((curveRepeater.count == 4) ? curveRepeater.itemAt(3).getPoint(index).point.pos.y : 1))
     }
 
     function getPositionAt(index)
     {
-        return curveRepeater.itemAt(0).getPoint(index).pos.x
+        return curveRepeater.itemAt(0).getPoint(index).point.pos.x
     }
 
     function pointSelectionChanged(point)
@@ -249,40 +330,50 @@ Rectangle {
         id: contents
         spacing: 2
         anchors.fill: parent
+        Item {
+            id: toolbarFrame
+            Layout.fillWidth: true
+            Layout.preferredHeight: childrenRect.height + defaultSpacing.standardMargin
 
-        CurveEditorToolbar {
-            id: toolbar
+            CurveEditorToolbar {
+                id: toolbar
 
-            title: subTitle
-            time:  selection.length > 0 ? selection[selection.length-1].point.pos.x : 0
-            value:  selection.length > 0 ? selection[selection.length-1].point.pos.y : 0
-            timeScale: xScale
-            valueScale: yScale
-            editEnabled: selection.length > 0
-            timeScaleEnabled: timeScaleEditEnabled
+                title: subTitle
+                time:  selection.length > 0 ? selection[selection.length-1].point.pos.x : 0
+                value:  selection.length > 0 ? selection[selection.length-1].point.pos.y : 0
+                timeScale: xScale
+                valueScale: yScale
+                editEnabled: selection.length > 0
+                timeScaleEnabled: timeScaleEditEnabled
 
-            onToggleX: toggleCurve(0)
-            onToggleY: toggleCurve(1)
-            onToggleZ: toggleCurve(2)
-            onToggleW: toggleCurve(3)
-            onTimeScaleChanged: xScale = timeScale;
-            onValueScaleChanged: yScale = valueScale;
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: defaultSpacing.standardMargin
 
-            onUnscaledTimeChanged:
-            {
-                if(selection.length > 0)
+                onToggleX: toggleCurve(0)
+                onToggleY: toggleCurve(1)
+                onToggleZ: toggleCurve(2)
+                onToggleW: toggleCurve(3)
+                onTimeScaleChanged: xScale = timeScale;
+                onValueScaleChanged: yScale = valueScale;
+
+                onUnscaledTimeChanged:
                 {
-                    var point = selection[selection.length-1];
-                    point.setPosition(time, point.point.pos.y)
+                    if(selection.length > 0)
+                    {
+                        var point = selection[selection.length-1];
+                        point.setPosition(time, point.point.pos.y)
+                    }
                 }
-            }
 
-            onUnscaledValueChanged:
-            {
-                if(selection.length > 0)
+                onUnscaledValueChanged:
                 {
-                    var point = selection[selection.length-1];
-                    point.setPosition(point.point.pos.x, value)
+                    if(selection.length > 0)
+                    {
+                        var point = selection[selection.length-1];
+                        point.setPosition(point.point.pos.x, value)
+                    }
                 }
             }
         }
@@ -294,6 +385,52 @@ Rectangle {
             valueScale: yScale
             Layout.fillHeight: true
             Layout.fillWidth: true
+            useAxisScaleLimit: yScaleLimit
+            maxYScaleFactor: -1000
+
+            property var isInitialized: false
+            property int oldWidth: timeline.width
+            property int oldHeight: timeline.height
+
+            onWidthChanged: {
+                if(oldWidth > 0 && oldHeight > 0)
+                {
+                    var leftMargin = timeline.viewTransform.origin.x / oldWidth
+                    var rightMargin = timeline.viewTransform.xScale / oldWidth
+
+                    timeline.viewTransform.origin.x = timeline.width * leftMargin;
+                    timeline.viewTransform.xScale = timeline.width * rightMargin;
+
+                    timeline.requestPaint();
+                    curveEditor.repaintCurves();
+                }
+                if( !isInitialized && width > 0 && height > 0 )
+                {
+                    timeline.zoomExtents();
+                    isInitialized = true;
+                }
+                oldWidth = timeline.width
+            }
+
+            onHeightChanged: {
+                if(oldWidth > 0 && oldHeight > 0)
+                {
+                    var topMargin = timeline.viewTransform.origin.y / oldHeight
+                    var botMargin = timeline.viewTransform.yScale / oldHeight
+
+                    timeline.viewTransform.origin.y = timeline.height * topMargin;
+                    timeline.viewTransform.yScale = timeline.height * botMargin;
+
+                    timeline.requestPaint();
+                    curveEditor.repaintCurves();
+                }
+                if( !isInitialized && width > 0 && height > 0 )
+                {
+                    timeline.zoomExtents();
+                    isInitialized = true;
+                }
+                oldHeight = timeline.height
+            }
 
             // Zoom to the extents of the curve, always zooms the full X axis and zooms to the available y extremes
             function zoomExtents()
@@ -390,11 +527,11 @@ Rectangle {
             }
 
             // Data model coming from C++
-            WGOne.WGListModel
+            WGListModel
             {
                 id: curvesModel
                 source: curves
-                WGOne.ValueExtension {}
+                ValueExtension {}
             }
 
             WGSelectionArea
@@ -451,10 +588,13 @@ Rectangle {
                 id: curveRepeater
                 model: curvesModel
 
-                onCountChanged: colorGradient.syncHandles()
+                onCountChanged: {
+                    _.resetAll = true
+                    updateGradientTimer.restart()
+                }
 
                 delegate: Curve{
-                    objectName: index
+                    objectName: "curve" + index
                     curveIndex: index
                     points: value.points
                     curveModel: value
@@ -468,6 +608,9 @@ Rectangle {
                         curveEditor.pointSelectionChanged(point);
                     }
                     onPointPositionChanged:{
+                        _.updatePoint(point.pointIndex)
+                        // Also update the previous point's sub-gradiant
+                        _.updatePoint(point.pointIndex-1)
                         curveEditor.pointPositionChanged(point, xDelta, yDelta)
                     }
                     onPointPressed:{
@@ -475,12 +618,15 @@ Rectangle {
                         {
                             clearSelection();
                         }
+                        timeline.debugLine = curveIndex
                     }
                     onPointAdded:{
-                        colorGradient.syncHandles()
+                        _.addPoint(index)
+                        updateGradientTimer.restart()
                     }
                     onPointRemoved:{
-                        colorGradient.syncHandles()
+                        _.removePoint(index)
+                        updateGradientTimer.restart()
                     }
                     onPointClicked:{
                         if(mouse.modifiers !== Qt.ControlModifier)
@@ -489,6 +635,9 @@ Rectangle {
                         }
                     }
                     onPointUpdated:{
+                        _.updatePoint(point.pointIndex)
+                        // Also update the previous point's sub-gradiant
+                        _.updatePoint(point.pointIndex-1)
                         updateGradientTimer.restart()
                     }
                 }
@@ -499,20 +648,51 @@ Rectangle {
                 }
             }
 
+            // *** DEBUG CODE ***
+            // An array of points represented by squares to show linear approximation ***
+            // Enabled by making showDebugPoints >= 0
+
+            signal updateDebug()
+
+            property var debugPoints: []
+            property int debugCount: timeline.debugPoints.length
+            property int debugLine: 0
+
+            onUpdateDebug: {
+                timeline.debugCount = timeline.debugPoints.length
+            }
+
+            Repeater {
+                id: debugSquareRepeater
+                model: showDebugPoints ? timeline.debugCount : 0
+
+                delegate: Rectangle {
+                    height: 4
+                    width: 4
+                    color: "transparent"
+                    border.color: curveRepeater.itemAt(timeline.debugLine).color
+                    border.width: 1
+                    visible: index < timeline.debugPoints.length
+                    x: index < timeline.debugPoints.length ? timeline.debugPoints[index].x - 2 : 0
+                    y: index < timeline.debugPoints.length ? timeline.debugPoints[index].y - 2 : 0
+                }
+            }
+
+            // *** END DEBUG CODE ***
+
             CurveEditorContextMenu {}
 
-            // Commenting this out until multiple gradient stops work correctly
-            // Also need signals to enable handling changes to update the curve data
             WGGradientSlider {
                 id: colorGradient
                 visible: showColorSlider
                 anchors.bottom: timeline.bottom
-                x: timeline.viewTransform.transformX(0)
-                width: timeline.viewTransform.transformX(1) - timeline.viewTransform.transformX(0)
+                x: Math.round(timeline.viewTransform.transformX(0))
+                width: Math.round(timeline.viewTransform.transformX(1) - timeline.viewTransform.transformX(0))
                 height: defaultSpacing.minimumRowHeight
                 minimumValue: 0
                 maximumValue: 1.0
-                stepSize: .001
+                stepSize: .0001
+                onVisibleChanged: updateGradientTimer.restart()
 
                 onChangeValue: {
                     if(!Qt._updatingPosition && !Qt._updatingCurveGradient)
@@ -523,11 +703,11 @@ Rectangle {
                         var alpha = curveRepeater.count == 4 ?
                                     curveRepeater.itemAt(3).getPoint(index) : null
                         beginUndoFrame()
-                        red.pos.x = val
-                        green.pos.x = val
-                        blue.pos.x = val
+                        red.setPosition(val, red.point.pos.y)
+                        green.setPosition(val, green.point.pos.y)
+                        blue.setPosition(val, blue.point.pos.y)
                         if(alpha){
-                            alpha.pos.x = val
+                            alpha.setPosition(val, alpha.point.pos.y)
                         }
                         endUndoFrame()
                         repaintCurves()
@@ -537,21 +717,19 @@ Rectangle {
                 onColorModified: {
                     if(!Qt._updatingCurveGradient)
                     {
-                        beginUndoFrame()
                         var red = curveRepeater.itemAt(0).getPoint(index);
                         var green = curveRepeater.itemAt(1).getPoint(index);
                         var blue = curveRepeater.itemAt(2).getPoint(index);
                         var alpha = curveRepeater.count == 4 ?
                                     curveRepeater.itemAt(3).getPoint(index) : null
-
-                        red.pos.y = color.r
-                        green.pos.y = color.g
-                        blue.pos.y = color.b
+                        beginUndoFrame()
+                        red.setPosition(red.point.pos.x, color.r)
+                        green.setPosition(green.point.pos.x, color.g)
+                        blue.setPosition(blue.point.pos.x, color.b)
                         if(alpha){
-                            alpha.pos.y = color.a
+                            alpha.setPosition(alpha.point.pos.x, color.a)
                         }
                         endUndoFrame()
-                        repaintCurves()
                     }
                 }
 
@@ -562,23 +740,11 @@ Rectangle {
                         // Prevent adding new points if the addition of the point created this handle
                         if(colorGradient.__handleCount === curveRepeater.itemAt(0).pointRepeater.count)
                             return
-                        var color = colorGradient.getHandleColor(index)
                         var relPos = colorGradient.getHandleValue(index)
                         var mousePos = timeline.viewTransform.transformX(relPos)
                         beginUndoFrame()
+                        _.handleModified(index)
                         curveEditor.addPointsToCurves(Qt.point(mousePos,0))
-                        var red = curveRepeater.itemAt(0).getPoint(index);
-                        var green = curveRepeater.itemAt(1).getPoint(index);
-                        var blue = curveRepeater.itemAt(2).getPoint(index);
-                        var alpha = curveRepeater.count == 4 ?
-                                    curveRepeater.itemAt(3).getPoint(index) : null
-
-                        red.pos.y = color.r
-                        green.pos.y = color.g
-                        blue.pos.y = color.b
-                        if(alpha){
-                            alpha.pos.y = color.a
-                        }
                         endUndoFrame()
                     }
                 }
@@ -587,8 +753,81 @@ Rectangle {
                     console.assert(curveRepeater.count > 0)
                     if(!Qt._updatingCurveGradient)
                     {
-                        var red = curveRepeater.itemAt(0).getPoint(index);
+                        // Prevent deleting points multiple times if the deletion of the point removed this handle
+                        if(colorGradient.__handleCount === curveRepeater.itemAt(0).pointRepeater.count)
+                            return
+                        var red = curveRepeater.itemAt(0).getPoint(index).point;
+                        _.handleModified(index)
                         curveEditor.deletePointsAt([red.pos.x]);
+                    }
+                }
+
+                onSliderDoubleClicked: {
+                    if (useColorPicker)
+                    {
+                        clearSelection();
+                    }
+                }
+
+                function updateSubGradients (index)
+                {
+                    var newDebugArray = []
+
+                    var indexStart = index >= 0 ? Math.max(index, 0) : 0
+                    var indexEnd = index >= 0 ? Math.min(index + 1, colorGradient.__handleCount - 1) : colorGradient.__handleCount - 1
+
+                    // last handle never needs an approximated gradient (it's always a single color)
+
+                    // generates linear approximations of the curves to create a gradient
+                    for (var i = indexStart; i < indexEnd; i++)
+                    {
+                        var subCurves = []
+                        for (var c = 0; c < curveRepeater.count; c++)
+                        {
+                            //gets a linear array of points approximating the curve from point(i)
+                            subCurves.push(curveRepeater.itemAt(c).getLinearGradient(i, subGradientDetail))
+                        }
+
+                        var subCols = []
+                        var subVals = []
+
+                        // create a new gradient based off the linear approximations above
+                        // has to be done via a string of QML as gradients are very restrictive and un-dynamic
+
+                        var gradString = "import QtQuick 2.4; Gradient { "
+
+                        for (var j = 0; j <= subGradientDetail+1; j++)
+                        {
+                            //adds points to array to show approximated linear curve
+                            if (showDebugPoints && timeline.debugLine >= 0 && timeline.debugLine <= curveRepeater.count)
+                            {
+                                newDebugArray.push(timeline.viewTransform.transform(subCurves[timeline.debugLine][j]));
+                            }
+
+                            var t = (1 / (subGradientDetail + 1)) * j
+                            var newR = subCurves.length >= 1 ? subCurves[0][j].y : 1
+                            var newG = subCurves.length >= 2 ? subCurves[1][j].y : 1
+                            var newB = subCurves.length >= 3 ? subCurves[2][j].y : 1
+                            var newA = subCurves.length == 4 ? subCurves[3][j].y : 1
+                            var newColor = Qt.rgba(newR, newG, newB, newA)
+
+                            subCols[j] = newColor
+                            subVals[j] = t
+
+                            gradString += "GradientStop { position: " + subVals[j] + "; color: '" + subCols[j] + "' } "
+                        }
+
+                        gradString += " }"
+
+                        var newGradient = Qt.createQmlObject(gradString,colorGradient)
+
+                        colorGradient.setHandleGradient(i + 1, newGradient)
+                    }
+                    // update debug repeater
+                    if (showDebugPoints)
+                    {
+                        timeline.debugPoints = newDebugArray
+                        timeline.updateDebug()
                     }
                 }
 
@@ -599,6 +838,7 @@ Rectangle {
                     // Ensure all curves have equal points
                     var curveIndex = curveRepeater.count - 1
                     var pointCount = curveRepeater.itemAt(curveIndex).pointRepeater.count
+
                     while(--curveIndex >= 0)
                     {
                         if(pointCount !== curveRepeater.itemAt(curveIndex).pointRepeater.count)
@@ -611,36 +851,69 @@ Rectangle {
                     {
                         Qt._updatingCurveGradient = true
 
-                        // Remove surplus handles
-                        while(__handleCount > pointCount)
+                        // When the curve count changes clear out the previous gradient and recreate it
+                        if(_.resetAll)
                         {
-                            colorGradient.removeHandle(__handleCount-1)
+                            _.resetAll = false
+                            _.clear()
+
+                            while(colorGradient.__handleCount > 0)
+                            {
+                                colorGradient.removeHandle(colorGradient.__handleCount - 1)
+                            }
+                            for(var index = 0; index < pointCount; ++index)
+                            {
+                                _.addPoint(index)
+                            }
                         }
 
                         // Update existing handles
-                        var indexes = []
                         var gradHandleValues = []
                         var gradHandleColors = []
-                        for(var i = 0; i < __handleCount; ++i)
+                        for(var i = 0; i < _.updatedPointIndexes.length; ++i)
                         {
-                            indexes.push(i)
-                            gradHandleValues.push(curveEditor.getPositionAt(i))
-                            gradHandleColors.push(curveEditor.getColorAt(i))
+                            gradHandleValues.push(curveEditor.getPositionAt(_.updatedPointIndexes[i]))
+                            gradHandleColors.push(curveEditor.getColorAt(_.updatedPointIndexes[i]))
                         }
 
-                        colorGradient.setHandleValue(gradHandleValues, indexes);
-                        colorGradient.setHandleColor(gradHandleColors, indexes);
+                        colorGradient.setHandleValue(gradHandleValues, _.updatedPointIndexes);
+                        colorGradient.setHandleColor(gradHandleColors, _.updatedPointIndexes);
 
-                        // Create handles for all missing values
-                        while(__handleCount < pointCount)
+                        // Remove handles corresponding to removed points, highest index first
+                        for(var r = _.removedPointIndexes.length-1; r >= 0; --r)
                         {
-                            var index = __handleCount
+                            var index = _.removedPointIndexes[r]
+                            colorGradient.removeHandle(index)
+                            // Update the index accounting for all handles being removed
+                            index = index - r
+                            _.updatePoint(index-1)
+                        }
+
+                        // Create new handles for new points
+                        for(var a = 0; a < _.addedPointIndexes.length; ++a)
+                        {
+                            var index = _.addedPointIndexes[a]
                             var point = curveRepeater.itemAt(curveRepeater.count - 1).pointRepeater.itemAt(index)
 
                             var newColor = curveEditor.getColorAt(index)
 
-                            colorGradient.createColorHandle(point.point.pos.x, handleStyle, __handlePosList.length, newColor)
+                            _.updatePoint(index)
+                            // Also update the previous point
+                            if(index > 0)
+                            {
+                                _.updatePoint(index-1)
+                            }
+                            // Calculate the gradient index based on the number of points added
+                            colorGradient.createColorHandle(point.point.pos.x, handleStyle, index, newColor)
                         }
+
+                        for(var i = 0; i < _.updatedPointIndexes.length; ++i)
+                        {
+                            colorGradient.updateSubGradients(_.updatedPointIndexes[i])
+                        }
+
+                        _.clear()
+
                         Qt._updatingCurveGradient = false
                     }
                 }
@@ -653,7 +926,8 @@ Rectangle {
     Timer
     {
         id: updateGradientTimer
-        interval: 1
+        interval: 0
+
         onTriggered: { colorGradient.syncHandles() }
     }
 }

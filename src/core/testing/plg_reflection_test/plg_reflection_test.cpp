@@ -9,16 +9,17 @@
 namespace wgt
 {
 /**
- *	Test reflection system.
- */
+* A plugin which tests the reflection plugin
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TestPluginReflection
 	: public PluginMain
 {
-private:
-	std::unique_ptr< MetaTypeImpl< ObjectHandle > > baseProviderMetaType_;
 public:
 	TestPluginReflection( IComponentContext & contextManager )
-		: baseProviderMetaType_( new MetaTypeImpl< ObjectHandle >() )
 	{ 
 	}
 
@@ -26,14 +27,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		auto metaTypeManager =
-			contextManager.queryInterface< IMetaTypeManager >();
-		if (metaTypeManager)
-		{
-			metaTypeManager->registerType( baseProviderMetaType_.get() );
-		}
-		Variant::setMetaTypeManager( metaTypeManager );
-
 		IDefinitionManager* pDefinitionManager =
 			contextManager.queryInterface< IDefinitionManager >();
 		if (pDefinitionManager == nullptr)
@@ -63,8 +56,7 @@ public:
 				assert( baseNamePropertyAccessor.isValid() );
 				Variant value = baseNamePropertyAccessor.getValue();
 				std::string testBaseName;
-				bool ok = false;
-				ok = value.tryCast( testBaseName );
+				bool ok = value.tryCast( testBaseName );
 				assert( ok );
 				assert( strcmp( testBaseName.c_str(), "TestBaseName" ) == 0 );
 			}
@@ -100,16 +92,46 @@ public:
 				bool ok = value.tryCast( testClassString );
 				assert( ok );
 				assert( testClassString == "TestClassString" );
+
+				stringPropertyAccessor.setValue("Test1");
+				value = stringPropertyAccessor.getValue();
+				ok = value.tryCast( testClassString );
+				assert( ok );
+				assert( testClassString == "Test1" );
 			}
 
 			// String accessors
 			{
-				PropertyAccessor namePropertyAccessor =
+				PropertyAccessor stringPropertyAccessor =
 					definition->bindProperty( "StringFunc", testClass );
-				assert( namePropertyAccessor.isValid() );
+				assert( stringPropertyAccessor.isValid() );
 				std::string testClassString;
-				Variant value = namePropertyAccessor.getValue();
+				Variant value = stringPropertyAccessor.getValue();
 				bool ok = value.tryCast( testClassString );
+				assert( ok );
+				assert( testClassString == "Test1" );
+
+				stringPropertyAccessor.setValue("Test2");
+				value = stringPropertyAccessor.getValue();
+				ok = value.tryCast( testClassString );
+				assert( ok );
+				assert( testClassString == "Test2" );
+			}
+
+			// String lambda accessors
+			{
+				PropertyAccessor stringPropertyAccessor =
+					definition->bindProperty( "StringLambda", testClass );
+				assert( stringPropertyAccessor.isValid() );
+				Variant value = stringPropertyAccessor.getValue();
+				std::string testClassString;
+				bool ok = value.tryCast( testClassString );
+				assert( ok );
+				assert( testClassString == "Test2" );
+
+				stringPropertyAccessor.setValue("TestClassString");
+				value = stringPropertyAccessor.getValue();
+				ok = value.tryCast( testClassString );
 				assert( ok );
 				assert( testClassString == "TestClassString" );
 			}
@@ -141,16 +163,14 @@ public:
 				// From innerClass property accessor
 				{
 					auto value = innerPropertyAccessor.getValue();
-					ObjectHandle baseProvider;
-					value.tryCast( baseProvider );
 					auto pInnerClass
-						= baseProvider.getBase< TestClass::InnerClass >();
+					= value.cast<TestClass::InnerClass*>();
 					assert( pInnerClass != nullptr );
 
 					const auto pStructDefinition =
 						innerPropertyAccessor.getStructDefinition();
 					assert( pStructDefinition != nullptr );
-
+					ObjectHandle baseProvider(value, pStructDefinition);
 					const auto & structDefinition =
 						(*pStructDefinition);
 					PropertyAccessor innerNamePropertyAccessor =

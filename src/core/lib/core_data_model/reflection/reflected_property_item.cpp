@@ -17,6 +17,10 @@
 
 namespace wgt
 {
+ITEMROLE(readOnly)
+ITEMROLE(enabled)
+ITEMROLE(multipleValues)
+
 namespace
 {
 	struct MaxMinValuePair
@@ -137,18 +141,7 @@ ReflectedPropertyItem::~ReflectedPropertyItem()
 
 const char * ReflectedPropertyItem::getDisplayText( int column ) const
 {
-	switch (column)
-	{
-	case 0:
-		return displayName_.c_str();
-
-	case 1:
-		return "Reflected Property";
-
-	default:
-		assert( false );
-		return "";
-	}
+	return displayName_.c_str();
 }
 
 ThumbnailData ReflectedPropertyItem::getThumbnail( int column ) const
@@ -173,7 +166,7 @@ ThumbnailData ReflectedPropertyItem::getThumbnail( int column ) const
 	return thumbnail;
 }
 
-Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
+Variant ReflectedPropertyItem::getData( int column, ItemRole::Id roleId ) const
 {
 	auto obj = getObject();
 	auto propertyAccessor = obj.getDefinition( *getDefinitionManager() )->bindProperty(
@@ -183,7 +176,11 @@ Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
 	{
 		return this->getPath();
 	}
-    else if (roleId == ObjectRole::roleId_)
+	else if (roleId == NameRole::roleId_)
+	{
+		return propertyAccessor.getName();
+	}
+	else if (roleId == ObjectRole::roleId_)
     {
         return getObject();
     }
@@ -210,6 +207,10 @@ Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
 	else if (roleId == IsColorRole::roleId_)
 	{
 		return findFirstMetaData< MetaColorObj >( propertyAccessor, *getDefinitionManager() ) != nullptr;
+	}
+	else if (roleId == IsActionRole::roleId_)
+	{
+		return findFirstMetaData<MetaActionObj>(propertyAccessor, *getDefinitionManager()) != nullptr;
 	}
 	else if (roleId == IsUrlRole::roleId_)
 	{
@@ -316,7 +317,7 @@ Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
 			}
 			auto enumModel = std::unique_ptr< IListModel >( 
 				new ReflectedEnumModel( propertyAccessor, enumObj ) );
-			return ObjectHandle( std::move( enumModel ) );
+			return std::move(enumModel);
 		}
 	}
 	else if (roleId == DefinitionRole::roleId_)
@@ -344,7 +345,7 @@ Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
 			{
 				auto definitionModel = std::unique_ptr< IListModel >(
 					new ClassDefinitionModel( definition, *getDefinitionManager() ) );
-				return ObjectHandle( std::move( definitionModel ) );
+				return std::move(definitionModel);
 			}
 		}
 	}
@@ -418,21 +419,30 @@ Variant ReflectedPropertyItem::getData( int column, size_t roleId ) const
 		}
 		return modality;
 	}
-	else if ( roleId == IsReadOnlyRole::roleId_ )
+	else if (roleId == ItemRole::readOnlyId)
 	{
 		TypeId typeId = propertyAccessor.getType();
 		auto readonly =
 			findFirstMetaData< MetaReadOnlyObj >( propertyAccessor, *getDefinitionManager() );
-		if ( readonly != nullptr )
+		if (readonly)
 		{
 			return true;
 		}
 		return false;
 	}
+	else if (roleId == ItemRole::enabledId)
+	{
+		return Variant(true);
+	}
+	else if (roleId == ItemRole::multipleValuesId)
+	{
+		return Variant(false);
+	}
+
 	return Variant();
 }
 
-bool ReflectedPropertyItem::setData( int column, size_t roleId, const Variant & data )
+bool ReflectedPropertyItem::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto controller = getController();
 	if (controller == nullptr)
@@ -591,7 +601,7 @@ bool ReflectedPropertyItem::empty() const
 
 	if (isCollection)
 	{
-		const Collection & collection = value.castRef< const Collection >();
+		const Collection & collection = value.cast< const Collection& >();
 		return collection.empty();
 	}
 
@@ -669,11 +679,11 @@ bool ReflectedPropertyItem::preSetValue(
 			{
 				definition = handle.getDefinition( *getDefinitionManager() );
 			}
-			getModel()->signalPreItemDataChanged( this, 1, DefinitionRole::roleId_, ObjectHandle( definition ) );
+			getModel()->signalPreItemDataChanged( this, 0, DefinitionRole::roleId_, ObjectHandle( definition ) );
 			return true;
 		}
 
-		getModel()->signalPreItemDataChanged( this, 1, ValueRole::roleId_,
+		getModel()->signalPreItemDataChanged( this, 0, ValueRole::roleId_,
 			value );
 		return true;
 	}
@@ -717,11 +727,11 @@ bool ReflectedPropertyItem::postSetValue(
 				definition = handle.getDefinition( *getDefinitionManager() );
 			}
 			children_.clear();
-			getModel()->signalPostItemDataChanged( this, 1, DefinitionRole::roleId_, ObjectHandle( definition ) );
+			getModel()->signalPostItemDataChanged( this, 0, DefinitionRole::roleId_, ObjectHandle( definition ) );
 			return true;
 		}
 
-		getModel()->signalPostItemDataChanged( this, 1, ValueRole::roleId_,
+		getModel()->signalPostItemDataChanged( this, 0, ValueRole::roleId_,
 			value );
 		return true;
 	}

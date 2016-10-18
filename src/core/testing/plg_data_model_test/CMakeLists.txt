@@ -17,7 +17,7 @@ SET( ALL_SRCS
 	custom_model_interface_test.hpp
 	plg_data_model_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( "" FILES ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(plg_data_model_test resources/plg_data_model_test)
 BW_GLOB_RESOURCE_FILES()

@@ -17,7 +17,7 @@ SET( ALL_SRCS
 	main_window/main_window.hpp
 	plg_window_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(plg_window_test resources/plg_window_test)
 BW_GLOB_RESOURCE_FILES()

@@ -9,40 +9,37 @@
 
 namespace wgt
 {
-/**
- *	Create an item in a ReflectedTreeModel from an ObjectHandle.
- *	Can be a root or child item.
- */
+/** Represents an ObjectHandle as an item in a ReflectedTreeModel.
+This can result in either a root or child item. */
 class ReflectedObjectItemNew : public ReflectedTreeItemNew
 {
 public:
-
-	/**
-	 *	Construct a tree data model by reflecting over the given object.
-	 *	@param object the root of the tree.
-	 *		@warning the parent *must* correspond to the object.
-	 *	@param parent the parent model of this property.
-	 *		In this case the item is the root of the model.
-	 */
+	/** Creates a reflected tree item to represent a reflected object.
+	The created item may contain child items as well.
+	This constructor is used for top level items.
+	@warning the parent *must* correspond to the object.
+	@param object The object relating to this item.
+	@param model the parent model of this property. */
 	ReflectedObjectItemNew( IComponentContext & contextManager,
 		const ObjectHandle & object,
 		const ReflectedTreeModelNew & model );
-	/**
-	 *	Construct a tree data model by reflecting over the given object.
-	 *	@param object the root of the tree.
-	 *		@warning the parent *must* correspond to the object.
-	 *	@param parent the parent item of this property.
-	 *		In this case the item is a child item.
-	 */
+
+	/** Creates a reflected tree item to represent a reflected object.
+	The created item may contain child items as well.
+	This constructor is used for non top level items.
+	@warning the parent *must* correspond to the object.
+	@param object The object relating to this item.
+	@param parent the parent item of this property. */
 	ReflectedObjectItemNew( IComponentContext & contextManager,
 		const ObjectHandle & object,
 		ReflectedTreeItemNew * parent,
 		size_t index );
+
 	virtual ~ReflectedObjectItemNew();
 
 	// AbstractItem
-	virtual Variant getData( int column, size_t roleId ) const override;
-	virtual bool setData( int column, size_t roleId, const Variant & data ) override;
+	virtual Variant getData( int column, ItemRole::Id roleId ) const override;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data ) override;
 
 	// ReflectedTreeItemNew
 	virtual const ObjectHandle & getRootObject() const override;

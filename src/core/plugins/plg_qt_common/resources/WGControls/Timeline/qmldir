@@ -1,0 +1,13 @@
+module WGControls.Timeline
+
+# 2.0 Controls
+WGTimelineBarDelegate 2.0 WGTimelineBarDelegate20.qml
+WGTimelineBarSlider 2.0 WGTimelineBarSlider20.qml
+WGTimelineBarSliderHandle 2.0 WGTimelineBarSliderHandle20.qml
+WGTimelineContextMenu 2.0 WGTimelineContextMenu20.qml
+WGTimelineDialogs 2.0 WGTimelineDialogs20.qml
+WGTimelineFrameSlider 2.0 WGTimelineFrameSlider20.qml
+WGTimelineFrameSliderHandle 2.0 WGTimelineFrameSliderHandle20.qml
+WGTimelineKeyframeDelegate 2.0 WGTimelineKeyframeDelegate20.qml
+WGTimelineControl 2.0 WGTimelineControl20.qml
+WGTimelineToolbar 2.0 WGTimelineToolbar20.qml

@@ -7,8 +7,12 @@
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/reflected_method_parameters.hpp"
+#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/base_property_with_metadata.hpp"
 
 #include <map>
+#include "core_reflection/reflected_method.hpp"
 
 namespace wgt
 {
@@ -67,18 +71,16 @@ public:
 			return;
 		}
 
-		std::unique_ptr< ReflectedPropertyCommandArgument > args( new ReflectedPropertyCommandArgument );
-		args->setContextId( key.first );
-		args->setPath( key.second.c_str() );
-		args->setValue( data );
-		
 		// Access is only on the main thread
 		assert( std::this_thread::get_id() == commandManager_.ownerThreadId() );
 
 		const auto commandId = getClassIdentifier< SetReflectedPropertyCommand >();
-		const auto pArgsDefinition =
-			pa.getDefinitionManager()->getDefinition< ReflectedPropertyCommandArgument >();
-		ObjectHandle commandArgs( std::move( args ), pArgsDefinition );
+
+		const auto commandArgs = pa.getDefinitionManager()->create< ReflectedPropertyCommandArgument >();
+		commandArgs->setContextId( key.first );
+		commandArgs->setPath( key.second.c_str() );
+		commandArgs->setValue( data );
+
 		auto command = commandManager_.queueCommand( commandId, commandArgs );
 
 		// Queuing may cause it to execute straight away
@@ -91,6 +93,11 @@ public:
 
 	Variant invoke( const PropertyAccessor & pa, const ReflectedMethodParameters & parameters )
 	{
+		if (findFirstMetaData<MetaDirectInvokeObj>(pa, *pa.getDefinitionManager()))
+		{
+			return pa.invoke(parameters);
+		}
+
 		Key key;
 		if (!createKey( pa, key ))
 		{

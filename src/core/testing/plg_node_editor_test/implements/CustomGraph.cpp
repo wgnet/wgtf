@@ -10,6 +10,7 @@
 namespace wgt
 {
 CustomGraph::CustomGraph()
+    : m_nodeGroupModel(m_groupsStorage)
 {
     m_nodeClassesModel.push_back("IntToString");
     m_nodeClasses.insert(NodeClassesMap::value_type("IntToString", []()->INode* { return new IntToStringNode("IntToString"); }));
@@ -174,4 +175,10 @@ void CustomGraph::Load(std::string fileName)
 {
     NGT_ERROR_MSG("METHOD IS NOT IMPLEMENTED\n");
 }
+
+const Collection& CustomGraph::GetNodeGroupModel() const /* override */
+{
+	return m_nodeGroupModel;
+}
+
 } // end namespace wgt

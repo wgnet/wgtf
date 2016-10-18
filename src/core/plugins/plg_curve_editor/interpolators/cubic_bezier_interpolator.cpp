@@ -96,14 +96,34 @@ void CubicBezierInterpolator::updateControlPoints(BezierPoint& point, BezierPoin
 		}
 		else
 		{
-			prevPoint->cp2->setX(( point.pos->getX() - prevPoint->pos->getX() ) / 2.f);
-			prevPoint->cp2->setY(0.f);
+			auto x = prevPoint->cp2->getX();
+			auto maxx = (point.pos->getX() - prevPoint->pos->getX());
+			// Don't allow the previous point's control point go beyond the new point
+			if(x > 0 && x > maxx)
+			{
+				*prevPoint->cp2.get() *= (maxx / x);
+			}
+			else if (x < 0)
+			{
+				prevPoint->cp2->setX(maxx * 0.5f);
+				prevPoint->cp2->setY(0.0f);
+			}
 		}
 	}
 	else if(nextPoint)
 	{
-		nextPoint->cp1->setX(( point.pos->getX() - nextPoint->pos->getX() ) / 2.f);
-		nextPoint->cp1->setY(0);
+		auto x = nextPoint->cp1->getX();
+		auto minx = ( point.pos->getX() - nextPoint->pos->getX() );
+		// Don't allow the next point's control point to precede the new point
+		if ( x < 0 && x < minx )
+		{
+			*nextPoint->cp1.get() *= (minx / x);
+		}
+		else if (x > 0)
+		{
+			prevPoint->cp2->setX(minx * 0.5f);
+			prevPoint->cp2->setY(0.0f);
+		}
 	}
 }
 } // end namespace wgt

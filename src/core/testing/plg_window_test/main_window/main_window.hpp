@@ -3,21 +3,26 @@
 
 #include "core_ui_framework/i_window.hpp"
 #include "core_generic_plugin/interfaces/i_application.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_ui_framework/interfaces/i_view_creator.hpp"
+#include "core_ui_framework/i_ui_application.hpp"
+#include "core_ui_framework/i_ui_framework.hpp"
+
 #include <memory>
 
 namespace wgt
 {
 class IAction;
-class IUIApplication;
-class IUIFramework;
+class IComponentContext;
 
 class MainWindow
+	: public Depends< IViewCreator, IUIApplication, IUIFramework >
 {    
 public:
-    explicit MainWindow();
+    explicit MainWindow( IComponentContext & context );
     ~MainWindow();
 
-	void init( IUIApplication & uiApplication, IUIFramework & uiFramework );
+	void init();
 	void fini();
 
 private:
@@ -25,6 +30,7 @@ private:
 	void destroyActions();
 
 	void close( IAction * action );
+	void showShortcutConfig( IAction* action );
 	void onTryClose( bool& shouldClose );
 	void onClose();
 
@@ -33,10 +39,9 @@ private:
 	void addMenuBar( IUIApplication & uiApplication );
 
 private:
-	IUIApplication*			   app_;
-	IUIFramework*			   uiFramework_;
 	std::unique_ptr< IWindow > mainWindow_;
 	std::unique_ptr< IAction > testExit_;
+	std::unique_ptr< IAction > shortcutConfig_;
 	ConnectionHolder connections_;
 };
 } // end namespace wgt

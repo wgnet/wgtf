@@ -13,9 +13,13 @@
 namespace wgt
 {
 /**
- *	Controls initialization and finalization of Python and
- *	registers the Python interface to be used by other plugins.
- */
+* A plugin which controls initialization and finalization of Python 
+* and registers the IPythonScriptingEngine Python interface to be used by other plugins
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class Python27Plugin
 	: public PluginMain
 {
@@ -40,9 +44,6 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager(
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		// Initialize listener hooks
 		const auto pDefinitionManager = contextManager.queryInterface< IDefinitionManager >();
 		if (pDefinitionManager == nullptr)
@@ -99,6 +100,7 @@ private:
 	ReflectedPython::ScriptObjectDefinitionRegistry definitionRegistry_;
 	PythonType::ConverterQueue typeConverterQueue_;
 	std::shared_ptr< ReflectedPython::HookListener > hookListener_;
+
 };
 
 PLG_CALLBACK_FUNC( Python27Plugin )

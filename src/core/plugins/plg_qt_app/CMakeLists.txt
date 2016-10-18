@@ -9,7 +9,7 @@ SET( ALL_SRCS
 	qt_application.cpp
 	qt_application.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 SET(RESOURCE_FILES
   resources.qrc

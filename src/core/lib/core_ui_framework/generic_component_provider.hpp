@@ -15,13 +15,13 @@ public:
 	}
 
 	GenericComponentProvider( const char * component,
-		const size_t roles[], size_t count )
+		const ItemRole::Id roles[], size_t count )
 		: SimpleComponentProvider( component, roles, count )
 	{
 	}
 
 	const char * componentId( const TypeId & typeId,
-		std::function< bool ( size_t ) > & predicate ) const override
+		std::function< bool ( const ItemRole::Id& ) > & predicate ) const override
 	{
 		if (typeId != TypeId::getType<T>())
 		{

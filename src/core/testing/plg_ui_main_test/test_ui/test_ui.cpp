@@ -1,4 +1,5 @@
 #include "test_ui.hpp"
+#include "context.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_command_system/compound_command.hpp"
 #include "core_command_system/i_env_system.hpp"
@@ -9,7 +10,7 @@
 #include "interfaces/i_datasource.hpp"
 
 #include "core_data_model/reflection/reflected_tree_model.hpp"
-#include "core_data_model/reflection/reflected_tree_model_new.hpp"
+#include "core_data_model/reflection_proto/property_tree_model.hpp"
 
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
@@ -17,12 +18,18 @@
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/i_window.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
-
+#include "core_serialization/i_file_system.hpp"
+#include "core_serialization/serializer/xml_serializer.hpp"
 #include "core_copy_paste/i_copy_paste_manager.hpp"
 #include "core_logging/logging.hpp"
 
 namespace wgt
 {
+namespace
+{
+static const char* s_historyVersion = "_ui_main_ver_1_0_15";
+typedef XMLSerializer HistorySerializer;
+}
 //==============================================================================
 TestUI::TestUI( IComponentContext & context )
 	: Depends( context )
@@ -41,6 +48,8 @@ void TestUI::init( IUIApplication & uiApplication, IUIFramework & uiFramework )
 {
 	app_ = &uiApplication;
 	fw_ = &uiFramework;
+	uiFramework.loadActionData(
+	":/testing_ui_main/actions.xml", IUIFramework::ResourceType::File);
 
 	createActions( uiFramework );
 	addActions( uiApplication );
@@ -83,35 +92,39 @@ void TestUI::createViews( IUIFramework & uiFramework, IDataSource* dataSrc, int 
 	assert( defManager != nullptr );
 	auto controller = get<IReflectionController>();
 	assert( controller != nullptr );
-
 	auto viewCreator = get< IViewCreator >();
 	assert(viewCreator != nullptr);
 
-	test1Models_.emplace_back( new ReflectedTreeModelNew( context_, dataSrc->getTestPage() ) );
+	const bool managed = true;
+	auto contextObject = defManager->create<TestUIContext>(managed);
+	assert(contextObject != nullptr);
+	contextObject->initialize(std::unique_ptr<AbstractTreeModel>(
+	new proto::PropertyTreeModel(context_, dataSrc->getTestPage())));
+	test1Contexts_.emplace_back(contextObject);
 	std::string uniqueName1 = dataSrc->description() + std::string("testing_ui_main/test_property_tree_panel.qml");
-	viewCreator->createView(
-		"testing_ui_main/test_property_tree_panel.qml",
-		test1Models_.back().get(),
-		[ this, envIdx ] (std::unique_ptr< IView > & view )
-		{
-			test1Views_.emplace_back( TestViews::value_type( std::move( view ), envIdx ) );
-			test1Views_.back().first->registerListener(this);
-		},
-		uniqueName1.c_str() );
+	auto view = viewCreator->createView(
+	"testing_ui_main/test_property_tree_panel.qml",
+	test1Contexts_.back(),
+	[&](IView& view)
+	{
+		view.registerListener(this);
+	},
+	uniqueName1.c_str());
+	test1Views_.emplace_back( TestViews::value_type( std::move( view.get() ), envIdx ) );
 
-	auto model = std::unique_ptr< ITreeModel >(
-		new ReflectedTreeModel( dataSrc->getTestPage2(), *defManager, controller ) );
+    auto model = std::unique_ptr< ITreeModel >(
+        new ReflectedTreeModel( dataSrc->getTestPage2(), *defManager, controller ) );
 	std::string uniqueName2 = dataSrc->description() + std::string("testing_ui_main/test_reflected_tree_panel.qml");
 
-	viewCreator->createView(
+	view = viewCreator->createView(
 		"testing_ui_main/test_reflected_tree_panel.qml",
 		std::move(model),
-		[ this, envIdx ] ( std::unique_ptr< IView > & view )
+		[&] ( IView & view )
 		{
-			test2Views_.emplace_back(TestViews::value_type(std::move( view ), envIdx ) );
-			test2Views_.back().first->registerListener(this);
+            view.registerListener(this);
 		},
 		uniqueName2.c_str());
+	test2Views_.emplace_back(TestViews::value_type(std::move( view.get() ), envIdx ) );
 }
 
 // =============================================================================
@@ -129,7 +142,7 @@ void TestUI::destroyViews( size_t idx )
 {
 	assert( test1Views_.size() == test2Views_.size() );
 	removeViews( idx );
-	test1Models_.erase( test1Models_.begin() + idx );
+	test1Contexts_.erase(test1Contexts_.begin() + idx);
 	test1Views_.erase( test1Views_.begin() + idx );
 	test2Views_.erase( test2Views_.begin() + idx );
 }
@@ -174,16 +187,47 @@ void TestUI::onFocusIn( IView* view )
 	auto pr = [&]( TestViews::value_type& x ) { return x.first.get() == view; };
 
 	auto it1 = std::find_if( test1Views_.begin(), test1Views_.end(), pr );
+	auto it2 = std::find_if(test2Views_.begin(), test2Views_.end(), pr);
+	int envId = -1;
 	if ( it1 != test1Views_.end() )
 	{
-		get<IEnvManager>()->selectEnv( it1->second );
-		return;
+		envId = it1->second;
 	}
-
-	auto it2 = std::find_if( test2Views_.begin(), test2Views_.end(), pr );
 	if ( it2 != test2Views_.end() )
 	{
-		get<IEnvManager>()->selectEnv( it2->second );
+		envId = it2->second;
+	}
+	assert(envId != -1);
+	get<IEnvManager>()->selectEnv(envId);
+	auto findIt = historyFlags_.find(envId);
+	assert(findIt != historyFlags_.end());
+	if (!findIt->second)
+	{
+		auto pre = [envId](DataSrcEnvPairs::value_type& x) { return x.second == envId; };
+		auto it = std::find_if(dataSrcEnvPairs_.begin(), dataSrcEnvPairs_.end(), pre);
+		assert(it != dataSrcEnvPairs_.end());
+		auto dataSrc = it->first;
+		assert(dataSrc != nullptr);
+		std::string file = dataSrc->description();
+		file += s_historyVersion;
+		auto fileSystem = get<IFileSystem>();
+		assert(fileSystem != nullptr);
+		if (fileSystem->exists(file.c_str()))
+		{
+			auto defManager = get<IDefinitionManager>();
+			assert(defManager != nullptr);
+			IFileSystem::IStreamPtr fileStream = fileSystem->readFile(file.c_str(), std::ios::in | std::ios::binary);
+			HistorySerializer serializer(*fileStream, *defManager);
+			std::string version;
+			serializer.deserialize(version);
+			if (version == s_historyVersion)
+			{
+				auto cmdMgr = get<ICommandManager>();
+				assert(cmdMgr != nullptr);
+				cmdMgr->LoadHistory(serializer);
+			}
+		}
+		historyFlags_[envId] = true;
 	}
 }
 
@@ -201,6 +245,9 @@ void TestUI::open()
 
 	IEnvManager* em = get<IEnvManager>();
 	int envIdx = em->addEnv( dataSrc->description() );
+	auto findIt = historyFlags_.find(envIdx);
+	assert(findIt == historyFlags_.end());
+	historyFlags_[envIdx] = false;
 
 	dataSrcEnvPairs_.push_back( DataSrcEnvPairs::value_type( dataSrc, envIdx ) );
 	createViews( *fw_, dataSrc, envIdx );
@@ -212,9 +259,24 @@ void TestUI::close()
 
 	IDataSource* dataSrc = dataSrcEnvPairs_.back().first;
 	int envIdx = dataSrcEnvPairs_.back().second;
-
+	auto findIt = historyFlags_.find(envIdx);
+	assert(findIt != historyFlags_.end());
+	historyFlags_.erase(envIdx);
 	dataSrcEnvPairs_.pop_back();
 	destroyViews( dataSrcEnvPairs_.size() );
+
+	auto cmdMgr = get<ICommandManager>();
+	auto defManager = get<IDefinitionManager>();
+	assert(cmdMgr != nullptr && defManager != nullptr);
+	ResizingMemoryStream stream;
+	HistorySerializer serializer(stream, *defManager);
+	serializer.serialize(s_historyVersion);
+	cmdMgr->SaveHistory(serializer);
+	std::string file = dataSrc->description();
+	file += s_historyVersion;
+	auto fileSystem = get<IFileSystem>();
+	assert(fileSystem != nullptr);
+	fileSystem->writeFile(file.c_str(), stream.buffer().c_str(), stream.buffer().size(), std::ios::out | std::ios::binary);
 
 	IEnvManager* em = get<IEnvManager>();
 	em->removeEnv( envIdx );

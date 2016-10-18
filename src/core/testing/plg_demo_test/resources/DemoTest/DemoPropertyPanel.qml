@@ -4,6 +4,7 @@ import QtQuick.Layouts 1.0
 
 import WGControls 1.0
 import WGCopyableFunctions 1.0
+import WGControls.Views 1.0
 
 Rectangle {
     id: root
@@ -17,7 +18,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         placeholderText: "Search (Ctrl+p)"
-		Component.onCompleted: {
+        Component.onCompleted: {
             WGCopyableHelper.disableChildrenCopyable(searchBox);
         }
 
@@ -75,6 +76,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         model: testModel
         rightMargin: 8 // leaves just enought space for conventional slider
+		columnSequence: [0, 0]
         columnDelegates: [defaultColumnDelegate, propertyDelegate]
         selectionExtension: treeModelSelection
         treeExtension: treeModelExtension
@@ -87,6 +89,7 @@ Rectangle {
 
         property Component propertyDelegate: Loader {
             clip: true
+            property bool autoSizeOnDoubleClick: true
             sourceComponent: itemData != null ? itemData.component : null
         }
     }

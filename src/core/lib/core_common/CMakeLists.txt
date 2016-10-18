@@ -19,6 +19,7 @@ SET( ALL_SRCS
 	platform_dll.cpp
 	platform_env.hpp
 	platform_env.cpp
+	platform_export.hpp
 	platform_path.hpp
 	platform_path.cpp
 	platform_std.hpp
@@ -26,16 +27,22 @@ SET( ALL_SRCS
 	shared_library.hpp
 	signal.cpp
 	signal.hpp
+	strong_type.hpp
 	thread_local_value.hpp
 	thread_local_value_impl.hpp
 	thread_local_value.cpp
 	wg_condition_variable.cpp
 	wg_condition_variable.hpp
+	wg_dlink.cpp
+	wg_dlink.hpp
+	wg_future.hpp
 	wg_read_write_lock.cpp
 	wg_read_write_lock.hpp
+	objects_pool.hpp
 	${PLATFORM_SRCS}
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
@@ -43,6 +50,7 @@ BW_BLOB_SOURCES( BLOB_SRCS
 BW_ADD_LIBRARY( core_common ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_common INTERFACE
+    core_string_utils
 	${PLATFORM_LIBRARIES}
 )
 

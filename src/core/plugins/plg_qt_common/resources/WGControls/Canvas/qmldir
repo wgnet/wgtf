@@ -1,0 +1,7 @@
+module WGControls.Canvas
+
+# 2.0 Controls
+WGGridCanvas 2.0 WGGridCanvas20.qml
+WGGridCanvasItem 2.0 WGGridCanvasItem20.qml
+WGSelectionArea 2.0 WGSelectionArea20.qml
+WGViewTransform 2.0 WGViewTransform20.qml

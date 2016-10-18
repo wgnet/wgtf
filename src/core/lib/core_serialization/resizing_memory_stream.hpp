@@ -2,11 +2,13 @@
 #define RESIZING_MEMORY_STREAM_HPP
 
 #include "i_datastream.hpp"
+#include "serialization_dll.hpp"
 #include <string>
 
 namespace wgt
 {
-class ResizingMemoryStream
+
+class SERIALIZATION_DLL ResizingMemoryStream
 	: public IDataStream
 {
 public:
@@ -33,5 +35,6 @@ private:
 	std::streamoff pos_;
 
 };
+
 } // end namespace wgt
 #endif //RESIZING_MEMORY_STREAM_HPP

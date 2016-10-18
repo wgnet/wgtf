@@ -32,7 +32,7 @@ namespace
 			return nullptr;
 		}
 
-		Variant getData( int column, size_t roleId ) const 
+		Variant getData( int column, ItemRole::Id roleId ) const
 		{ 
 			if (roleId == ValueRole::roleId_)
 			{
@@ -45,7 +45,7 @@ namespace
 			return Variant();
 		}
 		
-		bool setData( int column, size_t roleId, const Variant & data ) 
+		bool setData( int column, ItemRole::Id roleId, const Variant & data )
 		{ 
 			return false; 
 		}
@@ -54,39 +54,53 @@ namespace
 		int index_;
 		std::string text_;
 	};
+
+    void generateFromString(std::vector<IItem *>& items, const wchar_t* enumString)
+    {
+        std::wstring_convert< Utf16to8Facet > conversion(Utf16to8Facet::create());
+        int index = 0;
+        const wchar_t * start = enumString;
+        const wchar_t * enumStringEnd = start + wcslen(start);
+        while (start < enumStringEnd)
+        {
+            const wchar_t * end = nullptr;
+            end = wcsstr(start, L"|");
+            if (end == nullptr)
+            {
+                end = start + wcslen(start);
+            }
+            const wchar_t * trueEnd = end;
+            const wchar_t * indexStart = wcsstr(start, L"=");
+            if (indexStart != nullptr &&
+                indexStart <= end)
+            {
+                index = static_cast<int>(wcstol(indexStart + 1, nullptr, 10));
+                end = indexStart;
+            }
+            std::wstring text(start, end);
+
+            items.push_back(new ReflectedEnumItem(index, conversion.to_bytes(text)));
+            start = trueEnd + 1;
+            ++index;
+        }
+    }
+}
+
+ReflectedEnumModel::ReflectedEnumModel(const MetaEnumObj * enumObj)
+{
+    const wchar_t * enumString = enumObj->getEnumString();
+    if (enumString != nullptr)
+    {
+        generateFromString(items_, enumString);
+    }
 }
 
 ReflectedEnumModel::ReflectedEnumModel( const PropertyAccessor & pA, const MetaEnumObj * enumObj )
 {
-	std::wstring_convert< Utf16to8Facet > conversion( Utf16to8Facet::create() );
 	const wchar_t * enumString = enumObj->getEnumString();
 	if (enumString != nullptr)
 	{
-		int index = 0;
-		const wchar_t * start = enumString;
-		const wchar_t * enumStringEnd = start + wcslen( start );
-		while( start < enumStringEnd )
-		{
-			const wchar_t * end = nullptr;
-			end = wcsstr( start, L"|" );
-			if (end == nullptr)
-			{
-				end = start + wcslen( start );
-			}
-			const wchar_t * trueEnd = end;
-			const wchar_t * indexStart = wcsstr( start, L"=" );
-			if (indexStart != nullptr &&
-				indexStart <= end )
-			{
-				index =  static_cast<int>( wcstol( indexStart + 1, nullptr, 10 ) );
-				end = indexStart;
-			}
-			std::wstring text( start, end );
-
-			items_.push_back( new ReflectedEnumItem( index, conversion.to_bytes( text ) ) );
-			start = trueEnd + 1;
-			++index;
-		}
+        generateFromString(items_, enumString);
 		return;
 	}
 

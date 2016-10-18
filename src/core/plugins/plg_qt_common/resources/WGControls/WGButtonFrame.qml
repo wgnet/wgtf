@@ -1,13 +1,14 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+    \ingroup wgcontrols
     \brief A WG styled frame with a raised look intended for buttons.
 */
-
 
 Rectangle {
     id: outerFrame
     objectName: "WGButtonFrame"
+    WGComponent { type: "WGButtonFrame" }
 
     /*! This property defines the color of the inner border
         The default value is \c palette.lighterShade

@@ -2,6 +2,7 @@
 #define REFLECTION_CONTROLLER_HPP
 
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
+#include "core_dependency_system/i_interface.hpp"
 
 namespace wgt
 {

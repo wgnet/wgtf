@@ -9,8 +9,7 @@
 namespace wgt
 {
 class IComponentContext;
-class ITreeModel;
-
+class AbstractTreeModel;
 
 /**
  *	Stores variables that can be accessed by QML.
@@ -20,15 +19,22 @@ class PanelContext
 public:
 	DECLARE_REFLECTED
 	PanelContext();
-	~PanelContext();
 
+	bool initialize(IComponentContext& context,
+	                const char* panelName,
+	                const ObjectHandle& pythonObject);
 	const std::string & panelName() const;
-	ITreeModel * treeModel() const;
+	AbstractTreeModel* treeModel() const;
 	void updateValues();
-	
-	IComponentContext * pContext_;
+	void undoUpdateValues(const ObjectHandle&, Variant);
+	void redoUpdateValues(const ObjectHandle&, Variant);
+	const PanelContext* getSource() const;
+
+private:
+	IComponentContext* context_;
 	std::string panelName_;
+	std::string testScriptDescription_;
 	ObjectHandle pythonObject_;
-	std::unique_ptr< ITreeModel > treeModel_;
+	std::shared_ptr<AbstractTreeModel> treeModel_;
 };
 } // end namespace wgt

@@ -2,12 +2,15 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 import QtQuick.Window 2.1
-import WGControls 1.0
+
+import WGControls 2.0
+import WGControls.Views 2.0
 
 Rectangle {
 	property var title: "Alerts"
 
     id: main
+    WGComponent { type: "alert_window" }
 
 	color: palette.mainWindowColor
 

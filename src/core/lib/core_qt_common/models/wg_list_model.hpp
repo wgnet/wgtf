@@ -7,6 +7,7 @@
 #include "core_data_model/i_list_model.hpp"
 #include "core_qt_common/qt_new_handler.hpp"
 #include "qt_model_macros.hpp"
+#include "core_data_model/i_item_role.hpp"
 
 
 #include <memory>
@@ -14,7 +15,7 @@
 
 namespace wgt
 {
-class IModelExtension;
+class IModelExtensionOld;
 
 
 /**
@@ -32,7 +33,7 @@ class WGListModel : public QAbstractListModel
 		READ getSource
 		WRITE setSource
 		NOTIFY sourceChanged )
-	Q_PROPERTY( QQmlListProperty< wgt::IModelExtension > extensions 
+	Q_PROPERTY( QQmlListProperty< wgt::IModelExtensionOld > extensions 
 		READ getExtensions )
 	Q_CLASSINFO( "DefaultProperty", "extensions" )
 
@@ -72,8 +73,8 @@ public:
 	void setSource( const QVariant & source );
 
 private:
-	void registerExtension( IModelExtension * extension );
-	bool decodeRole( int role, size_t & o_RoleId ) const;
+	void registerExtension( IModelExtensionOld * extension );
+	bool decodeRole( int role, ItemRole::Id & o_RoleId ) const;
 
 	QHash< int, QByteArray > roleNames() const Q_DECL_OVERRIDE;
 
@@ -84,26 +85,26 @@ private:
 
 	void onSourceChanged();
 
-	QQmlListProperty< IModelExtension > getExtensions() const;
+	QQmlListProperty< IModelExtensionOld > getExtensions() const;
 
 	static void appendExtension( 
-		QQmlListProperty< IModelExtension > * property, 
-		IModelExtension * value );
-	static IModelExtension * extensionAt( 
-		QQmlListProperty< IModelExtension > * property, 
+		QQmlListProperty< IModelExtensionOld > * property, 
+		IModelExtensionOld * value );
+	static IModelExtensionOld * extensionAt( 
+		QQmlListProperty< IModelExtensionOld > * property, 
 		int index );
 	static void clearExtensions( 
-		QQmlListProperty< IModelExtension > * property );
+		QQmlListProperty< IModelExtensionOld > * property );
 	static int countExtensions( 
-		QQmlListProperty< IModelExtension > * property );
+		QQmlListProperty< IModelExtensionOld > * property );
 
 signals:
 	void sourceChanged();
 
 private:
-	void onModelDataChanged( int column, size_t roleId, const Variant & data );
-	void onPreItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data );
-	void onPostItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data );
+	void onModelDataChanged( int column, ItemRole::Id roleId, const Variant & data );
+	void onPreItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
+	void onPostItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
 	void onPreItemsInserted( size_t index, size_t count );
 	void onPostItemsInserted( size_t index, size_t count );
 	void onPreItemsRemoved( size_t index, size_t count );

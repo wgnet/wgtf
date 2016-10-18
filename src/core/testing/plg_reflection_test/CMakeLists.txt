@@ -9,22 +9,17 @@ ADD_DEFINITIONS( -D_CRT_SECURE_NO_WARNINGS )
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-SET( METADATA_SRCS
-	metadata/test_class.mpp
-)
-SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
-
 SET( ALL_SRCS
+	metadata/test_class.mpp
 	plg_reflection_test.cpp
 	test_class.cpp
 	test_class.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
-	${METADATA_SRCS}
 )
 BW_ADD_TOOL_PLUGIN( plg_reflection_test SHARED
 	${BLOB_SRCS}

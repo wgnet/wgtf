@@ -17,15 +17,29 @@ namespace wgt
 {
 class IQtFramework;
 
+/** Data storage for extensions.*/
 class IExtensionData
 {
 public:
-	typedef QMap< size_t, QVariant > ItemData;
-	virtual ItemData & getItemData( const QModelIndex& index ) = 0;
+	virtual bool encodeRole(ItemRole::Id roleId, int& o_Role) const = 0;
+	virtual bool decodeRole(int role, ItemRole::Id& o_RoleId) const = 0;
+
+	virtual bool encodeRoleExt(ItemRole::Id roleId, int& o_Role) const = 0;
+	virtual bool decodeRoleExt(int role, ItemRole::Id& o_RoleId) const = 0;
+
+	virtual QVariant data(const QModelIndex& index, ItemRole::Id roleId) = 0;
+	virtual bool setData(const QModelIndex& index, const QVariant& value, ItemRole::Id roleId) = 0;
+
+	virtual QVariant dataExt(const QModelIndex& index, ItemRole::Id roleId) = 0;
+	virtual bool setDataExt(const QModelIndex& index, const QVariant& value, ItemRole::Id roleId) = 0;
+
+	virtual void dataExtChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<ItemRole::Id> roleIds) = 0;
 };
 
+/** An extension to a model or view.
+An extension provides additional functionality to a model, by adding additional roles.
+Any roles defined in this extension are exposed as additional properties in QML.*/
 class IModelExtension : public QObject
-					  , public RoleProvider
 {
 	Q_OBJECT
 
@@ -35,53 +49,122 @@ public:
 	IModelExtension();
 	virtual ~IModelExtension();
 
-	void init( IExtensionData & extensionData_ );
+	/** Initialise the extension with initial data.
+	@param extensionData_ Initial data.*/
+	void init(IExtensionData& extensionData_);
+	/** Returns all roles used by the extension.
+	@return A vector of role names.*/
+	const std::vector<std::string>& roles() const;
 
-	virtual QHash< int, QByteArray > roleNames() const = 0;
+	/** Get role data at an index position.
+	@param index The position the data applies to.
+	@param role The decoded role identifier.
+	@return The role data.*/
+	virtual QVariant data(const QModelIndex& index, ItemRole::Id roleId) const;
 
-	virtual QVariant data( const QModelIndex &index, int role ) const;
-	virtual bool setData( const QModelIndex &index, const QVariant &value, int role );
+	/** Set role data at an index position.
+	@param index The position the data applies to.
+	@param value The role data.
+	@param role The decoded role identifier.
+	@return True if successful.*/
+	virtual bool setData(const QModelIndex& index, const QVariant& value, ItemRole::Id roleId);
 
-	virtual QVariant headerData( int section, Qt::Orientation orientation, int role ) const { return QVariant::Invalid; }
-	virtual bool setHeaderData( int section, Qt::Orientation orientation, const QVariant &value, int role ) { return false; }
+	/** Get role data for a header row or column.
+	@param section The row or column number.
+	@param orientation Specifies whether section refers to a row or column.
+	@param role The decoded role identifier.
+	@return The role data.*/
+	virtual QVariant headerData(int section, Qt::Orientation orientation, ItemRole::Id roleId) const;
 
-	// DEPRECATED
-	void init( IQtFramework* qtFramework )
-	{
-		qtFramework_ = qtFramework;
-	}
-
-	virtual void saveStates( const char * modelUniqueName ) {}
-	virtual void loadStates( const char * modelUniqueName ) {}
-	//
-
-protected:
-	QVariant dataExt( const QModelIndex &index, size_t roleId ) const;
-	bool setDataExt( const QModelIndex &index, const QVariant &value, size_t roleId );
+	/** Set role data for a header row or column.
+	@param section The row or column number.
+	@param orientation Specifies whether section refers to a row or column.
+	@param value The role data.
+	@param role The decoded role identifier.
+	@return True if successful.*/
+	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, ItemRole::Id roleId);
 
 public slots:
-	virtual void onDataAboutToBeChanged( 
-		const QModelIndex &index, int role, const QVariant &value ) {}
-	virtual void onDataChanged( 
-		const QModelIndex &index, int role, const QVariant &value ) {}
+	virtual void onDataChanged(
+	const QModelIndex& topLeft,
+	const QModelIndex& bottomRight,
+	const QVector<int>& roles)
+	{
+	}
 	virtual void onLayoutAboutToBeChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint ) {}
+	const QList<QPersistentModelIndex>& parents,
+	QAbstractItemModel::LayoutChangeHint hint)
+	{
+	}
 	virtual void onLayoutChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint ) {}
-	virtual void onRowsAboutToBeInserted( 
-		const QModelIndex& parent, int first, int last ) {}
+	const QList<QPersistentModelIndex>& parents,
+	QAbstractItemModel::LayoutChangeHint hint)
+	{
+	}
+	virtual void onRowsAboutToBeInserted(
+	const QModelIndex& parent, int first, int last)
+	{
+	}
 	virtual void onRowsInserted(
-		const QModelIndex & parent, int first, int last ) {}
+	const QModelIndex& parent, int first, int last)
+	{
+	}
 	virtual void onRowsAboutToBeRemoved(
-		const QModelIndex& parent, int first, int last ) {}
-	virtual void onRowsRemoved( 
-		const QModelIndex & parent, int first, int last ) {}
+	const QModelIndex& parent, int first, int last)
+	{
+	}
+	virtual void onRowsRemoved(
+	const QModelIndex& parent, int first, int last)
+	{
+	}
+	virtual void onRowsAboutToBeMoved(const QModelIndex& sourceParent,
+	                                  int sourceFirst,
+	                                  int sourceLast,
+	                                  const QModelIndex& destinationParent,
+	                                  int destinationRow)
+	{
+	}
+	virtual void onRowsMoved(const QModelIndex& sourceParent,
+	                         int sourceFirst,
+	                         int sourceLast,
+	                         const QModelIndex& destinationParent,
+	                         int destinationRow)
+	{
+	}
+	virtual void onColumnsAboutToBeInserted(
+	const QModelIndex& parent, int first, int last)
+	{
+	}
+	virtual void onColumnsInserted(
+	const QModelIndex& parent, int first, int last)
+	{
+	}
+	virtual void onColumnsAboutToBeRemoved(
+	const QModelIndex& parent, int first, int last)
+	{
+	}
+	virtual void onColumnsRemoved(
+	const QModelIndex& parent, int first, int last)
+	{
+	}
+	virtual void onColumnsAboutToBeMoved(const QModelIndex& sourceParent,
+	                                     int sourceFirst,
+	                                     int sourceLast,
+	                                     const QModelIndex& destinationParent,
+	                                     int destinationRow)
+	{
+	}
+	virtual void onColumnsMoved(const QModelIndex& sourceParent,
+	                            int sourceFirst,
+	                            int sourceLast,
+	                            const QModelIndex& destinationParent,
+	                            int destinationColumn)
+	{
+	}
 
 protected:
-	IQtFramework * qtFramework_;
-	IExtensionData * extensionData_;
+	IExtensionData* extensionData_;
+	std::vector<std::string> roles_;
 };
 } // end namespace wgt
 #endif // I_MODEL_EXTENSION_HPP

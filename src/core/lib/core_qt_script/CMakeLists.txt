@@ -18,7 +18,8 @@ SET( ALL_SRCS
 	collection_qt_type_converter.cpp
 	collection_qt_type_converter.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}

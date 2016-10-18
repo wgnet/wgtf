@@ -58,9 +58,9 @@ DefinedInstance::DefinedInstance(
 		fullPath_ = pParentInstance->fullPath();
 		if (!fullPath_.empty() && !childPath.empty())
 		{
-			if (childPath[0] != INDEX_OPEN)
+			if (childPath[0] != IClassDefinition::INDEX_OPEN)
 			{
-				fullPath_ += DOT_OPERATOR;
+				fullPath_ += IClassDefinition::DOT_OPERATOR;
 			}
 		}
 	}
@@ -199,5 +199,76 @@ ObjectHandle DefinedInstance::getDerivedType()
 }
 
 
+TextStream& operator<<( TextStream& stream, const DefinedInstance& value )
+{
+	if(auto definition = value.getDefinition())
+	{
+		stream << definition->getName();
+	}
+	else
+	{
+		stream << "<empty DefinedInstance>";
+	}
+
+	return stream;
+}
+
+
 } // namespace ReflectedPython
+
+
+MetaTypeImpl<ReflectedPython::DefinedInstance>::MetaTypeImpl():
+	base("DefinedInstance", data< value_type >())
+{
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::init(void* value) const
+{
+	new (value) value_type();
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::copy(void* dest, const void* src) const
+{
+	// should never be called
+	assert(false);
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::move(void* dest, void* src) const
+{
+	// should never be called
+	assert(false);
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::destroy(void* value) const
+{
+	cast(value).~value_type();
+}
+
+bool MetaTypeImpl<ReflectedPython::DefinedInstance>::equal(const void* lhs, const void* rhs) const
+{
+	// different instances are always different
+	return lhs == rhs;
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamOut(TextStream& stream, const void* value) const
+{
+	stream << cast(value);
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamIn(TextStream& stream, void* value) const
+{
+	stream.setState( std::ios_base::failbit );
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamOut(BinaryStream& stream, const void* value) const
+{
+	stream.setState( std::ios_base::failbit );
+}
+
+void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamIn(BinaryStream& stream, void* value) const
+{
+	stream.setState( std::ios_base::failbit );
+}
+
+
 } // end namespace wgt

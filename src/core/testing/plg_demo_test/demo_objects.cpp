@@ -9,6 +9,7 @@
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
 #include "core_string_utils/string_utils.hpp"
+#include "core_string_utils/file_path.hpp"
 #include "testing/reflection_objects_test/test_objects.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_serialization/i_file_system.hpp"
@@ -36,6 +37,24 @@ namespace
 		Vector3,
 		Vector4,
 	};
+
+    template< typename T >
+    T getObjectProperty( int index, const GenericListT<GenericObjectPtr>& objects, const char* name, T&& defaultValue )
+    {
+        assert( index >= 0 && static_cast<size_t>( index ) < objects.size() );
+        auto genericObject = objects[index];
+    
+        const auto accessor = genericObject->findProperty( name );
+        if ( accessor.isValid() )
+        {
+            T value;
+            bool isOk = genericObject->get( name, value );
+            assert( isOk );
+            return value;
+        }
+
+        return std::forward<T>( defaultValue );
+    }
 }
 
 class DemoObjectsEnvCom : public IEnvComponent
@@ -107,6 +126,10 @@ ObjectHandle DemoObjects::createObject( Vector3 pos )
 	GenericObjectPtr genericObject = GenericObject::create( *pDefManager_, id );
 	genericObject->set( "name", std::string("object_") + id.toString() );
 	genericObject->set( "position", pos );
+	genericObject->set("rotation", Vector3(0.0f, 0.0f, 0.0f));
+	genericObject->set("scale", Vector3(1.0f, 1.0f, 1.0f));
+	genericObject->set("visible", true);
+	genericObject->set( "map1", std::string("logo.png"));
 	objects_->objList_.push_back( genericObject );
 	return genericObject;
 }
@@ -154,21 +177,11 @@ void DemoObjects::onSelectEnv(IEnvState* state)
 	}
 }
 
-void DemoObjects::onSaveEnvState( IEnvState* state )
+const ITreeModel* DemoObjects::getTreeModel() const
 {
-
-}
-
-void DemoObjects::onLoadEnvState( IEnvState* state )
-{
-
-}
-
-ObjectHandle DemoObjects::getTreeModel() const
-{
-	auto model = std::unique_ptr< ITreeModel >(
-		new ReflectedTreeModel( helper_.value(), *pDefManager_, controller_ ) );
-	return std::move( model );
+	treeModel_.reset(
+	new ReflectedTreeModel(helper_.value(), *pDefManager_, controller_));
+	return treeModel_.get();
 }
 
 const IListModel * DemoObjects::getListModel() const
@@ -178,11 +191,14 @@ const IListModel * DemoObjects::getListModel() const
 
 void DemoObjects::updateRootObject( int index )
 {
-	objects_->index_ = index;
-	helper_.value( (objects_->index_ >= 0) ? objects_->objList_[index] : nullSelection_);
+	if (objects_)
+	{
+		objects_->index_ = index;
+		helper_.value((objects_->index_ >= 0) ? objects_->objList_[index] : nullSelection_);
+	}
 }
 
-int DemoObjects::rootObjectIndex()
+const int DemoObjects::rootObjectIndex() const
 {
 	if (objects_ == nullptr)
 	{
@@ -194,11 +210,13 @@ int DemoObjects::rootObjectIndex()
 // TODO:remove tiny xml dependency and use our own serialization stuff to handle this
 bool DemoObjects::loadDemoData( const char* name, DemoObjectsEnvCom* objects )
 {
-	std::string file = name;
+	std::string file = PROJECT_RESOURCE_FOLDER;
+	file += name;
 	file += ".xml";
 
 	if (!fileSystem_->exists( file.c_str() ))
 	{
+		NGT_ERROR_MSG("Could not find file %s", file.c_str());
 		return false;
 	}
 
@@ -336,36 +354,49 @@ void DemoObjects::populateDemoObject( GenericObjectPtr & genericObject, const ti
 
 }
 
-size_t DemoObjects::getObjectCount()
-{
-	return objects_ ? objects_->objList_.size() : 0;
-}
 
-Vector3 DemoObjects::getObjectPosition( int index )
+std::string DemoObjects::getObjectTexture( int index )
 {
 	assert( objects_ );
-	assert( index >= 0 && static_cast<size_t>(index) < objects_->objList_.size() );
-	auto genericObject = objects_->objList_[index];
-	Vector3 vec3;
-	bool isOk = genericObject->get( "position", vec3 );
-	assert( isOk );
-	return vec3;
+	if (index > -1 && index < (int)objects_->objList_.size())
+	{
+		return getObjectProperty<std::string>( index, objects_->objList_, "map1", "" );
+	}
+	return "";
 }
 
-
-void DemoObjects::automationUpdate()
+void DemoObjects::setTexture( int index, std::string currFilePath, std::string newFilePath )
 {
-	auto pAutomation = Context::queryInterface< AutomationInterface >();
-	if (pAutomation)
+	if (index > -1 && index < (int)objects_->objList_.size())
 	{
-		if (pAutomation->timedOut())
-		{
-			auto pApplication = Context::queryInterface< IApplication >();
-			if (pApplication)
-			{
-				pApplication->quitApplication();
-			}
-		}
+		objects_->objList_[index]->set( "map1", newFilePath );
 	}
 }
+
+void DemoObjects::undoSetTexture( const ObjectHandle& params, Variant result )
+{
+	ReflectedMethodParameters *args = params.getBase<ReflectedMethodParameters>();
+	int index = (*args)[0].cast<int>();
+	std::string prevFilePath = (*args)[1].cast<std::string>();
+
+	if (index > -1 && index < (int)objects_->objList_.size())
+	{
+		objects_->objList_[index]->set( "map1", prevFilePath );
+	}
+}
+
+void DemoObjects::redoSetTexture( const ObjectHandle& params, Variant result )
+{
+	ReflectedMethodParameters *args = params.getBase<ReflectedMethodParameters>();
+
+	int index = (*args)[0].cast<int>();
+	std::string newFilePath = (*args)[2].cast<std::string>();
+
+	if (index > -1 && index < (int)objects_->objList_.size())
+	{
+		objects_->objList_[index]->set( "map1", newFilePath );
+	}
+}
+
+
 } // end namespace wgt

@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+ \ingroup wgcontrols
  \brief WGHighlightFrame is a WG styled recctangle that can be used to highlight an object
 
 Example:
@@ -43,6 +44,8 @@ GridView {
 
 Rectangle {
     objectName: "WGHighlightFrame"
+    WGComponent { type: "WGHighlightFrame" }
+    
     color: palette.highlightShade
     border.width: defaultSpacing.standardBorderSize
     border.color: palette.highlightColor

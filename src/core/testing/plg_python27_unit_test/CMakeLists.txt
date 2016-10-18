@@ -9,12 +9,14 @@ IF( NOT PYTHON_FOUND )
 	RETURN()
 ENDIF()
 
+FIND_PACKAGE( QT5 )
 
 SET( PYTHON_SRCS
-	scripts/python27_test/__init__.py
+	resources/Scripts/python27_test/__init__.py
 )
 SOURCE_GROUP( "Python" FILES ${PYTHON_SRCS} )
-
+BW_QT_ADD_QRC( Scripts resources/Scripts )
+BW_GLOB_RESOURCE_FILES()
 
 SET( ALL_SRCS
 	pch.hpp
@@ -25,12 +27,14 @@ SET( ALL_SRCS
 	reflection_test_module.cpp
 	reflection_test_module.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 	${BLOB_SRCS}
+	${COMPILED_RESOURCES}
 	${PYTHON_SRCS}
+	${RESOURCE_FILES}
 )
  
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
@@ -39,9 +43,9 @@ BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_unit_test
 	core_python27
 	wg_pyscript
+	Qt5::Core
 )
 WG_TARGET_LINK_PYTHON()
-WG_DEPLOY_PYTHON( ${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/scripts scripts/${PROJECT_NAME} )
 
 BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Plugins" )

@@ -7,15 +7,20 @@
 #include <shellapi.h>
 #endif
 
+#ifdef __APPLE__
+#include <sys/syslimits.h>
+#define MAX_PATH PATH_MAX
+#define _MAX_PATH PATH_MAX
+#endif
+
 namespace wgt
 {
-void AddDllExtension(wchar_t* file);
+void AddDllExtension( wchar_t* file );
+bool GetUserDirectoryPath( char (&path) [MAX_PATH] );
+bool CreateDirectoryPath( const char* path );
 } // end namespace wgt
 
 #ifdef __APPLE__
-
-#define MAX_PATH PATH_MAX
-#define _MAX_PATH PATH_MAX
 
 bool PathIsRelative(const char* path);
 bool PathIsRelative(const wchar_t* path);

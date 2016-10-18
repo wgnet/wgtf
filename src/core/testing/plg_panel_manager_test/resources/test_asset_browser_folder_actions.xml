@@ -1,0 +1,4 @@
+<Actions>
+	<CopyFolderPath text="Copy Path" shortcut="Ctrl+C" path="WGAssetBrowser20FolderMenu" icon=":/WGControls/icons/copy_small_16x16.png"/>
+	<CopyAssetPath text="Copy Path" shortcut="Ctrl+C" path="WGAssetBrowser20AssetMenu" icon=":/WGControls/icons/copy_small_16x16.png"/>
+</Actions>

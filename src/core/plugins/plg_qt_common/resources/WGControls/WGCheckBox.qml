@@ -1,8 +1,12 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+
 import WGControls 1.0
+import WGControls.Styles 1.0
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A WG styled control that allows the user to make a binary choice.
 
 Example:
@@ -17,6 +21,7 @@ WGCheckBox {
 WGCheckBase {
     id: checkBox
     objectName: "WGCheckBox"
+    WGComponent { type: "WGCheckBox" }
 
     /*! This property is used to define the buttons label when used in a WGFormLayout
         The default value is an empty string
@@ -28,7 +33,7 @@ WGCheckBase {
     */
     property bool checked: false
 
-    checkedState: Qt.Unchecked
+    checkedState: multipleValues ? Qt.PartiallyChecked : checked ? Qt.Checked : Qt.Unchecked
 
     activeFocusOnTab: enabled
 
@@ -52,6 +57,7 @@ WGCheckBase {
         {
             checkedState = Qt.Checked
         }
+        forceActiveFocus()
     }
 
     // support copy&paste

@@ -16,6 +16,7 @@ SET( BW_COMPILER_FLAGS
 	/Gy		# Enable function level linking
 
 	/w34302 # Enable warning 'conversion': truncation from 'type1' to 'type2'
+	/wd4251 # Disable warning 'type1' needs to have dll-interface to be used by clients of class 'type2'
 	/d2Zi+	# Put local variables and inline functions into the PDB
 	)
 
@@ -48,9 +49,6 @@ SET( BW_COMPILER_FLAGS_DEBUG
 
 # Flags used by C and C++ compilers for Hybrid Consumer_Release builds
 SET( BW_COMPILER_FLAGS_OPTIMIZED
-	# Preprocessor definitions
-	/DNDEBUG
-
 	# Optimization
 	/Ox		# Full optimization
 	/Ob2	# Any suitable inline function expansion
@@ -178,10 +176,17 @@ SET( BW_STATIC_LINKER_FLAGS_CONSUMER_RELEASE "" )
 ### MSVC Resource Compiler Flags ###
 
 # Flags for the resource compiler
-SET( BW_RC_FLAGS
-	/nologo		# Suppress startup banner
+	# comments from WoT:
+	# cmake 2.8.12 happily allowed the nologo specificaion, but cmake 3.3.2 complains with
+    # "RC : fatal error RC1106: invalid option: -ologo" errors.
+    # The issue is due to /nologo being added twice to the command line for 'RC'.
+    # I'm not sure which versions will work or not, but let's just distinguish between major
+    # versions 2 and 3 in the knowledge that WoT has gone from versions 2.8.12.2 to 3.3.2.
+IF (CMAKE_MAJOR_VERSION LESS 3)
+	SET( BW_RC_FLAGS
+		/nologo		# Suppress startup banner
 	)
-
+ENDIF()
 
 IF( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
 	# Force compiling against XP with Ninja

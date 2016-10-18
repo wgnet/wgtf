@@ -9,6 +9,7 @@
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "wg_types/binary_block.hpp"
+#include "core_reflection/reflected_method.hpp"
 
 namespace wgt
 {
@@ -61,9 +62,7 @@ public:
 		bool ok = obj.getId( id );
 		if (!ok)
 		{
-			NGT_ERROR_MSG( "Trying to create undo/redo helper for unmanaged object\n" );
-			// evgenys: we have to split notifications for managed and unmanaged objects
-			return;
+			return; // Unmanaged objects do not support undo/redo
 		}
 		const char * propertyPath = accessor.getFullPath();
 		const TypeId type = accessor.getType();
@@ -77,7 +76,22 @@ public:
 		helper->objectId_ = id;
 		helper->path_ = propertyPath;
 		helper->typeName_ = type.getName();
-		helper->preValue_ = std::move( prevalue );
+		if (prevalue.isPointer())
+		{
+			// handle property value return by reference data, we need a copy of the value
+			ResizingMemoryStream stream;
+			XMLSerializer preValueSerializer(stream, *const_cast<IDefinitionManager*>(accessor.getDefinitionManager()));
+			preValueSerializer.serialize(prevalue);
+			stream.seek(0);
+			Variant v;
+			preValueSerializer.deserialize(v);
+			helper->preValue_ = std::move(v);
+		}
+		else
+		{
+			helper->preValue_ = std::move(prevalue);
+		}
+
 		undoRedoHelperList_.emplace_back( helper );
 	}
 
@@ -91,22 +105,44 @@ public:
 		bool ok = obj.getId( id );
 		if (!ok)
 		{
-			NGT_ERROR_MSG( "Trying to create undo/redo helper for unmanaged object\n" );
-			// evgenys: we have to split notifications for managed and unmanaged objects
-			return;
+			return; // Unmanaged objects do not support undo/redo
 		}
 		const char * propertyPath = accessor.getFullPath();
 		Variant postValue = accessor.getValue();
 		RPURU::ReflectedPropertyUndoRedoHelper* pHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>(
 			this->findUndoRedoHelper( id, propertyPath ) );
 		assert( pHelper != nullptr );
-		pHelper->postValue_ = std::move( postValue );
+		if (postValue.isPointer())
+		{
+			// handle property value return by reference data, we need a copy of the value
+			ResizingMemoryStream stream;
+			XMLSerializer preValueSerializer(stream, *const_cast<IDefinitionManager*>(accessor.getDefinitionManager()));
+			preValueSerializer.serialize(postValue);
+			stream.seek(0);
+			Variant v;
+			preValueSerializer.deserialize(v);
+			pHelper->postValue_ = std::move(v);
+		}
+		else
+		{
+			pHelper->postValue_ = std::move(postValue);
+		}
 	}
 
 
 	void preInvoke(
 		const PropertyAccessor & accessor, const ReflectedMethodParameters& parameters, bool undo ) override
 	{
+		auto method = dynamic_cast<ReflectedMethod*>(accessor.getProperty().get());
+		if (method != nullptr)
+		{
+			//don't record readonly method
+			if (method->getUndoMethod() == nullptr)
+			{
+				return;
+			}
+		}
+
 		const char* path = accessor.getFullPath();
 		const auto& object = accessor.getRootObject();
 		assert( object != nullptr );
@@ -134,6 +170,15 @@ public:
 
 	void postInvoke( const PropertyAccessor & accessor, Variant result, bool undo ) override
 	{
+		auto method = dynamic_cast<ReflectedMethod*>(accessor.getProperty().get());
+		if (method != nullptr)
+		{
+			//don't record readonly method
+			if (method->getUndoMethod() == nullptr)
+			{
+				return;
+			}
+		}
 		const auto& object = accessor.getRootObject();
 		assert( object != nullptr );
 
@@ -313,14 +358,10 @@ ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 		assert(handle.get() != nullptr);
 		auto& genericObject = (*handle);
 
-		// command with no property change
-		if (propertyCache.empty())
-		{
-			genericObject.set("Name", "Unknown");
-			genericObject.set("Type", "Unknown");
-		}
 		// Single command
-		else if (propertyCache.size() == 1)
+		// or batch command of size 1
+		// Note that at this point, it can't detect the difference
+		if (propertyCache.size() == 1)
 		{
 			auto& helper = propertyCache.at(0);
 			// TODO: Refactor this and the section below as they do the same thing.
@@ -365,6 +406,11 @@ ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 				genericObject.set("PostValue", propertyHelper->postValue_);
 			}
 		}
+		// Batch command:
+		// - empty batch command
+		// - or batch command that has child commands,
+		//	but they did not change reflected properties and so were not serialized,
+		//  i.e. the batch's child commands were custom commands.
 		else
 		{
 			genericObject.set("Name", "Batch");
@@ -442,23 +488,28 @@ ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 	return result;
 }
 
-std::shared_ptr<BinaryBlock> ReflectionUndoRedoData::getUndoData() const
+BinaryBlock ReflectionUndoRedoData::getUndoData() const
 {
-    return std::make_shared<BinaryBlock>( undoData_.buffer().c_str(), undoData_.buffer().length(), true );
+	return BinaryBlock(undoData_.buffer().c_str(), undoData_.buffer().length(), true);
 }
 
-std::shared_ptr<BinaryBlock> ReflectionUndoRedoData::getRedoData() const
+BinaryBlock ReflectionUndoRedoData::getRedoData() const
 {
-    return std::make_shared<BinaryBlock>( redoData_.buffer().c_str(), redoData_.buffer().length(), true );
+	return BinaryBlock(redoData_.buffer().c_str(), redoData_.buffer().length(), true);
 }
 
-void ReflectionUndoRedoData::setUndoData( const std::shared_ptr<BinaryBlock> & undoData )
+void ReflectionUndoRedoData::setUndoData(const BinaryBlock& undoData)
 {
-     undoData_.setBuffer( std::string( undoData->cdata(), undoData->length() ) );
+	undoData_.setBuffer(std::string(undoData.cdata(), undoData.length()));
 }
 
-void ReflectionUndoRedoData::setRedoData( const std::shared_ptr<BinaryBlock> & redoData )
+void ReflectionUndoRedoData::setRedoData(const BinaryBlock& redoData)
 {
-    redoData_.setBuffer( std::string( redoData->cdata(), redoData->length() ) );
+	redoData_.setBuffer(std::string(redoData.cdata(), redoData.length()));
+}
+
+const CommandInstance& ReflectionUndoRedoData::getCommandInstance() const
+{
+	return commandInstance_;
 }
 } // end namespace wgt

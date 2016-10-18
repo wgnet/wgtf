@@ -1,5 +1,4 @@
 #include "qt_context_menu.hpp"
-
 #include "core_ui_framework/i_action.hpp"
 #include "core_logging/logging.hpp"
 #include "core_string_utils/string_utils.hpp"
@@ -33,9 +32,19 @@ void QtContextMenu::addAction( IAction & action, const char* path )
 	
 	QtMenu::addMenuAction( qMenu_, *qAction, relativePath( path ) );
 
+	onPaletteChanged();
+
+	if (qView_ != nullptr)
+	{
+		qView_->addAction(qAction);
+	}
+}
+
+void QtContextMenu::onPaletteChanged()
+{
 	QColor highlightShade = qMenu_.palette().color(QPalette::Highlight);
 	QColor textShade = qMenu_.palette().color(QPalette::Disabled, QPalette::Text);
-	
+
 	QString menuStyleSheet(
 		"QMenu { background-color: palette(window); margin: 2px;}"
 		"QMenu::item { padding: 2px 25px 2px 20px; border: 1px solid transparent;}"
@@ -48,11 +57,6 @@ void QtContextMenu::addAction( IAction & action, const char* path )
 	menuStyleSheet = menuStyleSheet.arg(textShade.red()).arg(textShade.green()).arg(textShade.blue()).arg(textShade.alpha());
 
 	qMenu_.setStyleSheet(menuStyleSheet);
-
-	if (qView_ != nullptr)
-	{
-		qView_->addAction(qAction);
-	}
 }
 
 void QtContextMenu::removeAction( IAction & action )

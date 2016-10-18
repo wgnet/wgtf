@@ -34,21 +34,29 @@ public:
 	virtual IEnvComponentPtr remove( const ECGUID& guid ) = 0;
 	virtual IEnvComponent* query( const ECGUID& guid ) const = 0;
 	virtual const char* description() const = 0;
+	virtual int id() const = 0;
 };
 
 class IEnvEventListener
 {
 public:
-	virtual void onAddEnv( IEnvState* state ) = 0;
-	virtual void onRemoveEnv( IEnvState* state ) = 0;
-	virtual void onSelectEnv( IEnvState* state ) = 0;
-    virtual void onSaveEnvState( IEnvState* state ) = 0;
-    virtual void onLoadEnvState( IEnvState* state ) = 0;
+	virtual ~IEnvEventListener(){};
+	virtual void onAddEnv(IEnvState* state){};
+	virtual void onRemoveEnv(IEnvState* state){};
+	virtual void onSelectEnv(IEnvState* state){};
+	virtual void onSaveEnvState(IEnvState* state){};
+	virtual void onLoadEnvState(IEnvState* state){};
+	virtual void onDeselectEnv(){};
 };
 
 class IEnvManager
 {
 public:
+	enum
+	{
+		INVALID_ID = -1
+	};
+
 	virtual ~IEnvManager() { }
 	virtual void registerListener( IEnvEventListener* listener ) = 0;
 	virtual void deregisterListener( IEnvEventListener* listener ) = 0;
@@ -56,8 +64,9 @@ public:
 	virtual int addEnv( const char* description ) = 0;
 	virtual void removeEnv( int id ) = 0;
 	virtual void selectEnv( int id ) = 0;
-    virtual void saveEnvState( int id ) = 0;
-    virtual void loadEnvState( int id ) = 0;
+	virtual void deSelectEnv(int id) = 0;
+	virtual void saveEnvState(int id) = 0;
+	virtual void loadEnvState( int id ) = 0;
 };
 
 #define DEFINE_EC_GUID public: static const ECGUID GUID; virtual const ECGUID& getGUID() const override { return GUID; }

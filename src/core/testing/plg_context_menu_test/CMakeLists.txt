@@ -14,7 +14,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 SET( ALL_SRCS
 	plg_context_menu_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(plg_context_menu_test resources/plg_context_menu_test)
 BW_GLOB_RESOURCE_FILES()

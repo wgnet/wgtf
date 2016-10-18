@@ -16,12 +16,12 @@ PluginContextManager::~PluginContextManager()
 {
 	for (auto & it : contexts_)
 	{
-		delete it.second;
+		delete it.second.first;
 	}
 	globalContext_->deregisterListener(*this);
 }
 
-IComponentContext* PluginContextManager::createContext(const PluginId & id)
+IComponentContext* PluginContextManager::createContext(const PluginId& id, const std::wstring& path)
 {
 	// Create context
 	auto pluginContext = new DefaultComponentContext(globalContext_.get());
@@ -29,7 +29,7 @@ IComponentContext* PluginContextManager::createContext(const PluginId & id)
 	globalContext_->registerListener( *pluginContext );
 
 	// Insert in context list
-	contexts_.insert(std::make_pair(id, pluginContext));
+	contexts_.insert(std::make_pair(id, std::make_pair(pluginContext, path)));
 
 	// Create ContextCreators and register them
 	for (auto & it : contextCreators_)
@@ -54,7 +54,7 @@ IComponentContext * PluginContextManager::getContext(const PluginId & id) const
 	auto findIt = contexts_.find(id);
 	if (findIt != contexts_.end())
 	{
-		return findIt->second;
+		return findIt->second.first;
 	}
 	return NULL;
 }
@@ -70,8 +70,8 @@ void PluginContextManager::destroyContext(const PluginId & id)
 	auto findIt = contexts_.find(id);
 	if (findIt != contexts_.end())
 	{
-		globalContext_->deregisterListener( *findIt->second );
-		delete findIt->second;
+		globalContext_->deregisterListener(*findIt->second.first);
+		delete findIt->second.first;
 		contexts_.erase(findIt);
 	}
 }
@@ -87,11 +87,10 @@ void PluginContextManager::onContextCreatorRegistered(IComponentContextCreator *
 	// Register interface for ContextCreator
 	for (auto context : contexts_)
 	{
-		IInterface * child =
-			context.second->registerInterfaceImpl(
-			contextCreator->getType(),
-			contextCreator->createContext(context.first.c_str()),
-			IComponentContext::Reg_Local);
+		IInterface* child = context.second.first->registerInterfaceImpl(
+		contextCreator->getType(),
+		contextCreator->createContext(context.second.second.c_str()),
+		IComponentContext::Reg_Local);
 		childContexts_[contextCreator].push_back(child);
 	}
 
@@ -120,7 +119,7 @@ void PluginContextManager::onContextCreatorDeregistered(IComponentContextCreator
 		{
 			for (auto & contextIt : contexts_)
 			{
-				if (contextIt.second->deregisterInterface(child))
+				if (contextIt.second.first->deregisterInterface(child))
 				{
 					break;
 				}

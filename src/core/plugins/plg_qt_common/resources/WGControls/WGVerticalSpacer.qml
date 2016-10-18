@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+ \ingroup wgcontrols
  \brief An invisible box that can have height set by number of lineSpaces_
 
 Example:
@@ -14,6 +15,7 @@ WGVerticalSpacer{
 Rectangle {
     id: spacerFrame
     objectName: "WGVerticalSpacer"
+    WGComponent { type: "WGVerticalSpacer" }
 
     anchors {left: parent.left; right: parent.right}
     color: "transparent"

@@ -224,7 +224,7 @@ bool ContextDefinitionManager::serializeDefinitions( ISerializer & serializer )
 		{
 			assert( baseProp );
 			serializer.serialize( baseProp->getName() );
-			auto metaType = Variant::findType( baseProp->getType() );
+			auto metaType = MetaType::find( baseProp->getType() );
 			if (metaType != nullptr)
 			{
 				serializer.serialize( metaType->name() );
@@ -273,7 +273,7 @@ bool ContextDefinitionManager::deserializeDefinitions( ISerializer & serializer 
 			serializer.deserialize( propName );
 			serializer.deserialize( typeName );
 			IBasePropertyPtr property = nullptr;
-			auto metaType = Variant::findType( typeName.c_str() );
+			auto metaType = MetaType::find( typeName.c_str() );
 			if (modifier)
 			{
 				auto property = modifier->addProperty( propName.c_str(), metaType != nullptr ? metaType->typeId().getName() : typeName.c_str(), nullptr );

@@ -7,10 +7,10 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( IAssetBrowserEventModel, MetaNone() )
-	EXPOSE_METHOD( "assetSelectionChanged", assetSelectionChanged )
-	EXPOSE_METHOD( "useSelectedAsset", useSelectedAsset )
-	EXPOSE_METHOD( "breadcrumbSelected", breadcrumbSelected )
-	EXPOSE_METHOD( "folderSelectionChanged", folderSelectionChanged )
+BEGIN_EXPOSE(IAssetBrowserEventModel, MetaNone())
+EXPOSE_METHOD("assetSelectionChanged", assetSelectionChanged)
+EXPOSE_METHOD("useSelectedAsset", useSelectedAsset)
+EXPOSE_METHOD("breadcrumbSelected", breadcrumbSelected)
+EXPOSE_METHOD("folderSelectionChanged", folderSelectionChanged)
 END_EXPOSE()
 } // end namespace wgt

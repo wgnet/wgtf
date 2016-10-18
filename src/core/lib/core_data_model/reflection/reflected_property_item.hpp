@@ -54,8 +54,8 @@ public:
 	// IItem
 	const char * getDisplayText( int column ) const override;
 	ThumbnailData getThumbnail( int column ) const override;
-	Variant getData( int column, size_t roleId ) const override;
-	bool setData( int column, size_t roleId, const Variant & data ) override;
+	Variant getData( int column, ItemRole::Id roleId ) const override;
+	bool setData( int column, ItemRole::Id roleId, const Variant & data ) override;
 
 	// GenericTreeItem
 	GenericTreeItem * getChild( size_t index ) const override;

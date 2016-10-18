@@ -179,8 +179,8 @@ struct FilteredTreeModel::Implementation
 	void remapIndices();
 	void copyIndices( IndexMap& target ) const;
 
-	void preItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data ); 
-	void postItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data );
+	void preItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
+	void postItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
 	void preItemsInserted( const IItem * parent, size_t index, size_t count );
 	void postItemsInserted( const IItem * parent, size_t index, size_t count );
 	void preItemsRemoved( const IItem * parent, size_t index, size_t count );
@@ -837,14 +837,14 @@ void FilteredTreeModel::Implementation::copyIndices( IndexMap& target ) const
 	eventControlMutex_.unlock();
 }
 
-void FilteredTreeModel::Implementation::preItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data )
+void FilteredTreeModel::Implementation::preItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
 {
 	eventControlMutex_.lock();
 	self_.signalPreItemDataChanged( item, column, roleId, data );
 	indexMapMutex_.lock();
 }
 
-void FilteredTreeModel::Implementation::postItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data  )
+void FilteredTreeModel::Implementation::postItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data  )
 {
 	indexMapMutex_.unlock();
 	std::lock_guard<std::mutex> blockEvents( eventControlMutex_, std::adopt_lock );
@@ -1143,7 +1143,7 @@ int FilteredTreeModel::columnCount() const
 	return 1;
 }
 
-Variant FilteredTreeModel::getData( int column, size_t roleId ) const
+Variant FilteredTreeModel::getData( int column, ItemRole::Id roleId ) const
 {
 	if (impl_->model_ == nullptr)
 	{
@@ -1153,7 +1153,7 @@ Variant FilteredTreeModel::getData( int column, size_t roleId ) const
 	return impl_->model_->getData( column, roleId );
 }
 
-bool FilteredTreeModel::setData( int column, size_t roleId, const Variant & data )
+bool FilteredTreeModel::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	if (impl_->model_ == nullptr)
 	{

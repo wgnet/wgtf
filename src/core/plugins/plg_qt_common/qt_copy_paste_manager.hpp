@@ -5,6 +5,7 @@
 #include "core_copy_paste/i_copy_paste_manager.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include <vector>
+#include <QObject>
 
 class QClipboard;
 
@@ -18,7 +19,8 @@ class ICommandManager;
  * Responsible for serializing copy/paste data to the system clipboard.
  */
 class QtCopyPasteManager
-	: public Implements< ICopyPasteManager >
+: public Implements<ICopyPasteManager>,
+  public QObject
 {
 public:
 	QtCopyPasteManager();
@@ -34,11 +36,22 @@ public:
 	bool canCopy() const override;
 	bool canPaste() const override;
 
+	MimeData getClipboardContents() override;
+	void setClipboardContents(MimeData& mimeData) override;
+
+	std::string getText() override;
+	void setText(std::string str) override;
+
+	virtual Connection connectClipboardDataChanged(ClipboardCallback callback) override;
+
 private:
+	void clipboardChangedSignal();
+
 	QClipboard * clipboard_;
 	std::vector< ICopyableObject* > curObjects_;
 	IDefinitionManager * definitionManager_;
 	ICommandManager * commandManager_;
+	Signal<ClipboardSignature> onClipboardDataChanged;
 };
 } // end namespace wgt
 #endif // QT_COPY_PASTE_MANAGER_HPP

@@ -16,7 +16,7 @@ public:
 	}
 
 	SimpleComponentProvider( const char * component,
-		const size_t roles[], size_t count )
+		const ItemRole::Id roles[], size_t count )
 		: component_( component )
 	{
 		for (size_t i = 0; i < count; ++i)
@@ -26,7 +26,7 @@ public:
 	}
 
 	const char * componentId( const TypeId & typeId,
-		std::function< bool ( size_t ) > & predicate ) const override
+		std::function< bool ( const ItemRole::Id& ) > & predicate ) const override
 	{
 		for ( auto role : roles_ )
 		{
@@ -41,7 +41,7 @@ public:
 
 private:
 	std::string component_;
-	std::vector< size_t > roles_;
+	std::vector< ItemRole::Id > roles_;
 };
 } // end namespace wgt
 #endif

@@ -9,7 +9,16 @@
 
 namespace wgt
 {
-//==============================================================================
+/** 
+* A plugin which queries the ICopyPasteManager interface to 
+* create an Edit option in the menu bar with copy and paste options.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @image html plg_copy_paste.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class CopyPastePlugin
 	: public PluginMain
 {
@@ -118,9 +127,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager(
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		createCopyPasteUI( contextManager );
 	}
 

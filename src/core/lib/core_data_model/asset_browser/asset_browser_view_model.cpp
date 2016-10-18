@@ -31,23 +31,23 @@ static const size_t NO_SELECTION = SIZE_MAX;
 struct AssetBrowserViewModel::AssetBrowserViewModelImplementation
 {
 	AssetBrowserViewModelImplementation(
-		IDefinitionManager& definitionManager,
-		ObjectHandleT<IAssetBrowserModel> data,
-		ObjectHandleT<IAssetBrowserEventModel> events)
-		: definitionManager_( definitionManager )
-		, currentSelectedAssetIndex_( -1 )
-		, currentFolderHistoryIndex_( NO_SELECTION )
-		, selectedTreeItem_(nullptr)
-		, data_( std::move(data) )
-		, events_( std::move(events) )
-		, breadcrumbsModel_( nullptr )
+	IDefinitionManager& definitionManager,
+	ObjectHandleT<IAssetBrowserModel> data,
+	ObjectHandleT<IAssetBrowserEventModel> events)
+	    : definitionManager_(definitionManager)
+	    , currentSelectedAssetIndex_(-1)
+	    , currentFolderHistoryIndex_(NO_SELECTION)
+	    , selectedTreeItem_(nullptr)
+	    , data_(std::move(data))
+	    , events_(std::move(events))
+	    , breadcrumbsModel_(nullptr)
 	{
-		connections_ += folderSelectionHandler_.signalPostSelectionChanged.connect( std::bind(
-		&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderDataChanged, this ) );
-		connections_+= folderContentSelectionHandler_.signalPostSelectionChanged.connect( std::bind(
-			&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderContentDataChanged, this ) );
+		connections_ += folderSelectionHandler_.signalPostSelectionChanged.connect(std::bind(
+		&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderDataChanged, this));
+		connections_ += folderContentSelectionHandler_.signalPostSelectionChanged.connect(std::bind(
+		&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderContentDataChanged, this));
 
-		breadcrumbsModel_ = std::unique_ptr< AssetBrowserBreadcrumbsModel >( new AssetBrowserBreadcrumbsModel( definitionManager ) );
+		breadcrumbsModel_ = std::unique_ptr<AssetBrowserBreadcrumbsModel>(new AssetBrowserBreadcrumbsModel(definitionManager));
 	}
 
 	~AssetBrowserViewModelImplementation()
@@ -56,41 +56,41 @@ struct AssetBrowserViewModel::AssetBrowserViewModelImplementation
 
 	void onPostFolderDataChanged()
 	{
-		std::vector< IItem* > items = folderSelectionHandler_.getSelectedItems();
+		std::vector<IItem*> items = folderSelectionHandler_.getSelectedItems();
 		if (items.empty())
 		{
 			return;
 		}
 
-		assert( items.size() == 1);
+		assert(items.size() == 1);
 
 		selectedTreeItem_ = items[0];
-		data_.get()->populateFolderContents( selectedTreeItem_ );
+		data_.get()->populateFolderContents(selectedTreeItem_);
 
-		breadcrumbsModel_->generateBreadcrumbs( selectedTreeItem_, data_->getFolderTreeModel() );
+		breadcrumbsModel_->generateBreadcrumbs(selectedTreeItem_, data_->getFolderTreeModel());
 	}
 
 	void onPostFolderContentDataChanged()
 	{
-		std::vector< int > indices = folderSelectionHandler_.getSelectedRows();
+		std::vector<int> indices = folderSelectionHandler_.getSelectedRows();
 		if (indices.empty())
 		{
 			return;
 		}
 
-		assert( indices.size() == 1);
+		assert(indices.size() == 1);
 
 		currentSelectedAssetIndex_ = indices[0];
 	}
 
 	IDefinitionManager& definitionManager_;
-	int					currentSelectedAssetIndex_;
-	size_t				currentFolderHistoryIndex_;
-	IItem*				selectedTreeItem_;
+	int currentSelectedAssetIndex_;
+	size_t currentFolderHistoryIndex_;
+	IItem* selectedTreeItem_;
 
-	ObjectHandleT<IAssetBrowserModel>				data_;
-	ObjectHandleT<IAssetBrowserEventModel>			events_;
-	std::unique_ptr<AssetBrowserBreadcrumbsModel>	breadcrumbsModel_;
+	ObjectHandleT<IAssetBrowserModel> data_;
+	ObjectHandleT<IAssetBrowserEventModel> events_;
+	std::unique_ptr<AssetBrowserBreadcrumbsModel> breadcrumbsModel_;
 
 	SelectionHandler folderSelectionHandler_;
 	SelectionHandler folderContentSelectionHandler_;
@@ -99,15 +99,16 @@ struct AssetBrowserViewModel::AssetBrowserViewModelImplementation
 };
 
 AssetBrowserViewModel::AssetBrowserViewModel(
-	IDefinitionManager& definitionManager,
-	ObjectHandleT<IAssetBrowserModel> data,
-	ObjectHandleT<IAssetBrowserEventModel> events ) :
-	impl_( new AssetBrowserViewModelImplementation( definitionManager, std::move(data), 
-			std::move(events) ) )
+IDefinitionManager& definitionManager,
+ObjectHandleT<IAssetBrowserModel> data,
+ObjectHandleT<IAssetBrowserEventModel> events)
+    :
+    impl_(new AssetBrowserViewModelImplementation(definitionManager, std::move(data),
+                                                  std::move(events)))
 {
-	if(impl_->events_.get())
+	if (impl_->events_.get())
 	{
-		impl_->events_->connectFilterChanged( [&]( const Variant& filter ) { updateFolderContentsFilter( filter ); } );
+		impl_->events_->connectFilterChanged([&](const Variant& filter) { updateFolderContentsFilter(filter); });
 	}
 }
 
@@ -121,17 +122,17 @@ ObjectHandle AssetBrowserViewModel::events() const
 	return impl_->events_;
 }
 
-IBreadcrumbsModel * AssetBrowserViewModel::getBreadcrumbsModel() const
+IBreadcrumbsModel* AssetBrowserViewModel::getBreadcrumbsModel() const
 {
 	return impl_->breadcrumbsModel_.get();
 }
 
-const int & AssetBrowserViewModel::currentSelectedAssetIndex() const
+const int& AssetBrowserViewModel::currentSelectedAssetIndex() const
 {
 	return impl_->currentSelectedAssetIndex_;
 }
 
-void AssetBrowserViewModel::currentSelectedAssetIndex( const int & index )
+void AssetBrowserViewModel::currentSelectedAssetIndex(const int& index)
 {
 	impl_->currentSelectedAssetIndex_ = index;
 }
@@ -143,17 +144,17 @@ IAssetObjectItem* AssetBrowserViewModel::getSelectedAssetData() const
 	auto dataModel = impl_->data_.get();
 	if (dataModel != nullptr)
 	{
-		return dataModel->getFolderContentsAtIndex( impl_->currentSelectedAssetIndex_ );
+		return dataModel->getFolderContentsAtIndex(impl_->currentSelectedAssetIndex_);
 	}
 
 	return nullptr;
 }
 
-const char * AssetBrowserViewModel::getSelectedTreeItemName()
+const char* AssetBrowserViewModel::getSelectedTreeItemName()
 {
 	if (impl_->selectedTreeItem_ != nullptr)
 	{
-		return impl_->selectedTreeItem_->getDisplayText( 0 );
+		return impl_->selectedTreeItem_->getDisplayText(0);
 	}
 
 	return nullptr;
@@ -163,22 +164,22 @@ bool AssetBrowserViewModel::refreshData() const
 {
 	if (impl_->selectedTreeItem_ != nullptr)
 	{
-		impl_->data_->populateFolderContents( impl_->selectedTreeItem_ );
+		impl_->data_->populateFolderContents(impl_->selectedTreeItem_);
 	}
 
 	return true;
 }
 
-void AssetBrowserViewModel::updateFolderContentsFilter( const Variant& filter )
+void AssetBrowserViewModel::updateFolderContentsFilter(const Variant& filter)
 {
 	std::string newFilter = "";
 	if (filter.typeIs<std::string>())
 	{
-		bool isOk = filter.tryCast( newFilter );
+		bool isOk = filter.tryCast(newFilter);
 		if (isOk)
 		{
 			// Set the new filter for folder contents
-			impl_->data_->setFolderContentsFilter( newFilter );
+			impl_->data_->setFolderContentsFilter(newFilter);
 
 			// Refresh is required to apply the new filter
 			refreshData();
@@ -186,12 +187,12 @@ void AssetBrowserViewModel::updateFolderContentsFilter( const Variant& filter )
 	}
 }
 
-ISelectionHandler * AssetBrowserViewModel::getFolderSelectionHandler() const
+ISelectionHandler* AssetBrowserViewModel::getFolderSelectionHandler() const
 {
 	return &impl_->folderSelectionHandler_;
 }
 
-ISelectionHandler * AssetBrowserViewModel::getFolderContentSelectionHandler() const
+ISelectionHandler* AssetBrowserViewModel::getFolderContentSelectionHandler() const
 {
 	return &impl_->folderContentSelectionHandler_;
 }

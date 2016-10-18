@@ -36,6 +36,9 @@ protected:
 
 	virtual void registerActions(IUIFramework& uiFramework, Actions& actions) = 0;
 
+	void addAction(std::unique_ptr<IAction> action);
+	void removeAction(IAction& action);
+
 private:
 	// When VS2012 support is retired change this code to use a variadic template
 	template<class TMenuHandler, class TArg>

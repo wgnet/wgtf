@@ -1,42 +1,73 @@
 #ifndef META_TYPE_HPP
 #define META_TYPE_HPP
 
-// define this to 1 once non-exception type cast is implemented
-#define FAST_RUNTIME_POINTER_CAST 0
-
+#include "variant_dll.hpp"
 #include "type_id.hpp"
-#include <typeinfo>
+
+#include "core_common/wg_dlink.hpp"
+
 #include <type_traits>
-#include <unordered_map>
-#include <limits>
-#include <mutex>
-#include <cstdint>
-#include <cstring>
+#include <cstddef>
+
 
 namespace wgt
 {
+
 class TextStream;
 class BinaryStream;
+
+namespace meta_type_details
+{
+
+	template< typename T, bool is_void >
+	struct size_traits_impl
+	{
+		static const size_t size = sizeof( T );
+	};
+
+	template< typename T >
+	struct size_traits_impl< T, true >
+	{
+		static const size_t size = 0;
+	};
+
+	template< typename T >
+	struct size_traits:
+		size_traits_impl< T, std::is_void< T >::value >
+	{
+	};
+
+	template< typename T >
+	struct StaticInstantiator
+	{
+		StaticInstantiator()
+		{
+			instance();
+		}
+
+		T& instance()
+		{
+			static T s_instance;
+			return s_instance;
+		}
+
+		static StaticInstantiator< T > instantiator;
+	};
+
+	template< typename T >
+	StaticInstantiator< T > StaticInstantiator< T >::instantiator;
+
+}
+
+template<typename T>
+class MetaTypeImpl;
 
 /**
 Base metatype class for any type that can be used inside Variant.
 */
-class MetaType
+class VARIANT_DLL MetaType
 {
 public:
-	typedef bool (*ConversionFunc)( const MetaType* toType, void* to, const MetaType* fromType, const void* from );
-
-	template< typename To, typename From >
-	static bool straightConversion( const MetaType* toType, void* to, const MetaType* fromType, const void* from )
-	{
-		To* t = reinterpret_cast< To* >( to );
-		const From* f = reinterpret_cast< const From* >( from );
-
-		*t = static_cast< To >( *f );
-
-		return true;
-	}
-
 	enum Flag
 	{
 		/**
@@ -49,24 +80,86 @@ public:
 		This type can be deduced from a textual representation. Currently only
 		some basic types are deducible.
 		*/
-		DeducibleFromText = 2
+		DeducibleFromText = 2,
 	};
 
-	MetaType(
-		const char* name,
-		size_t size,
-		const TypeId& typeId,
-		const std::type_info& typeInfo,
-		const std::type_info* pointedType,
-		int flags );
-
-	virtual ~MetaType()
+	enum Qualifier
 	{
+		Unqualified = 0,
+		Const = 1,
+		Volatile = 2
+	};
+
+	enum
+	{
+		QualifiersMask = Const | Volatile
+	};
+
+	template< typename T >
+	struct qualifiers_of
+	{
+		static const int value =
+			(std::is_const< T >::value ? Const : 0) |
+			(std::is_volatile< T >::value ? Volatile : 0);
+	};
+
+	class Qualified
+	{
+		friend class MetaType;
+
+	public:
+		const MetaType* type() const
+		{
+			return type_;
+		}
+
+		int qualifiers() const
+		{
+			return static_cast< int >( this - type_->qualified_ );
+		}
+
+		bool testQualifiers( int test ) const
+		{
+			return ( qualifiers() & test ) == test;
+		}
+
+		template< typename Dest, typename Src >
+		bool castPtr( Dest** dest, Src* src ) const
+		{
+			// check qualifiers
+			auto srcQualifiers = qualifiers_of< Src >::value | qualifiers();
+			auto destQualifiers = qualifiers_of< Dest >::value;
+			if( !qualifiersMatch( srcQualifiers, destQualifiers ) )
+			{
+				// conversion loses qualifiers, fail
+				return false;
+			}
+
+			// check types
+			return type()->castPtr(
+				TypeId::getType< Dest >(),
+				(void**)dest,
+				(void*)src );
+		}
+
+	private:
+		const MetaType* type_;
+
+	};
+
+	static bool qualifiersMatch(int src, int dest)
+	{
+		// dest must have all bits of src set
+		return ( src & dest ) == src;
 	}
+
+	virtual ~MetaType();
+
+	const Qualified* qualified( int qualifiers ) const;
 
 	const TypeId& typeId() const
 	{
-		return typeId_;
+		return data_.typeId_;
 	}
 
 	const char* name() const
@@ -76,12 +169,17 @@ public:
 
 	size_t size() const
 	{
-		return size_;
+		return data_.size_;
 	}
 
-	const std::type_info& typeInfo() const
+	int flags() const
 	{
-		return typeInfo_;
+		return data_.flags_;
+	}
+
+	bool testFlags( int test ) const
+	{
+		return ( data_.flags_ & test ) == test;
 	}
 
 	virtual void init(void* value) const = 0;
@@ -90,31 +188,16 @@ public:
 	virtual void destroy(void* value) const = 0;
 	virtual bool equal(const void* lhs, const void* rhs) const = 0;
 
-	const std::type_info* pointedType() const
-	{
-		return pointedType_;
-	}
-
-	int flags() const
-	{
-		return flags_;
-	}
-
-	bool testFlags( int test ) const
-	{
-		return ( flags_ & test ) == test;
-	}
-
 	virtual void streamOut( TextStream& stream, const void* value ) const = 0;
 	virtual void streamIn( TextStream& stream, void* value ) const = 0;
-	
+
 	virtual void streamOut( BinaryStream& stream, const void* value ) const = 0;
 	virtual void streamIn( BinaryStream& stream, void* value ) const = 0;
 
 	/**
 	Try convert a @a from value of @a fromType to a @a to value of this type.
 	*/
-	bool convertFrom( void* to, const MetaType* fromType, const void* from ) const;
+	virtual bool convertFrom( void* to, const MetaType* fromType, const void* from ) const;
 	bool canConvertFrom( const MetaType* toType ) const;
 
 	/**
@@ -123,173 +206,59 @@ public:
 	bool convertTo( const MetaType* toType, void* to, const void* from ) const;
 	bool canConvertTo( const MetaType* toType ) const;
 
-	template< typename T >
-	T* castPtr( const void* value ) const
+	bool castPtr( const TypeId& destType, void** dest, void* src ) const;
+
+	bool operator==( const MetaType& other ) const;
+
+	bool operator!=( const MetaType& other ) const
 	{
-		return castPtr< T >( value, true );
+		return !( *this == other );
 	}
 
-	template< typename T >
-	T* castPtr( void* value ) const
+	template<typename T>
+	static const MetaType* get()
 	{
-		return castPtr< T >( value, false );
+		return &meta_type_details::StaticInstantiator<
+			MetaTypeImpl<
+				typename std::decay< T >::type
+			>
+		>::instantiator.instance();
 	}
 
-#if !FAST_RUNTIME_POINTER_CAST
-
-	/**
-	Throw @a ptr casted the stored value type.
-
-	`(T*)ptr` is thrown if stored type is either `T` or `T*`. I.e. if stored
-	value is pointer then pointer itself is thrown, NOT pointer to
-	pointer).
-	*/
-	virtual void throwPtr( void* ptr, bool const_value ) const = 0;
-
-#endif // FAST_RUNTIME_POINTER_CAST
-
-	bool operator == ( const MetaType& other ) const
-	{
-		return typeId_ == other.typeId_ && strcmp(name_, other.name_) == 0;
-	}
+	static const MetaType* find(const char* name);
+	static const MetaType* find(const TypeId& typeId);
 
 protected:
-	void addConversionFrom( const std::type_info& fromType, ConversionFunc func );
-
-	template< typename From >
-	void addConversionFrom( ConversionFunc func )
+	struct Data
 	{
-		addConversionFrom( typeid( From ), func );
-	}
+		const TypeId& typeId_;
+		size_t size_;
+		int flags_;
+	};
 
-	template< typename To, typename From >
-	void addStraightConversion()
+	MetaType( const char* name, const Data& data );
+
+	template< typename T >
+	static Data data( int flags = 0 )
 	{
-		addConversionFrom( typeid( From ), &straightConversion< To, From > );
+		Data result =
+		{
+			TypeId::getType< T >(),
+			meta_type_details::size_traits< T >::size,
+			flags
+		};
+		return result;
 	}
-
-	void setDefaultConversionFrom( ConversionFunc func );
 
 private:
-	struct TypeInfoHash
-	{
-		size_t operator()(const std::type_info* v) const
-		{
-			return v->hash_code();
-		}
-	};
-
-	struct TypeInfosEq
-	{
-		bool operator()(const std::type_info* lhs, const std::type_info* rhs) const
-		{
-			return
-				lhs == rhs ||
-				*lhs == *rhs;
-		}
-	};
-
-	const TypeId& typeId_;
+	Data data_;
 	const char* name_; // allow custom (human readable) type name for MetaType
-	size_t size_;
-	const std::type_info& typeInfo_;
-	const std::type_info* pointedType_;
-	int flags_;
+	Qualified qualified_[ QualifiersMask + 1 ];
+	DLink link_;
 
-#if FAST_RUNTIME_POINTER_CAST
-
-	// TODO: keep a list of all possible pointer conversions
-
-#else // FAST_RUNTIME_POINTER_CAST
-
-	struct PtrCastEntry
-	{
-		PtrCastEntry()
-		{
-			memset( this, 0, sizeof( *this ) );
-		}
-
-		bool tested[2];
-		bool compatible[2];
-		std::ptrdiff_t diff[2];
-	};
-
-	mutable std::mutex ptrCastsMutex_;
-	mutable std::unordered_map< const std::type_info*, PtrCastEntry, TypeInfoHash, TypeInfosEq > ptrCasts_;
-
-#endif // FAST_RUNTIME_POINTER_CAST
-
-	std::unordered_map< const std::type_info*, ConversionFunc, TypeInfoHash, TypeInfosEq > conversionsFrom_;
-	ConversionFunc defaultConversionFrom_;
-
-#if FAST_RUNTIME_POINTER_CAST
-
-	void* castPtr( const std::type_info& type, void* value, bool const_value ) const;
-
-	template< typename T >
-	T* castPtr( const void* value, bool const_value ) const
-	{
-		return castPtr( typeid( T ), ( void* )value, const_value );
-	}
-
-#else // FAST_RUNTIME_POINTER_CAST
-
-	template< typename T >
-	T* castPtr( const void* value, bool const_value ) const
-	{
-		char* initialPtr;
-		if( pointedType_ )
-		{
-			initialPtr = *( char** )value;
-			const_value = false; // pointer itself is const, but pointed value is probably non-const
-		}
-		else
-		{
-			initialPtr = ( char* )value;
-		}
-
-		if( !initialPtr )
-		{
-			return nullptr;
-		}
-
-		std::lock_guard< std::mutex > lock( ptrCastsMutex_ );
-		auto& castEntry = ptrCasts_[ &typeid( T ) ];
-		if( !castEntry.tested[ const_value ] )
-		{
-			// new entry
-			try
-			{
-				throwPtr( initialPtr, const_value );
-			}
-			catch( T* e )
-			{
-				// conversion succeeded, record the difference
-				castEntry.compatible[ const_value ] = true;
-				castEntry.diff[ const_value ] = ( char* )e - initialPtr;
-			}
-			catch( ... )
-			{
-				// nop
-			}
-
-			castEntry.tested[ const_value ] = true;
-		}
-
-		if( castEntry.compatible[ const_value ] )
-		{
-			// apply diff to the pointer
-			return ( T* )( initialPtr + castEntry.diff[ const_value ] );
-		}
-		else
-		{
-			// pointer types are incompatible
-			return nullptr;
-		}
-	}
-
-#endif // FAST_RUNTIME_POINTER_CAST
+	static void validateIndex();
 
 };
+
 } // end namespace wgt
 #endif //META_TYPE_HPP

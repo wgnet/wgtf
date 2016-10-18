@@ -1,12 +1,16 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
+import WGControls.Layouts 1.0
 
 
-//ToDo brief
-
+/*!
+ \ingroup wgcontrols
+ \todo brief
+*/
 WGExpandingRowLayout {
     id: fileComponent
     objectName: "WGFileSelectBox"
+    WGComponent { type: "WGFileSelectBox" }
 
     /*! Determines whether text in the url is readOnly and can only be copied.
       Setting readOnly to true also allows the dialog box to be opened on double click.
@@ -20,6 +24,13 @@ WGExpandingRowLayout {
       The default value points to fileUrl
     */
     property alias text: textField.text
+
+    /*! property indicates if the control represetnts multiple data values */
+    property bool multipleValues: false
+
+    /*! the property containing the string to be displayed when multiple values are represented by the control
+    */
+    property string __multipleValuesString: "Multiple Values"
 
     /*! The folder the fileDialog will open to by default.
       The default value is empty
@@ -98,6 +109,8 @@ WGExpandingRowLayout {
     signal fileChosen(var selectedFile)
     signal fileRejected()
 
+    implicitHeight: defaultSpacing.minimumRowHeight
+
     /*! This function opens the desired dialog box.
     */
     function openDialog() {
@@ -135,13 +148,46 @@ WGExpandingRowLayout {
     }
 
     WGTextBox {
+        DropArea {
+            anchors.fill:parent
+            keys: ["text/uri-list"]
+            onDropped: {
+                if (drop.hasUrls)
+                {
+                    var fileName = drop.urls[0].toString();
+                    var fileExtensionIndex = fileName.lastIndexOf('.') + 1;
+
+                    if ( fileExtensionIndex !== -1 )
+                    {
+                        var fileType = fileName.substring(fileExtensionIndex);
+
+                        for ( var i in nameFilters )
+                        {
+                            var filter = nameFilters[i];
+
+                            if ( filter.indexOf('(') !== -1 )
+                            {
+                                filter = filter.substring(filter.indexOf('(') + 1, filter.indexOf(')'));
+                            }
+
+                            if ( filter.indexOf( "*." + fileType ) !== -1 || filter === '*' )
+                            {
+                                fileChosen(fileName);
+                                drop.accept();
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         id: textField
         objectName: "textField"
         Layout.fillWidth: true
         Layout.preferredHeight: defaultSpacing.minimumRowHeight
 
-        //TODO: Make this point to the data
-        text: fileUrl
+        text: fileComponent.multipleValues ? fileComponent.__multipleValuesString : fileUrl
         readOnly: true
 
         MouseArea {

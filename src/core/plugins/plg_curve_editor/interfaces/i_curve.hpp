@@ -18,6 +18,7 @@
 #include <core_reflection/object_handle.hpp>
 #include <core_data_model/i_list_model.hpp>
 #include <core_data_model/value_change_notifier.hpp>
+#include <wg_types/vector2.hpp>
 
 namespace wgt
 {
@@ -117,10 +118,19 @@ protected:
 	*/
 	virtual const IListModel* getPoints() const = 0;
 private:
-	// TODO: Remove this when we can invoke reflected functions
-	float dummy() const
+
+	/*! Calls at() to get the value on the curve at the specified time.
+		(Can't expose overloaded functions to QML)
+	*/
+	float atTime(float time) { return at(time); }
+
+	/*! Calls at() to get the value on the curve at the specified index.
+		(Can't expose overloaded functions to QML)
+	*/
+	Vector2 atIndex(unsigned int index)
 	{
-		return 0;
+		auto data = at(index);
+		return Vector2(data.pos.x, data.pos.y );
 	}
 };
 } // end namespace wgt

@@ -1,18 +1,20 @@
 #include "qt_collection_model.hpp"
 
+#include "core_data_model/common_data_roles.hpp"
 #include "helpers/qt_helpers.hpp"
+#include "core_qt_script/qt_script_object.hpp"
 
-
+#include <iterator>
 
 namespace wgt
 {
-ITEMROLE( value )
 ITEMROLE( key )
-ITEMROLE( valueType )
 ITEMROLE( keyType )
 
-QtCollectionModel::QtCollectionModel( std::unique_ptr<CollectionModel>&& source )
-	: QtListModel( *source.get() ), model_( std::move( source ) )
+
+QtCollectionModel::QtCollectionModel( IComponentContext & context,
+	std::unique_ptr< CollectionModel > && source )
+	: QtListModel( context, *source.get() ), model_( std::move( source ) )
 {
 }
 
@@ -43,26 +45,23 @@ bool QtCollectionModel::insertRows( int row,
 	const QModelIndex & parent )
 {
 	auto & collectionModel = this->source();
-	auto & collection = collectionModel.getSource();
 
-	// Insert/remove by row disabled for mapping types
-	if (collection.isMapping())
+	// Item already uses the Command System or the Command System is not available
+	const auto useController =
+		(!collectionModel.hasController() && (itemModelController_ != nullptr));
+	if (!useController)
 	{
-		return false;
+		// Set property directly
+		return collectionModel.insertRows( row, count );
 	}
 
-	// Since this is an index-able collection
-	// Convert index directly to key
-	Variant key( row );
-	bool success = true;
-	for (int i = 0; i < count; ++i)
-	{
-		// Repeatedly inserting items at the same key
-		// should add count items above the first
-		const auto insertItr = collection.insert( key );
-		success &= (insertItr != collection.end());
-	}
-	return success;
+	// Queue with Command System, to register undo/redo data
+	auto pParent = parent.isValid() ?
+		reinterpret_cast< AbstractItem * >( parent.internalId() ) : nullptr; 
+	return itemModelController_->insertRows( collectionModel,
+		row,
+		count,
+		pParent );
 }
 
 
@@ -71,104 +70,102 @@ bool QtCollectionModel::removeRows( int row,
 	const QModelIndex & parent )
 {
 	auto & collectionModel = this->source();
-	auto & collection = collectionModel.getSource();
 
-	// Insert/remove by row disabled for mapping types
-	if (collection.isMapping())
+	// Item already uses the Command System or the Command System is not available
+	const auto useController =
+		(!collectionModel.hasController() && (itemModelController_ != nullptr));
+	if (!useController)
 	{
-		return false;
+		// Set property directly
+		return collectionModel.removeRows( row, count );
 	}
 
-	// Trying to remove too many rows
-	if ((row + count) >= this->rowCount( parent ))
-	{
-		return false;
-	}
-
-	// Since this is an index-able collection
-	// Convert index directly to key
-	Variant key( row );
-	bool success = true;
-	for (int i = 0; i < count; ++i)
-	{
-		// Repeatedly removing items at the same key
-		// should remove count items after the first
-		const auto erasedCount = collection.erase( key );
-		success &= (erasedCount > 0);
-	}
-	return success;
+	// Queue with Command System, to register undo/redo data
+	auto pParent = parent.isValid() ?
+		reinterpret_cast< AbstractItem * >( parent.internalId() ) : nullptr; 
+	return itemModelController_->removeRows( collectionModel,
+		row,
+		count,
+		pParent );
 }
 
 
 QObject * QtCollectionModel::item( const QVariant & key ) const
 {
 	const auto & collectionModel = this->source();
-	const auto & collection = collectionModel.getSource();
-
-	// Check key types match
 	const auto variantKey = QtHelpers::toVariant( key );
 
-	int row = 0;
-	if (collection.isMapping())
-	{
-		// Key type may not be an index.
-		// E.g. map[ "string key" ]
-		// Iterate to convert key to an index.
-		auto itr = collection.cbegin();
-		for (; itr != collection.cend(); ++itr, ++row)
-		{
-			if (itr.key() == variantKey)
-			{
-				break;
-			}
-		}
-		if (itr == collection.cend())
-		{
-			return nullptr;
-		}
-	}
-	else
-	{
-		// Since this is an index-able collection
-		// Convert key directly to index
-		const auto isRow = variantKey.tryCast< int >( row );
-		if (!isRow)
-		{
-			return nullptr;
-		}
-	}
+	const auto pItem = collectionModel.find(variantKey);
+	const auto value = pItem->getData(0 /* row */, 0 /* column */, ValueRole::roleId_);
 
-	assert( QtItemModel::hasIndex( row, 0 ) );
-	return QtItemModel::item( row, 0, nullptr );
+	auto qValue = QtHelpers::toQVariant(value, const_cast<QtCollectionModel*>(this));
+	return qValue.value<QObject*>();
 }
 
+bool QtCollectionModel::insertItem(const QVariant& key)
+{
+	auto& collectionModel = this->source();
+	const auto variantKey = QtHelpers::toVariant(key);
 
-bool QtCollectionModel::insertItem( const QVariant & key )
+	// Item already uses the Command System or the Command System is not available
+	const auto useController =
+	(!collectionModel.hasController() && (itemModelController_ != nullptr));
+
+	if (!useController)
+	{
+		// Set property directly
+		return collectionModel.insertItem(variantKey);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	const int count = 1;
+	const AbstractItem* pParent = nullptr;
+	return itemModelController_->insertItem(collectionModel, variantKey);
+}
+
+bool QtCollectionModel::insertItemValue(const QVariant& key, const QVariant& value)
 {
 	auto & collectionModel = this->source();
-	auto & collection = collectionModel.getSource();
-
 	const auto variantKey = QtHelpers::toVariant( key );
-	const auto insertItr = collection.insert( variantKey );
-	return (insertItr != collection.end());
+	const auto variantValue = QtHelpers::toVariant(value);
+
+	// Item already uses the Command System or the Command System is not available
+	const auto useController =
+	(!collectionModel.hasController() && (itemModelController_ != nullptr));
+	if (!useController)
+	{
+		// Set property directly
+		return collectionModel.insertItem(variantKey, variantValue);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return itemModelController_->insertItem(collectionModel,
+	                                        variantKey,
+	                                        variantValue);
 }
 
 
 bool QtCollectionModel::removeItem( const QVariant & key )
 {
 	auto & collectionModel = this->source();
-	auto & collection = collectionModel.getSource();
-
 	const auto variantKey = QtHelpers::toVariant( key );
-	const auto erasedCount = collection.erase( variantKey );
-	return (erasedCount > 0);
+
+	// Item already uses the Command System or the Command System is not available
+	const auto useController =
+	(!collectionModel.hasController() && (itemModelController_ != nullptr));
+	if (!useController)
+	{
+		// Set property directly
+		return collectionModel.removeItem( variantKey );
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return itemModelController_->removeItem(collectionModel, variantKey);
 }
 
 bool QtCollectionModel::isMapping() const
 {
 	auto & collectionModel = this->source();
-	auto & collection = collectionModel.getSource();
-	
-	return collection.isMapping();
+	return collectionModel.isMapping();
 }
 } // end namespace wgt

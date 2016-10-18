@@ -5,41 +5,37 @@ INCLUDE( WGToolsCoreProject )
 
 FIND_PACKAGE( QT5 )
 
-SET( METADATA_SRCS
-	metadata/demo_objects_fix_mixin.mpp
-	metadata/demo_objects.mpp
-)
-SOURCE_GROUP( "" FILES ${METADATA_SRCS} )
+IF (Qt5_WEB_ENGINE_SUPPORT)
+	ADD_DEFINITIONS( -DUSE_Qt5_WEB_ENGINE=1 )
+ENDIF()
 
 SET( ALL_SRCS
+	metadata/demo_objects.mpp
 	plg_demo_test.cpp
 	demo_objects.cpp
 	demo_objects.hpp
-	demo_objects_fix_mixin.hpp
-	demo_objects_fix_mixin.cpp
 	object_selection_helper.cpp
 	object_selection_helper.hpp
 	tinyxml2.cpp
 	tinyxml2.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC( DemoTest resources/DemoTest )
 BW_GLOB_RESOURCE_FILES()
 
-FILE( GLOB MODEL_FILES resources/sceneModel0.xml resources/sceneModel1.xml )
-SOURCE_GROUP( "Model Files" FILES ${MODEL_FILES} )
-BW_CUSTOM_COPY_TO_PROJECT_OUTPUT( .. "${MODEL_FILES}" )
+FILE( GLOB PLUGIN_RESOURCES resources/*.xml )
+BW_COPY_PLUGIN_RESOURCES( "${PLUGIN_RESOURCES}" )
 
 BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 	${ALL_SRCS}
-	${METADATA_SRCS}
 	${RESOURCE_FILES}
 	${COMPILED_RESOURCES}
-	${MODEL_FILES}
+	${PLUGIN_RESOURCES}    
 )
 
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
+	core_reflection
 	core_generic_plugin
 	core_qt_common
 	core_ui_framework

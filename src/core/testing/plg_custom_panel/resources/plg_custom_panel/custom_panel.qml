@@ -2,9 +2,8 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 
-
-import WGControls 1.0
 import WGControls 2.0
+import WGControls.Layouts 2.0
 
 WGPanel {
 
@@ -45,11 +44,8 @@ WGPanel {
 
     WGScrollPanel { // Entire panel
         id: baseLayout
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
 
-        clip: false //does nothing
+        clip: false
 
         childObject_ :
         WGColumnLayout {
@@ -251,11 +247,28 @@ WGPanel {
                                             WGExpandingRowLayout {
                                                 Layout.fillWidth: true
                                                 WGLabel {
+                                                    text: "Infinite:"
+                                                    horizontalAlignment: Text.AlignRight
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGNumberBox
+                                                {
+                                                    Layout.fillWidth: true
+                                                    number: 10
+                                                    valueIsInfinite: false
+                                                    showInfiniteButton: true
+                                                }
+                                            }
+
+                                            WGExpandingRowLayout {
+                                                Layout.fillWidth: true
+                                                WGLabel {
                                                     text: "Text:"
                                                     horizontalAlignment: Text.AlignRight
                                                     Layout.preferredWidth: 60
                                                 }
-                                                WGTextBox {
+                                                WGTextBoxAutoComplete {
+                                                    autoCompleteData: ["apple", "orange", "banana", "pineapple", "pear", "persimmon", "crabapple", "lemon", "lime"]
                                                     Layout.fillWidth: true
                                                 }
                                             }
@@ -295,9 +308,7 @@ WGPanel {
                                                 text: ""
                                                 iconSource: "icons/add_16x16.png"
                                                 onClicked: {
-                                                    colorBar.colorData.push(Qt.rgba(1,0,1,1))
-                                                    colorBar.positionData.push(90)
-                                                    colorBar.updateData()
+                                                    colorBar.createColorHandle(1.0,colorBar.handleStyle,colorBar.__handlePosList.length, Qt.rgba(Math.random(1), Math.random(1), Math.random(1), 1));
                                                 }
                                             }
                                         }
@@ -454,19 +465,78 @@ WGPanel {
 
                                     WGControlChunk {
                                         tags: "image click thumbnail load picture"
-                                        WGExpandingRowLayout {
+                                        ColumnLayout {
                                             anchors.left: parent.left
                                             anchors.right: parent.right
-                                            Rectangle {
-                                                color: "transparent"
-                                                Layout.preferredWidth: 60
-                                            }
-                                            WGComboBoxImage {
-                                                id: openImage
-                                            }
-                                            Rectangle {
-                                                color: "transparent"
+                                            WGExpandingRowLayout {
+
                                                 Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGDropDownBox {
+                                                    id: openDropDown
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            WGExpandingRowLayout {
+
+                                                Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGImageDropDown {
+                                                    id: openImageDropDown
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+
+                                                WGLabel {
+                                                    text: "Image Drop Down Test"
+                                                }
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
                                             }
                                         }
                                     }
@@ -783,7 +853,8 @@ WGPanel {
                                                     horizontalAlignment: Text.AlignRight
                                                     Layout.preferredWidth: 60
                                                 }
-                                                WGTextBox {
+                                                WGTextBoxAutoComplete {
+                                                    autoCompleteData: ["apple", "orange", "banana", "pineapple", "pear", "persimmon", "crabapple", "lemon", "lime"]
                                                     Layout.fillWidth: true
                                                 }
                                             }
@@ -1064,19 +1135,78 @@ WGPanel {
                                             }
                                         }
                                         tags: "image click thumbnail load picture"
-                                        WGExpandingRowLayout {
+                                        ColumnLayout {
                                             anchors.left: parent.left
                                             anchors.right: parent.right
-                                            Rectangle {
-                                                color: "transparent"
-                                                Layout.preferredWidth: 60
-                                            }
-                                            WGComboBoxImage {
-                                                id: openImageClone
-                                            }
-                                            Rectangle {
-                                                color: "transparent"
+                                            WGExpandingRowLayout {
+
                                                 Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGDropDownBox {
+                                                    id: openDropDownClone
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            WGExpandingRowLayout {
+
+                                                Layout.fillWidth: true
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.preferredWidth: 60
+                                                }
+                                                WGImageDropDown {
+                                                    id: openImageDropDownClone
+
+                                                    textRole: "label"
+                                                    imageRole: "icon"
+
+                                                    model: ListModel {}
+
+                                                    Component.onCompleted:
+                                                    {
+                                                        model.append({"label": "Image 8 x 8", "icon": Qt.resolvedUrl("icons/grid_8x8.png")})
+                                                        model.append({"label": "Image 8 x 16", "icon": Qt.resolvedUrl("icons/grid_8x16.png")})
+                                                        model.append({"label": "Image 16 x 8", "icon": Qt.resolvedUrl("icons/grid_16x8.png")})
+                                                        model.append({"label": "Image 16 x 16", "icon": Qt.resolvedUrl("icons/grid_16x16.png")})
+                                                        model.append({"label": "Image 32 x 64", "icon": Qt.resolvedUrl("icons/grid_32x64.png")})
+                                                        model.append({"label": "Image 64 x 32", "icon": Qt.resolvedUrl("icons/grid_64x32.png")})
+                                                        model.append({"label": "Image 64 x 64", "icon": Qt.resolvedUrl("icons/grid_64x64.png")})
+                                                    }
+                                                }
+
+                                                WGLabel {
+                                                    text: "Image Drop Down Test"
+                                                }
+
+                                                Rectangle {
+                                                    color: "transparent"
+                                                    Layout.fillWidth: true
+                                                }
                                             }
                                         }
                                     }
@@ -1162,7 +1292,7 @@ WGPanel {
 
     Rectangle {
         id: tooltip
-        z: 100
+        z: 1
         height: 60
         implicitWidth: 360
         radius: defaultSpacing.standardRadius

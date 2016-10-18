@@ -4,28 +4,19 @@ PROJECT( plg_macros_ui )
 INCLUDE( WGToolsCoreProject )
 find_package(QT5)
 
-SET( METADATA_SRCS
-	metadata/macros_object.mpp
-)
-SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
-
-
-BW_QT_ADD_QRC(WGMacros resources/WGMacros)
-BW_GLOB_RESOURCE_FILES()
-
-
 SET( ALL_SRCS
-	${QML_SRCS}
+	metadata/macros_object.mpp
 	macros_object.cpp
 	macros_object.hpp
 	plg_macros_ui.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
+BW_QT_ADD_QRC(WGMacros resources/WGMacros)
+BW_GLOB_RESOURCE_FILES()
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
-	${METADATA_SRCS}
 )
 BW_ADD_TOOL_PLUGIN( plg_macros_ui SHARED
 	${BLOB_SRCS}

@@ -1,0 +1,3 @@
+module WGQmlPreferences
+ 
+QmlPreferencesPanel 1.0 QmlPreferencesPanel.qml

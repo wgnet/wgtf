@@ -1,0 +1,48 @@
+CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
+PROJECT( qt_common_unit_test )
+
+INCLUDE( WGToolsCoreProject )
+find_package(QT5)
+
+SET( ALL_SRCS
+	main.cpp
+	pch.cpp
+	pch.hpp
+	test_qml_modules.cpp
+)
+
+BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
+BW_ADD_EXECUTABLE( ${PROJECT_NAME} ${BLOB_SRCS} )
+
+IF( BW_PLATFORM_WINDOWS )
+	SET( PLATFORM_LIBRARIES shlwapi )
+ELSEIF( BW_PLATFORM_MAC )
+	SET( PLATFORM_LIBRARIES core_common )
+ENDIF()
+
+BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
+	core_qt_common
+	core_unit_test
+	core_string_utils
+	Qt5::Core
+    
+	# external libraries
+	${PLATFORM_LIBRARIES}  
+)
+
+BW_ADD_TOOL_TEST( ${PROJECT_NAME} )
+
+BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Unit Tests" )
+
+# Copy all .qml files from the core plugins for testing
+BW_GET_TEST_DST_DIR(TEST_DIR)
+SET (EXCLUDE_DIR "/Private/")
+FILE(GLOB_RECURSE PLUGIN_QML_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../plugins/*.qml")
+FOREACH(QML_PATH ${PLUGIN_QML_FILES})
+    STRING (FIND ${QML_PATH} ${EXCLUDE_DIR} EXCLUDE_DIR_FOUND)
+    IF (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
+        LIST (REMOVE_ITEM PLUGIN_QML_FILES ${QML_PATH})
+    ENDIF ()
+ENDFOREACH(QML_PATH)
+FILE(COPY ${PLUGIN_QML_FILES} DESTINATION "${TEST_DIR}/plugins/QML/")

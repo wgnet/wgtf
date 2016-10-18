@@ -12,7 +12,7 @@ ADD_DEFINITIONS(
 SET( ALL_SRCS
 	plg_file_system.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
@@ -24,7 +24,7 @@ BW_ADD_TOOL_PLUGIN( plg_file_system SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_file_system PRIVATE
 	core_generic_plugin
-	core_serialization
+	core_reflection
 	core_string_utils
 )
 

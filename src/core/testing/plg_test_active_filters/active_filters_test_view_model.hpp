@@ -6,6 +6,7 @@
 #include "core_data_model/i_tree_model.hpp"
 #include "core_data_model/i_item.hpp"
 #include <memory>
+#include "core_data_model/abstract_item_model.hpp"
 
 namespace wgt
 {
@@ -26,7 +27,8 @@ public:
 	void init( IDefinitionManager & defManager, IUIFramework & uiFramework );
 
 	IActiveFiltersModel * getSimpleActiveFiltersModel() const;
-	ITreeModel * getSampleDataToFilter() const ;
+	ITreeModel * getSampleDataToFilterOld() const;
+	AbstractTreeModel * getSampleDataToFilterNew() const;
 
 private:
 	struct Implementation;
@@ -47,8 +49,8 @@ public:
 	const IItem* getParent() const;
 	virtual const char* getDisplayText( int column ) const;
 	virtual ThumbnailData getThumbnail( int column ) const;
-	virtual Variant getData( int column, size_t roleId ) const;
-	virtual bool setData( int column, size_t roleId, const Variant& data );
+	virtual Variant getData( int column, ItemRole::Id roleId ) const;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant& data );
 
 private:
 	struct Implementation;

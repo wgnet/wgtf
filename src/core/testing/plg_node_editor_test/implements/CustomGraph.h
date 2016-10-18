@@ -9,6 +9,8 @@
 #include "plugins/plg_node_editor/interfaces/i_node.hpp"
 #include "plugins/plg_node_editor/interfaces/i_connection.hpp"
 
+#include <vector>
+
 namespace wgt
 {
 typedef std::map<std::string, std::function<INode*()> > NodeClassesMap;
@@ -35,12 +37,16 @@ private:
     const IListModel* GetNodesModel() const override { return &m_nodesModel; }
     const IListModel* GetConnectionsModel() const override { return &m_connectionsModel; }
     const IListModel* GetNodeClassesModel() const override { return  &m_nodeClassesModel; }
+	virtual const Collection& GetNodeGroupModel() const override;
 
 private:
     GenericListT<ObjectHandleT<INode>> m_nodesModel;
     GenericListT<ObjectHandleT<IConnection>> m_connectionsModel;
     GenericListT<std::string> m_nodeClassesModel;
+	std::vector<ObjectHandleT<IGroup>> m_groupsStorage;
+
     NodeClassesMap m_nodeClasses;
+	Collection m_nodeGroupModel;
 };
 } // end namespace wgt
 #endif //__CUSTOM_GRAPH_H__

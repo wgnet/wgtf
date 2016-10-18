@@ -96,6 +96,35 @@ public:
 	Iterator begin();
 	Iterator end();
 
+	template<class InputIt>
+	Iterator insert( const Iterator & position, InputIt first, InputIt last )
+	{
+		auto index = std::distance( items_.cbegin(), position.iterator() );
+		auto count = std::distance( first, last );
+		auto insertedPosition = position;
+		signalPreItemsInserted( index, count );
+
+		size_t i = index;
+		size_t oldSize = items_.size();
+		items_.resize( oldSize + count );
+		size_t newSize = items_.size();
+
+		for (int c = 0; i < oldSize; ++i, ++c)
+		{
+			items_[newSize - 1 - c] = std::move(items_[oldSize - 1 - c]);
+		}
+
+		i = index;
+
+		for (auto itr = first; itr != last; ++itr, ++i)
+		{
+			items_[i].reset( createItem( *itr ) );
+		}
+
+		signalPostItemsInserted( index, count );
+		return insertedPosition;
+	}
+
 	Iterator insert( const Iterator & position, const Variant & value );
 	Iterator erase( const Iterator & position );
 	Iterator erase( const Iterator & first, const Iterator & last );
@@ -114,6 +143,8 @@ public:
 private:
 	VariantList( const VariantList& rhs );
 	VariantList& operator=( const VariantList& rhs );
+
+	IItem* createItem( const Variant& value );
 
 	Items items_;
 

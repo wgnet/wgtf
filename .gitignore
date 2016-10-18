@@ -1,14 +1,15 @@
 build_*/
 out/
-doc/
 *.pyc
 *.bak
 *.autosave
 *.swp
 .DS_Store
 *.user
+*.orig
 build/bw_internal*
 build/ci*
+build/cmake/WGConfiguration_custom*
 src/core/third_party/cmake*
 src/core/third_party/perforce*
 src/core/third_party/python/Python-*

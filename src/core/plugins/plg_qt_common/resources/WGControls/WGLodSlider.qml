@@ -1,11 +1,13 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 import QtQuick.Controls.Private 1.0
 import QtQuick.Dialogs 1.2
+import WGControls.Layouts 1.0
 
 /*!
- \A Level of Detail slider control designed to replace ModelEditors LOD control
+ \ingroup wgcontrols
+ \brief A Level of Detail slider control designed to replace ModelEditors LOD control
 
 Example:
 \code{.js}
@@ -20,6 +22,7 @@ WGLodSlider {
 WGColumnLayout {
     id: mainBody
     objectName: "WGLodSlider"
+    WGComponent { type: "WGLodSlider" }
 
     /*! This property holds a Sample LOD data set if used if one isnt explicitly set */
     property QtObject lodList: ListModel{
@@ -557,7 +560,7 @@ WGColumnLayout {
                     width: defaultSpacing.standardBorderSize
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    z: 2
+                    z: 1
                     x: (currentDistance * __unitWidth) + defaultSpacing.standardMargin
                 }
 

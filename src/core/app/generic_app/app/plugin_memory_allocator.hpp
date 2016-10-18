@@ -13,6 +13,7 @@ public:
 	PluginMemoryAllocator( const wchar_t * name );
 	~PluginMemoryAllocator();
 
+	void fini() override;
 	void * mem_new( size_t size );
 	void * mem_new( size_t size, const std::nothrow_t & throwable );
 	void * mem_new_array( size_t size );

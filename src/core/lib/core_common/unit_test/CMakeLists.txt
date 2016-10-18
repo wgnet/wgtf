@@ -6,12 +6,13 @@ INCLUDE( WGToolsCoreProject )
 SET( ALL_SRCS
 	main.cpp
 	test_wg_condition_variable.cpp
+      test_objects_pool.cpp
 )
 
 BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 BW_ADD_EXECUTABLE( core_common_unit_test ${BLOB_SRCS} )
 
-BW_TARGET_LINK_LIBRARIES( core_common_unit_test
+BW_TARGET_LINK_LIBRARIES( core_common_unit_test PRIVATE
 	core_common
 	core_unit_test
 )

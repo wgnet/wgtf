@@ -81,10 +81,29 @@ TEST( Python27Interface )
 		CHECK( module.isValid() );
 	}
 
+	// Import a builtin module that uses py files
+	{
+		ObjectHandle module = scriptingEngine->import( "os" );
+		CHECK( module.isValid() );
+	}
+
+	// Import a builtin module which will then import a submodule
+	// encodings.aliases
+	{
+		ObjectHandle module = scriptingEngine->import("encodings");
+		CHECK(module.isValid());
+	}
+
+	// Import a builtin module that uses pyd files
+	{
+		ObjectHandle module = scriptingEngine->import("md5");
+		CHECK(module.isValid());
+	}
+
 	{
 		// Import a test module
-		const wchar_t * sourcePath = L"../../../src/core/testing/plg_python27_interface_test/scripts";
-		const wchar_t * deployPath = L"./scripts/plg_python27_interface_test";
+		const wchar_t * sourcePath = L"../../../src/core/testing/plg_python27_interface_test/resources/Scripts";
+		const wchar_t * deployPath = L":/Scripts";
 		const char * moduleName = "python27_test";
 		const bool sourcePathSet = scriptingEngine->appendSourcePath( sourcePath );
 		CHECK( sourcePathSet );
@@ -127,11 +146,11 @@ TEST( Python27Interface )
 		// Check listeners were notified
 		{
 			CHECK( testListener->preSetValueCalled_ );
-			CHECK_EQUAL( testDataAccessor.getType(), testListener->preSetAccessor_.getType() );
+			CHECK( testDataAccessor.getType() == testListener->preSetAccessor_.getType() );
 			CHECK( strcmp( testDataAccessor.getName(), testListener->preSetAccessor_.getName() ) == 0 );
 			const char * expectedName = "testData";
 			CHECK( strcmp( expectedName, testListener->preSetAccessor_.getName() ) == 0 );
-			CHECK_EQUAL( testDataAccessor.getObject(), testListener->preSetAccessor_.getObject() );
+			CHECK( testDataAccessor.getObject() == testListener->preSetAccessor_.getObject() );
 			int preSetValue = 0;
 			const auto preSetValueSuccess = testListener->preSetValue_.tryCast< int >( preSetValue );
 			CHECK( preSetValueSuccess );
@@ -140,11 +159,11 @@ TEST( Python27Interface )
 
 		{
 			CHECK( testListener->postSetValueCalled_ );
-			CHECK_EQUAL( testDataAccessor.getType(), testListener->postSetAccessor_.getType() );
+			CHECK( testDataAccessor.getType() == testListener->postSetAccessor_.getType() );
 			CHECK( strcmp( testDataAccessor.getName(), testListener->postSetAccessor_.getName() ) == 0 );
 			const char * expectedName = "testData";
 			CHECK( strcmp( expectedName, testListener->postSetAccessor_.getName() ) == 0 );
-			CHECK_EQUAL( testDataAccessor.getObject(), testListener->postSetAccessor_.getObject() );
+			CHECK( testDataAccessor.getObject() == testListener->postSetAccessor_.getObject() );
 			int postSetValue = 0;
 			const auto postSetValueSuccess = testListener->postSetValue_.tryCast< int >( postSetValue );
 			CHECK( postSetValueSuccess );

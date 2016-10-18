@@ -3,8 +3,7 @@
 namespace wgt
 {
 IModelExtension::IModelExtension()
-	: qtFramework_( nullptr )
-	, extensionData_( nullptr )
+	: extensionData_( nullptr )
 {
 
 }
@@ -19,55 +18,28 @@ void IModelExtension::init( IExtensionData & extensionData )
 	extensionData_ = &extensionData;
 }
 
-QVariant IModelExtension::data( const QModelIndex &index, int role ) const
+const std::vector< std::string > & IModelExtension::roles() const
 {
-	size_t roleId;
-	if (!decodeRole( role, roleId ))
-	{
-		return QVariant( QVariant::Invalid );
-	}
-
-	return dataExt( index, roleId );
+	return roles_;
 }
 
-bool IModelExtension::setData( const QModelIndex &index, const QVariant &value, int role )
+QVariant IModelExtension::data( const QModelIndex &index, ItemRole::Id roleId ) const
 {
-	size_t roleId;
-	if (!decodeRole( role, roleId ))
-	{
-		return false;
-	}
-
-	return setDataExt( index, value, roleId );
+	return QVariant::Invalid;
 }
 
-QVariant IModelExtension::dataExt( const QModelIndex &index, size_t roleId ) const
+bool IModelExtension::setData( const QModelIndex &index, const QVariant &value, ItemRole::Id roleId )
 {
-	assert( extensionData_ != nullptr );
-
-	auto& itemData = extensionData_->getItemData( index );
-	return itemData[roleId];
+	return false;
 }
 
-bool IModelExtension::setDataExt( const QModelIndex &index, const QVariant &value, size_t roleId )
+QVariant IModelExtension::headerData( int section, Qt::Orientation orientation, ItemRole::Id roleId ) const
 {
-	assert( extensionData_ != nullptr );
+	return QVariant::Invalid;
+}
 
-	auto& itemData = extensionData_->getItemData( index );
-	if (itemData[roleId] == value)
-	{
-		return false;
-	}
-	itemData[roleId] = value;
-
-	int role;
-	if (encodeRole( roleId, role ))
-	{
-		QVector< int > roles;
-		roles.append( role );
-		emit const_cast< QAbstractItemModel * >( index.model() )->dataChanged( index, index, roles );
-	}
-
-	return true;
+bool IModelExtension::setHeaderData( int section, Qt::Orientation orientation, const QVariant &value, ItemRole::Id roleId )
+{
+	return false;
 }
 } // end namespace wgt

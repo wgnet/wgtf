@@ -1,14 +1,13 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.2
 import WGControls 1.0
 
-// Thumbnail with default size and boder
-// Use WGThumbnailButton if thumbnail is editable
-
 /*!
+ \ingroup wgcontrols
  \brief Thumbnail image with default size and boder.
  Use WGThumbnailButton if thumbnail is meant as a button.
+ Use WGThumbnailButton if thumbnail is editable.
 
 Intended use:
 Where a thumbnail of an asset is to be displayed.
@@ -25,6 +24,7 @@ WGThumbnail{
 Rectangle {
     id: thumbnail
     objectName: "WGThumbnail"
+    WGComponent { type: "WGThumbnail" }
 
     /*! This property holds the location of the image to be displayed as the thumbnail
         The default value is false
@@ -34,17 +34,17 @@ Rectangle {
     /*! This property holds the default text string that will be displayed if /c source_ is not defined.
         The default value is \c "Image not found"
     */
-    property string notFoundString: "Image not found"
+    property string __notFoundString: "Image not found"
+
+    property bool multipleValues: false
+
+    property string __multipleValuesString: "Multiple Values"
 
     color: palette.lightShade
 
-    implicitWidth: {
-        defaultSpacing.minimumRowHeight * 4
-    }
+    implicitWidth: Math.min( icon.sourceSize.width + defaultSpacing.doubleBorderSize, defaultSpacing.minimumRowHeight * 4)
 
-    implicitHeight: {
-        defaultSpacing.minimumRowHeight * 4
-    }
+    implicitHeight: Math.min( icon.sourceSize.height + defaultSpacing.doubleBorderSize, defaultSpacing.minimumRowHeight * 4)
 
     // support copy&paste
     WGCopyable {
@@ -80,15 +80,13 @@ Rectangle {
         anchors.fill: parent
         Image {
             id: icon
-            anchors.fill: parent
+            anchors.centerIn: parent
+            height: sourceSize.height < parent.height ? sourceSize.height : parent.height
+            width: sourceSize.width < parent.width ? sourceSize.width : parent.width
             anchors.margins: defaultSpacing.standardBorderSize
             source: thumbnail.source
-
-            Component.onCompleted: {
-                if (thumbnail.source == ""){
-                    missingText.visible = true
-                }
-            }
+            visible: !multipleValues
+            fillMode: Image.PreserveAspectFit
         }
         WGLabel{
             objectName: "Label"
@@ -97,8 +95,20 @@ Rectangle {
             width: (parent.width - (defaultSpacing.leftMargin + defaultSpacing.rightMargin))
             horizontalAlignment: "AlignHCenter"
             verticalAlignment: "AlignVCenter"
-            text: notFoundString
-            visible: false
+            text: __notFoundString
+            font.pointSize: thumbnail.height <= defaultSpacing.minimumRowHeight ? 5 : 9
+            visible: thumbnail.source == "" && !multipleValues
+            wrapMode: "WordWrap"
+        }
+        WGLabel{
+            objectName: "MultiValuesText"
+            id: multipleValuesText
+            anchors.centerIn: parent
+            width: (parent.width - (defaultSpacing.leftMargin + defaultSpacing.rightMargin))
+            horizontalAlignment: "AlignHCenter"
+            verticalAlignment: "AlignVCenter"
+            text: __multipleValuesString
+            visible: multipleValues
             wrapMode: "Wrap"
         }
     }
