@@ -40,7 +40,8 @@ for base, dirnames, filenames in os.walk(directory):
 		# Ignore hidden files or temporary editor files
 		if filename.startswith( "." ) or \
 			filename.endswith( ".swp" ) or \
-			filename.endswith( ".orig" ):
+			filename.endswith( ".orig" ) or \
+			filename.endswith( ".pyc" ):
 			continue
 		files.append(os.path.join(base, filename).replace( '\\', '/' ))
 

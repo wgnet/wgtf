@@ -1,9 +1,12 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtGraphicalEffects 1.0
-import QtQuick.Layouts 1.1
+import QtQuick.Layouts 1.3
+import WGControls.Styles 1.0
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Raised button with border and label.
  Button width determined by label width.
  Can have text, text+icon or just icon
@@ -20,6 +23,7 @@ WGPushButton {
 WGAbstractButton {
     id: pushButton
     objectName: "WGPushButton"
+    WGComponent { type: "WGPushButton" }
 
     /*! This property determines the checked state of the control
         The default value is false

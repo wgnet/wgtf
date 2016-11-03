@@ -49,6 +49,6 @@ bool StringRef::operator == ( const StringRef & other ) const
 	{
 		return false;
 	}
-	return strcmp( pStart_, other.pStart_ ) == 0;
+	return memcmp( pStart_, other.pStart_, length_ ) == 0;
 }
 } // end namespace wgt

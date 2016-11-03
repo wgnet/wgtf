@@ -6,8 +6,8 @@
 
 namespace wgt
 {
-QtApplicationAdapter::QtApplicationAdapter()
-	: QtApplication( __argc, __argv )
+QtApplicationAdapter::QtApplicationAdapter(IComponentContext& context)
+    : QtApplication(context, __argc, __argv)
 {
 	QObject::connect( QGuiApplication::instance(),
 		SIGNAL( applicationStateChanged( Qt::ApplicationState ) ),
@@ -43,7 +43,7 @@ void QtApplicationAdapter::applicationStopped()
 int QtApplicationAdapter::startApplication()
 {
 	assert( application_ != nullptr );
-	application_->processEvents();
+	application_->sendPostedEvents();
 	update();
 	return 0;
 }

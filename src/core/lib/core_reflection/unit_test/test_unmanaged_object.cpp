@@ -20,8 +20,6 @@
 #include "core_reflection_utils/commands/metadata/set_reflectedproperty_command.mpp"
 #include "core_reflection_utils/serializer/reflection_serializer.hpp"
 
-#include "core_variant/default_meta_type_manager.hpp"
-
 #include "core_data_model/reflection/reflected_list.hpp"
 #include "core_data_model/i_item_role.hpp"
 
@@ -40,8 +38,6 @@ public:
 	TestApplication application_;
 	ObjectManager objManager;
 	DefinitionManager defManager;
-	DefaultMetaTypeManager metaTypeManager;
-	std::unique_ptr< MetaTypeImpl< ObjectHandle > > baseProviderMetaType;
 	EnvManager envManager_;
 	CommandManager commandManager;
 	ReflectionController reflectionController;
@@ -62,11 +58,6 @@ public:
 		commandManager.init( application_, envManager_, nullptr, nullptr );
 		commandManager.registerCommand( &setReflectedPropertyCmd );
 		reflectionController.init( commandManager );
-
-		Variant::setMetaTypeManager( &metaTypeManager );
-
-		baseProviderMetaType.reset( new MetaTypeImpl<ObjectHandle>() );
-		metaTypeManager.registerType( baseProviderMetaType.get() );
 	}
 
 	~TestObjectHandleFixture()

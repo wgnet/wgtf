@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
 PROJECT( plg_perforce )
 INCLUDE( WGToolsProject )
 
-FIND_PACKAGE( Perforce "15.2" )
+WG_FIND_PACKAGE( Perforce "15.2" )
 
 IF( NOT PERFORCE_FOUND )
 	# Use ADD_CUSTOM_TARGET because this target has no cpp files
@@ -23,7 +23,7 @@ SET( ALL_SRCS
 	perforce_version_control.cpp
 	plg_perforce.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
 BW_BLOB_SOURCES( BLOB_SRCS

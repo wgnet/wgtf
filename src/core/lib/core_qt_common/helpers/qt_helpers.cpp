@@ -12,12 +12,13 @@
 #include <QFileInfo>
 #include "core_variant/variant.hpp"
 #include "core_logging/logging.hpp"
+#include "core_string_utils/string_utils.hpp"
+#include "core_string_utils/file_path.hpp"
 
 namespace wgt
 {
 namespace QtHelpers
 {
-
 static IQtFramework * s_qtFramework = nullptr;
 
 //==============================================================================
@@ -115,6 +116,52 @@ QQuickItem * findChildByObjectName( QObject * parent, const char * controlName )
 	return NULL;
 }
 
+std::string removeQRCPrefix(const char* path)
+{
+	std::string filepath(path);
+	StringUtils::erase_string(filepath, "qrc:");
+	StringUtils::erase_string(filepath, ":");
+
+	if (!filepath.empty())
+	{
+		int index = 0;
+		while (filepath[index] == FilePath::kDirectorySeparator ||
+		       filepath[index] == FilePath::kAltDirectorySeparator)
+		{
+			++index;
+		}
+
+		if (index > 0)
+		{
+			filepath.erase(0, index);
+		}
+	}
+
+	return filepath;
+}
+
+QString resolveFilePath(const QQmlEngine& qmlEngine, const char* relativePath)
+{
+	if (relativePath == nullptr)
+	{
+		NGT_ERROR_MSG("QtHelpers::resolveFilePath(): relativePath is NULL.\n");
+		return QString();
+	}
+
+	const std::string filepath(removeQRCPrefix(relativePath));
+
+	QStringList paths = qmlEngine.importPathList();
+	for (auto path : paths)
+	{
+		QFileInfo info(QDir(path), filepath.c_str());
+		if (info.exists() && info.isFile())
+		{
+			return info.canonicalFilePath();
+		}
+	}
+
+	return QString(relativePath);
+}
 
 QUrl resolveQmlPath( const QQmlEngine & qmlEngine, const char * relativePath )
 {
@@ -126,11 +173,12 @@ QUrl resolveQmlPath( const QQmlEngine & qmlEngine, const char * relativePath )
 		return url;
 	}
 
-	QStringList paths = qmlEngine.importPathList();
+	const std::string filepath(removeQRCPrefix(relativePath));
 
+	QStringList paths = qmlEngine.importPathList();
 	for (auto path : paths)
 	{
-		QFileInfo info( QDir( path ), relativePath );
+		QFileInfo info(QDir(path), filepath.c_str());
 		if (info.exists() && info.isFile())
 		{
 			url = QUrl::fromLocalFile( info.canonicalFilePath() );
@@ -141,14 +189,12 @@ QUrl resolveQmlPath( const QQmlEngine & qmlEngine, const char * relativePath )
 	//fallback to qrc
 	if (url.isEmpty())
 	{
-		url.setScheme( "qrc" );
-		if (relativePath[0] != '/')
+		QString filePath = relativePath[0] != '/' ? QString("/") + relativePath : relativePath;
+		QFile file(QString(":") + filePath);
+		if (file.exists())
 		{
-			url.setPath( QString( "/" ) + relativePath );
-		}
-		else
-		{
-			url.setPath( relativePath );
+			url.setScheme("qrc");
+			url.setPath(filePath);
 		}
 	}
 

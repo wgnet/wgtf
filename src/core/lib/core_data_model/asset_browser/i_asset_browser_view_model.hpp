@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //
-//  i_asset_browser_view_model.h
+//  i_asset_browser_view_model_old.h
 //
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //  Copyright (c) Wargaming.net. All rights reserved.
@@ -24,7 +24,7 @@ class ISelectionHandler;
 class IValueChangeNotifier;
 
 //------------------------------------------------------------------------------
-// IAssetBrowserViewModel
+// IAssetBrowserViewModelOld
 //
 // Represents the view model for the WGAssetBrowser control. Provides the
 // data model used for the tree and list views as well as an event model.
@@ -34,47 +34,83 @@ class IValueChangeNotifier;
 class IAssetBrowserViewModel
 {
 public:
-	IAssetBrowserViewModel() : tempInt_( 0 )
+	IAssetBrowserViewModel()
+	    : tempInt_(0)
 	{
 	}
 
-	virtual ~IAssetBrowserViewModel(){}
-
+	virtual ~IAssetBrowserViewModel()
+	{
+	}
 
 	// Retrieve the view model
-	virtual const IAssetBrowserViewModel * view() const { return this; }
+	virtual const IAssetBrowserViewModel* view() const
+	{
+		return this;
+	}
 
 	// Retrieve the data model
 	// Expected: IAssetBrowserModel
-	virtual ObjectHandle data() const { return ObjectHandle(); }
+	virtual ObjectHandle data() const
+	{
+		return ObjectHandle();
+	}
 
 	// Retrieve the event model
 	// Expected: IAssetBrowserEventModel
-	virtual ObjectHandle events() const { return ObjectHandle(); }
+	virtual ObjectHandle events() const
+	{
+		return ObjectHandle();
+	}
 
 	// Retrieve the breadcrumbs model
-	virtual IBreadcrumbsModel * getBreadcrumbsModel() const { return nullptr; }
+	virtual IBreadcrumbsModel* getBreadcrumbsModel() const
+	{
+		return nullptr;
+	}
 
 	// Folder tree view selection handlers
-	virtual ISelectionHandler * getFolderSelectionHandler() const { return nullptr; }
-	virtual ISelectionHandler * getFolderContentSelectionHandler() const { return nullptr; }
+	virtual ISelectionHandler* getFolderSelectionHandler() const
+	{
+		return nullptr;
+	}
+	virtual ISelectionHandler* getFolderContentSelectionHandler() const
+	{
+		return nullptr;
+	}
 
 	// Asset usage handlers (note: pattern likely to change in future iterations)
-	virtual bool useSelectedAsset() const { return true; }
-	virtual const int & currentSelectedAssetIndex() const { return tempInt_; }
-	virtual void currentSelectedAssetIndex( const int & index ) {}
+	virtual bool useSelectedAsset() const
+	{
+		return true;
+	}
+	virtual const int& currentSelectedAssetIndex() const
+	{
+		return tempInt_;
+	}
+	virtual void currentSelectedAssetIndex(const int& index)
+	{
+	}
 
 	// Retrieve the selected asset data - not exposed to QML. For native-use only.
-	virtual IAssetObjectItem * getSelectedAssetData() const { return nullptr; }
+	virtual IAssetObjectItem* getSelectedAssetData() const
+	{
+		return nullptr;
+	}
 
 	// Invokes a refresh of the data models based on plugin states. How the refresh is handled is
 	// entirely up to the developer.
 	// Expected: Boolean
-	virtual bool refreshData() const { return true; }
+	virtual bool refreshData() const
+	{
+		return true;
+	}
 
 	// Retrieve the name of the selected tree item
-	virtual const char * getSelectedTreeItemName() { return nullptr; }
-
+	virtual const char* getSelectedTreeItemName()
+	{
+		return nullptr;
+	}
 
 private:
 	int tempInt_;

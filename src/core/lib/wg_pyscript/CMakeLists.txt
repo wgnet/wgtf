@@ -26,15 +26,15 @@ SET( ALL_SRCS
 	type_converter.cpp
 	type_converter.hpp
 )
-SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS} 
 )
-BW_ADD_LIBRARY( wg_pyscript ${BLOB_SRCS} )
+BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )
 
 WG_TARGET_LINK_PYTHON()
 
-BW_PRECOMPILED_HEADER( wg_pyscript pch.hpp )
-BW_PROJECT_CATEGORY( wg_pyscript "Wargaming Libs" )
+BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Wargaming Libs" )
 

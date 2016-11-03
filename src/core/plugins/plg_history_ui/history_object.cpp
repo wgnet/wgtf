@@ -4,6 +4,7 @@
 #include "core_reflection/generic/generic_object.hpp"
 #include "core_data_model/variant_list.hpp"
 #include "core_data_model/i_value_change_notifier.hpp"
+#include "core_data_model/i_item_role.hpp"
 #include "core_logging/logging.hpp"
 #include "display_object.hpp"
 #include <cassert>
@@ -127,13 +128,43 @@ void HistoryObject::unbindCommandHistoryCallbacks()
 //==============================================================================
 void HistoryObject::pushHistoryItems( const VariantList& history )
 {
-	for(size_t i = 0; i < history.size(); i++)
+	size_t oldSize = historyItems_.size();
+	size_t newSize = history.size();
+	size_t overwriteSize = std::min( oldSize, newSize );
+	size_t insertSize = newSize > oldSize ? newSize - oldSize : 0;
+
+	auto getHistoryItem = [this]( const Variant& variantHistoryItem ) -> ObjectHandleT<DisplayObject>
 	{
 		auto displayObject = defManager_->create<DisplayObject>( false );
-		auto instance = history[i].value<CommandInstancePtr>();
+		auto instance = variantHistoryItem.value<CommandInstancePtr>();
 		displayObject->init( *defManager_, instance );
-		historyItems_.push_back( displayObject );
+		return displayObject;
+	};
+
+	for (size_t i = 0; i < overwriteSize; ++i)
+	{
+		Variant newValue = getHistoryItem( history[i] );
+		IItem* item = historyItems_.item( i );
+		ItemRole::Id roleId = ValueRole::roleId_;
+
+		historyItems_.signalPreItemDataChanged( item, 0, roleId, newValue );
+		item->setData( 0, roleId, newValue );
+		historyItems_.signalPostItemDataChanged( item, 0, roleId, newValue );
 	}
+
+	if (insertSize > 0)
+	{
+		std::vector<Variant> newValues;
+
+		for (size_t i = overwriteSize; i < overwriteSize + insertSize; ++i)
+		{
+			newValues.push_back(getHistoryItem(history[i]));
+		}
+
+		historyItems_.insert(historyItems_.end(), newValues.begin(), newValues.end());
+	}
+
+	historyItems_.resize( newSize );
 }
 
 //==============================================================================
@@ -245,14 +276,11 @@ void HistoryObject::onPostCommandHistoryRemoved( const VariantList & history, si
 void HistoryObject::onCommandHistoryPreReset( const VariantList & history )
 {
 	postHistoryItemsRemoved_.disable();
-	historyItems_.clear();
-	postHistoryItemsRemoved_.enable();
 }
 
 //==============================================================================
 void HistoryObject::onCommandHistoryPostReset( const VariantList & history )
 {
-	postHistoryItemsRemoved_.disable();
 	pushHistoryItems( history );
 	postHistoryItemsRemoved_.enable();
 

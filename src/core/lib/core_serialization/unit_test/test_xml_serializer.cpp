@@ -25,8 +25,6 @@
 #include <cmath>
 #include <limits>
 
-
-
 namespace wgt
 {
 	IDefinitionManager& definitionManager();
@@ -235,15 +233,10 @@ namespace wgt
 
 			Reflection::initReflectedTypes( s_definitionManager );
 
-			static MetaTypeImpl< SimpleTestObject > s_simpleTestObjectType( "SimpleTestObject" );
-			Variant::registerType( &s_simpleTestObjectType );
-
 			s_managerPtr = &s_definitionManager;
 		}
 		return *s_managerPtr;
 	}
-
-
 
 BEGIN_EXPOSE( SimpleTestObject, MetaNone() )
 	EXPOSE( "string", s_ )
@@ -259,7 +252,6 @@ BEGIN_EXPOSE( ComplexTestObject, MetaNone() )
 	EXPOSE( "map_string_to_int", s_i_ )
 	EXPOSE( "maps_string_to_obj", xs_obj_ )
 END_EXPOSE()
-
 
 TEST( XMLSerializer_simple )
 {
@@ -283,6 +275,24 @@ TEST( XMLSerializer_simple )
 	CHECK( s == "hello" );
 }
 
+TEST(XMLSerializer_void)
+{
+	ResizingMemoryStream dataStream;
+	XMLSerializer serializer(dataStream, definitionManager());
+
+	Variant voidSource(MetaType::get<void>());
+	CHECK(voidSource.isVoid());
+	CHECK(serializer.serialize(voidSource));
+
+	CHECK(serializer.sync());
+	CHECK_EQUAL(0, dataStream.seek(0));
+
+	Variant voidDest;
+	CHECK(serializer.deserialize(voidDest));
+
+	CHECK(voidDest.isVoid());
+	CHECK(voidDest == voidSource);
+}
 
 TEST( XMLSerializer_reflected )
 {
@@ -316,3 +326,4 @@ TEST( XMLSerializer_reflected )
 	CHECK( *dstTestObj != *tmpTestObj );
 }
 } // end namespace wgt
+META_TYPE(wgt::SimpleTestObject)

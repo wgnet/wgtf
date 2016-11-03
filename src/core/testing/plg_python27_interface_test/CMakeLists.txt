@@ -4,12 +4,14 @@ PROJECT( plg_python27_interface_test )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGPython27Common )
 
+FIND_PACKAGE( QT5 )
 
 SET( PYTHON_SRCS
-	scripts/python27_test/__init__.py
+	resources/Scripts/python27_test/__init__.py
 )
 SOURCE_GROUP( "Python" FILES ${PYTHON_SRCS} )
-
+BW_QT_ADD_QRC( Scripts resources/Scripts )
+BW_GLOB_RESOURCE_FILES()
 
 SET( ALL_SRCS
 	main_application.cpp
@@ -20,23 +22,24 @@ SET( ALL_SRCS
 	python27_interface_test.cpp
 	python27_interface_test.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 	${BLOB_SRCS}
+	${COMPILED_RESOURCES}
 	${PYTHON_SRCS}
+	${RESOURCE_FILES}
 )
  
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_generic_plugin
 	core_reflection
 	core_unit_test
+	Qt5::Core
 )
-
-WG_DEPLOY_PYTHON( ${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/scripts scripts/${PROJECT_NAME} )
 
 BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Plugins" )

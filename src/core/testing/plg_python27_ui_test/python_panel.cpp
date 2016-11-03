@@ -1,6 +1,5 @@
 #include "python_panel.hpp"
 #include "core_logging/logging.hpp"
-#include "core_variant/default_meta_type_manager.hpp"
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
@@ -40,8 +39,8 @@ bool PythonPanel::addPanel()
 		NGT_ERROR_MSG("Failed to find IViewCreator\n");
 		return false;
 	}
-	viewCreator->createView(
-		"Python27UITest/PythonObjectTestPanel.qml", contextObject_, pythonView_ );
+	pythonView_ = viewCreator->createView(
+		"Python27UITest/PythonObjectTestPanel.qml", contextObject_ );
 	return true;
 }
 
@@ -56,9 +55,11 @@ void PythonPanel::removePanel()
 		return;
 	}
 
-	if (pythonView_ != nullptr)
+	if (pythonView_.valid())
 	{
-		uiApplication->removeView( *pythonView_ );
+        auto view = pythonView_.get();
+		uiApplication->removeView( *view );
+        view = nullptr;
 	}
 }
 } // end namespace wgt

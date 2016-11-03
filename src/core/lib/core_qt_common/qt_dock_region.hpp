@@ -4,20 +4,25 @@
 #include "core_ui_framework/i_region.hpp"
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/layout_tags.hpp"
+#include "core_dependency_system/depends.hpp"
 #include <map>
 #include <memory>
 
 class QDockWidget;
+class QWidget;
 
 namespace wgt
 {
 class IQtFramework;
+class IUIApplication;
+class IComponentContext;
 class QtWindow;
 
 class QtDockRegion : public IRegion
+				   , public Depends<IQtFramework, IUIApplication>
 {
 public:
-	QtDockRegion( IQtFramework & qtFramework, QtWindow & qtWindow, QDockWidget & qDockWidget );
+	QtDockRegion( IComponentContext & context, QtWindow & qtWindow, QDockWidget & qDockWidget );
 
 	const LayoutTags & tags() const override;
 
@@ -28,14 +33,14 @@ public:
 private:
 	void setDefaultPreferenceForDockWidget( QDockWidget * qDockWidget );
 
-	IQtFramework & qtFramework_;
 	QtWindow & qtWindow_;
 	QDockWidget & qDockWidget_;
 	LayoutTags tags_;
 	bool hidden_;
 	typedef std::pair< std::unique_ptr< QDockWidget >, std::unique_ptr< IAction > > DockData;
 	std::map< IView*, DockData > dockWidgetMap_;
-	std::vector<QDockWidget*> needToRestorePreference_;
+    typedef std::pair<QDockWidget*, IView*> DockPair;
+    std::vector<DockPair> needToRestorePreference_;
 };
 } // end namespace wgt
 #endif//QT_DOCK_REGION_HPP

@@ -2,7 +2,9 @@
 #define CUSTOM_MODEL_INTERFACE_TEST__HPP
 
 #include <memory>
+#include "core_common/wg_future.hpp"
 #include "core_dependency_system/depends.hpp"
+#include "core_ui_framework/i_view.hpp"
 
 namespace wgt
 {
@@ -21,7 +23,7 @@ public:
 	void fini( IComponentContext & contextManager );
 
 private:
-	std::unique_ptr< IView > testView_;
+	wg_future<std::unique_ptr< IView >> testView_;
 };
 } // end namespace wgt
 #endif//CUSTOM_MODEL_INTERFACE_TEST__HPP

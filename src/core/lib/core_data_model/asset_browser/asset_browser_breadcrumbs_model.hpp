@@ -9,48 +9,46 @@ class IDefinitionManager;
 class IAssetObjectItem;
 
 //------------------------------------------------------------------------------
-// AssetBrowserBreadcrumbsModel
+// AssetBrowserBreadcrumbsModelOld
 //
-// An implementation of the IBreadcrumbsModel that is specific to the
-// Asset Browser and manipulating IAssetObjectItems.
+// An implementation of the IBreadcrumbsModelOld that is specific to the
+// Asset Browser and manipulating IAssetObjectItemsOld.
 //------------------------------------------------------------------------------
 
 class AssetBrowserBreadcrumbsModel : public IBreadcrumbsModel
 {
 public:
-
 	//
 	// Lifecycle
 	//
 
-	AssetBrowserBreadcrumbsModel( IDefinitionManager & definitionManager );
+	AssetBrowserBreadcrumbsModel(IDefinitionManager& definitionManager);
 
 	virtual ~AssetBrowserBreadcrumbsModel() override;
-	
+
 	//
 	// IBreadcrumbsModel Implementation
 	//
 
-	virtual IListModel * getBreadcrumbs() const override;
+	virtual IListModel* getBreadcrumbs() const override;
 
-	virtual const char * getPath() const override;
+	virtual const char* getPath() const override;
 
-	virtual Variant getItemAtIndex( unsigned int index, int childIndex ) override;
+	virtual Variant getItemAtIndex(unsigned int index, int childIndex) override;
 
 	virtual void clear() override;
 
 	virtual size_t size() const override;
-	
+
 	//
 	// Asset Browser Breadcrumbs Implementation
 	//
 
-	virtual void generateBreadcrumbs( const IItem * item, const ITreeModel * model );
+	virtual void generateBreadcrumbs(const IItem* item, const ITreeModel* model);
 
-	virtual void setPath( const char * path );
+	virtual void setPath(const char* path);
 
 private:
-
 	//
 	// Private Implementation Principle
 	//

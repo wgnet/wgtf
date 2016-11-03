@@ -4,17 +4,25 @@ PROJECT( wg_memory )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
+ADD_DEFINITIONS( -DWG_MEMORY_EXPORT )
+
 SET( ALL_SRCS
 	allocator.hpp
 	allocator.cpp
 	memory_overrides.hpp
+	wg_memory_dll.hpp
 )
-SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS} 
 )
-BW_ADD_LIBRARY( wg_memory ${BLOB_SRCS} )
+BW_ADD_LIBRARY( ${PROJECT_NAME} SHARED ${BLOB_SRCS} )
 
-BW_PROJECT_CATEGORY( wg_memory "Wargaming Libs" )
+BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME}
+	core_common
+	wg_types
+)
+
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Wargaming Libs" )
 

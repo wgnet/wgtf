@@ -2,11 +2,18 @@
 #include "main_application.hpp"
 
 #include "core_generic_plugin/generic_plugin.hpp"
-#include "core_variant/variant.hpp"
 
 
 namespace wgt
 {
+/**
+* A plugin which queries the IPythonScriptingEngine and runs unit tests on its interface
+*
+* @ingroup plugins 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - Python27Plugin
+*/
 class Python27TestPlugin
 	: public PluginMain
 {
@@ -25,7 +32,6 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
 	}
 
 

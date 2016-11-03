@@ -1,0 +1,128 @@
+#include "logging_data_model.hpp"
+
+#include "core_logging_system/log_message.hpp"
+
+#include <sstream>
+#include <regex>
+
+namespace wgt
+{
+
+//------------------------------------------------------------------------------
+// Implementation
+//------------------------------------------------------------------------------
+
+struct LoggingDataModel::Implementation
+{
+	Implementation( LoggingDataModel& self );
+
+	LoggingDataModel& self_;
+	std::string text_;
+};
+
+LoggingDataModel::Implementation::Implementation( LoggingDataModel& self )
+	: self_( self )
+{
+}
+
+
+//------------------------------------------------------------------------------
+// Logger
+//------------------------------------------------------------------------------
+
+Logger::Logger( std::shared_ptr< ILoggingModel > loggingModel )
+	: loggingModel_( loggingModel )
+{
+}
+
+void Logger::out( LogMessage* message )
+{
+	if ( message != nullptr && loggingModel_.get() != nullptr )
+	{
+		std::string remark = message->str();
+		// Trim tailing new line each remark is in a <div>
+		if(!remark.empty() && *remark.rbegin() == '\n')
+		{
+			remark.erase(--remark.end());
+		}
+		// Remove carriage returns
+		remark = regex_replace(remark, std::regex("\r"), std::string(" "));
+		// Replace double quotes with singles to allow assigning innerHTML in javascript
+		remark = regex_replace(remark, std::regex("\""), std::string("'"));
+		// Replace new lines with breaks
+		remark = regex_replace(remark, std::regex("\n"), std::string("<br>"));
+		
+		// Rather than modify all lines of code that use <color> tags we replace them here with the supported <font> tags
+		remark = regex_replace(remark, std::regex("<color\\svalue=['\"](.*)['\"]>"), std::string("<font color='$1'>"));
+		remark = regex_replace(remark, std::regex("</color>"), std::string("</font>"));
+		
+		// In order to keep formatted whitespace we wrap the line in a div
+		std::stringstream ss;
+		ss << "<div style='white-space: pre;'>";
+
+		switch(message->getLevel())
+		{
+		case LOG_FATAL:
+		case LOG_ERROR:
+			ss << "<font color='red'>(" << message->getLevelString() << ") ";
+			break;
+		case LOG_WARNING:
+			ss << "<font color='gold'>(" << message->getLevelString() << ") ";
+			break;
+		case LOG_ALERT:
+			ss << "<font color='green'>(" << message->getLevelString() << ") ";
+			break;
+		case LOG_INFO:
+			ss << "<font color='#aaaaaa'>";
+			break;
+		case LOG_DEBUG:
+		default:
+			ss << "<font>";
+		}
+		ss << remark << "</font></div>";
+
+		loggingModel_->appendText( ss.str() );
+	}
+}
+
+
+//------------------------------------------------------------------------------
+// Data Model
+// Data passed to the QML panel to be used by the control(s).
+//------------------------------------------------------------------------------
+
+LoggingDataModel::LoggingDataModel()
+	: impl_( new Implementation( *this ) )
+{
+}
+
+LoggingDataModel::~LoggingDataModel()
+{
+	if (impl_ != nullptr)
+	{
+		impl_.reset();
+	}
+}
+
+const std::string& LoggingDataModel::getText() const
+{
+	return impl_->text_;
+}
+
+void LoggingDataModel::putText( const std::string& text )
+{
+	impl_->text_ = text;
+}
+
+void LoggingDataModel::appendText( const std::string& text )
+{
+	impl_->text_ += text;
+	setText(impl_->text_);
+}
+
+void LoggingDataModel::clear()
+{
+	setText("");
+}
+
+} // end namespace wgt

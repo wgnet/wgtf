@@ -5,6 +5,7 @@
 
 #include "core_reflection/generic/base_generic_object.hpp"
 #include "wg_pyscript/py_script_object.hpp"
+#include "core_serialization/text_stream.hpp"
 
 #include <memory>
 
@@ -106,8 +107,44 @@ private:
 	std::string fullPath_;
 };
 
-
+TextStream& operator<<( TextStream& stream, const DefinedInstance& value );
 
 } // namespace ReflectedPython
+
+template<>
+class MetaTypeImpl<ReflectedPython::DefinedInstance>:
+	public MetaType
+{
+	typedef MetaType base;
+	typedef ReflectedPython::DefinedInstance value_type;
+
+public:
+	MetaTypeImpl();
+
+	void init(void* value) const override;
+	void copy(void* dest, const void* src) const override;
+	void move(void* dest, void* src) const override;
+	void destroy(void* value) const override;
+	bool equal(const void* lhs, const void* rhs) const override;
+
+	void streamOut(TextStream& stream, const void* value) const override;
+	void streamIn(TextStream& stream, void* value) const override;
+
+	void streamOut(BinaryStream& stream, const void* value) const override;
+	void streamIn(BinaryStream& stream, void* value) const override;
+
+protected:
+	static value_type& cast(void* value)
+	{
+		return *static_cast<value_type*>(value);
+	}
+
+	static const value_type& cast(const void* value)
+	{
+		return *static_cast<const value_type*>(value);
+	}
+
+};
+
 } // end namespace wgt
 #endif // PYTHON_DEFINED_INSTANCE_HPP

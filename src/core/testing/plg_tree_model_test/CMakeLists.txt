@@ -22,7 +22,7 @@ SET( ALL_SRCS
 	test_tree_model.hpp
 	plg_tree_model_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_QT_ADD_QRC(plg_tree_model_test resources/plg_tree_model_test)
 BW_GLOB_RESOURCE_FILES()
@@ -37,6 +37,7 @@ BW_TARGET_LINK_LIBRARIES( plg_tree_model_test PRIVATE
 	core_generic_plugin
 	core_qt_common
 	core_ui_framework
+	data_model_test
 	Qt5::Core
 )
 

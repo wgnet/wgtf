@@ -1,8 +1,9 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 
 /*!
+ \ingroup wgcontrols
  \brief An Expandable Subpanel/GroupBox
  Prebuilt alternatives: WGInternalPanel, WGGroupBox.
  Will not work properly in a WGFormLayout, use WGColumnLayout instead.
@@ -25,6 +26,7 @@ WGSubPanel {
 Rectangle {
     id: mainPanel
     objectName: "WGSubPanel"
+    WGComponent { type: "WGSubPanel" }
 
     /*! This property holds the panel title text
         The default value is an empty string
@@ -149,6 +151,9 @@ Rectangle {
     property alias titleFontSize: headerLabel.font.pointSize
 
     property alias subtitleFontSize: headerSubLabel.font.pointSize
+
+	/** Switch to load asynchronously or synchronously.*/
+    property bool asynchronous: false
 
     //delay so panels don't animate when control is created
     Component.onCompleted: {
@@ -487,9 +492,10 @@ Rectangle {
         }
 
         //controls that can be placed in the header itself
-        Loader {
+        WGLoader {
             id: headerControl
-
+			asynchronous: mainPanel.asynchronous
+			loading: !(status == Loader.Ready) && headerObject != null
             anchors.left: headerBox.right
             anchors.right: panelMenu.left
             anchors.verticalCenter: parent.verticalCenter
@@ -517,11 +523,12 @@ Rectangle {
 
     //loads child object.
     //Highly recommended first child object is a WGColumnLayout or similar
-    Loader {
+    WGLoader {
         id: content
 
         clip: clipContents
-
+		asynchronous: mainPanel.asynchronous
+		loading: !(status == Loader.Ready) && childObject != null
         anchors {left: parent.left; right: parent.right}
 
         anchors.top: headerPanel.bottom

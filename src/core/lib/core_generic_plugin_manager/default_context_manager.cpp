@@ -66,6 +66,8 @@ DefaultComponentContext::~DefaultComponentContext()
 		registeredInterfaces_.erase( interface.second->getImpl() );
 		delete interface.second;
 	}
+	interfaces_.clear();
+
 	if(parentContext_ == nullptr)
 	{
 		return;

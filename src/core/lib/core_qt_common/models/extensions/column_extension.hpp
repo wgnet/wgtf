@@ -12,11 +12,7 @@ public:
 	ColumnExtension();
 	virtual ~ColumnExtension();
 
-	QHash< int, QByteArray > roleNames() const override;
-	QVariant data( const QModelIndex &index, int role ) const override;
-	bool setData( const QModelIndex &index,
-		const QVariant &value,
-		int role ) override;
+	QVariant data( const QModelIndex &index, ItemRole::Id roleId ) const override;
 
 	void onLayoutAboutToBeChanged(
 		const QList< QPersistentModelIndex > & parents, 

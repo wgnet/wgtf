@@ -94,17 +94,17 @@ namespace
 }
 
 
-const char INDEX_OPEN = '[';
-const char INDEX_CLOSE = ']';
-const char DOT_OPERATOR = '.';
-
-
 //------------------------------------------------------------------------------
 ClassDefinition::ClassDefinition( std::unique_ptr<IClassDefinitionDetails> details )
 	: details_( std::move(details) )
 {
 }
 
+
+//------------------------------------------------------------------------------
+ClassDefinition::~ClassDefinition()
+{
+}
 
 //------------------------------------------------------------------------------
 const IClassDefinitionDetails & ClassDefinition::getDetails() const
@@ -277,10 +277,22 @@ void ClassDefinition::bindPropertyImpl(
 	if (*propOperator == DOT_OPERATOR)
 	{
 		ObjectHandle propObject;
-		if (!propVal.tryCast( propObject ))
+		auto typeId = propVal.type()->typeId();
+		auto defManager = getDefinitionManager();
+		assert(defManager != nullptr);
+		auto def = defManager->getDefinition(typeId.getName());
+		if (def != nullptr)
+		{
+			propObject = ObjectHandle(propVal, def);
+		}
+		else if (propVal.typeIs<ObjectHandle>())
+		{
+			propObject = propVal.cast<ObjectHandle>();
+		}
+		else
 		{
 			// error: dot operator is applicable to objects only
-			o_PropertyAccessor.setBaseProperty( nullptr );
+			o_PropertyAccessor.setBaseProperty(nullptr);
 			return;
 		}
 

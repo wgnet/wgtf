@@ -337,8 +337,9 @@ MetaHandle QtScriptObject::getMetaObject(
 	const QString& property,
 	const QString& metaType ) const
 {
-	QString metaClassName = "class Meta" + metaType + "Obj";
-	TypeId metaTypeId( metaClassName.toUtf8().data() );
+	QString metaClassName = "class wgt::Meta" + metaType + "Obj";
+	std::string strMetaClassName = metaClassName.toUtf8().constData();
+	TypeId metaTypeId(strMetaClassName.c_str());
 
 	auto metaObject = getMetaObject( definition, property );
 	return findFirstMetaData( metaTypeId, metaObject, *data_->get< IDefinitionManager >() );

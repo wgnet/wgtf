@@ -1,0 +1,15 @@
+module WGControls.Layouts
+
+# 2.0 Unchanged Controls
+WGBoolGridLayout 2.0 WGBoolGridLayout.qml
+WGColumnLayout 2.0 WGColumnLayout.qml
+WGDraggableColumn 2.0 WGDraggableColumn.qml
+WGExpandingRowLayout 2.0 WGExpandingRowLayout.qml
+WGFormLayout 2.0 WGFormLayout.qml
+
+# 1.0 Controls
+WGBoolGridLayout 1.0 WGBoolGridLayout.qml
+WGColumnLayout 1.0 WGColumnLayout.qml
+WGDraggableColumn 1.0 WGDraggableColumn.qml
+WGExpandingRowLayout 1.0 WGExpandingRowLayout.qml
+WGFormLayout 1.0 WGFormLayout.qml

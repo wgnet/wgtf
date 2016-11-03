@@ -1,7 +1,9 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
+import WGControls.Styles 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A Frame that can be broken up into X textboxes
  Can use separators or decimal places between each box
 
@@ -42,6 +44,7 @@ WGSplitTextFrame {
 WGTextBoxFrame {
     id: mainFrame
     objectName: "WGSplitTextFrame"
+    WGComponent { type: "WGSplitTextFrame" }
 
     /*! This property contains the list of textboxes to be displayed in the frame */
     property list<QtObject> boxList
@@ -89,7 +92,6 @@ WGTextBoxFrame {
         anchors.margins: defaultSpacing.standardMargin
     }
 
-    //TODO give this frame a disabled state
     Row {
         Repeater {
             model: boxList

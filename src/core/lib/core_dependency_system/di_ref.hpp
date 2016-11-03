@@ -14,29 +14,51 @@ class DIRef
 {
 public:
 	//--------------------------------------------------------------------------
-	DIRef( IComponentContext & contextManager )
-		: contextManager_( contextManager )
+	DIRef( IComponentContext & context )
+		: context_( &context )
 		, pValue_( nullptr )
 	{
-		contextManager_.registerListener( *this );
+		context_->registerListener( *this );
+		pValue_ = context.queryInterface< T >();
+	}
+
+
+	//--------------------------------------------------------------------------
+	DIRef( const DIRef& that )
+		: context_( that.context_ )
+		, pValue_( nullptr )
+	{
+		context_->registerListener( *this );
+		pValue_ = that.pValue_;
 	}
 
 
 	//--------------------------------------------------------------------------
 	~DIRef()
 	{
-		contextManager_.deregisterListener( *this );
+		context_->deregisterListener( *this );
+	}
+
+
+	//--------------------------------------------------------------------------
+	DIRef& operator=( const DIRef& that )
+	{
+		if(context_ != that.context_)
+		{
+			context_->deregisterListener( *this );
+			context_ = that.context_;
+			context_->registerListener( *this );
+		}
+
+		pValue_ = that.pValue_;
+
+		return *this;
 	}
 
 
 	//--------------------------------------------------------------------------
 	T * get() const
 	{
-		if(pValue_== nullptr)
-		{
-			pValue_ = contextManager_.queryInterface< T >();
-		}
-		
 		return pValue_;
 	}
 
@@ -44,7 +66,7 @@ public:
 	//--------------------------------------------------------------------------
 	void get( std::vector< T * > & interfaces ) const
 	{
-		contextManager_.queryInterface< T >( interfaces );
+		context_->queryInterface< T >( interfaces );
 	}
 
 
@@ -98,8 +120,8 @@ private:
 		}
 	}
 
-	IComponentContext & contextManager_;
-	mutable T * pValue_;
+	IComponentContext * context_;
+	T * pValue_;
 };
 } // end namespace wgt
 #endif //DI_REF_HPP

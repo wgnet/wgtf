@@ -3,11 +3,13 @@ import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
 import WGControls 1.0
+import WGControls.Layouts 1.0
 
 
 // Component for displaying compound commands
 Item {
-
+    WGComponent { type: "WGCompoundCommandDelegate" }
+    
     height: Math.max( defaultSpacing.minimumRowHeight, macroRow.height )
 
     property QtObject macroWindow: WGMacroEditWindow{}
@@ -48,7 +50,6 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                z: 10
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
 

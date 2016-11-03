@@ -13,10 +13,11 @@ namespace wgt
 {
 class IClassDefinitionDetails;
 
-class ClassDefinition : public IClassDefinition
+class REFLECTION_DLL ClassDefinition : public IClassDefinition
 { 
 public: 
 	ClassDefinition( std::unique_ptr<IClassDefinitionDetails> details );
+	virtual ~ClassDefinition();
 
 	const IClassDefinitionDetails & getDetails() const override;
 

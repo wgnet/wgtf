@@ -22,20 +22,13 @@ ObjectHandleVariantStorage::ObjectHandleVariantStorage( Variant* variant, const 
 
 void* ObjectHandleVariantStorage::data() const
 {
-	return variantPtr_->castPtr< void >();
+	return const_cast<void*>(variantPtr_->value<const void*>());
 }
 
 
 TypeId ObjectHandleVariantStorage::type() const
 {
-	if( const std::type_info* pointedType = variantPtr_->type()->pointedType() )
-	{
-		return TypeId( pointedType->name() );
-	}
-	else
-	{
-		return variantPtr_->type()->typeId();
-	}
+	return variantPtr_->type()->typeId();
 }
 
 

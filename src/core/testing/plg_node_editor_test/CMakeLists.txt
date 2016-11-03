@@ -10,13 +10,10 @@ INCLUDE( WGToolsProject )
 #include_directories   ( ${CMAKE_CURRENT_BINARY_DIR})
 #include_directories   (${ADDITIONAL_INCLUDES})
 
-add_definitions       (-DNGT_INTEGRATION)
-
-
 SOURCE_GROUP("Resource Files" FILES ${RESOURCE_FILES} )
 SOURCE_GROUP("Compiled Resources" FILES ${COMPILED_RESOURCES})
 
-SET( IMPLEMENTS
+SET( ALL_SRCS
 	implements/CustomGraph.h
 	implements/CustomGraph.cpp
 	implements/CustomConnection.h
@@ -33,17 +30,12 @@ SET( IMPLEMENTS
     implements/PrintNode.cpp
     implements/StringSlot.h
     implements/StringSlot.cpp
-)
-SOURCE_GROUP( "Implements Files" FILES ${IMPLEMENTS} )
-
-SET( ALL_SRCS
 	plg_node_editor_test.cpp
 )                                     
-SOURCE_GROUP( "Source Files" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_node_editor_test SHARED
 	${ALL_SRCS}
-	${IMPLEMENTS}
 )
 
 BW_TARGET_LINK_LIBRARIES( plg_node_editor_test PRIVATE

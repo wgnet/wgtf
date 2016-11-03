@@ -45,6 +45,7 @@ QmlComponentLoaderHelper::QmlComponentLoaderHelper(
 		case QQmlComponent::Error:
 			NGT_WARNING_MSG("Error loading control %s\n",
 				qPrintable(data->qmlComponent_->errorString()));
+            data->sig_Error_( data->qmlComponent_ );
 			delete data;
 			return;
 

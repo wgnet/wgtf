@@ -70,7 +70,17 @@ public:
 };
 
 
-//==============================================================================
+/**
+* A plugin which tests using multiple registered interfaces of the same type 
+* (including major and minor versions) by outputting test data to the debug window
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - FileSystemPlugin
+*       - ReflectionPlugin
+*       - CommandSystemPlugin
+*       - MainTestPlugin
+*/
 class TestPlugin3
 	: public PluginMain
 {

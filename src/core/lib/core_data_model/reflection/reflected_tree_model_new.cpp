@@ -1,6 +1,9 @@
 #include "reflected_tree_model_new.hpp"
 #include "reflected_object_item_new.hpp"
 
+#include "core_data_model/i_item_role.hpp"
+#include "core_data_model/common_data_roles.hpp"
+
 #include "core_reflection/property_accessor_listener.hpp"
 
 #include <vector>
@@ -8,6 +11,14 @@
 
 namespace wgt
 {
+ITEMROLE( key )
+ITEMROLE( keyType )
+ITEMROLE( isCollection )
+ITEMROLE( elementValueType )
+ITEMROLE( elementKeyType )
+ITEMROLE( readOnly )
+ITEMROLE( enabled )
+ITEMROLE( multipleValues )
 namespace
 {
 
@@ -304,6 +315,55 @@ bool ReflectedTreeModelNew::hasChildren(
 		return true;
 	}
 	return false;
+}
+
+
+std::vector< std::string > ReflectedTreeModelNew::roles() const
+{
+	std::vector< std::string > roles;
+	roles.push_back( ItemRole::valueName );
+	roles.push_back( ItemRole::valueTypeName );
+	roles.push_back( ItemRole::keyName );
+	roles.push_back( ItemRole::keyTypeName );
+	roles.push_back( ItemRole::isCollectionName );
+	roles.push_back( ItemRole::elementValueTypeName );
+	roles.push_back( ItemRole::elementKeyTypeName );
+	roles.push_back( ItemRole::readOnlyName );
+	roles.push_back( ItemRole::enabledName );
+	roles.push_back( ItemRole::multipleValuesName );
+	//DEPRECATED
+	roles.push_back( EnumModelRole::roleName_ );
+	roles.push_back( DefinitionRole::roleName_ );
+	roles.push_back( DefinitionModelRole::roleName_ );
+	roles.push_back( ObjectRole::roleName_ );
+	roles.push_back( RootObjectRole::roleName_ );
+	roles.push_back( MinValueRole::roleName_ );
+	roles.push_back( MaxValueRole::roleName_ );
+	roles.push_back( StepSizeRole::roleName_ );
+	roles.push_back( DecimalsRole::roleName_ );
+	roles.push_back( IndexPathRole::roleName_ );
+	roles.push_back( UrlIsAssetBrowserRole::roleName_ );
+	roles.push_back( UrlDialogTitleRole::roleName_ );
+	roles.push_back( UrlDialogDefaultFolderRole::roleName_ );
+	roles.push_back( UrlDialogNameFiltersRole::roleName_ );
+	roles.push_back( UrlDialogSelectedNameFilterRole::roleName_ );
+	roles.push_back( UrlDialogModalityRole::roleName_ );
+	roles.push_back( IsReadOnlyRole::roleName_ );
+	roles.push_back( IsEnumRole::roleName_ );
+	roles.push_back( IsThumbnailRole::roleName_ );
+	roles.push_back( IsSliderRole::roleName_ );
+	roles.push_back( IsColorRole::roleName_ );
+	roles.push_back(IsActionRole::roleName_);
+	roles.push_back( IsUrlRole::roleName_ );
+	roles.push_back(IsActionRole::roleName_);
+	roles.push_back( ThumbnailRole::roleName_ );
+	return roles;
+}
+
+
+bool ReflectedTreeModelNew::hasController() const /* override */
+{
+	return true;
 }
 
 

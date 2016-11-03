@@ -88,6 +88,8 @@ private:
 
 	const std::string & getAssetUrl() const;
 	void setAssetUrl( const std::string & url );
+
+	void methodOnly();
 	
 	bool bChecked_;
 	bool boolTest_;

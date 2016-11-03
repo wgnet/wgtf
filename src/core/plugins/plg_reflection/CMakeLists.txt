@@ -17,7 +17,7 @@ SET( ALL_SRCS
 	plg_reflection.cpp
 	reflection_component_provider.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_reflection SHARED
 	${ALL_SRCS}

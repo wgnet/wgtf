@@ -6,6 +6,8 @@
 #include <vector>
 #include <mutex>
 
+#include "wg_types/hash_utilities.hpp"
+
 #include "core_common/ngt_windows.hpp"
 #include "core_common/thread_local_value.hpp"
 
@@ -20,6 +22,7 @@ namespace wgt
 {
 static bool ALLOCATOR_DEBUG_OUTPUT = false;
 static bool ALLOCATOR_STACK_TRACES = false;
+static bool ALLOCATOR_LEAK_DETECTION = false;
 
 // Windows stack helper function definitions
 typedef USHORT (__stdcall* RtlCaptureStackBackTraceFuncType)(ULONG FramesToSkip, ULONG FramesToCapture, PVOID* BackTrace, PULONG BackTraceHash);
@@ -141,6 +144,8 @@ private:
 		}
 	};
 
+	typedef std::basic_string<char, std::char_traits<char>, UntrackedAllocator<char>> UntrackedString;
+
 public:
 	MemoryContext()
 		: allocId_( 0 )
@@ -171,6 +176,8 @@ public:
 
 	~MemoryContext()
 	{
+		const auto success = printLeaks();
+		assert((ALLOCATOR_LEAK_DETECTION ? success : true) && "Memory leaks detected");
 		if (parentContext_ != nullptr)
 		{
 			std::lock_guard< std::mutex > childContextsGuard(parentContext_->childContextsLock_);
@@ -249,10 +256,83 @@ public:
 		}
 
 		// failed to find a proper context
-		assert( false );
+		char msg[ 128 ];
+		snprintf( msg, 128, "deallocate: failed to find memory context for %p\n", ptr );
+		::OutputDebugStringA( msg );
+
+		::free( ptr );
 	}
 
-	void cleanup()
+	UntrackedString resolveSymbol(HANDLE currentProcess, void* ptr)
+	{
+		auto findIt = stackCache_.find(ptr);
+		if (findIt != stackCache_.end())
+		{
+			return findIt->second;
+		}
+
+		UntrackedString builder;
+
+		// Allocate a buffer large enough to hold the symbol information on the stack and get
+		// a pointer to the buffer.  We also have to set the size of the symbol structure itself
+		// and the number of bytes reserved for the name.
+		const int MaxSymbolNameLength = 1024;
+		ULONG64 buffer[(sizeof(SYMBOL_INFO) + MaxSymbolNameLength + sizeof(ULONG64) - 1) / sizeof(ULONG64)] = { 0 };
+		SYMBOL_INFO* info = (SYMBOL_INFO*)buffer;
+		info->SizeOfStruct = sizeof(SYMBOL_INFO);
+		info->MaxNameLen = MaxSymbolNameLength;
+
+		// Attempt to get information about the symbol and add it to our output parameter.
+		DWORD64 displacement64 = 0;
+		DWORD displacement = 0;
+
+		char nameBuf[1024] = { 0 };
+		if (SymFromAddrFunc(
+		    currentProcess,
+		    (DWORD64)ptr,
+		    &displacement64, info))
+		{
+			strncat(nameBuf, info->Name, info->NameLen);
+		}
+		else
+		{
+			// Unable to find the name, so lets get the module or address
+			MEMORY_BASIC_INFORMATION mbi;
+			char fullPath[MAX_PATH];
+			if (VirtualQuery(ptr, &mbi, sizeof(mbi)) &&
+			    GetModuleFileNameA((HMODULE)mbi.AllocationBase, fullPath, sizeof(fullPath)))
+			{
+				// Get base name of DLL
+				char* filename = strrchr(fullPath, '\\');
+				strncpy_s(nameBuf, sizeof(nameBuf), filename == NULL ? fullPath : (filename + 1), _TRUNCATE);
+			}
+			else
+			{
+				sprintf_s(nameBuf, sizeof(nameBuf), "0x%p", ptr);
+			}
+		}
+
+		IMAGEHLP_LINE64 source_info;
+		char lineBuffer[1024] = { 0 };
+		::ZeroMemory(&source_info, sizeof(IMAGEHLP_LINE64));
+		source_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+		if (SymGetLineFromAddr64Func(
+		    currentProcess,
+		    (DWORD64)ptr,
+		    &displacement, &source_info))
+		{
+			sprintf(lineBuffer, "%s(%d)", source_info.FileName, source_info.LineNumber);
+		}
+		char outputBuffer[2048] = { 0 };
+		sprintf(outputBuffer, "%s : %s\n", lineBuffer, nameBuf);
+		builder.append(outputBuffer);
+
+		stackCache_.insert(std::make_pair(ptr, builder));
+
+		return builder;
+	}
+
+	void initSymbols()
 	{
 #ifdef _WIN32
 		HMODULE dbghelp  = ::LoadLibraryA( "dbghelp.dll" );
@@ -277,150 +357,192 @@ public:
 
 		auto currentProcess = ::GetCurrentProcess();
 
-		std::basic_string< char, std::char_traits< char >, UntrackedAllocator< char > > builder;
-
 		static bool symbolsLoaded = false;
-		if (!symbolsLoaded)
+		if (symbolsLoaded)
 		{
-			// build PDB path that should be the same as executable path
-			{
-				char path[_MAX_PATH] = { 0 };
-				wcstombs(path, name_, wcslen(name_));
-
-				// check that the pdb actually exists and is accessible, if it doesn't then SymInitialize will raise an obscure error dialog
-				// so just disable complete callstacks if it is not there
-				char* pend = nullptr; 
-				if ((pend = strrchr( path, '.')))
-					*pend = 0;
-				strcat( path, ".pdb" );
-				FILE *f = fopen( path, "rb" );
-				if ( f == NULL )
-				{
-					return;
-				}
-				fclose( f );
-
-				if ((pend = strrchr(path, '\\')))
-				{
-					*pend = 0;
-				}
-				else if ((pend = strrchr(path, '/')))
-				{
-					*pend = 0;
-				}
-
-				builder.append( path );
-			}
-
-			// append the working directory.
-			builder.append( ";.\\" );
-
-			// append %SYSTEMROOT% and %SYSTEMROOT%\system32.
-			char * env = getenv( "SYSTEMROOT" );
-			if (env)
-			{
-				builder.append( ";" );
-				builder.append( env );
-			}
-
-			// append %_NT_SYMBOL_PATH% and %_NT_ALT_SYMBOL_PATH%.
-			if ((env = getenv( "_NT_SYMBOL_PATH" )))
-			{
-				builder.append( ";" );
-				builder.append( env );
-			}
-			if ((env = getenv( "_NT_ALT_SYMBOL_PATH" )))
-			{
-				builder.append( ";" );
-				builder.append( env );
-			}
-			builder.append( ";" );
-			builder.append( "http://msdl.microsoft.com/download/symbols");
-
-			SymSetOptionsFunc( SYMOPT_LOAD_LINES | SYMOPT_DEFERRED_LOADS | SYMOPT_UNDNAME );
-			SymInitializeFunc( currentProcess, (PSTR) builder.c_str(), TRUE );
-
-			builder.clear();
-
-			symbolsLoaded = true;
+			return;
 		}
 
+		UntrackedString builder;
+
+		// build PDB path that should be the same as executable path
+		{
+			char path[_MAX_PATH] = { 0 };
+			wcstombs(path, name_, wcslen(name_));
+
+			// check that the pdb actually exists and is accessible, if it doesn't then SymInitialize will raise an obscure error dialog
+			// so just disable complete callstacks if it is not there
+			char* pend = nullptr;
+			if ((pend = strrchr(path, '.')))
+				*pend = 0;
+			strcat(path, ".pdb");
+			FILE* f = fopen(path, "rb");
+			if (f == NULL)
+			{
+				return;
+			}
+			fclose(f);
+
+			if ((pend = strrchr(path, '\\')))
+			{
+				*pend = 0;
+			}
+			else if ((pend = strrchr(path, '/')))
+			{
+				*pend = 0;
+			}
+
+			builder.append(path);
+		}
+
+		// append the working directory.
+		builder.append(";.\\");
+
+		// append %SYSTEMROOT% and %SYSTEMROOT%\system32.
+		char* env = getenv("SYSTEMROOT");
+		if (env)
+		{
+			builder.append(";");
+			builder.append(env);
+		}
+
+		// append %_NT_SYMBOL_PATH% and %_NT_ALT_SYMBOL_PATH%.
+		if ((env = getenv("_NT_SYMBOL_PATH")))
+		{
+			builder.append(";");
+			builder.append(env);
+		}
+		if ((env = getenv("_NT_ALT_SYMBOL_PATH")))
+		{
+			builder.append(";");
+			builder.append(env);
+		}
+		builder.append(";");
+		builder.append("http://msdl.microsoft.com/download/symbols");
+
+		SymSetOptionsFunc(SYMOPT_LOAD_LINES | SYMOPT_DEFERRED_LOADS | SYMOPT_UNDNAME);
+		SymInitializeFunc(currentProcess, (PSTR)builder.c_str(), TRUE);
+
+		builder.clear();
+
+		symbolsLoaded = true;
+	}
+
+	void cleanup()
+	{
+		initSymbols();
 		wchar_t contextName[ 2048 ];
 		swprintf( contextName, 2048, L"Destroying memory context for %s\n", name_ );
 		::OutputDebugString( contextName );
+
+		auto currentProcess = ::GetCurrentProcess();
 
 		{
 			std::lock_guard< std::mutex > allocationGuard(allocationLock_);
 			for( auto & liveAllocation : liveAllocations_)
 			{
-				// Allocate a buffer large enough to hold the symbol information on the stack and get
-				// a pointer to the buffer.  We also have to set the size of the symbol structure itself
-				// and the number of bytes reserved for the name.
-				const int MaxSymbolNameLength = 1024;
-				ULONG64 buffer[ (sizeof( SYMBOL_INFO ) + MaxSymbolNameLength + sizeof( ULONG64 ) - 1) / sizeof( ULONG64 ) ] = { 0 };
-				SYMBOL_INFO * info = (SYMBOL_INFO *) buffer;
-				info->SizeOfStruct = sizeof( SYMBOL_INFO );
-				info->MaxNameLen = MaxSymbolNameLength;
-
-				// Attempt to get information about the symbol and add it to our output parameter.
-				DWORD64 displacement64 = 0;
-				DWORD displacement = 0;
-
-				{
-					char allocIdBuffer[ 2048 ] = { 0 };
-					sprintf( allocIdBuffer, "Alloc Id: %lu\n", static_cast< unsigned long >( liveAllocation.second->allocId_ ) );
-					builder.append( allocIdBuffer );
-				}
 				const auto & allocStack = liveAllocation.second;
 				for( size_t i = 0; i < allocStack->frames_; ++i )
 				{
-					char nameBuf[ 1024 ] = { 0 };
-					if (SymFromAddrFunc(
-						currentProcess,
-						(DWORD64) liveAllocation.second->addrs_[ i ],
-						&displacement64, info ))
-					{
-						strncat( nameBuf, info->Name, info->NameLen );
-					}
-					else
-					{
-						// Unable to find the name, so lets get the module or address
-						MEMORY_BASIC_INFORMATION mbi;
-						char fullPath[MAX_PATH];
-						if (VirtualQuery( liveAllocation.second->addrs_[ i ], &mbi, sizeof(mbi) ) &&
-							GetModuleFileNameA( (HMODULE)mbi.AllocationBase, fullPath, sizeof(fullPath) ))
-						{
-							// Get base name of DLL
-							char * filename = strrchr( fullPath, '\\' );
-							strncpy_s( nameBuf, sizeof( nameBuf ), filename == NULL ? fullPath : (filename + 1), _TRUNCATE );
-						}
-						else
-						{
-							sprintf_s( nameBuf, sizeof( nameBuf ), "0x%p", liveAllocation.second->addrs_[ i ] );
-						}
-					}
-
-					IMAGEHLP_LINE64 source_info;
-					char lineBuffer[ 1024 ] = { 0 };
-					::ZeroMemory( &source_info, sizeof(IMAGEHLP_LINE64) );
-					source_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-					if(SymGetLineFromAddr64Func(
-						currentProcess,
-						(DWORD64) liveAllocation.second->addrs_[ i ],
-						&displacement, &source_info ))
-					{
-						sprintf( lineBuffer, "%s(%d)", source_info.FileName, source_info.LineNumber );
-					}
-					char outputBuffer[ 2048 ] = { 0 };
-					sprintf( outputBuffer, "%s : %s\n", lineBuffer, nameBuf );
-					builder.append( outputBuffer );
+					resolveSymbol(currentProcess, liveAllocation.second->addrs_[i]);
 				}
-				liveAllocation.second.reset();
+			}
+		}
+	}
+
+	/// @return false on failure or if memory leaks were detected
+	bool printLeaks()
+	{
+		initSymbols();
+		wchar_t contextName[2048];
+		swprintf(contextName, 2048, L"Destroying memory context for %s\n", name_);
+		::OutputDebugString(contextName);
+
+		auto currentProcess = ::GetCurrentProcess();
+
+		bool hasLeaks = false;
+		{
+			UntrackedString builder;
+			std::lock_guard<std::mutex> allocationGuard(allocationLock_);
+
+			hasLeaks = !liveAllocations_.empty();
+
+			struct UniqueAlloc
+			{
+				UntrackedString stackOutput_;
+
+				struct AllocationBasic
+				{
+					AllocationBasic(size_t allocId, void* address)
+					    : allocId_(allocId)
+					    , address_(address)
+					{
+					}
+
+					size_t allocId_;
+					void* address_;
+				};
+				std::vector<AllocationBasic, UntrackedAllocator<AllocationBasic>> allocations_;
+			};
+			typedef std::unordered_map<
+			uint64_t,
+			UniqueAlloc,
+			std::hash<uint64_t>,
+			std::equal_to<uint64_t>,
+			UntrackedAllocator<std::pair<const uint64_t, UniqueAlloc>>> UniqueStackCollection;
+			UniqueStackCollection uniqueStackInstances;
+
+			for (auto& liveAllocation : liveAllocations_)
+			{
+				const auto& allocStack = liveAllocation.second;
+
+				uint64_t hash = 0;
+				for (size_t i = 0; i < allocStack->frames_; ++i)
+				{
+					HashUtilities::directCombine(hash, (uint64_t)liveAllocation.second->addrs_[i]);
+				}
+
+				auto findIt = uniqueStackInstances.find(hash);
+				UniqueAlloc uniqueAlloc;
+				if (findIt == uniqueStackInstances.end())
+				{
+					for (size_t i = 0; i < allocStack->frames_; ++i)
+					{
+						uniqueAlloc.stackOutput_.append(
+						resolveSymbol(currentProcess, liveAllocation.second->addrs_[i]));
+					}
+					uniqueAlloc.allocations_.emplace_back(UniqueAlloc::AllocationBasic(liveAllocation.second->allocId_, liveAllocation.first));
+					uniqueStackInstances.insert(std::make_pair(hash, uniqueAlloc));
+				}
+				else
+				{
+					findIt->second.allocations_.emplace_back(UniqueAlloc::AllocationBasic(liveAllocation.second->allocId_, liveAllocation.first));
+					continue;
+				}
+			}
+			for (auto& uniqueStack : uniqueStackInstances)
+			{
+				{
+					builder.append("Leaked allocation: [id:address] ");
+				}
+				for (auto& allocation : uniqueStack.second.allocations_)
+				{
+					char allocIdBuffer[2048] = { 0 };
+					sprintf(allocIdBuffer, "[%lu:0x%p], ",
+					        static_cast<unsigned long>(allocation.allocId_),
+					        allocation.address_);
+					builder.append(allocIdBuffer);
+				}
+				builder.append("\n");
+				builder.append(uniqueStack.second.stackOutput_);
 				builder.append( "\n\n" );
-
 				::OutputDebugStringA( builder.c_str() );
-
 				builder.clear();
+			}
+
+			for (auto& liveAllocation : liveAllocations_)
+			{
+				liveAllocation.second.reset();
 			}
 			liveAllocations_.clear();
 		}
@@ -429,6 +551,8 @@ public:
 			std::lock_guard< std::mutex > allocationPoolGuard(allocationPoolLock_);
 			allocationPool_.clear();
 		}
+
+		return !hasLeaks;
 	}
 
 private:
@@ -469,6 +593,14 @@ private:
 		std::equal_to< void * >,
 		UntrackedAllocator< std::pair< void * const, AllocationPtr > > > liveAllocations_;
 
+	typedef std::unordered_map<
+	void*,
+	UntrackedString,
+	std::hash<void*>,
+	std::equal_to<void*>,
+	UntrackedAllocator<std::pair<void* const, UntrackedString>>> StackCache;
+
+	StackCache stackCache_;
 
 	/**
 	Deallocate using this context or its children recursively.
@@ -629,5 +761,10 @@ void enableStackTraces( bool enable )
 	ALLOCATOR_STACK_TRACES = enable;
 }
 
+//------------------------------------------------------------------------------
+void enableLeakDetection(bool enable)
+{
+	ALLOCATOR_LEAK_DETECTION = enable;
+}
 }
 } // end namespace wgt

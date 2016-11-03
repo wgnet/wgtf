@@ -42,7 +42,7 @@ class InvokeReflectedMethodCommand
 	: public Command
 {
 public:
-	InvokeReflectedMethodCommand( const IDefinitionManager& definitionManager );
+	InvokeReflectedMethodCommand(IDefinitionManager& definitionManager);
 	InvokeReflectedMethodCommand( const InvokeReflectedMethodCommand& rhs );
 	InvokeReflectedMethodCommand& operator=( const InvokeReflectedMethodCommand& rhs );
 	virtual ~InvokeReflectedMethodCommand();
@@ -52,6 +52,7 @@ public:
 	ObjectHandle execute( const ObjectHandle& arguments ) const override;
 	CommandThreadAffinity threadAffinity() const override;
 	bool canUndo( const ObjectHandle& arguments ) const override;
+	virtual ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
 
 private:
 	struct Implementation;

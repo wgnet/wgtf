@@ -1,13 +1,14 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtQuick.Controls.Private 1.0
-import QtQuick.Layouts 1.1
+import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.2
-import WGControls 1.0
 
-//TODO: Test orientation = vertical. Create vertical slider. Remove option here
+import WGControls.Styles 1.0
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Slider with a color gradient background.
  Purpose: Allow the user to select a color visually
 
@@ -20,7 +21,7 @@ import WGControls 1.0
  would only have one handle.
 
  The following example creates a grayscale or brightness slider with one handle.
-
+ 
 Example:
 \code{.js}
     WGColorSlider {
@@ -61,17 +62,19 @@ Example:
     }
 \endcode
 
-TODO: Hook up to proper C++ data
-TODO: Make it work with Undo, macros etc.
-TODO: Make multi handle slider with linkColorsToHandles: true work in vertical orientation (make all multi handle sliders work in vertical tbh)
-TODO: Make safer with bad data, colorData.length != posData.length, bad colors etc.
-TODO: Fix slight difficulty grabbing handles at max and min values when handleClamp: false
-TODO: Get rid of spammy undefined messages when handle is deleted.
+\todo - Test orientation = vertical. Create vertical slider. Remove option here.
+      - Hook up to proper C++ data.
+      - Make it work with Undo, macros etc.
+      - Make multi handle slider with linkColorsToHandles: true work in vertical orientation (make all multi handle sliders work in vertical tbh).
+      - Make safer with bad data, colorData.length != posData.length, bad colors etc.
+      - Fix slight difficulty grabbing handles at max and min values when handleClamp: false
+      - Get rid of spammy undefined messages when handle is deleted.
 */
 
 WGSlider {
     id: sliderFrame
     objectName: "WGColorSlider"
+    WGComponent { type: "WGColorSlider" }
 
     minimumValue: 0
     maximumValue: linkColorsToHandles ? 100 : 255
@@ -197,7 +200,6 @@ WGSlider {
         id: colorPicker
         title: "Please choose a color"
         showAlphaChannel: sliderFrame.showAlphaChannel
-
         property int currentColorIndex: -1
 
         onAccepted: {

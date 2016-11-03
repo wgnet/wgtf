@@ -21,6 +21,8 @@ BEGIN_EXPOSE(BezierPoint, MetaNone())
 END_EXPOSE()
 
 BEGIN_EXPOSE(ICurve, MetaNone())
+	EXPOSE_METHOD("atTime", atTime)
+	EXPOSE_METHOD("atIndex", atIndex)
 	EXPOSE_METHOD("addAt", addAt, undo, redo)
 	EXPOSE_METHOD("removeAt", removeAt, undo, redo)
 	EXPOSE("notifyDirty", curveDirty, MetaNone())

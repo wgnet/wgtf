@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+ \ingroup wgcontrols
  \brief Empty box with placeholder text.
 
 Example:
@@ -15,6 +16,8 @@ WGTextBox {
 
 Rectangle {
     objectName: "WGPlaceholder"
+    WGComponent { type: "WGPlaceholder" }
+    
     color: "transparent"
     border.width: defaultSpacing.standardBorderSize
     border.color: palette.lighterShade

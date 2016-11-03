@@ -42,6 +42,6 @@ QImage QtImageProviderOld::requestImage(
 
 const char * QtImageProviderOld::providerId()
 {
-	return "QtImageProvider 1.0";
+	return "QtImageProviderOld";
 }
 } // end namespace wgt

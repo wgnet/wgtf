@@ -2,12 +2,14 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
-import WGControls 1.0
+import WGControls 2.0
+import WGControls.Layouts 2.0
 
 // Component for dislaying an entry in the history timeline
 Item {
     id: timelineEntry
     objectName: "WGTimelineEntryDelegate"
+    WGComponent { type: "WGTimelineEntryDelegate" }
 
     // Only access DisplayObject once because it is generated every time in C++
     property variant displayObject: itemData.value.DisplayObject

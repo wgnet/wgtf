@@ -3,7 +3,7 @@
 #include "core_data_model/i_item.hpp"
 #include "core_qt_common/helpers/qt_helpers.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
-#include "core_qt_common/models/extensions/i_model_extension.hpp"
+#include "core_qt_common/models/extensions/deprecated/i_model_extension_old.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
 #include "core_qt_common/qt_image_provider_old.hpp"
 #include "qt_model_helpers.hpp"
@@ -114,7 +114,7 @@ ITreeModel * WGTreeModel::getModel() const
 	return impl_->model_;
 }
 
-void WGTreeModel::registerExtension( IModelExtension * extension )
+void WGTreeModel::registerExtension( IModelExtensionOld * extension )
 {
 	beginResetModel();
 	extension->init( impl_->qtFramework_ );
@@ -122,28 +122,28 @@ void WGTreeModel::registerExtension( IModelExtension * extension )
 	extension->loadStates( modelName.c_str() );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::itemDataAboutToBeChanged, 
-		extension, &IModelExtension::onDataAboutToBeChanged );
+		extension, &IModelExtensionOld::onDataAboutToBeChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::itemDataChanged, 
-		extension, &IModelExtension::onDataChanged );
+		extension, &IModelExtensionOld::onDataChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::layoutAboutToBeChanged, 
-		extension, &IModelExtension::onLayoutAboutToBeChanged );
+		extension, &IModelExtensionOld::onLayoutAboutToBeChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::layoutChanged, 
-		extension, &IModelExtension::onLayoutChanged );
+		extension, &IModelExtensionOld::onLayoutChanged );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::rowsAboutToBeInserted, 
-		extension, &IModelExtension::onRowsAboutToBeInserted );
+		extension, &IModelExtensionOld::onRowsAboutToBeInserted );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::rowsInserted, 
-		extension, &IModelExtension::onRowsInserted );
+		extension, &IModelExtensionOld::onRowsInserted );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::rowsAboutToBeRemoved, 
-		extension, &IModelExtension::onRowsAboutToBeRemoved );
+		extension, &IModelExtensionOld::onRowsAboutToBeRemoved );
 	impl_->qtConnections_ += QObject::connect( 
 		this, &WGTreeModel::rowsRemoved, 
-		extension, &IModelExtension::onRowsRemoved );
+		extension, &IModelExtensionOld::onRowsRemoved );
 	impl_->extensions_.emplace_back( extension );
 
 	QHashIterator<int, QByteArray> itr( extension->roleNames() );
@@ -157,7 +157,7 @@ void WGTreeModel::registerExtension( IModelExtension * extension )
 	endResetModel();
 }
 
-bool WGTreeModel::decodeRole( int role, size_t & o_RoleId ) const
+bool WGTreeModel::decodeRole( int role, ItemRole::Id & o_RoleId ) const
 {
 	for (const auto& extension: impl_->extensions_)
 	{
@@ -276,7 +276,7 @@ QVariant WGTreeModel::headerData(
 		return QVariant( QVariant::Invalid );
 	}
 
-	size_t roleId;
+	ItemRole::Id roleId;
 
 	if (!decodeRole( role, roleId ))
 	{
@@ -417,8 +417,13 @@ void WGTreeModel::onSourceChanged()
 	ITreeModel * source = nullptr;
 
 	Variant variant = QtHelpers::toVariant( getSource() );
-	if (variant.typeIs< ObjectHandle >())
+	if (variant.typeIs<ITreeModel>())
 	{
+		source = const_cast<ITreeModel*>(variant.cast<const ITreeModel*>());
+	}
+	else if (variant.typeIs<ObjectHandle>())
+	{
+		NGT_WARNING_MSG("Double wrapping found, please wrap ITreeModel pointer as Variant directly.\n");
 		ObjectHandle provider;
 		if (variant.tryCast( provider ))
 		{
@@ -429,9 +434,9 @@ void WGTreeModel::onSourceChanged()
 	impl_->model_ = source;
 }
 
-QQmlListProperty< IModelExtension > WGTreeModel::getExtensions() const
+QQmlListProperty< IModelExtensionOld > WGTreeModel::getExtensions() const
 {
-	return QQmlListProperty< IModelExtension >(
+	return QQmlListProperty< IModelExtensionOld >(
 		const_cast< WGTreeModel * >( this ),
 		nullptr,
 		&appendExtension, 
@@ -441,8 +446,8 @@ QQmlListProperty< IModelExtension > WGTreeModel::getExtensions() const
 }
 
 void WGTreeModel::appendExtension( 
-	QQmlListProperty< IModelExtension > * property, 
-	IModelExtension * value )
+	QQmlListProperty< IModelExtensionOld > * property, 
+	IModelExtensionOld * value )
 {
 	auto treeModel = qobject_cast< WGTreeModel * >( property->object );
 	if (treeModel == nullptr)
@@ -453,8 +458,8 @@ void WGTreeModel::appendExtension(
 	treeModel->registerExtension( value );
 }
 
-IModelExtension * WGTreeModel::extensionAt( 
-	QQmlListProperty< IModelExtension > * property, 
+IModelExtensionOld * WGTreeModel::extensionAt( 
+	QQmlListProperty< IModelExtensionOld > * property, 
 	int index )
 {
 	auto treeModel = qobject_cast< WGTreeModel * >( property->object );
@@ -467,7 +472,7 @@ IModelExtension * WGTreeModel::extensionAt(
 }
 
 void WGTreeModel::clearExtensions( 
-	QQmlListProperty< IModelExtension > * property )
+	QQmlListProperty< IModelExtensionOld > * property )
 {
 	auto treeModel = qobject_cast< WGTreeModel * >( property->object );
 	if (treeModel == nullptr)
@@ -483,7 +488,7 @@ void WGTreeModel::clearExtensions(
 }
 
 int WGTreeModel::countExtensions( 
-	QQmlListProperty< IModelExtension > * property )
+	QQmlListProperty< IModelExtensionOld > * property )
 {
 	auto treeModel = qobject_cast< WGTreeModel * >( property->object );
 	if (treeModel == nullptr)
@@ -499,14 +504,14 @@ void WGTreeModel::onDestructing()
 	setSource( QVariant() );
 }
 
-void WGTreeModel::onModelDataChanged( int column, size_t roleId, const Variant & data )
+void WGTreeModel::onModelDataChanged( int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto model = getModel();
 	assert( model != nullptr );
 	this->changeHeaderData( Qt::Orientation::Horizontal, column, column );
 }
 
-void WGTreeModel::onPreItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data )
+void WGTreeModel::onPreItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto model = getModel();
 	assert( model != nullptr );
@@ -528,7 +533,7 @@ void WGTreeModel::onPreItemDataChanged( const IItem * item, int column, size_t r
 	this->beginChangeData(index, role, value);
 }
 
-void WGTreeModel::onPostItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data )
+void WGTreeModel::onPostItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto model = getModel();
 	assert( model != nullptr );

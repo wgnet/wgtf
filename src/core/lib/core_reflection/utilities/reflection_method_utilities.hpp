@@ -106,12 +106,25 @@ struct ReflectedMethodParameterWrapper<Type, true>
 {
 	ReflectedMethodParameterWrapper( const Variant& variant, const IDefinitionManager & definitionManager )
 	{
-		ObjectHandle handle = variant.cast<ObjectHandle>();
-		pointer = reflectedCast< Type >( handle.data(), handle.type(), definitionManager );
+		if (variant.canCast<ObjectHandle>())
+		{
+			ObjectHandle handle = variant.cast<ObjectHandle>();
+			pointer_ = reflectedCast<Type>(handle.data(), handle.type(), definitionManager);
+		}
+		else
+		{
+			variant_ = variant;
+			pointer_ = &variant_.cast<Type&>();
+		}
 	}
 
-	Type& operator()() { return *pointer; }
-	Type* pointer;
+	Type& operator()()
+	{
+		return *pointer_;
+	}
+
+	Type* pointer_;
+	Variant variant_;
 };
 
 

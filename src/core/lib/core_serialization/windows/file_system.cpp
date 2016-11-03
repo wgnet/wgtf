@@ -121,15 +121,19 @@ IFileInfoPtr FileSystem::getFileInfo(const char* path) const
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/aa364944(v=vs.85).aspx
 	WIN32_FIND_DATAA findData;
 	auto handle = FindFirstFileExAHelper(path, findData);
+
+	char fullPath[MAX_PATH] = {};
+	GetFullPathNameA(path, MAX_PATH, fullPath, 0);
+
 	if (handle != INVALID_HANDLE_VALUE)
 	{
 		auto info = std::make_shared<FileInfo>(
-			uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
-			uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
-			uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
-			uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime,
-			path,
-			static_cast<FileAttribute>(findData.dwFileAttributes)
+		uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
+		uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
+		uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
+		uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime,
+		fullPath,
+		static_cast<FileAttribute>(findData.dwFileAttributes)
 		);
 		FindClose(handle);
 		return info;

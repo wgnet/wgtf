@@ -11,7 +11,7 @@
 
 namespace wgt
 {
-class IModelExtension;
+class IModelExtensionOld;
 
 /**
  * This is the Qt data model which accepts a QModelIndex and adapts it into a list-friendly format
@@ -27,7 +27,7 @@ class WGTreeListAdapter : public IListAdapter
 				WRITE		setParentIndex
 				NOTIFY		parentIndexChanged )
 
-	Q_PROPERTY( QQmlListProperty< wgt::IModelExtension > extensions 
+	Q_PROPERTY( QQmlListProperty< wgt::IModelExtensionOld > extensions 
 				READ getExtensions )
 
 	Q_CLASSINFO( "DefaultProperty", "extensions" )
@@ -64,7 +64,7 @@ protected:
 	virtual void disconnect() override;
 
 private:
-	void registerExtension( IModelExtension * extension );
+	void registerExtension( IModelExtensionOld * extension );
 
 	// QAbstractItemModel
 	int rowCount( const QModelIndex &parent ) const Q_DECL_OVERRIDE;
@@ -87,11 +87,11 @@ private:
 
 
 	// Extensions Handling
-	QQmlListProperty< IModelExtension > getExtensions() const;
-	static void appendExtension( QQmlListProperty< IModelExtension > * property, IModelExtension * value );
-	static IModelExtension * extensionAt( QQmlListProperty< IModelExtension > * property, int index );
-	static void clearExtensions( QQmlListProperty< IModelExtension > * property );
-	static int countExtensions( QQmlListProperty< IModelExtension > * property );
+	QQmlListProperty< IModelExtensionOld > getExtensions() const;
+	static void appendExtension( QQmlListProperty< IModelExtensionOld > * property, IModelExtensionOld * value );
+	static IModelExtensionOld * extensionAt( QQmlListProperty< IModelExtensionOld > * property, int index );
+	static void clearExtensions( QQmlListProperty< IModelExtensionOld > * property );
+	static int countExtensions( QQmlListProperty< IModelExtensionOld > * property );
 
 signals:
 	void parentIndexChanged();

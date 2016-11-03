@@ -2,6 +2,7 @@
 #define CUSTOM_XML_DATA_HPP
 #include <string>
 #include "wg_types/vector3.hpp"
+#include "core_variant/variant.hpp"
 
 namespace wgt
 {
@@ -15,5 +16,9 @@ struct CustomXmlData
 
 	bool operator==( const CustomXmlData& tdo ) const;
 };
+
 } // end namespace wgt
+
+META_TYPE_NAME( wgt::CustomXmlData, "CustomXmlData" )
+
 #endif //CUSTOM_XML_DATA_HPP

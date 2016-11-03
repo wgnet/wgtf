@@ -1,7 +1,16 @@
 #include "node_editor.hpp"
+#include "group.hpp"
+#include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/type_class_definition.hpp"
 
 namespace wgt
 {
+NodeEditor::NodeEditor(IComponentContext& context)
+    : Implements<INodeEditor>()
+    , Depends<IDefinitionManager>(context)
+{
+}
+
 void NodeEditor::SetGraph(std::shared_ptr<IGraph> graph)
 {
     if (graph == nullptr)
@@ -40,6 +49,26 @@ void NodeEditor::onCreateConnection(size_t nodeIdFrom, size_t slotIdFrom, size_t
 void NodeEditor::onDeleteConnection(size_t connectionId)
 {
     graphModel.back()->DeleteConnection(connectionId);
+}
+
+void NodeEditor::CreateGroup(Collection& collection,
+                             const Vector4& rectangle,
+                             const std::string& name,
+                             const Vector4& color)
+{
+	auto pDefinitionManager = this->get<IDefinitionManager>();
+	if (pDefinitionManager == nullptr)
+	{
+		return;
+	}
+	auto pDefinition = pDefinitionManager->getDefinition<IGroup>();
+	if (pDefinition == nullptr)
+	{
+		return;
+	}
+
+	ObjectHandleT<IGroup> group(std::unique_ptr<IGroup>(new Group(rectangle, name, color)), pDefinition);
+	collection.insertValue(collection.size(), group);
 }
 
 INode* NodeEditor::GetNode(size_t id)

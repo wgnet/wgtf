@@ -1,12 +1,23 @@
 #include "platform_path.hpp"
+#include "core_string_utils/string_utils.hpp"
+#include "core_string_utils/file_path.hpp"
+#include "core_common/platform_env.hpp"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
+#pragma warning(push)
+#pragma warning(disable: 4091) // warning C4091: 'typedef ': ignored on left of 'tagGPFIDL_FLAGS' when no variable is declared
+#include <ShlObj.h>
+#pragma warning(pop)
+#include <direct.h>
+#elif __APPLE__
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 
 namespace wgt
 {
-void AddDllExtension(wchar_t* file)
+void AddDllExtension( wchar_t* file )
 {
 #ifdef _WIN32
 	PathAddExtensionW(file, L".dll");
@@ -14,6 +25,36 @@ void AddDllExtension(wchar_t* file)
 	PathAddExtension(file, L".dylib");
 #endif
 }
+
+bool GetUserDirectoryPath( char (&path) [MAX_PATH] )
+{
+    memset( path, '\0', MAX_PATH );
+#ifdef _WIN32
+    PWSTR userDirectory = nullptr;
+    if( !FAILED( SHGetKnownFolderPath( FOLDERID_Documents, 0, 0, &userDirectory ) ) )
+    {
+        strcpy( path, StringUtils::to_string( userDirectory ).c_str() );
+        return true;
+    }
+#elif __APPLE__
+    if( Environment::getValue<MAX_PATH>( "HOME", path ) ||
+        Environment::getValue<MAX_PATH>( "HOMEDRIVE", path ) )
+    {
+        return true;
+    }
+#endif
+    return false;
+}
+
+bool CreateDirectoryPath( const char* path )
+{
+#ifdef _WIN32
+    return _mkdir( path ) == 0 || errno == EEXIST;
+#elif __APPLE__
+    return mkdir( path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH ) == 0 || errno == EEXIST;
+#endif
+}
+
 } // end namespace wgt
 #ifdef __APPLE__
 

@@ -79,9 +79,9 @@ bool ControlsTestPanel::addPanel()
 	IDefinitionManager& definitionManager = *defManager;
 	auto def = REGISTER_DEFINITION( ColorSliderDataModel );
 	controlData_ = def->create();
-	viewCreator->createView(
+	controlsView_ = viewCreator->createView(
 		"WGControlsTest/WGControlsTestPanel.qml",
-		controlData_, controlsView_ );
+		controlData_ );
 	return true;
 }
 
@@ -94,10 +94,11 @@ void ControlsTestPanel::removePanel()
 		return;
 	}
 
-	if (controlsView_ != nullptr)
+	if (controlsView_.valid())
 	{
-		uiApplication->removeView( *controlsView_ );
-		controlsView_ = nullptr;
+        auto view = controlsView_.get();
+		uiApplication->removeView( *view );
+		view = nullptr;
 	}
 }
 } // end namespace wgt

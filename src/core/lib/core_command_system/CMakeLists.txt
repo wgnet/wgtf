@@ -4,14 +4,10 @@ PROJECT( core_command_system )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
-SET( METADATA_SRCS
+SET( ALL_SRCS
 	metadata/compound_command.mpp
 	metadata/command_instance.mpp
 	metadata/macro_object.mpp
-)
-SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
-
-SET( ALL_SRCS
 	i_command_event_listener.hpp
 	compound_command.hpp 
 	compound_command.cpp
@@ -39,12 +35,12 @@ SET( ALL_SRCS
 	reflection_undo_redo_data.hpp
 	reflection_undo_redo_data.cpp
 )
-SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
+
+WG_AUTO_SOURCE_GROUPS(${ALL_SRCS} )
 
 
 BW_BLOB_SOURCES( BLOB_SRCS 
 	${ALL_SRCS} 
-	${METADATA_SRCS}  
 )
 BW_ADD_LIBRARY( core_command_system ${BLOB_SRCS} )
 
@@ -52,7 +48,6 @@ BW_TARGET_LINK_LIBRARIES( core_command_system INTERFACE
 	core_common
 	core_reflection
 	core_reflection_utils
-	core_serialization
 	core_data_model
 	core_logging
 )

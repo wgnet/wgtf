@@ -3,6 +3,7 @@
 
 #include "core_ui_framework/i_component_provider.hpp"
 #include "core_reflection/i_definition_manager.hpp"
+#include "core_data_model/i_item_role.hpp"
 
 namespace wgt
 {
@@ -15,7 +16,7 @@ public:
 	}
 
 	const char * componentId( const TypeId & typeId,
-		std::function< bool ( size_t ) > & predicate ) const
+		std::function< bool ( const ItemRole::Id& ) > & predicate ) const
 	{
 		if (typeId.isPointer())
 		{

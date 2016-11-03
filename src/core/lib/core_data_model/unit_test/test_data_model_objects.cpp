@@ -95,12 +95,12 @@ void UnitTestTreeItem::setName( const char * name )
 	impl_->name_ = name;
 }
 
-Variant UnitTestTreeItem::getData( int column, size_t roleId ) const
+Variant UnitTestTreeItem::getData( int column, ItemRole::Id roleId ) const
 {
 	return Variant();
 }
 
-bool UnitTestTreeItem::setData( int column, size_t roleId, const Variant& data )
+bool UnitTestTreeItem::setData( int column, ItemRole::Id roleId, const Variant& data )
 {
 	return true;
 }

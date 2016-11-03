@@ -9,7 +9,6 @@
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
-#include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework//interfaces/i_view_creator.hpp"
 #include "core_data_model/file_system/file_system_model.hpp"
 #include "core_serialization/i_file_system.hpp"
@@ -101,7 +100,7 @@ public:
 		implementation3_ = std::unique_ptr< ICustomModelInterface >(
 			new CustomModelImplementation3 );
 		fileSystemModel_ = std::unique_ptr< AbstractTreeModel >(
-			new FileSystemModel( *fileSystem, "c:/" ) );
+			new FileSystemModel( *fileSystem, "/" ) );
 	}
 
 	ICustomModelInterface * implementation1() const
@@ -175,9 +174,9 @@ void CustomModelInterfaceTest::initialise( IComponentContext & contextManager )
 	auto viewCreator = get< IViewCreator >();
 	if (viewCreator)
 	{
-		viewCreator->createView(
+		testView_ = viewCreator->createView(
 			"plg_data_model_test/custom_model_interface_test_panel.qml",
-			testFixture, testView_ );
+			testFixture );
 	}
 }
 
@@ -189,10 +188,11 @@ void CustomModelInterfaceTest::fini( IComponentContext & contextManager )
 		return;
 	}
 
-	if (testView_ != nullptr)
+	if (testView_.valid())
 	{
-		uiApplication->removeView( *testView_ );
-		testView_.reset();
+        auto view = testView_.get();
+		uiApplication->removeView( *view );
+		view = nullptr;
 	}
 }
 } // end namespace wgt

@@ -12,12 +12,15 @@
 
 #pragma once
 
+#include "serialization_dll.hpp"
+
 #include "std_data_stream.hpp"
 #include <fstream>
 
 namespace wgt
 {
-class FileDataStream:
+
+class SERIALIZATION_DLL FileDataStream:
 	public StdDataStream
 {
 	typedef StdDataStream base;
@@ -32,5 +35,6 @@ private:
 	std::filebuf file_;
 
 };
+
 } // end namespace wgt
 #endif // FILE_DATA_STREAM_H_

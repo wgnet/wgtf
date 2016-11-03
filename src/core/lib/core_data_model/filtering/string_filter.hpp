@@ -18,7 +18,7 @@ public:
 	
 	virtual bool checkFilter( const IItem * item ) override;
 
-	virtual void setRole( unsigned int roleId ) override;
+	virtual void setRole( ItemRole::Id roleId ) override;
 
 	void setFilterText( const char * filterText );
 	const char* getFilterText();

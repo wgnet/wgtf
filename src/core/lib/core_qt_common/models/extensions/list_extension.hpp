@@ -15,8 +15,6 @@ public:
 	ListExtension();
 	virtual ~ListExtension();
 
-	QHash< int, QByteArray > roleNames() const override;
-
 	/**
 	 *	Convert first and last index into a selection range.
 	 *	@param first start of selected area.

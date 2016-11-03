@@ -1,14 +1,18 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 import WGControls 1.0
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A vector2 variation of the vectorN control
 */
 
 WGVectorN {
     objectName: "WGVector2"
     id: vector2
+    WGComponent { type: "WGVector2" }
+    
     property vector2d value
 
     vectorData: [value.x, value.y]

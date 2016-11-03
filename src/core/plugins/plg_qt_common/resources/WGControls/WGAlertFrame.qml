@@ -1,9 +1,10 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.0
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 import WGControls 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A styled frame to contain alert messages
 
 Example:
@@ -28,6 +29,7 @@ WGListView {
 Rectangle {
     id: baseAlertFrame
     objectName: "WGAlertFrame"
+    WGComponent { type: "WGAlertFrame" }
 
     /*! This property holds the index of the item within the list of alert messages.
     */

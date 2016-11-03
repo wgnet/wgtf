@@ -3,12 +3,14 @@
 #define PYTHON_SCRIPTING_ENGINE_HPP
 
 #include "interfaces/core_python_script/i_scripting_engine.hpp"
+#include "core_dependency_system/di_ref.hpp"
 #include "core_script/type_converter_queue.hpp"
 
 
 namespace wgt
 {
 class IComponentContext;
+class ICommandLineParser;
 class ObjectHandle;
 
 
@@ -51,6 +53,7 @@ private:
 	Python27ScriptingEngine & operator=( Python27ScriptingEngine && other );
 
 	IComponentContext & context_;
+	DIRef< ICommandLineParser > commandLine_;
 };
 } // end namespace wgt
 #endif // PYTHON_SCRIPTING_ENGINE_HPP

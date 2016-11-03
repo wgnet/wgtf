@@ -1,6 +1,6 @@
 # INCLUDE( WGPython27Project ) in projects that #include or link to Python 2.7.
 # Core
-FIND_PACKAGE( CorePython )
+WG_FIND_PACKAGE( CorePython )
 
 IF( CORE_PYTHON_FOUND )
 	SET( PYTHON_FOUND CORE_PYTHON_FOUND )

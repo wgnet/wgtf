@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+    \ingroup wgcontrols
     \brief The top level panel container
 
 Example:
@@ -19,12 +20,13 @@ WGPanel {
 Rectangle {
     id: basePanel
     objectName: "WGPanel"
-
+    WGComponent { type: "WGPanel" }
+    
     implicitHeight: defaultSpacing.minimumRowHeight
     implicitWidth: defaultSpacing.minimumRowHeight
 
     /*!
-        This property sets the frame colour to dark
+        Determines if the panel should be automatically reloaded when edited and saved
         The default value is \c true
     */
     property bool autoReload: true

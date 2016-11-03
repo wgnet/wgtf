@@ -1,18 +1,21 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.2
 
 
 /*!
+  \ingroup wgcontrols
  \brief A WG specific file dialog
 */
 
 WGFileDialog {
     id: mainDialog
     objectName: "WGNativeFileDialog"
+    WGComponent { type: "WGNativeFileDialog" }
 
     onOpen: {
-        fileDialogInstance.folder = curValue
+        var dir = curValue.substring(0, curValue.lastIndexOf('/'));
+        fileDialogInstance.folder = Qt.resolvedUrl(dir);
         fileDialogInstance.open()
     }
 

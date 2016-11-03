@@ -766,6 +766,115 @@ void listConversionTest( ReflectedPython::DefinedInstance & instance,
 	}
 	{
 		// @see PyListObject
+		// Append to end
+		// Reset list in case another test above modified it
+		const size_t originalSize = 5;
+		resetList(instance, originalSize, m_name, result_);
+
+		Collection listResult;
+		const bool getSuccess = instance.get<Collection>(
+		"listTest", listResult);
+
+		CHECK(getSuccess);
+		CHECK(listResult.canResize());
+
+		const size_t insertionSize = 5;
+		for (int i = 0; i < static_cast<int>(originalSize); ++i)
+		{
+			Variant key(i + originalSize);
+			auto insertionItr = listResult.insertValue(key, key);
+			CHECK(insertionItr != listResult.end());
+		}
+
+		const size_t expectedSize = (originalSize + insertionSize);
+		checkList(listResult, expectedSize, m_name, result_);
+	}
+	{
+		// @see PyListObject
+		// Insert in middle
+		// Reset list in case another test above modified it
+		const size_t originalSize = 5;
+		resetList(instance, originalSize, m_name, result_);
+
+		Collection listResult;
+		const bool getSuccess = instance.get<Collection>(
+		"listTest", listResult);
+
+		CHECK(getSuccess);
+		CHECK(listResult.canResize());
+
+		const int insertionPosition = 2;
+		{
+			Variant position(insertionPosition);
+			auto insertionItr = listResult.insertValue(position, position);
+			CHECK(insertionItr != listResult.end());
+		}
+
+		{
+			int i = 0;
+			const size_t expectedSize = (originalSize + 1);
+			CHECK_EQUAL(expectedSize, listResult.size());
+			for (const auto& item : listResult)
+			{
+				int value = -1;
+				const bool success = item.tryCast(value);
+				CHECK(success);
+				if (i <= insertionPosition)
+				{
+					CHECK_EQUAL(i, value);
+				}
+				else
+				{
+					CHECK_EQUAL(i - 1, value);
+				}
+				++i;
+			}
+		}
+	}
+	{
+		// @see PyListObject
+		// Insert at start
+		// Reset list in case another test above modified it
+		const size_t originalSize = 5;
+		resetList(instance, originalSize, m_name, result_);
+
+		Collection listResult;
+		const bool getSuccess = instance.get<Collection>(
+		"listTest", listResult);
+
+		CHECK(getSuccess);
+		CHECK(listResult.canResize());
+
+		const int insertionPosition = -100;
+		{
+			Variant position(insertionPosition);
+			auto insertionItr = listResult.insertValue(position, position);
+			CHECK(insertionItr != listResult.end());
+		}
+
+		{
+			int i = 0;
+			const size_t expectedSize = (originalSize + 1);
+			CHECK_EQUAL(expectedSize, listResult.size());
+			for (const auto& item : listResult)
+			{
+				int value = -1;
+				const bool success = item.tryCast(value);
+				CHECK(success);
+				if (i == 0)
+				{
+					CHECK_EQUAL(insertionPosition, value);
+				}
+				else
+				{
+					CHECK_EQUAL(i - 1, value);
+				}
+				++i;
+			}
+		}
+	}
+	{
+		// @see PyListObject
 		// Erase existing item by key
 		// Reset list in case another test above modified it
 		const size_t originalSize = 5;
@@ -782,7 +891,7 @@ void listConversionTest( ReflectedPython::DefinedInstance & instance,
 		char buffer[ maxDigits ];
 		PlatformHelpers::sprintfSize_t(buffer, erasureId);
 		Variant key( buffer );
-		auto erasureCount = listResult.erase( key );
+		auto erasureCount = listResult.eraseKey( key );
 		CHECK( erasureCount == 1 );
 
 		const size_t expectedSize = originalSize - 1;
@@ -802,7 +911,7 @@ void listConversionTest( ReflectedPython::DefinedInstance & instance,
 		CHECK( getSuccess );
 
 		Variant key( "Invalid" );
-		auto erasureCount = listResult.erase( key );
+		auto erasureCount = listResult.eraseKey( key );
 		CHECK( erasureCount == 0 );
 
 		const size_t expectedSize = originalSize;
@@ -1487,6 +1596,71 @@ void tupleConversionTest( ReflectedPython::DefinedInstance & instance,
 	}
 	{
 		// @see PyTupleObject
+		// Append to end
+		// Reset tuple in case another test above modified it
+		const size_t originalSize = 5;
+		resetTuple<originalSize>(instance, m_name, result_);
+
+		Collection tupleResult;
+		const bool getSuccess = instance.get<Collection>(
+		"tupleTest", tupleResult);
+
+		CHECK(getSuccess);
+		CHECK(!tupleResult.canResize());
+
+		Variant position(originalSize + 1);
+		auto insertionItr = tupleResult.insertValue(position, position);
+		CHECK(insertionItr == tupleResult.end());
+
+		const size_t expectedSize = originalSize;
+		checkTuple(tupleResult, expectedSize, m_name, result_);
+	}
+	{
+		// @see PyTupleObject
+		// Insert in middle
+		// Reset tuple in case another test above modified it
+		const size_t originalSize = 5;
+		resetTuple<originalSize>(instance, m_name, result_);
+
+		Collection tupleResult;
+		const bool getSuccess = instance.get<Collection>(
+		"tupleTest", tupleResult);
+
+		CHECK(getSuccess);
+		CHECK(!tupleResult.canResize());
+
+		const int insertionPosition = 2;
+		Variant position(insertionPosition);
+		auto insertionItr = tupleResult.insertValue(position, position);
+		CHECK(insertionItr == tupleResult.end());
+
+		const size_t expectedSize = originalSize;
+		checkTuple(tupleResult, expectedSize, m_name, result_);
+	}
+	{
+		// @see PyTupleObject
+		// Insert at start
+		// Reset tuple in case another test above modified it
+		const size_t originalSize = 5;
+		resetTuple<originalSize>(instance, m_name, result_);
+
+		Collection tupleResult;
+		const bool getSuccess = instance.get<Collection>(
+		"tupleTest", tupleResult);
+
+		CHECK(getSuccess);
+		CHECK(!tupleResult.canResize());
+
+		const int insertionPosition = -100;
+		Variant position(insertionPosition);
+		auto insertionItr = tupleResult.insertValue(position, position);
+		CHECK(insertionItr == tupleResult.end());
+
+		const size_t expectedSize = originalSize;
+		checkTuple(tupleResult, expectedSize, m_name, result_);
+	}
+	{
+		// @see PyTupleObject
 		// Erase existing item by key
 		// Reset tuple in case another test above modified it
 		const size_t originalSize = 5;
@@ -1500,7 +1674,7 @@ void tupleConversionTest( ReflectedPython::DefinedInstance & instance,
 
 		const size_t erasureId = originalSize - 1;
 		Variant key( erasureId );
-		auto erasureCount = tupleResult.erase( key );
+		auto erasureCount = tupleResult.eraseKey( key );
 		CHECK( erasureCount == 0 );
 
 		const size_t expectedSize = originalSize;
@@ -1946,6 +2120,40 @@ void dictConversionTest( ReflectedPython::DefinedInstance & instance,
 	}
 	{
 		// @see PyDictObject
+		// Insert new item
+		// Reset dict in case another test above modified it
+		const size_t originalSize = 5;
+		resetDict(instance, originalSize, m_name, result_);
+
+		Collection dictResult;
+		const bool getSuccess = instance.get<Collection>(
+		"dictTest", dictResult);
+
+		CHECK(getSuccess);
+
+		const size_t insertionId = originalSize;
+		const size_t maxDigits = 10;
+		char buffer[maxDigits];
+		PlatformHelpers::sprintfSize_t(buffer, insertionId);
+		const Variant key(buffer);
+		const Variant value(insertionId);
+		auto insertionItr = dictResult.insertValue(key, value);
+		CHECK(insertionItr != dictResult.end());
+
+		{
+			// Check it inserted value
+			const auto insertionResult = (*insertionItr);
+			size_t result = -1;
+			const bool success = insertionResult.tryCast<size_t>(result);
+			CHECK(success);
+			CHECK_EQUAL(insertionId, result);
+		}
+
+		const size_t expectedSize = originalSize + 1;
+		checkDict(dictResult, expectedSize, m_name, result_);
+	}
+	{
+		// @see PyDictObject
 		// Erase existing item by key
 		// Reset dict in case another test above modified it
 		const size_t originalSize = 5;
@@ -1962,7 +2170,7 @@ void dictConversionTest( ReflectedPython::DefinedInstance & instance,
 		char buffer[ maxDigits ];
 		PlatformHelpers::sprintfSize_t(buffer, erasureId);
 		Variant key( buffer );
-		auto erasureCount = dictResult.erase( key );
+		auto erasureCount = dictResult.eraseKey( key );
 		CHECK( erasureCount == 1 );
 
 		const size_t expectedSize = originalSize - 1;
@@ -1982,7 +2190,7 @@ void dictConversionTest( ReflectedPython::DefinedInstance & instance,
 		CHECK( getSuccess );
 
 		Variant key( "Invalid" );
-		auto erasureCount = dictResult.erase( key );
+		auto erasureCount = dictResult.eraseKey( key );
 		CHECK( erasureCount == 0 );
 
 		const size_t expectedSize = originalSize;
@@ -2712,7 +2920,7 @@ void getCollectionPath2( const ReflectedPython::DefinedInstance & instance,
 	TestResult & result_ )
 {
 	std::string pathName = "childTest";
-	pathName += DOT_OPERATOR;
+	pathName += IClassDefinition::DOT_OPERATOR;
 	pathName += collectionName;
 	const bool getCollectionSuccess = instance.get< Collection >(
 		pathName.c_str(), outCollection );
@@ -2758,11 +2966,11 @@ void checkSequencePaths( const ReflectedPython::DefinedInstance & instance,
 		const auto & valueFullPath = valueInstance.fullPath();
 
 		std::string expectedValueFullPath = "childTest";
-		expectedValueFullPath += DOT_OPERATOR;
+		expectedValueFullPath += IClassDefinition::DOT_OPERATOR;
 		expectedValueFullPath += collectionName;
-		expectedValueFullPath += INDEX_OPEN;
+		expectedValueFullPath += IClassDefinition::INDEX_OPEN;
 		expectedValueFullPath += std::to_string( expectedKey );
-		expectedValueFullPath += INDEX_CLOSE;
+		expectedValueFullPath += IClassDefinition::INDEX_CLOSE;
 		CHECK_EQUAL( expectedValueFullPath, valueFullPath );
 
 		int valueValue = -1;
@@ -2819,11 +3027,11 @@ void checkMappingPaths( const ReflectedPython::DefinedInstance & instance,
 		const auto & valueFullPath = valueInstance.fullPath();
 
 		std::string expectedValueFullPath = "childTest";
-		expectedValueFullPath += DOT_OPERATOR;
+		expectedValueFullPath += IClassDefinition::DOT_OPERATOR;
 		expectedValueFullPath += collectionName;
-		expectedValueFullPath += INDEX_OPEN;
+		expectedValueFullPath += IClassDefinition::INDEX_OPEN;
 		expectedValueFullPath += expectedKeyFullPath;
-		expectedValueFullPath += INDEX_CLOSE;
+		expectedValueFullPath += IClassDefinition::INDEX_CLOSE;
 		CHECK_EQUAL( expectedValueFullPath, valueFullPath );
 	}
 }

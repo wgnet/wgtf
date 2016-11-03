@@ -1,8 +1,9 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 
 /*!
+ \ingroup wgcontrols
  \brief A non-editable single line of text that can align to a panel wide width in defaultSpacing
  Will appear in the left column if placed in a WGFormLayout && formLabel == true
 
@@ -16,6 +17,7 @@ WGLabel {
 Text {
     id: labelText
     objectName: "WGLabel"
+    WGComponent { type: "WGLabel" }
 
     /*! This property right aligns the label and sets width to the largest label in the panel.
         The default value is false
@@ -26,6 +28,11 @@ Text {
         The default is false
     */
     property bool localForm: false
+
+    property QtObject linkedFormObject: Item{}
+
+    enabled: linkedFormObject.enabled
+
 
     /*
         Links the label to it's control object and then finds the copyable inside it.

@@ -20,27 +20,8 @@ public:
 	const IItem* getParent() const;
 	virtual const char* getDisplayText( int column ) const;
 	virtual ThumbnailData getThumbnail( int column ) const;
-	virtual Variant getData( int column, size_t roleId ) const;
-	virtual bool setData( int column, size_t roleId, const Variant& data );
-
-private:
-	struct Implementation;
-	std::unique_ptr<Implementation> impl_;
-};
-
-class TestTreeItem: public AbstractTreeItem
-{
-public:
-	TestTreeItem( const char* name, const AbstractTreeItem* parent );
-	TestTreeItem( const TestTreeItem& rhs );
-	virtual ~TestTreeItem();
-
-	TestTreeItem& operator=( const TestTreeItem& rhs );
-
-	const AbstractTreeItem* getParent() const;
-
-	virtual Variant getData( int column, size_t roleId ) const;
-	virtual bool setData( int column, size_t roleId, const Variant& data );
+	virtual Variant getData( int column, ItemRole::Id roleId ) const;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant& data );
 
 private:
 	struct Implementation;

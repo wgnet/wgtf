@@ -433,15 +433,15 @@ TEST_F(TestCollectionFixture, int_vector)
 
 	// Verify initial iterator properties
 	{
-		CHECK_EQUAL(collection.begin(), collection.end());
+		CHECK(collection.begin() == collection.end());
 		const size_t index = 0;
-		CHECK_EQUAL(collection.end(), collection.find(index));
+		CHECK(collection.end() == collection.find(index));
 	}
 
 	{
 		subject.int_vector_ = test1;
 
-		CHECK_EQUAL( Collection( subject.int_vector_), collection );
+		CHECK( Collection( subject.int_vector_) == collection );
 		CHECK_EQUAL(test1.size(), collection.size());
 	}
 
@@ -480,7 +480,7 @@ TEST_F(TestCollectionFixture, int_vector)
 
 		index = 1000;
 		iter = collection.find( index );
-		CHECK_EQUAL(collection.end(), iter);
+		CHECK(collection.end() == iter);
 	}
 
 	{
@@ -551,16 +551,16 @@ TEST_F(TestCollectionFixture, int_map)
 
 	// Verify initial iterator properties
 	{
-		CHECK_EQUAL(collection.begin(), collection.end());
+		CHECK(collection.begin() == collection.end());
 
 		const int index = 0;
-		CHECK_EQUAL(collection.end(), collection.find( index ) );
+		CHECK(collection.end() == collection.find( index ) );
 	}
 
 	{
 		subject.int_map_ = test1;
 
-		CHECK_EQUAL( Collection( subject.int_map_ ) , collection);
+		CHECK( Collection( subject.int_map_ ) == collection);
 		CHECK_EQUAL(test1.size(), collection.size());
 	}
 
@@ -600,7 +600,7 @@ TEST_F(TestCollectionFixture, int_map)
 
 		index = 1000;
 		iter = collection.find( index);
-		CHECK_EQUAL(collection.end(), iter);
+		CHECK(collection.end() == iter);
 	}
 
 	{

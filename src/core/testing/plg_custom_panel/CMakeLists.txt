@@ -11,7 +11,7 @@ SET( ALL_SRCS
 	custom_panel.cpp
 	plg_custom_panel_main.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}

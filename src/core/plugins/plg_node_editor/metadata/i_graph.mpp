@@ -10,5 +10,6 @@ BEGIN_EXPOSE(IGraph, MetaNone())
 	EXPOSE("nodesModel", GetNodesModel, MetaNone())
 	EXPOSE("connectionsModel", GetConnectionsModel, MetaNone())
     EXPOSE("nodeClassesModel", GetNodeClassesModel, MetaNone())
+    EXPOSE("nodeGroupModel", GetNodeGroupModel, MetaNone())
 END_EXPOSE()
 }

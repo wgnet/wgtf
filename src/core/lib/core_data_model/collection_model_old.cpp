@@ -29,7 +29,7 @@ namespace
 			return nullptr;
 		}
 
-		Variant getData( int column, size_t roleId ) const override
+		Variant getData( int column, ItemRole::Id roleId ) const override
 		{
 			auto & collection = model_.getSource();
 			if (roleId == ValueTypeRole::roleId_)
@@ -69,7 +69,7 @@ namespace
 			return Variant();
 		}
 
-		bool setData( int column, size_t roleId, const Variant & data ) override
+		bool setData( int column, ItemRole::Id roleId, const Variant & data ) override
 		{
 			if (roleId != ValueRole::roleId_)
 			{

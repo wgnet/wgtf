@@ -1,8 +1,10 @@
 #ifndef QT_APPLICATION_HPP
 #define QT_APPLICATION_HPP
 
+#include "core_dependency_system/depends.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/layout_manager.hpp"
+#include "interfaces/core_splash/i_splash.hpp"
 
 #include <memory>
 
@@ -11,17 +13,20 @@ class QSplashScreen;
 
 namespace wgt
 {
+class IComponentContext;
 class IQtFramework;
 
-class QtApplication : public Implements< IUIApplication >
+class QtApplication : public Implements<IUIApplication>
+                      ,
+                      public Depends<IQtFramework, ISplash>
 {
 	typedef Signal<void(void)> SignalVoid;
 
 public:
-	QtApplication( int argc, char** argv );
+	QtApplication(IComponentContext& context, int argc, char** argv);
 	virtual ~QtApplication();
 
-	void initialise( IQtFramework * qtFramework );
+	void initialise();
 	void finalise();
 	void update();
 
@@ -48,7 +53,6 @@ private:
 	int argc_;
 	char** argv_;
 
-	IQtFramework * qtFramework_;
 	LayoutManager layoutManager_;
 	std::unique_ptr< QSplashScreen > splash_;
 	bool bQuit_;

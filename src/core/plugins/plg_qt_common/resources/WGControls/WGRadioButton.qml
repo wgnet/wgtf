@@ -1,7 +1,11 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+
+import WGControls.Styles 1.0
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A WG styled radio button control, typically for selecting one of a set of predefined options.
 
 
@@ -26,9 +30,10 @@ WGBoolGridLayout {
 \endcode
 */
 
-RadioButton {
+WGCheckBase {
     id: radioButton
     objectName: "WGRadioButton"
+    WGComponent { type: "WGRadioButton" }
 
     /*! This property is used to define the buttons label when used in a WGFormLayout
         The default value is an empty string

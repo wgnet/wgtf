@@ -1,0 +1,5 @@
+<Actions>
+	<Open text="Open" shortcut="Ctrl+O" path="TestData" order="1"/>
+	<TestDataSeparator separator="true" path="TestData" order="2"/>
+	<Close text="Close" shortcut="Ctrl+W" path="TestData" order="3"/>
+</Actions>

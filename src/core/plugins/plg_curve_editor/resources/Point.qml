@@ -1,8 +1,12 @@
 import QtQuick 2.0
+
 import WGControls 2.0
+import WGControls.Canvas 2.0
 
 Rectangle {
     id: handle
+    WGComponent { type: "Point" }
+    
     visible: enabled;
     width: 7;
     height: width
@@ -11,9 +15,6 @@ Rectangle {
 
     x: viewTransform.transformX(handle.point.pos.x);
     y: viewTransform.transformY(handle.point.pos.y);
-
-    onXChanged: { parentCurve.requestPaint(); updated(handle) }
-    onYChanged: { parentCurve.requestPaint(); updated(handle) }
 
     property var _scaleX: viewTransform.xScale;
     property var _scaleY: viewTransform.yScale;
@@ -70,7 +71,6 @@ Rectangle {
             Qt._updatingPosition = false
         }
         endUndoFrame()
-        handle.parent.requestPaint();
     }
 
     on_ScaleXChanged: { updateHandlePositions() }
@@ -91,7 +91,7 @@ Rectangle {
         State {
             name: "selected";
             PropertyChanges { target: handle; color: Qt.lighter(handle.baseColor); }
-            PropertyChanges { target: handle; width: 10; }
+            PropertyChanges { target: handle; width: 9; }
             PropertyChanges { target: leftHandle; visible: handle.cp1Enabled; }
             PropertyChanges { target: rightHandle; visible: handle.cp2Enabled; }
         },
@@ -105,29 +105,32 @@ Rectangle {
         State {
             name: "hovered"
             PropertyChanges { target: handle; color: Qt.lighter(handle.baseColor); }
-            PropertyChanges { target: handle; width: 10; }
+            PropertyChanges { target: handle; width: 9; }
         }
     ]
 
     function updateHandlePositions(){
-        leftHandle.x = handle.point.cp1.x * viewTransform.xScale;
-        leftHandle.y = handle.point.cp1.y * viewTransform.yScale;
-        rightHandle.x = handle.point.cp2.x * viewTransform.xScale;
-        rightHandle.y = handle.point.cp2.y * viewTransform.yScale;
+        if(!Qt._updatingPositions)
+        {
+            leftHandle.x = handle.point.cp1.x * viewTransform.xScale;
+            leftHandle.y = handle.point.cp1.y * viewTransform.yScale;
+            rightHandle.x = handle.point.cp2.x * viewTransform.xScale;
+            rightHandle.y = handle.point.cp2.y * viewTransform.yScale;
+        }
     }
 
     function constrainHandles()
     {
         if(prevPoint){
             var constrainedX = Math.max(prevPoint.pos.x - point.pos.x, handle.point.cp1.x)
-            handle.point.cp1.y = constrainedX ? handle.point.cp1.y * constrainedX / handle.point.cp1.x : 0;
+            handle.point.cp1.y = constrainedX ? handle.point.cp1.y * constrainedX / handle.point.cp1.x : handle.point.cp1.y;
             handle.point.cp1.x = constrainedX;
             leftHandle.x = handle.point.cp1.x * viewTransform.xScale;
             leftHandle.y = handle.point.cp1.y * viewTransform.yScale;
         }
         if (nextPoint) {
             var constrainedX = Math.min(nextPoint.pos.x - point.pos.x, handle.point.cp2.x)
-            handle.point.cp2.y = constrainedX ? handle.point.cp2.y * constrainedX / handle.point.cp2.x : 0;
+            handle.point.cp2.y = constrainedX ? handle.point.cp2.y * constrainedX / handle.point.cp2.x : handle.point.cp2.y;
             handle.point.cp2.x = constrainedX;
             rightHandle.x = handle.point.cp2.x * viewTransform.xScale;
             rightHandle.y = handle.point.cp2.y * viewTransform.yScale;
@@ -136,9 +139,12 @@ Rectangle {
 
     MouseArea {
         id: handleDragArea
+        objectName: "handleDragArea_" + handle.objectName
         property bool dragging: false
         property var startPos
-        anchors.fill: parent
+        anchors.centerIn: parent
+        height: 9
+        width: 9
         drag.target: handle
         drag.minimumX: prevPoint ? viewTransform.transformX(prevPoint.pos.x + minDistance) : viewTransform.transformX(0)
         drag.maximumX: nextPoint ? viewTransform.transformX(nextPoint.pos.x - minDistance) : viewTransform.transformX(1)
@@ -225,7 +231,7 @@ Rectangle {
 
     Rectangle {
         id: leftHandle
-        width: 20;
+        width: 19;
         height: width
         color: "transparent";
         visible: false;
@@ -233,8 +239,8 @@ Rectangle {
         x: handle.point.cp1.x * viewTransform.xScale;
         y: handle.point.cp1.y * viewTransform.yScale;
         transform: Translate{
-            x: -width/2 - 2; // Additional 2 pixels due to snapping
-            y: -height/2 - 2;
+            x: -width/2;
+            y: -height/2;
         }
 
         Rectangle {
@@ -244,6 +250,7 @@ Rectangle {
         }
 
         MouseArea {
+            objectName: "leftTangentDragArea_" + handle.objectName
             property bool dragging: false;
             anchors.fill: parent
             drag.target: leftHandle
@@ -258,10 +265,24 @@ Rectangle {
                         dragging = true;
                         beginUndoFrame();
                     }
+                    Qt._updatingPositions = true
                     // -- Move the tangent
-                    if (!rightHandle.children[1].drag.active) {
+                    if (!rightHandle.children[1].drag.active && !(mouse.modifiers & Qt.ShiftModifier)) {
                         handle.point.cp1.x = leftHandle.x / viewTransform.xScale;
                         handle.point.cp1.y = leftHandle.y / viewTransform.yScale;
+                    }
+                    // -- Lock the tangents to the X or Y axis if Shift is held
+                    if (!rightHandle.children[1].drag.active && (mouse.modifiers & Qt.ShiftModifier)) {
+                        if (Math.abs(leftTangent.transform[0].angle) >= 135){
+                            handle.point.cp1.x = leftHandle.x / viewTransform.xScale;
+                            handle.point.cp1.y = handle.point.pos.y / viewTransform.yScale;
+                        }
+                        else
+                        {
+                            handle.point.cp1.x = handle.point.pos.x / viewTransform.xScale;
+                            handle.point.cp1.y = leftHandle.y / viewTransform.yScale;
+                        }
+                        constrainHandles();
                     }
 
                     // -- Force the opposite tangent to the inverse position
@@ -270,8 +291,7 @@ Rectangle {
                         handle.point.cp2.y = -handle.point.cp1.y;
                         constrainHandles();
                     }
-
-                    handle.parent.requestPaint();
+                    Qt._updatingPositions = false
                 }
             }
             onReleased: {
@@ -299,7 +319,7 @@ Rectangle {
 
     Rectangle {
         id: rightHandle
-        width: 20;
+        width: 19;
         height: width
         color: "transparent";
         visible: false;
@@ -307,8 +327,8 @@ Rectangle {
         x: handle.point.cp2.x * viewTransform.xScale;
         y: handle.point.cp2.y * viewTransform.yScale;
         transform: Translate{
-            x: -width/2 - 2; // Additional 2 pixels due to snapping
-            y: -height/2 - 2;
+            x: -width/2;
+            y: -height/2;
         }
 
         Rectangle {
@@ -318,6 +338,7 @@ Rectangle {
         }
 
         MouseArea {
+            objectName: "rightTangentDragArea_" + handle.objectName
             property bool dragging: false;
             anchors.fill: parent
             drag.target: rightHandle
@@ -332,10 +353,25 @@ Rectangle {
                         dragging = true;
                         beginUndoFrame();
                     }
+                    Qt._updatingPositions = true
                     // -- Move the tangent
-                    if (!leftHandle.children[1].drag.active) {
+                    if (!leftHandle.children[1].drag.active && !(mouse.modifiers & Qt.ShiftModifier)) {
                         handle.point.cp2.x = rightHandle.x / viewTransform.xScale;
                         handle.point.cp2.y = rightHandle.y / viewTransform.yScale;
+                    }
+
+                    // -- Lock the tangents to the X or Y axis if Shift is held
+                    if (!leftHandle.children[1].drag.active && (mouse.modifiers & Qt.ShiftModifier)) {
+                        if (Math.abs(rightTangent.transform[0].angle) <= 45){
+                            handle.point.cp2.x = rightHandle.x / viewTransform.xScale;
+                            handle.point.cp2.y = handle.point.pos.y / viewTransform.yScale;
+                        }
+                        else
+                        {
+                            handle.point.cp2.x = handle.point.pos.x / viewTransform.xScale;
+                            handle.point.cp2.y = rightHandle.y / viewTransform.yScale;
+                        }
+                        constrainHandles();
                     }
 
                     // -- Force the opposite tangent to the inverse position
@@ -344,8 +380,7 @@ Rectangle {
                         handle.point.cp1.y = -handle.point.cp2.y;
                         constrainHandles();
                     }
-
-                    handle.parent.requestPaint();
+                    Qt._updatingPositions = false
                 }
             }
             onReleased: {
@@ -356,6 +391,27 @@ Rectangle {
                 }
             }
         }
+    }
+
+    Connections
+    {
+        target: handle.point.pos
+        onXChanged: { parentCurve.requestPaint(); updated(handle) }
+        onYChanged: { parentCurve.requestPaint(); updated(handle) }
+    }
+
+    Connections
+    {
+        target: handle.point.cp1
+        onXChanged: { parentCurve.requestPaint(); updateHandlePositions(); updated(handle); }
+        onYChanged: { parentCurve.requestPaint(); updateHandlePositions(); updated(handle); }
+    }
+
+    Connections
+    {
+        target: handle.point.cp2
+        onXChanged: { parentCurve.requestPaint(); updateHandlePositions(); updated(handle); }
+        onYChanged: { parentCurve.requestPaint(); updateHandlePositions(); updated(handle); }
     }
 }
 

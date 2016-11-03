@@ -24,7 +24,7 @@ public:
 	void removePanel();
 
 private:
-	std::unique_ptr< IView > controlsView_;
+	wg_future<std::unique_ptr< IView >> controlsView_;
 	ObjectHandle controlData_;
 };
 } // end namespace wgt

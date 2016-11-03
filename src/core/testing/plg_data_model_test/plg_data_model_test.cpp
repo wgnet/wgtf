@@ -1,11 +1,16 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "custom_model_interface_test.hpp"
-#include "core_variant/variant.hpp"
-#include "core_variant/default_meta_type_manager.hpp"
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which creates a panel that tests reflection with undo/redo
+*
+* @ingroup plugins
+* @image html plg_data_model_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class TestDataModelPlugin
 	: public PluginMain
 {
@@ -19,9 +24,6 @@ public:
 	//==========================================================================
 	void Initialise(IComponentContext & contextManager) override
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		customModelInterfaceTest.initialise( contextManager );
 	}
 

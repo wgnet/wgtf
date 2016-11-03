@@ -10,9 +10,7 @@ namespace wgt
 {
 class MetaGroupObj;
 
-/**
- *	Collects together items with the same group metadata.
- */
+/** Collects items together with the same group metadata. */
 class ReflectedGroupItemNew : public ReflectedTreeItemNew
 {
 public:
@@ -24,8 +22,8 @@ public:
 	virtual ~ReflectedGroupItemNew();
 
 	// AbstractItem
-	virtual Variant getData( int column, size_t roleId ) const override;
-	virtual bool setData( int column, size_t roleId, const Variant & data ) override;
+	virtual Variant getData( int column, ItemRole::Id roleId ) const override;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data ) override;
 
 	// ReflectedTreeItemNew
 	virtual const ObjectHandle & getRootObject() const override;
@@ -49,9 +47,6 @@ private:
 
 	typedef std::vector< Variant > Variants;
 	void getChildValues( Variants & outChildValues ) const;
-
-	typedef std::function< bool( ReflectedTreeItemNew & ) > ReflectedItemCallback;
-	void enumerateChildren( const ReflectedItemCallback & callback ) const;
 };
 } // end namespace wgt
 #endif //_REFLECTED_GROUP_ITEM_NEW_HPP

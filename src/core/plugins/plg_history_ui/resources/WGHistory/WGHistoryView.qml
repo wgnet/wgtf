@@ -1,12 +1,17 @@
 import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
+
 import WGControls 1.0
+import WGControls.Views 1.0
+import WGControls.Layouts 1.0
 
 // This component is for displaying the history panel
 WGPanel {
     id: root
     objectName: "WGHistoryView"
+    WGComponent { type: "WGHistoryView" }
+    
     color: palette.mainWindowColor
 
     title: "History"

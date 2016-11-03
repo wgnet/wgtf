@@ -4,6 +4,8 @@
 #include <ios>
 
 //#include "i_datastream.hpp" // break cyclic include: i_datastream.hpp -> variant.hpp -> text_stream.hpp -> basic_stream.hpp -> i_datastream.hpp
+#include "serialization_dll.hpp"
+
 namespace wgt
 {
 class IDataStream;
@@ -11,13 +13,13 @@ class IDataStream;
 /**
 Basic IDataStream wrapper for more convenient IO.
 */
-class BasicStream
+class SERIALIZATION_DLL BasicStream
 {
 public:
 	/**
 	Construct basic stream.
 	*/
-	explicit BasicStream( IDataStream& dataStream );
+	explicit BasicStream(IDataStream& dataStream);
 
 	/**
 	Destructor.
@@ -42,14 +44,14 @@ public:
 
 	New state is bitwise OR of old state and argument: `newState = oldState | state`
 	*/
-	void setState( std::ios_base::iostate state );
+	void setState(std::ios_base::iostate state);
 
 	/**
 	Reset state bits.
 
 	New state is bitwise AND of old state and argument complement: `newState = oldState & ~state`
 	*/
-	void resetState( std::ios_base::iostate state = ~std::ios_base::iostate(0) );
+	void resetState(std::ios_base::iostate state = ~std::ios_base::iostate(0));
 
 	/**
 	Check whether stream state is consistent.
@@ -64,7 +66,7 @@ public:
 	*/
 	bool eof() const
 	{
-		return ( state_ & std::ios_base::eofbit ) != 0;
+		return (state_ & std::ios_base::eofbit) != 0;
 	}
 
 	/**
@@ -72,7 +74,7 @@ public:
 	*/
 	bool bad() const
 	{
-		return ( state_ & std::ios_base::badbit ) != 0;
+		return (state_ & std::ios_base::badbit) != 0;
 	}
 
 	/**
@@ -80,13 +82,13 @@ public:
 	*/
 	bool fail() const
 	{
-		return ( state_ & ( std::ios_base::badbit | std::ios_base::failbit ) ) != 0;
+		return (state_ & (std::ios_base::badbit | std::ios_base::failbit)) != 0;
 	}
 
 	/**
 	Wrapper for IDataStream::seek().
 	*/
-	std::streamoff seek( std::streamoff offset, std::ios_base::seekdir dir = std::ios_base::beg );
+	std::streamoff seek(std::streamoff offset, std::ios_base::seekdir dir = std::ios_base::beg);
 
 	/**
 	Sync stream.
@@ -117,12 +119,12 @@ public:
 
 	@see unget
 	*/
-	std::streamsize setUngetBufferSize( std::streamsize v );
+	std::streamsize setUngetBufferSize(std::streamsize v);
 
 	/**
 	Read single character.
 	*/
-	bool get( char& c );
+	bool get(char& c);
 
 	/**
 	Read single character.
@@ -141,7 +143,7 @@ public:
 	@return @c true on success, @c false on failure (unget area is not
 	large enough or @a source doesn't match buffer)
 	*/
-	bool unget( std::streamsize size = 1, const void* source = nullptr );
+	bool unget(std::streamsize size = 1, const void* source = nullptr);
 
 	/**
 	Get the next char to be read, but don't advance read position.
@@ -153,17 +155,17 @@ public:
 	/**
 	Wrapper for IDataStream::read().
 	*/
-	std::streamsize read( void* destination, std::streamsize size );
+	std::streamsize read(void* destination, std::streamsize size);
 
 	/**
 	Write single character.
 	*/
-	bool put( char c );
+	bool put(char c);
 
 	/**
 	Wrapper for IDataStream::write().
 	*/
-	std::streamsize write( const void* source, std::streamsize size );
+	std::streamsize write(const void* source, std::streamsize size);
 
 	/**
 	Read stream until destination buffer is filled or error occurred.
@@ -174,7 +176,7 @@ public:
 	Regular read() function may read less than requested, so use this function
 	if you want to read as much as possible.
 	*/
-	std::streamsize readHard( void* destination, std::streamsize size );
+	std::streamsize readHard(void* destination, std::streamsize size);
 
 	/**
 	Write stream until source buffer is sent or error occurred.
@@ -185,7 +187,7 @@ public:
 	Regular write() function may write less than requested, so use this function
 	if you want to write as much as possible.
 	*/
-	std::streamsize writeHard( const void* source, std::streamsize size );
+	std::streamsize writeHard(const void* source, std::streamsize size);
 
 	/**
 	Copy data from @a source stream to this one.
@@ -198,7 +200,7 @@ public:
 
 	@see copyTo
 	*/
-	std::streamsize copyFrom( IDataStream& source, std::streamsize amount = -1 );
+	std::streamsize copyFrom(IDataStream& source, std::streamsize amount = -1);
 
 	/**
 	Copy data from this stream to @a destination.
@@ -211,24 +213,23 @@ public:
 
 	@see copyFrom
 	*/
-	std::streamsize copyTo( IDataStream& destination, std::streamsize amount = -1 );
+	std::streamsize copyTo(IDataStream& destination, std::streamsize amount = -1);
 
 private:
 	// don't allow copying
-	BasicStream( const BasicStream& );
-	BasicStream& operator=( const BasicStream& );
+	BasicStream(const BasicStream&);
+	BasicStream& operator=(const BasicStream&);
 
 	IDataStream& dataStream_;
 
 	std::ios_base::iostate state_;
 
-	char readBuffer_[ 16 ];
+	char readBuffer_[16];
 	char* readPos_; // is allowed to get below (readBuffer_ + ungetBufferSize_) only in unget()
 	char* readEnd_;
 	std::streamsize ungetBufferSize_;
 
 	bool resetReadBuffer();
-
 };
 } // end namespace wgt
 #endif // BASIC_STREAM_HPP_INCLUDED

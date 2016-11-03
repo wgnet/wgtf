@@ -1,0 +1,58 @@
+module WGControls.Styles
+
+# BASE STYLES
+
+# 2.0 New Controls
+WGGradientSliderStyle 2.0 Base/WGGradientSliderStyle20.qml
+WGGridViewStyle 2.0 Base/WGGridViewStyle20.qml
+WGItemViewStyle 2.0 Base/WGItemViewStyle20.qml
+WGListViewStyle 2.0 Base/WGListViewStyle20.qml
+WGScrollViewStyle 2.0 Base/WGScrollViewStyle20.qml
+WGTableViewStyle 2.0 Base/WGTableViewStyle20.qml
+WGTimelineBarSliderStyle 2.0 Base/WGTimelineBarSliderStyle20.qml
+WGTimelineFrameSliderStyle 2.0 Base/WGTimelineFrameSliderStyle20.qml
+WGTreeViewStyle 2.0 Base/WGTreeViewStyle20.qml
+
+# 2.0 Updated Controls
+WGColorSliderStyle 2.0 Base/WGColorSliderStyle20.qml
+WGSliderStyle 2.0 Base/WGSliderStyle20.qml
+
+# 2.0 Unchanged Controls
+WGButtonStyle 2.0 Base/WGButtonStyle.qml
+WGCheckBoxStyle 2.0 Base/WGCheckBoxStyle.qml
+WGCheckStyle 2.0 Base/WGCheckStyle.qml
+WGTextBoxStyle 2.0 Base/WGTextBoxStyle.qml
+WGInvisTextBoxStyle 2.0 Base/WGInvisTextBoxStyle.qml
+WGMenuStyle 2.0 Base/WGMenuStyle.qml
+WGRadioStyle 2.0 Base/WGRadioStyle.qml
+WGScrollBarStyle 2.0 Base/WGScrollBarStyle.qml
+WGTabViewStyle 2.0 Base/WGTabViewStyle.qml
+WGTagButtonStyle 2.0 Base/WGTagButtonStyle.qml
+WGToolButtonStyle 2.0 Base/WGToolButtonStyle.qml
+
+# 1.0 Controls
+WGButtonStyle 1.0 Base/WGButtonStyle.qml
+WGCheckBoxStyle 1.0 Base/WGCheckBoxStyle.qml
+WGCheckStyle 1.0 Base/WGCheckStyle.qml
+WGColorSliderStyle 1.0 Base/WGColorSliderStyle.qml
+WGTextBoxStyle 1.0 Base/WGTextBoxStyle.qml
+WGInvisTextBoxStyle 1.0 Base/WGInvisTextBoxStyle.qml
+WGMenuStyle 1.0 Base/WGMenuStyle.qml
+WGRadioStyle 1.0 Base/WGRadioStyle.qml
+WGScrollBarStyle 1.0 Base/WGScrollBarStyle.qml
+WGSliderStyle 1.0 Base/WGSliderStyle.qml
+WGTabViewStyle 1.0 Base/WGTabViewStyle.qml
+WGTagButtonStyle 1.0 Base/WGTagButtonStyle.qml
+WGToolButtonStyle 1.0 Base/WGToolButtonStyle.qml
+
+# OVERLAY STYLES
+
+# 2.0 Unchanged Controls
+WGOverlayButtonStyle 2.0 Overlay/WGOverlayButtonStyle.qml
+WGOverlaySliderStyle 2.0 Overlay/WGOverlaySliderStyle.qml
+WGOverlayTextBoxStyle 2.0 Overlay/WGOverlayTextBoxStyle.qml
+
+# 1.0 Controls
+WGOverlayButtonStyle 1.0 Overlay/WGOverlayButtonStyle.qml
+WGOverlaySliderStyle 1.0 Overlay/WGOverlaySliderStyle.qml
+WGOverlayTextBoxStyle 1.0 Overlay/WGOverlayTextBoxStyle.qml

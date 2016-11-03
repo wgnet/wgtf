@@ -1,8 +1,10 @@
 import QtQuick 2.1
+import WGControls 2.0
 
 Image {
     id: thumbnail
     objectName: "WGHistoryImage"
+    WGComponent { type: "WGHistoryImage" }
 
     // -- Begin Interface
     property string type: undefined

@@ -21,11 +21,11 @@ namespace QtHelpers
 	QVariant toQVariant( const ObjectHandle & object, QObject* parent );
 	Variant toVariant( const QVariant & qVariant );
 
-	QVariant convertToQTTypeInstance( const TypeId & type, const void * data );
-	QQuickItem * findChildByObjectName(
-		QObject * parent, const char * controlName );
+    QVariant convertToQTTypeInstance(const TypeId& type, const void* data);
+    QQuickItem* findChildByObjectName(QObject* parent, const char* controlName);
 
-	QUrl resolveQmlPath( const QQmlEngine & qmlEngine, const char * relativePath );
+    QString resolveFilePath(const QQmlEngine& qmlEngine, const char* relativePath);
+    QUrl resolveQmlPath(const QQmlEngine& qmlEngine, const char* relativePath);
 };
 } // end namespace wgt
 #endif //QT_HELPERS_HPP

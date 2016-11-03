@@ -3,6 +3,7 @@ import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 
 import WGControls 1.0
+import WGControls.Layouts 1.0
 
 WGPanel {
     id: rootFrame

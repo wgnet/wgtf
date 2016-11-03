@@ -16,7 +16,7 @@ public:
 	TokenizedStringFilter();
 	virtual ~TokenizedStringFilter();
 
-	virtual void setRole( unsigned int roleId ) override;
+	virtual void setRole( ItemRole::Id roleId ) override;
 	
 	virtual bool checkFilter( const IItem * item ) override;
 

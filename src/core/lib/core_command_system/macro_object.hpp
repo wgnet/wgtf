@@ -6,6 +6,7 @@
 #include "core_variant/variant.hpp"
 #include "core_data_model/variant_list.hpp"
 #include "command_instance.hpp"
+#include "core_data_model/i_tree_model.hpp"
 
 namespace wgt
 {
@@ -121,7 +122,7 @@ public:
 
 	ObjectHandle executeMacro() const;
 	ObjectHandle executeMacro(const ObjectHandle& contextObject ) const;
-	ObjectHandle getTreeModel() const;
+	const ITreeModel* getTreeModel() const;
 
 	void serialize(ISerializer & serializer) const;
 	void deserialize(ISerializer & serializer);
@@ -141,6 +142,7 @@ private:
 	std::string macroName_;
 
 	ObjectHandle argsEdit_;
+	mutable std::shared_ptr<ITreeModel> treeModel_;
 };
 } // end namespace wgt
 #endif // MACRO_OBJECT_HPP

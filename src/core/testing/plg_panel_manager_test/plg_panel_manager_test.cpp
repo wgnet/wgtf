@@ -8,11 +8,22 @@
 #include "core_serialization/i_file_system.hpp"
 #include "core_data_model/asset_browser/file_system_asset_browser_model.hpp"
 #include "core_data_model/asset_browser/i_asset_browser_event_model.hpp"
+#include "core_data_model/asset_browser/file_system_asset_browser_model20.hpp"
+#include "core_data_model/asset_browser/i_asset_browser_event_model20.hpp"
 #include "interfaces/panel_manager/i_panel_manager.hpp"
+#include "test_asset_browser_folder_context_menu.hpp"
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which queries the IPanelManager to create an asset browser
+*
+* @ingroup plugins
+* @image html plg_panel_manager_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - PanelManagerPlugin
+*/
 class TestPanelManagerPlugin
 	: public PluginMain
 {
@@ -22,8 +33,6 @@ public:
 
 	void Initialise(IComponentContext& contextManager) override
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
 		auto fileSystem = contextManager.queryInterface<IFileSystem>();
@@ -35,29 +44,58 @@ public:
 		if(!fileSystem || !definitionManager || !uiApplication || !panelManager)
 			return;
 
-		presentationProvider_.generateData();
 		std::vector<std::string> assetPaths;
 		std::vector<std::string> customFilters;
 		assetPaths.emplace_back("../../");
-		auto browserModel = std::unique_ptr<IAssetBrowserModel>(
-			new FileSystemAssetBrowserModel(assetPaths, customFilters, *fileSystem, 
-											*definitionManager, presentationProvider_));
-		
-		auto dataDef = definitionManager->getDefinition<IAssetBrowserModel>();
-		dataModel_ = ObjectHandleT<IAssetBrowserModel>(std::move(browserModel), dataDef);
-		panelManager->createAssetBrowser( dataModel_, assetBrowserView_ );
+		{
+			presentationProviderOld_.generateData();
+			auto browserModelOld = std::unique_ptr<IAssetBrowserModel>(
+			new FileSystemAssetBrowserModel(assetPaths, customFilters, *fileSystem,
+			                                *definitionManager, presentationProviderOld_));
+
+			auto dataDef = definitionManager->getDefinition<IAssetBrowserModel>();
+			dataModelOld_ = ObjectHandleT<IAssetBrowserModel>(std::move(browserModelOld), dataDef);
+			assetBrowserViewOld_ = panelManager->createAssetBrowser(dataModelOld_);
+			assetBrowserFolderContextMenuHandlerOld_ = CreateMenuHandler<TestAssetBrowserFolderContextMenu>(contextManager);
+		}
+
+		{
+			presentationProvider_.generateData();
+			auto browserModel = std::unique_ptr<AssetBrowser20::IAssetBrowserModel>(
+			new AssetBrowser20::FileSystemAssetBrowserModel(assetPaths, customFilters, *fileSystem,
+			                                                *definitionManager, presentationProvider_));
+
+			auto dataDef = definitionManager->getDefinition<AssetBrowser20::IAssetBrowserModel>();
+			dataModel_ = ObjectHandleT<AssetBrowser20::IAssetBrowserModel>(std::move(browserModel), dataDef);
+			assetBrowserView_ = panelManager->createAssetBrowser20(dataModel_);
+			assetBrowserFolderContextMenuHandler_ = CreateMenuHandler<TestAssetBrowserFolderContextMenu20>(contextManager);
+		}
 	}
 
 	bool Finalise( IComponentContext & contextManager ) override
 	{
+		assetBrowserFolderContextMenuHandlerOld_.reset();
+		assetBrowserFolderContextMenuHandler_.reset();
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		if (uiApplication)
 		{
-			if(assetBrowserView_ != nullptr)
+			if (assetBrowserViewOld_.valid())
 			{
-				uiApplication->removeView( *assetBrowserView_ );
-				assetBrowserView_ = nullptr;
+				auto view = assetBrowserViewOld_.get();
+				uiApplication->removeView( *view );
+				view = nullptr;
 			}
+			if (assetBrowserView_.valid())
+			{
+				auto view = assetBrowserView_.get();
+				uiApplication->removeView(*view);
+				view = nullptr;
+			}
+		}
+		if (dataModelOld_ != nullptr)
+		{
+			dataModelOld_->finalise();
+			dataModelOld_ = nullptr;
 		}
 		if (dataModel_ != nullptr)
 		{
@@ -68,9 +106,14 @@ public:
 	}
 
 private:
-	TestAssetPresentationProvider presentationProvider_;
-	ObjectHandleT<IAssetBrowserModel> dataModel_;
-	std::unique_ptr< IView > assetBrowserView_;
+	TestAssetPresentationProvider presentationProviderOld_;
+	ObjectHandleT<IAssetBrowserModel> dataModelOld_;
+	wg_future<std::unique_ptr<IView>> assetBrowserViewOld_;
+	MenuHandlerPtr assetBrowserFolderContextMenuHandlerOld_;
+	TestAssetPresentationProvider20 presentationProvider_;
+	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel_;
+	wg_future<std::unique_ptr<IView>> assetBrowserView_;
+	MenuHandlerPtr assetBrowserFolderContextMenuHandler_;
 };
 
 PLG_CALLBACK_FUNC(TestPanelManagerPlugin)

@@ -1,13 +1,14 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtQuick.Controls.Private 1.0
-import QtQuick.Layouts 1.1
+import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.2
 import WGControls 2.0
-
-//TODO: Test orientation = vertical. Create vertical slider. Remove option here
+import WGControls.Styles 2.0
+import WGControls.Private 2.0
 
 /*!
+ \ingroup wgcontrols
  \brief A multi-handle Slider with a color gradient background.
  Purpose: Allow the user to edit a linear gradient.
 
@@ -55,11 +56,14 @@ Example:
         }
     }
 \endcode
+
+\todo TODO: Test orientation = vertical. Create vertical slider. Remove option here
 */
 
 WGSlider {
     id: slider
     objectName: "WGColorSlider"
+    WGComponent { type: "WGGradientSlider20" }
 
     /*!
         This value determines whether double clicking a handle should display a color picker.
@@ -84,6 +88,11 @@ WGSlider {
         The default value is 0.
     */
     property int handleVerticalOffset: 0
+
+    /*!
+        This value is true if the color picker is visible
+    */
+    readonly property bool colorPickerOpen: colorPicker.visible;
 
     minimumValue: 0
 
@@ -110,15 +119,23 @@ WGSlider {
 
         property int currentColorIndex: -1
 
+        onVisibleChanged: {
+            if (visible) {
+                beginUndoFrame();
+            }
+        }
+
         onAccepted: {
             if(currentColorIndex >= 0)
             {
                 colorModified(Qt.rgba(colorPicker.color.r,colorPicker.color.g,colorPicker.color.b,colorPicker.color.a), currentColorIndex)
+                endUndoFrame();
                 currentColorIndex = -1
             }
         }
 
         onRejected: {
+            abortUndoFrame();
             currentColorIndex = -1
         }
     }
@@ -332,6 +349,16 @@ WGSlider {
                                     });
         }
 
+        if (typeof color != "undefined")
+        {
+            newHandle.color = color
+        }
+
+        if (typeof grad != "undefined")
+        {
+            newHandle.gradient = grad
+        }
+
         if (typeof index != "undefined")
         {
             addHandle(newHandle, index)
@@ -347,16 +374,6 @@ WGSlider {
             {
                 handleAdded(index)
             }
-        }
-
-        if (typeof color != "undefined")
-        {
-            newHandle.color = color
-        }
-
-        if (typeof grad != "undefined")
-        {
-            newHandle.gradient = grad
         }
 
         updateHandles()

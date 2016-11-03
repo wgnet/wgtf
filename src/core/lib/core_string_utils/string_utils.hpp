@@ -41,17 +41,49 @@ public:
 		return elems;
 	}
 
-	template<class TDelimiter>
-	static std::string join(const std::vector<std::string>& strings, const TDelimiter& delim)
+	template<class TCollection, class TDelimiter>
+	static std::string join(const TCollection& values, const TDelimiter& delim)
 	{
+		auto iter = std::begin(values);
+		auto sentinel = std::end(values);
+		if(iter == sentinel)
+			return "";
 		std::stringstream stream;
-		for ( auto& str : strings )
+		for (; iter < sentinel - 1; ++iter )
 		{
-			stream << str << delim;
+			stream << *iter << delim;
 		}
+		stream << *iter;
 		return stream.str();
 	}
 
+    /**
+    * Converts wide string to standard string
+    */
+	static std::string to_string(const std::wstring& str)
+	{
+		return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(str);
+	}
+
+	/**
+    * Converts string to a wide string
+    */
+	static std::wstring to_wstring(const std::string& str)
+	{
+		return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(str);
+	}
+
+	/**
+    * Erases the first instance of the substring from the string if it exists
+    */
+	static void erase_string(std::string& str, const std::string& substr)
+	{
+		const auto index = str.find(substr);
+		if (index != std::string::npos)
+		{
+			str.erase(index, substr.size());
+		}
+	}
 };
 } // end namespace wgt
 #endif //TOOLS_STRING_UTILS_HPP

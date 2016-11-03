@@ -10,19 +10,15 @@ namespace wgt
 {
 namespace PythonType
 {
-
-
-namespace Detail
+namespace Sequence_Detail
 {
-
-
-template< typename T >
-typename std::enable_if< Sequence< T >::can_resize, typename Sequence< T >::result_type >::type
-insert( const ObjectHandle & containerHandle,
-	typename Sequence< T >::container_type & container,
-	const typename Sequence< T >::key_type i,
-	const CollectionIteratorImplPtr & end,
-	const Converters & typeConverters )
+template <typename T>
+typename std::enable_if<Sequence<T>::can_resize, CollectionIteratorImplPtr>::type
+insert(const ObjectHandle& containerHandle,
+       typename Sequence<T>::container_type& container,
+       const typename Sequence<T>::key_type i,
+       const CollectionIteratorImplPtr& end,
+       const Converters& typeConverters)
 {
 	auto noneType = PyScript::ScriptObject( Py_None,
 		PyScript::ScriptObject::FROM_BORROWED_REFERENCE );
@@ -37,7 +33,7 @@ insert( const ObjectHandle & containerHandle,
 		const bool success = container.insert( 0, noneType );
 		if (!success)
 		{
-			return Sequence< T >::result_type( end, false );
+			return end;
 		}
 	}
 	// Append to end
@@ -48,7 +44,7 @@ insert( const ObjectHandle & containerHandle,
 		const bool success = container.append( noneType );
 		if (!success)
 		{
-			return Sequence< T >::result_type( end, false );
+			return end;
 		}
 	}
 	// Insert in middle
@@ -58,29 +54,26 @@ insert( const ObjectHandle & containerHandle,
 		const bool success = container.insert( i, noneType );
 		if (!success)
 		{
-			return Sequence< T >::result_type( end, false );
+			return end;
 		}
 	}
 
-	return Sequence< T >::result_type(
-		std::make_shared< Sequence< T >::iterator_impl_type >( containerHandle,
-			container,
-			resultIndex,
-			typeConverters ),
-		true );
+	return std::make_shared<Sequence<T>::iterator_impl_type>(containerHandle,
+	                                                         container,
+	                                                         resultIndex,
+	                                                         typeConverters);
 }
 
-
-template< typename T >
-typename std::enable_if< !Sequence< T >::can_resize, typename Sequence< T >::result_type >::type
-insert( const ObjectHandle & containerHandle,
-	typename Sequence< T >::container_type & container,
-	const typename Sequence< T >::key_type i,
-	const CollectionIteratorImplPtr & end,
-	const Converters & typeConverters )
+template <typename T>
+typename std::enable_if<!Sequence<T>::can_resize, CollectionIteratorImplPtr>::type
+insert(const ObjectHandle& containerHandle,
+       typename Sequence<T>::container_type& container,
+       const typename Sequence<T>::key_type i,
+       const CollectionIteratorImplPtr& end,
+       const Converters& typeConverters)
 {
 	NGT_ERROR_MSG( "Cannot insert into container that does not resize\n" );
-	return Sequence< T >::result_type( end, false );
+	return end;
 }
 
 
@@ -153,9 +146,7 @@ erase( const ObjectHandle & containerHandle,
 	return Sequence< T >::result_type( end, false );
 }
 
-
-} // namespace Detail
-
+} // namespace Sequence_Detail
 
 template< typename T >
 Sequence< T >::Sequence(
@@ -222,7 +213,7 @@ typename Sequence< T >::result_type Sequence< T >::get( const Variant & key,
 	{
 		if (i < 0)
 		{
-			return result_type( this->end(), false );
+			return result_type(this->end(), false);
 		}
 		if (i < container_.size())
 		{
@@ -240,11 +231,12 @@ typename Sequence< T >::result_type Sequence< T >::get( const Variant & key,
 	}
 	else if (policy == GET_NEW)
 	{
-		return Detail::insert< T >( containerHandle_,
-			container_,
-			i,
-			this->end(),
-			typeConverters_ );
+		auto itr = Sequence_Detail::insert<T>(containerHandle_,
+		                                      container_,
+		                                      i,
+		                                      this->end(),
+		                                      typeConverters_);
+		return result_type(itr, itr != this->end());
 	}
 	else if (policy == GET_AUTO)
 	{
@@ -261,11 +253,12 @@ typename Sequence< T >::result_type Sequence< T >::get( const Variant & key,
 		}
 
 		// Insert new at start or end
-		return Detail::insert< T >( containerHandle_,
-			container_,
-			i,
-			this->end(),
-			typeConverters_ );
+		return result_type(Sequence_Detail::insert<T>(containerHandle_,
+		                                              container_,
+		                                              i,
+		                                              this->end(),
+		                                              typeConverters_),
+		                   true);
 	}
 	else
 	{
@@ -274,6 +267,36 @@ typename Sequence< T >::result_type Sequence< T >::get( const Variant & key,
 	}
 }
 
+template <typename T>
+typename CollectionIteratorImplPtr Sequence<T>::insert(const Variant& key,
+                                                       const Variant& value) /* override */
+{
+	key_type i;
+	if (!key.tryCast(i))
+	{
+		return this->end();
+	}
+
+	// If you pass in a negative index,
+	// Python adds the length of the sequence to the index.
+	// E.g. list[-1] gets the last item in the list
+	// SequenceIterator should always have an index in the range start-end
+	if (i < 0)
+	{
+		i += container_.size();
+	}
+
+	const auto insertItr = Sequence_Detail::insert<T>(containerHandle_,
+	                                                  container_,
+	                                                  i,
+	                                                  this->end(),
+	                                                  typeConverters_);
+	if (insertItr != this->end())
+	{
+		insertItr->setValue(value);
+	}
+	return insertItr;
+}
 
 template< typename T >
 CollectionIteratorImplPtr Sequence< T >::erase(
@@ -291,19 +314,19 @@ CollectionIteratorImplPtr Sequence< T >::erase(
 		return this->end();
 	}
 
-	auto result = Detail::erase< T >( containerHandle_,
-		container_,
-		pItr->rawIndex(),
-		pItr->rawIndex() + 1,
-		this->end(),
-		typeConverters_ );
+	auto result = Sequence_Detail::erase<T>(containerHandle_,
+	                                        container_,
+	                                        pItr->rawIndex(),
+	                                        pItr->rawIndex() + 1,
+	                                        this->end(),
+	                                        typeConverters_);
 
 	return result.first;
 }
 
 
 template< typename T >
-size_t Sequence< T >::erase( const Variant & key ) /* override */
+size_t Sequence< T >::eraseKey( const Variant & key ) /* override */
 {
 	key_type index;
 	if (!key.tryCast( index ))
@@ -311,12 +334,12 @@ size_t Sequence< T >::erase( const Variant & key ) /* override */
 		return 0;
 	}
 
-	const auto result = Detail::erase< T >( containerHandle_,
-		container_,
-		index,
-		index + 1,
-		this->end(),
-		typeConverters_ );
+	const auto result = Sequence_Detail::erase<T>(containerHandle_,
+	                                              container_,
+	                                              index,
+	                                              index + 1,
+	                                              this->end(),
+	                                              typeConverters_);
 
 	return result.second ? 1 : 0;
 }
@@ -339,12 +362,12 @@ CollectionIteratorImplPtr Sequence< T >::erase( const CollectionIteratorImplPtr 
 		return this->end();
 	}
 
-	auto result = Detail::erase< T >( containerHandle_,
-		container_,
-		pFirst->rawIndex(),
-		pLast->rawIndex(),
-		this->end(),
-		typeConverters_ );
+	auto result = Sequence_Detail::erase<T>(containerHandle_,
+	                                        container_,
+	                                        pFirst->rawIndex(),
+	                                        pLast->rawIndex(),
+	                                        this->end(),
+	                                        typeConverters_);
 
 	return result.first;
 }

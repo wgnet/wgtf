@@ -4,6 +4,17 @@
 
 namespace wgt
 {
+EnvState::EnvState(const char* description, int id)
+    : description_(description)
+    , id_(id)
+{
+}
+
+int EnvState::id() const
+{
+	return id_;
+}
+
 void EnvState::add(IEnvState::IEnvComponentPtr ec)
 {
 	assert(std::find_if(components_.begin(), components_.end(), 
@@ -29,6 +40,13 @@ IEnvComponent* EnvState::query(const ECGUID& guid) const
 	return it->get();
 }
 
+EnvManager::EnvManager()
+    : idx_(0)
+    , currentSelected_(INVALID_ID)
+    , previousSelected_(INVALID_ID)
+{
+}
+
 void EnvManager::registerListener( IEnvEventListener* listener )
 {
 	assert(std::find(listeners_.begin(), listeners_.end(), listener) == listeners_.end());
@@ -44,52 +62,86 @@ void EnvManager::deregisterListener(IEnvEventListener* listener)
 
 int EnvManager::addEnv( const char* description )
 {
-	stateVec_.emplace_back( StateVec::value_type( idx_, IEnvStatePtr( new EnvState(description) ) ) );
+	stateVec_.emplace_back(IEnvStatePtr(new EnvState(description, idx_)));
 	for (auto& l : listeners_)
 	{
-		l->onAddEnv( stateVec_.back().second.get() );
+		l->onAddEnv(stateVec_.back().get());
 	}
 	return idx_++;
 }
 
 void EnvManager::removeEnv(int id)
 {
-	auto it = find_if(stateVec_.begin(), stateVec_.end(), [=](const StateVec::value_type& x) { return x.first == id; });
+	auto it = find_if(stateVec_.begin(), stateVec_.end(), [id](const StateVec::value_type& x) { return x->id() == id; });
 	assert(it != stateVec_.end());
 	for (auto& l : listeners_)
 	{
-		l->onRemoveEnv( it->second.get() );
+		l->onRemoveEnv(it->get());
 	}
 	stateVec_.erase(it);
+
+	if (currentSelected_ == id)
+	{
+		currentSelected_ = INVALID_ID;
+	}
+	if (previousSelected_ == id)
+	{
+		previousSelected_ = INVALID_ID;
+	}
 }
 
 void EnvManager::selectEnv(int id)
 {
-	auto it = find_if(stateVec_.begin(), stateVec_.end(), [=](const StateVec::value_type& x) { return x.first == id; });
-	assert(it != stateVec_.end());
-	for (auto& l : listeners_)
+	if (currentSelected_ != id)
 	{
-		l->onSelectEnv( it->second.get() );
+		auto it = find_if(stateVec_.begin(), stateVec_.end(), [id](const StateVec::value_type& x) { return x->id() == id; });
+		assert(it != stateVec_.end());
+		for (auto& l : listeners_)
+		{
+			l->onSelectEnv(it->get());
+		}
+
+		previousSelected_ = currentSelected_;
+		currentSelected_ = id;
+	}
+}
+
+void EnvManager::deSelectEnv(int id)
+{
+	if (currentSelected_ == id)
+	{
+		currentSelected_ = INVALID_ID;
+		if (previousSelected_ != INVALID_ID)
+		{
+			selectEnv(previousSelected_);
+		}
+		else
+		{
+			for (auto& l : listeners_)
+			{
+				l->onDeselectEnv();
+			}
+		}
 	}
 }
 
 void EnvManager::saveEnvState( int id )
 {
-    auto it = find_if(stateVec_.begin(), stateVec_.end(), [=](const StateVec::value_type& x) { return x.first == id; });
-    assert(it != stateVec_.end());
+	auto it = find_if(stateVec_.begin(), stateVec_.end(), [id](const StateVec::value_type& x) { return x->id() == id; });
+	assert(it != stateVec_.end());
     for (auto& l : listeners_)
     {
-        l->onSaveEnvState( it->second.get() );
-    }
+		l->onSaveEnvState(it->get());
+	}
 }
 
 void EnvManager::loadEnvState( int id )
 {
-    auto it = find_if(stateVec_.begin(), stateVec_.end(), [=](const StateVec::value_type& x) { return x.first == id; });
-    assert(it != stateVec_.end());
+	auto it = find_if(stateVec_.begin(), stateVec_.end(), [id](const StateVec::value_type& x) { return x->id() == id; });
+	assert(it != stateVec_.end());
     for (auto& l : listeners_)
     {
-        l->onLoadEnvState( it->second.get() );
-    }
+		l->onLoadEnvState(it->get());
+	}
 }
 } // end namespace wgt

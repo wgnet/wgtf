@@ -16,6 +16,7 @@
 #include "test_objects.hpp"
 
 #include "core_variant/collection.hpp"
+#include <numeric>
 
 namespace wgt
 {
@@ -73,6 +74,22 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK_EQUAL(TypeId::getType< std::string >(), property->getType());
 	CHECK(property->getMetaData() != NULL);
 
+    // Function Int
+    ++pi;
+    property = *pi;
+    CHECK(property != NULL);
+    CHECK_EQUAL(std::string("functional ints"), property->getName());
+    CHECK_EQUAL(TypeId::getType< std::vector< int32_t > >(), property->getType());
+    CHECK(property->getMetaData() != NULL);
+
+    // Function Raw String
+    ++pi;
+    property = *pi;
+    CHECK(property != NULL);
+    CHECK_EQUAL(std::string("functional string"), property->getName());
+    CHECK_EQUAL(TypeId::getType< const char* >(), property->getType());
+    CHECK(property->getMetaData() != NULL);
+
 	// Getter only Counter
 	++pi;
 	property = *pi;
@@ -88,6 +105,14 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK_EQUAL(std::string("text getter"), property->getName());
 	CHECK_EQUAL(TypeId::getType< std::string >(), property->getType());
 	CHECK(property->getMetaData() == NULL);
+
+	// link
+	++pi;
+	property = *pi;
+	CHECK(property != NULL);
+	CHECK_EQUAL(std::string("link"), property->getName());
+	CHECK_EQUAL(TypeId::getType< ObjectHandleT< TestPolyStruct2 > >(), property->getType());
+	CHECK(property->getMetaData() != NULL);
 
 	// raw string
 	++pi;
@@ -395,6 +420,22 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK_EQUAL(TypeId::getType< std::string >(), property->getType());
 	CHECK(property->getMetaData() != NULL);
 
+    // Function Int
+    ++pi;
+    property = *pi;
+    CHECK(property != NULL);
+    CHECK_EQUAL(std::string("functional ints"), property->getName());
+    CHECK_EQUAL(TypeId::getType< std::vector< int32_t > >(), property->getType());
+    CHECK(property->getMetaData() != NULL);
+
+    // Function Raw String
+    ++pi;
+    property = *pi;
+    CHECK(property != NULL);
+    CHECK_EQUAL(std::string("functional string"), property->getName());
+    CHECK_EQUAL(TypeId::getType< const char* >(), property->getType());
+    CHECK(property->getMetaData() != NULL);
+
 	// Getter only Counter
 	++pi;
 	property = *pi;
@@ -410,6 +451,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK_EQUAL(std::string("text getter"), property->getName());
 	CHECK_EQUAL(TypeId::getType< std::string >(), property->getType());
 	CHECK(property->getMetaData() == NULL);
+
+	// link
+	++pi;
+	property = *pi;
+	CHECK(property != NULL);
+	CHECK_EQUAL(std::string("link"), property->getName());
+	CHECK_EQUAL(TypeId::getType< ObjectHandleT< TestPolyStruct2 > >(), property->getType());
+	CHECK(property->getMetaData() != NULL);
 
 	// raw string
 	++pi;
@@ -667,12 +716,12 @@ TEST_F(TestDefinitionFixture, property_accessor_vector3)
 		Vector3 value;
 		Variant variant = position.getValue();
 		CHECK(variant.tryCast( value ));
-		CHECK_EQUAL(TEST_VALUE, value);
+		CHECK(TEST_VALUE == value);
 	}
 }
 
 // -----------------------------------------------------------------------------
-TEST_F(TestDefinitionFixture, property_accessor_collection)
+TEST_F(TestDefinitionFixture, property_accessor_float_collection)
 {
 	auto provider = klass_->createManagedObject();
 
@@ -686,7 +735,6 @@ TEST_F(TestDefinitionFixture, property_accessor_collection)
 	CHECK(container.getMetaData() == NULL);
 
 	fillValuesWithNumbers( collection );
-
 	CHECK_EQUAL(5, collection.size());
 
 	{
@@ -704,6 +752,73 @@ TEST_F(TestDefinitionFixture, property_accessor_collection)
 		}
 
 		CHECK_EQUAL(5, count);
+	}
+}
+
+// -----------------------------------------------------------------------------
+TEST_F(TestDefinitionFixture, property_accessor_int_collection)
+{
+    auto provider = klass_->createManagedObject();
+    auto property = klass_->bindProperty( "functional ints", provider );
+    CHECK( property.isValid() );
+
+    const size_t size = 5;
+    std::vector< int32_t > input( size );
+    std::iota( input.begin(), input.end(), 0 ); // Fill with values [0, 4]
+    CHECK( property.setValue( input ) );
+
+    std::vector< int32_t > output;
+    CHECK( property.getValue().tryCast( output ) );
+
+    CHECK_EQUAL( output.size(), size );
+    CHECK_EQUAL( input.size(), size );
+
+    for( size_t i = 0; i < size; ++i )
+    {
+        CHECK_EQUAL( input[i], output[i] );
+    }
+}
+
+// -----------------------------------------------------------------------------
+TEST_F(TestDefinitionFixture, property_accessor_string)
+{
+    auto provider = klass_->createManagedObject();
+    auto property = klass_->bindProperty( "functional string", provider );
+    CHECK( property.isValid() );
+
+    // Setting const char* is currently not supported
+    // Update this test if it becomes supported
+    CHECK( !property.setValue( "unsupported" ) );
+
+    std::string output;
+    CHECK( property.getValue().tryCast( output ) );
+    CHECK_EQUAL( output, "test_string" );
+}
+
+// -----------------------------------------------------------------------------
+TEST_F(TestDefinitionFixture, property_accessor_polystruct)
+{
+	auto provider = klass_->createManagedObject();
+
+	PropertyAccessor position = klass_->bindProperty("link", provider );
+	CHECK(position.isValid());
+	CHECK_EQUAL(TypeId::getType< ObjectHandleT< TestPolyStruct2 > >(), position.getType());
+	CHECK_EQUAL(std::string("link"), position.getName());
+	CHECK(position.getMetaData() != NULL);
+
+	const TestPolyStruct2 TEST_VALUE = TestPolyStruct2();
+	{
+		ObjectHandleT< TestPolyStruct2 > value = &TEST_VALUE;
+		CHECK(position.setValue(value));
+	}
+
+	{
+		ObjectHandleT< TestPolyStruct2 > value;
+		Variant variant = position.getValue();
+		ObjectHandle handle;
+		CHECK(variant.tryCast( handle ));
+		value = reflectedCast< TestPolyStruct2 >( handle, getDefinitionManager() );
+		CHECK(value == &TEST_VALUE);
 	}
 }
 

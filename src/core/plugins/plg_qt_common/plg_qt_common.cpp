@@ -16,6 +16,9 @@
 #include <QFile>
 #include <QTextStream>
 #include <QRegExp>
+#if defined(USE_Qt5_WEB_ENGINE)
+#include <QtWebEngine/QtWebEngine>
+#endif
 
 namespace wgt
 {
@@ -61,32 +64,43 @@ private:
 	QtFramework * qtFramework_;
 };
 
-
-class QtPlugin
+/**
+* A plugin which creates and registers IUIFramework and IViewCreator interfaces to allow creation of UI Components from Qt resources.
+* Mutually exclusive with MayaAdapterPlugin.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
+class QtPluginCommon
 	: public PluginMain
 {
 public:
-	QtPlugin( IComponentContext & contextManager )
-		: qtCopyPasteManager_( new QtCopyPasteManager() )
+	QtPluginCommon( IComponentContext & contextManager )
 	{
-		contextManager.registerInterface(qtCopyPasteManager_);
 		contextManager.registerInterface(new UIViewCreator(contextManager));
 	}
 
 	bool PostLoad( IComponentContext & contextManager ) override
 	{
+#if defined(USE_Qt5_WEB_ENGINE)
+		QtWebEngine::initialize();
+#endif
 		qtFramework_.reset(new QtFramework(contextManager));
 		types_.push_back(
 			contextManager.registerInterface(new QtPluginContextCreator(qtFramework_.get())));
+
 		return true;
 	}
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
 		auto commandsystem = contextManager.queryInterface<ICommandManager>();
+
+		qtCopyPasteManager_ = new QtCopyPasteManager();
+		contextManager.registerInterface(qtCopyPasteManager_);
 		qtCopyPasteManager_->init( definitionManager, commandsystem );
 		qtFramework_->initialise( contextManager );
 	}
@@ -94,6 +108,7 @@ public:
 	bool Finalise( IComponentContext & contextManager ) override
 	{
         qtCopyPasteManager_->fini();
+		qtCopyPasteManager_ = nullptr;
 		qtFramework_->finalise();
 		return true;
 	}
@@ -104,8 +119,7 @@ public:
 		{
 			contextManager.deregisterInterface( type );
 		}
-
-        qtCopyPasteManager_ = nullptr;
+        qtFramework_.reset();
 	}
 
 private:
@@ -114,5 +128,5 @@ private:
 	std::vector< IInterface * > types_;
 };
 
-PLG_CALLBACK_FUNC( QtPlugin )
+PLG_CALLBACK_FUNC( QtPluginCommon )
 } // end namespace wgt

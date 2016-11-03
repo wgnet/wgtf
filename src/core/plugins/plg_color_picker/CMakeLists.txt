@@ -5,20 +5,15 @@ INCLUDE( WGToolsCoreProject )
 
 FIND_PACKAGE( QT5 )
 
-SET( METADATA_SRCS
-	metadata/color_picker.mpp
-)
-SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
-
-
 SET( ALL_SRCS
+	metadata/color_picker_context.mpp
 	color_picker.hpp
 	color_picker.cpp
 	color_picker_context.hpp
 	color_picker_context.cpp
 	plg_color_picker_main.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}

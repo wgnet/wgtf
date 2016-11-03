@@ -9,6 +9,7 @@
 #include "core_serialization/i_datastream.hpp"
 #include "reflected_object.hpp"
 #include "object_handle.hpp"
+#include "reflection_dll.hpp"
 
 namespace wgt
 {
@@ -23,7 +24,7 @@ class ISerializer;
 /**
  * IDefinitionManager
  */
-class IDefinitionManager
+class REFLECTION_DLL IDefinitionManager
 {
 public:
 	virtual ~IDefinitionManager() {}
@@ -71,7 +72,9 @@ public:
 		return getDefinition( defName );
 	}
 
-
+	/**
+	 *	@see TypeClassDefinition::create to construct with arguments.
+	 */
 	template< class T >
 	ObjectHandleT< T > create( bool managed = true ) const
 	{

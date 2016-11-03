@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 
+#include "reflection_dll.hpp"
+
 namespace wgt
 {
 class IBaseProperty;
@@ -12,7 +14,7 @@ typedef std::vector< IBasePropertyPtr > SortedProperties;
 class PropertyIteratorImplBase;
 typedef std::shared_ptr< PropertyIteratorImplBase > PropertyIteratorImplPtr;
 
-class PropertyStorage
+class REFLECTION_DLL PropertyStorage
 {
 public:
 	PropertyStorage();
@@ -26,5 +28,6 @@ private:
 
 	friend class PropertyStorageIterator;
 };
+
 } // end namespace wgt
 #endif

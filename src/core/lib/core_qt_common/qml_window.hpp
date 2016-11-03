@@ -3,7 +3,6 @@
 
 #include "core_ui_framework/i_window.hpp"
 #include "core_ui_framework/layout_hint.hpp"
-#include <map>
 #include <memory>
 #include <QObject>
 #include <QQuickWindow>
@@ -18,14 +17,14 @@ class QWindow;
 
 namespace wgt
 {
-class IQtFramework;
+class IComponentContext;
 class IUIApplication;
 
 class QmlWindow : public QObject, public IWindow
 {
 	Q_OBJECT
 public:
-	QmlWindow( IQtFramework & qtFramework, QQmlEngine & qmlEngine );
+	QmlWindow( IComponentContext & context, QQmlEngine & qmlEngine );
 	virtual ~QmlWindow();
 
 	const char * id() const override;
@@ -38,44 +37,39 @@ public:
 	void showMaximized( bool wait = false ) override;
 	void showModal() override;
 	void hide() override;
+	void title(const char* title) override;
 
 	const Menus & menus() const override;
 	const Regions & regions() const override;
 	IStatusBar* statusBar() const override;
-
-	void setApplication( IUIApplication * application ) override;
-	IUIApplication * getApplication() const override;
 
 	void setContextObject( QObject * object );
 	void setContextProperty( const QString & name, const QVariant & property );
 
 	QQuickWidget * release();
 	QQuickWidget * window() const;
-	bool load( QUrl & qUrl );
+	bool load( QUrl & qUrl, bool async,
+		std::function< void() > loadedHandler );
 
 	bool eventFilter( QObject * object, QEvent * event ) override;
 
 	public Q_SLOTS:
 		void error( QQuickWindow::SceneGraphError error, const QString &message );
 
+Q_SIGNALS: 
+		void windowClosed();
+
+private slots:
+    void onPrePreferencesChanged();
+    void onPostPreferencesChanged();
+    void onPrePreferencesSaved();
+
 private:
 	void waitForWindowExposed();
     void savePreference();
-    bool loadPreference();
-	IQtFramework & qtFramework_;
-    QQmlEngine  & qmlEngine_;
-	std::unique_ptr< QQmlContext > qmlContext_;
-	QQuickWidget* mainWindow_;
-	std::string id_;
-	std::string title_;
-	Menus menus_;
-	Regions regions_;
-	std::unique_ptr<IStatusBar> statusBar_;
-	bool released_;
-	Qt::WindowModality modalityFlag_;
-	IUIApplication * application_;
-    bool isMaximizedInPreference_;
-    bool firstTimeShow_;
+
+	struct Impl;
+	std::unique_ptr< Impl > impl_;
 };
 } // end namespace wgt
 #endif//QML_WINDOW_HPP

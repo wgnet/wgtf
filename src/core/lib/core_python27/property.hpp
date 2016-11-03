@@ -34,12 +34,12 @@ public:
 	 */
 	Property( IComponentContext & context,
 		const char * key,
-		const PyScript::ScriptObject & pythonObject );
+		const PyScript::ScriptObject & pythonObject, MetaHandle metaData );
 
 	Property( IComponentContext & context,
 		const char * key,
 		const TypeId & typeId,
-		const PyScript::ScriptObject & pythonObject );
+		const PyScript::ScriptObject & pythonObject, MetaHandle metaData );
 
 	const TypeId & getType() const override;
 
@@ -65,7 +65,9 @@ public:
 		const IDefinitionManager & definitionManager,
 		const ReflectedMethodParameters& parameters ) override;
 
-	size_t parameterCount() const override;
+	size_t parameterCount() const override;   
+
+    void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
 
 private:
 	class Implementation;

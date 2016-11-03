@@ -6,6 +6,7 @@
 #include <QVariant>
 
 Q_DECLARE_METATYPE( std::shared_ptr< wgt::BinaryBlock > );
+Q_DECLARE_METATYPE(wgt::Variant);
 
 namespace wgt
 {
@@ -60,17 +61,31 @@ public:
 
 	bool toQVariant( const Variant & variant, QVariant & o_qVariant, QObject* parent = nullptr ) const override
 	{
-		if (variant.typeIs< T >() == false)
+		if (TypeId::getType<T>() == TypeId::getType<Variant>())
 		{
-			return false;
+			if (!variant.isPointer() || variant.isNullPointer())
+			{
+				return false;
+			}
+			// handle pointer like IListModel*/ITreeModel*/IComponentContext* or reflected property which return reference value
+			o_qVariant = QVariant::fromValue(variant);
+			return true;
 		}
-		U tmp;
-		if (variant.tryCast( tmp ))
+		else
 		{
-			o_qVariant = QVariant::fromValue( tmp );
+			if (variant.typeIs<T>() == false)
+			{
+				return false;
+			}
+			U tmp;
+			if (variant.tryCast(tmp))
+			{
+				o_qVariant = QVariant::fromValue(tmp);
+			}
+			return true;
 		}
-		return true;
 	}
 };
+
 } // end namespace wgt
 #endif

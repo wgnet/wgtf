@@ -1,0 +1,129 @@
+<root>	8	</root>
+<root>	"3D5DA005.4F49FD50.210E2987.D6585617"	</root>
+<root>	""	</root>
+<root>	21	</root>
+<root>	"Q29weQ=="	</root>
+<root>	"string"	</root>
+<root>	"RXhpdA=="	</root>
+<root>	"string"	</root>
+<root>	"UHJlZmVyZW5jZXMuU2hvcnRjdXRz"	</root>
+<root>	"string"	</root>
+<root>	"VG9nZ2xlQ29weUNvbnRyb2xz"	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5Db3B5"	</root>
+<root>	"string"	</root>
+<root>	"UGFzdGU="	</root>
+<root>	"string"	</root>
+<root>	"VW5kbw=="	</root>
+<root>	"string"	</root>
+<root>	"UmVkbw=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5DdXQ="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5QYXN0ZQ=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5TZWxlY3QgQWxs"	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuUGFzdGU="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5GaW5kIEluIEFzc2V0QnJvd3Nlcg=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuQ3V0"	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuQ29weQ=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuU2VsZWN0IEFsbA=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuRmluZCBJbiBBc3NldEJyb3dzZXI="	</root>
+<root>	"string"	</root>
+<root>	"Vmlldy5IZWxsbyBXb3JsZA=="	</root>
+<root>	"string"	</root>
+<root>	"Vmlldy5IZWxsbyBQYW5lbCBMaXN0"	</root>
+<root>	"string"	</root>
+<root>	"Vmlldy5IZWxsbyBXb3JsZCBJbnRlcmZhY2U="	</root>
+<root>	"string"	</root>
+<root>	"Vmlldy5IaXN0b3J5"	</root>
+<root>	"string"	</root>
+<root>	"8FD66D72.4814AA8E.4A642EAB.5EDD9D26"	</root>
+<root>	""	</root>
+<root>	0	</root>
+<root>	"06931E25.452F5C1E.CD7B5C9B.0B654129"	</root>
+<root>	""	</root>
+<root>	0	</root>
+<root>	"F5E99CF0.46ADE9BB.3A5275B7.2434FE9A"	</root>
+<root>	""	</root>
+<root>	0	</root>
+<root>	"0253F827.402D1F9C.3D8DE597.AA898C48"	</root>
+<root>	""	</root>
+<root>	4	</root>
+<root>	"geometry"	</root>
+<root>	"BinaryBlock"	</root>
+<root>	"maximized"	</root>
+<root>	"int"	</root>
+<root>	"pos"	</root>
+<root>	"Vector2"	</root>
+<root>	"size"	</root>
+<root>	"Vector2"	</root>
+<root>	"F9D8EF4C.4081F9FA.674FCC9B.B7CF79BE"	</root>
+<root>	""	</root>
+<root>	3	</root>
+<root>	"geometry"	</root>
+<root>	"BinaryBlock"	</root>
+<root>	"layoutState"	</root>
+<root>	"BinaryBlock"	</root>
+<root>	"maximized"	</root>
+<root>	"int"	</root>
+<root>	"AA10F2B2.4DB54D5C.D2C131A9.911EF17E"	</root>
+<root>	""	</root>
+<root>	0	</root>
+<root>	"F1CE1146.438983BE.0FE0D19F.C74CAF48"	</root>
+<root>	""	</root>
+<root>	0	</root>
+<root>	8	</root>
+<root>	""	</root>
+<root type="F1CE1146.438983BE.0FE0D19F.C74CAF48" id="53263D64.4B053008.AB1EE0A1.EB5E110C"/>
+<root>	"0D18FE37-ED9E-473D-8878-3EB4CB8BF916"	</root>
+<root type="3D5DA005.4F49FD50.210E2987.D6585617" id="F2040677.49DB1F0F.CBCA0A97.50EF3C57">
+	<property name="Q29weQ==">	"Q3RybCtD"	</property>
+	<property name="RXhpdA==">	"QWx0K0Y0"	</property>
+	<property name="UHJlZmVyZW5jZXMuU2hvcnRjdXRz">	""	</property>
+	<property name="VG9nZ2xlQ29weUNvbnRyb2xz">	""	</property>
+	<property name="RWRpdC5Db3B5">	""	</property>
+	<property name="UGFzdGU=">	"Q3RybCtW"	</property>
+	<property name="VW5kbw==">	"Q3RybCta"	</property>
+	<property name="UmVkbw==">	"Q3RybCtZ"	</property>
+	<property name="RWRpdC5DdXQ=">	""	</property>
+	<property name="RWRpdC5QYXN0ZQ==">	""	</property>
+	<property name="RWRpdC5TZWxlY3QgQWxs">	""	</property>
+	<property name="RWRpdHwuUGFzdGU=">	""	</property>
+	<property name="RWRpdC5GaW5kIEluIEFzc2V0QnJvd3Nlcg==">	""	</property>
+	<property name="RWRpdHwuQ3V0">	""	</property>
+	<property name="RWRpdHwuQ29weQ==">	""	</property>
+	<property name="RWRpdHwuU2VsZWN0IEFsbA==">	""	</property>
+	<property name="RWRpdHwuRmluZCBJbiBBc3NldEJyb3dzZXI=">	""	</property>
+	<property name="Vmlldy5IZWxsbyBXb3JsZA==">	""	</property>
+	<property name="Vmlldy5IZWxsbyBQYW5lbCBMaXN0">	""	</property>
+	<property name="Vmlldy5IZWxsbyBXb3JsZCBJbnRlcmZhY2U=">	""	</property>
+	<property name="Vmlldy5IaXN0b3J5">	""	</property>
+</root>
+<root>	"WGHello/HelloPanel.qml"	</root>
+<root type="AA10F2B2.4DB54D5C.D2C131A9.911EF17E" id="EA01944A.49DDF766.8224B8B4.AF2F4638"/>
+<root>	"WGHello/HelloPanelList.qml"	</root>
+<root type="8FD66D72.4814AA8E.4A642EAB.5EDD9D26" id="3D51B527.4B5ADD4B.48534B85.9C680F9A"/>
+<root>	"E28A7FA9-08D4-464F-B073-47CB9DD20F62"	</root>
+<root type="F9D8EF4C.4081F9FA.674FCC9B.B7CF79BE" id="53A9E83F.446C894A.9D230FA7.9C8EAAB0">
+	<property name="geometry" type="BinaryBlock">	"AdnQywACAAAAAAd4////+AAADwcAAAS3AAAIcAAAAJYAAA4PAAAEGQAAAAECAAAAB4A="	</property>
+	<property name="layoutState" type="BinaryBlock">	"AAAA/wAAAAD9AAAAAwAAAAAAAAA6AAAEX/wCAAAAAvwAAAA7AAAEXwAAAAAA////+v////8CAAAAA/sAAAAQAGwAZQBmAHQARABvAGMAawAAAAAA/////wAAABMA////+wAAAB4AbABlAGYAdABEAG8AYwBrAF8AaABpAGQAZABlAG4AAAAAAP////8AAAATAP////sAAAA2AFcARwBIAGkAcwB0AG8AcgB5AC8AVwBHAEgAaQBzAHQAbwByAHkAVgBpAGUAdwAuAHEAbQBsAQAAAAD/////AAAAAAAAAAD7AAAAGABmAGwAbwBhAHQAaQBuAGcARABvAGMAawIAAApGAAABXgAAAfQAAAH0AAAAAQAAAUsAAARf/AIAAAAB/AAAADsAAARfAAAAAAD////6/////wIAAAAE+wAAABQAdABlAHMAdABQAGEAbgBlAGwAcwAAAAAA/////wAAACYA////+wAAACwAVwBHAEgAZQBsAGwAbwAvAEgAZQBsAGwAbwBQAGEAbgBlAGwALgBxAG0AbAEAAAAA/////wAAAAAAAAAA+wAAADQAVwBHAEgAZQBsAGwAbwAvAEgAZQBsAGwAbwBQAGEAbgBlAGwATABpAHMAdAAuAHEAbQBsAQAAAAD/////AAAAAAAAAAD7AAAARgBXAEcASABlAGwAbABvAEkAbgB0AGUAcgBmAGEAYwBlAC8ASABlAGwAbABvAEkAbgB0AGUAcgBmAGEAYwBlAC4AcQBtAGwBAAAAAP////8AAAAAAAAAAAAAAAMAAAAAAAAAAPwBAAAAAfsAAAAUAGIAbwB0AHQAbwBtAEQAbwBjAGsAAAAAAP////8AAAA6AP///wAABe8AAARfAAAABAAAAAQAAAAIAAAACPwAAAACAAAAAgAAAAEAAAAcAGQAZQBmAGEAdQBsAHQAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAAwAAAAEAAAAOAHQAbwBvAGwAQgBhAHIAAAAAAP////8AAAAAAAAAAA=="	</property>
+	<property name="maximized">	1	</property>
+</root>
+<root>	"WGHistory/WGHistoryView.qml"	</root>
+<root type="F5E99CF0.46ADE9BB.3A5275B7.2434FE9A" id="247CF1E2.4560FF1F.C2495194.609CF5EA"/>
+<root>	"WGHelloInterface/HelloInterface.qml"	</root>
+<root type="06931E25.452F5C1E.CD7B5C9B.0B654129" id="82BDF486.45464879.0FB0EB88.9DE525AA"/>
+<root>	"ShortcutConfig13CC6CD7-E935-488D-9E3D-8BED9454F554"	</root>
+<root type="0253F827.402D1F9C.3D8DE597.AA898C48" id="4D54EFFC.40F54276.05DF4499.237F47DA">
+	<property name="geometry" type="BinaryBlock">	"AdnQywACAAAAAAAAAAAAAAAAAP4AAAC/AAAAAAAAAAD//////////wAAAAAAAAAAB4A="	</property>
+	<property name="maximized">	0	</property>
+	<property name="pos" type="Vector2">	0,0	</property>
+	<property name="size" type="Vector2">	256,193	</property>
+</root>

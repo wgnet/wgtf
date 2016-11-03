@@ -1,0 +1,7 @@
+<Actions>
+  <NodeEditor_DeleteNode     order="0" path="NodeEditorMenu|"         text="Delete Node"/>
+  <NodeEditor_CreateGroupBox order="0" path="NodeEditorMenu|.Groups"  text="Create Group Box"/>
+  <NodeEditor_ColorGroupBox  order="1" path="NodeEditorMenu|.Groups"  text="Change Group Box Color"/>
+  <NodeEditor_LockGroupBox   order="2" path="NodeEditorMenu|.Groups"  text="Lock Group Box"/>
+  <NodeEditor_DeleteGroupBox order="3" path="NodeEditorMenu|.Groups"  text="Delete Group Box"/> 
+</Actions>

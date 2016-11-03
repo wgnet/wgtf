@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+ \ingroup wgcontrols
  \brief Generic rounded 'recessed' frame that can get focus.
  Typically used to frame text or a number of controls.
 
@@ -24,6 +25,8 @@ WGTextBoxFrame {
 Rectangle {
     id: textFrame
     objectName: "WGTextBoxFrame"
+    WGComponent { type: "WGTextBoxFrame" }
+    
     color: palette.textBoxColor
     border.width: defaultSpacing.standardBorderSize
     border.color: palette.darkestShade

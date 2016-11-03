@@ -3,6 +3,7 @@ import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
 import WGControls 1.0
+import WGControls.Views 1.0
 import WGCopyableFunctions 1.0
 
 Rectangle {
@@ -32,7 +33,7 @@ Rectangle {
     WGFilteredTreeModel {
         id: testModel
         source: sourceModel
-
+        objectName: viewId
         filter: WGTokenizedStringFilter {
             id: stringFilter
             filterText: searchBox.text
@@ -60,12 +61,14 @@ Rectangle {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         model: testModel
+		columnSequence: [0, 0]
         columnDelegates: [defaultColumnDelegate, propertyDelegate]
         selectionExtension: treeModelSelection
         treeExtension: treeModelExtension
         childRowMargin: 2
         columnSpacing: 4
         lineSeparator: false
+		initialColumnWidths: [100, 400]
 
         autoUpdateLabelWidths: true
 

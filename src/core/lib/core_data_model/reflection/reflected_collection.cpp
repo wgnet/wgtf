@@ -4,7 +4,7 @@
 
 namespace wgt
 {
-namespace
+namespace ReflectedCollectionDetails
 {
 	class ReflectedCollectionListener : public PropertyAccessorListener
 	{
@@ -105,7 +105,7 @@ namespace
 
 ReflectedCollection::ReflectedCollection( const PropertyAccessor & pa, IReflectionController * controller )
 	: pa_( pa )
-	, listener_( new ReflectedCollectionListener( *this ) )
+	, listener_( new ReflectedCollectionDetails::ReflectedCollectionListener( *this ) )
     , controller_( controller )
 {
 	auto definitionManager = const_cast< IDefinitionManager * >( pa_.getDefinitionManager() );
@@ -165,13 +165,22 @@ std::pair< CollectionIteratorImplPtr, bool > ReflectedCollection::get(const Vari
 	return it != end() ? result_type( it.impl(), true ) : result_type( end(), false );
 }
 
+CollectionIteratorImplPtr ReflectedCollection::insert(const Variant& key,
+                                                      const Variant& value) /* override */
+{
+	assert(controller_ != nullptr);
+	controller_->insert(pa_, key, value);
+	auto it = collection_.find(key);
+	return it != end() ? it.impl() : end();
+}
+
 CollectionIteratorImplPtr ReflectedCollection::erase(const CollectionIteratorImplPtr& pos)
 {
 	assert( false );
 	return end();
 }
 
-size_t ReflectedCollection::erase(const Variant& key)
+size_t ReflectedCollection::eraseKey(const Variant& key)
 {
 	assert (controller_ != nullptr);
 	auto count = collection_.size();

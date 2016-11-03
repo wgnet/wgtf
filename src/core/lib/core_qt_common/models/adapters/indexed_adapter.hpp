@@ -53,11 +53,31 @@ struct IndexedAdapter
 	std::unique_ptr< Adapter > data_;
 };
 
-template< typename T >
-void isolateRedundantIndices( 
-	const QModelIndex& parent,
-	std::vector< IndexedAdapter< T > >& indices, 
-	std::vector< std::unique_ptr< T > >& redundantAdapters )
+template <typename T>
+void isolateRedundantIndices(
+std::vector<IndexedAdapter<T>>& indices,
+std::vector<std::unique_ptr<T>>& redundantAdapters)
+{
+	for (;;)
+	{
+		auto predicate = [](const IndexedAdapter<T>& item)
+		{
+			return !item.index_.isValid();
+		};
+		auto it = std::find_if(indices.begin(), indices.end(), predicate);
+		if (it == indices.end())
+		{
+			break;
+		}
+		isolateRedundantIndex(it, indices, redundantAdapters);
+	}
+}
+
+template <typename T>
+void isolateRedundantIndices(
+const QModelIndex& parent,
+std::vector<IndexedAdapter<T>>& indices,
+std::vector<std::unique_ptr<T>>& redundantAdapters)
 {
 	for (;;)
 	{
@@ -95,21 +115,7 @@ void isolateRedundantIndices(
 	}
 }
 
-template< typename T >
-void isolateRedundantIndex( 
-	const QModelIndex& index,
-	std::vector< IndexedAdapter< T > >& indices, 
-	std::vector< std::unique_ptr< T > >& redundantAdapters )
-{
-	auto predicate = [&index]( const IndexedAdapter< T >& item )
-	{ 
-		return item.index_.internalId() == index.internalId(); 
-	};
-	auto it = std::find_if( indices.begin(), indices.end(), predicate );
-	isolateRedundantIndex( it, indices, redundantAdapters );
-}
-
-template< typename T >
+template< typename T > 
 void isolateRedundantIndex( 
 	const typename std::vector< IndexedAdapter< T > >::iterator& it,
 	std::vector< IndexedAdapter< T > >& indices, 

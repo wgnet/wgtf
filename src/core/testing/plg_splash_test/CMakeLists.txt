@@ -1,0 +1,28 @@
+CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
+PROJECT( plg_splash_test )
+
+INCLUDE( WGToolsCoreProject )
+
+FIND_PACKAGE( QT5 )
+
+SET( ALL_SRCS
+	plg_splash_test.cpp
+)
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
+
+BW_QT_ADD_QRC( Splash resources/Splash )
+BW_GLOB_RESOURCE_FILES()
+
+BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
+	${ALL_SRCS}
+	${RESOURCE_FILES}
+	${COMPILED_RESOURCES}
+)
+
+BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
+	core_generic_plugin
+	wg_types
+	Qt5::Core
+)
+
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Plugins" )

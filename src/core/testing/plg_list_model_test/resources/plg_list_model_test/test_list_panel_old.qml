@@ -1,15 +1,17 @@
 import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
+
 import WGControls 1.0
+import WGControls.Views 1.0
 
 WGPanel {
-	title: "ListModel Test"
-	layoutHints: { 'test': 0.1 }
+    title: "ListModel Test"
+    layoutHints: { 'test': 0.1 }
 
     property var sourceModel: useModel ? source : null
-	color: palette.mainWindowColor
-	
+    color: palette.mainWindowColor
+
     property var useModel: 1
     property var topControlsHeight: 20
 
@@ -29,7 +31,7 @@ WGPanel {
     WGListModel {
         id: listModel
         source: sourceModel
-       
+
         HeaderFooterTextExtension {}
         ValueExtension {}
         ColumnExtension {}
@@ -52,14 +54,14 @@ WGPanel {
         model: listModel
         selectionExtension: listModelSelection
         columnDelegates: [defaultColumnDelegate, columnDelegate]
-        
+
         Component {
             id: columnDelegate
 
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: testListView.minimumRowHeight
-				
+
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: 1
@@ -68,12 +70,12 @@ WGPanel {
                         {
                             return "transparent";
                         }
-						
+
                         var colour = itemData.value;
                         var r = colour > 9999 ? (colour / 10000) % 100 + 156 : 0;
                         var g = colour > 99 ? (colour / 100) % 100 + 156 : 0;
                         var b = colour % 100 + 156;
-						
+
                         return Qt.rgba(r / 255, g / 255, b / 255, 1);
                     }
                 }

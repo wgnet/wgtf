@@ -1,9 +1,10 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 
-//TODO: Assess the need for this control. It appears to me that this control is identical to WGSpinBox
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Text entry intended for numbers.
  Single clicked increment/decrement via stepSize property.
  Click and drag increment/decrement based on vertical linear mouse distance moved.
@@ -26,11 +27,13 @@ WGNumberBox {
     maximumValue: 100
 }
 \endcode
+
 */
 
 WGSpinBox {
     id: spinBox
     objectName: "WGNumberBox"
+    WGComponent { type: "WGNumberBox" }
 
     /*!
         This property contains the value represented by the control

@@ -6,7 +6,4 @@ SET( MAC_SRCS
 	mac/file_system.cpp
 )
 
-BW_BLOB_SOURCES( BLOB_SRCS
-	${MAC_SRCS}
-	${BLOB_SRCS}
-)
+list(APPEND ALL_SRCS ${MAC_SRCS})

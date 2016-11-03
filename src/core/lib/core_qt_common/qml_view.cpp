@@ -5,7 +5,11 @@
 #include "core_ui_framework/i_preferences.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
 #include "core_qt_common/helpers/qml_component_loader_helper.hpp"
+#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/qt_component_finder.hpp"
 #include "core_qt_script/qt_script_object.hpp"
+#include "core_string_utils/string_utils.hpp"
+#include "core_string_utils/file_path.hpp"
 
 #include <cassert>
 #include <functional>
@@ -18,29 +22,31 @@
 #include <QVariantMap>
 #include <QFileSystemWatcher>
 #include <QApplication>
+#include <QDir>
 
 namespace wgt
 {
 //==============================================================================
 struct QmlView::Impl
 {
-	Impl( QmlView & qmlView, const char * id,
-		IQtFramework & qtFramework, QQmlEngine & qmlEngine )
-		: qtFramework_(qtFramework)
-        , id_(id)
-        , qmlView_( qmlView )
-        , quickView_(new QQuickWidget(&qmlEngine, nullptr) )
-        , watcher_(nullptr)
-        , qmlContext_(new QQmlContext(qmlEngine.rootContext()))
-        , qmlEngine_( qmlEngine )
-        , released_(false)
-    {
+	Impl(QmlView& qmlView, const char* id,
+	     IQtFramework& qtFramework, QQmlEngine& qmlEngine)
+	    : qtFramework_(qtFramework)
+	    , id_(id)
+	    , qmlView_(qmlView)
+	    , quickView_(new QQuickWidget(&qmlEngine, nullptr))
+	    , qmlContext_(new QQmlContext(qmlEngine.rootContext()))
+	    , qmlEngine_(qmlEngine)
+	    , released_(false)
+	    , watched_(false)
+	{
 		QQmlEngine::setContextForObject(quickView_, qmlContext_.get());
 	}
 
 	~Impl()
 	{
 		std::unique_lock< std::mutex > holder(loadMutex_);
+		setWatched(false);
 		if (!released_)
 		{
 			delete quickView_;
@@ -81,24 +87,13 @@ struct QmlView::Impl
 			title_ = titleProperty.toString().toUtf8().data();
 		}
 
+		bool shouldBeWatched = false;
 		if (url_.scheme() == "file")
 		{
 			QVariant autoReload = content->property("autoReload");
-			if (autoReload.isValid() && autoReload.toBool())
-			{
-				if (watcher_ == nullptr)
-				{
-					watcher_ = new QFileSystemWatcher(quickView_);
-				}
-				watcher_->addPath(url_.toLocalFile());
-				QObject::connect(watcher_, SIGNAL(fileChanged(const QString &)), &qmlView_, SLOT(reload()));
-			}
-			else
-			{
-				delete watcher_;
-				watcher_ = nullptr;
-			}
+			shouldBeWatched = !autoReload.isValid() || (autoReload.isValid() && autoReload.toBool());
 		}
+		setWatched(shouldBeWatched, content.get());
 
 		QObject * rootObject = quickView_->rootObject();
 		if (rootObject)
@@ -114,8 +109,32 @@ struct QmlView::Impl
 		}
 	}
 
+	void setWatched(bool isWatched, QObject* root = nullptr)
+	{
+		if (isWatched != watched_)
+		{
+			auto watcher = qtFramework_.qmlWatcher();
+			if (isWatched)
+			{
+				QObject::connect(watcher, SIGNAL(fileChanged(const QString&)), &qmlView_, SLOT(reload(const QString&)));
+			}
+			else
+			{
+				QObject::disconnect(watcher, SIGNAL(fileChanged(const QString&)), &qmlView_, SLOT(reload(const QString&)));
+			}
 
-	bool doLoad(const QUrl & qUrl, std::function< void() > loadedHandler = [] {}, bool async = true )
+			watched_ = isWatched;
+		}
+
+		if (isWatched)
+		{
+			const auto& types = components_.getTypes();
+			watchedComponents_.insert(types.begin(), types.end());
+		}
+	}
+
+	bool doLoad(const QUrl & qUrl, std::function< void() > loadedHandler = [] {},
+                std::function< void() > errorHandler = [] {}, bool async = true )
 	{
 		std::unique_lock< std::mutex > holder( loadMutex_ );
 		auto qmlEngine = qmlContext_->engine();
@@ -131,6 +150,11 @@ struct QmlView::Impl
 		{
 			loadedHandler();
 		});
+        helper.data_->connections_ += 
+            helper.data_->sig_Error_.connect([ errorHandler ]( QQmlComponent * )
+        {
+            errorHandler();
+        });
 		helper.load( async );
 		return true;
 	}
@@ -143,18 +167,21 @@ struct QmlView::Impl
 	std::string windowId_;
 	std::string title_;
 	QQuickWidget * quickView_;
+	QtComponentFinder components_;
 	QUrl url_;
-	QFileSystemWatcher * watcher_;
 	std::unique_ptr< QQmlContext > qmlContext_;
 	QQmlEngine & qmlEngine_;
 	LayoutHint hint_;
 	bool released_;
 	std::mutex loadMutex_;
+	bool watched_;
+	std::set<QString> watchedComponents_;
 };
 
 //==============================================================================
 QmlView::QmlView( const char * id, IQtFramework & qtFramework, QQmlEngine & qmlEngine )
 	: impl_( new Impl( *this, id, qtFramework, qmlEngine ) )
+	, needLoad_(false)
 {
 	QObject::connect( impl_->quickView_, SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)),
 		this, SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
@@ -219,6 +246,11 @@ QWidget * QmlView::view() const
 	return impl_->quickView_;
 }
 
+//------------------------------------------------------------------------------
+const std::set<QString>& QmlView::componentTypes() const
+{
+	return impl_->components_.getTypes();
+}
 
 //------------------------------------------------------------------------------
 void QmlView::update()
@@ -280,9 +312,28 @@ void QmlView::error( QQuickWindow::SceneGraphError error, const QString &message
 
 
 //------------------------------------------------------------------------------
-bool QmlView::load( const QUrl & qUrl, std::function< void() > loadedHandler, bool async )
+bool QmlView::load( const QUrl & qUrl, std::function< void() > loadedHandler, 
+                   std::function< void() > errorHandler, bool async )
 {
 	impl_->url_ = qUrl;
+
+	if (qUrl.scheme() == "file")
+	{
+		// Automatically watch any other files in the same folder as the view
+		// as these can be added as components without using a module
+		const QDir directory(FilePath::getFolder(qUrl.toLocalFile().toUtf8().constData()).c_str());
+
+		QStringList filter;
+		filter.push_back("*.qml");
+		filter.push_back("*.js");
+
+		const auto files = directory.entryList(filter);
+		for (const auto& file : files)
+		{
+			const auto name(FilePath::getFileNoExtension(file.toUtf8().constData()));
+			impl_->watchedComponents_.insert(QString(name.c_str()));
+		}
+	}
 
 	auto preferences = impl_->qtFramework_.getPreferences();
 	auto preference = preferences->getPreference(impl_->id_.c_str() );
@@ -290,17 +341,22 @@ bool QmlView::load( const QUrl & qUrl, std::function< void() > loadedHandler, bo
 	this->setContextProperty( QString( "preference" ), value );
 	this->setContextProperty( QString( "viewId" ), impl_->id_.c_str() );
 	this->setContextProperty( QString( "View" ), QVariant::fromValue(impl_->quickView_ ) );
+	impl_->qmlContext_->setContextProperty(QString("qmlView"), this);
+	impl_->qmlContext_->setContextProperty(QString("qmlComponents"), &impl_->components_);
 
-	return impl_->doLoad( qUrl, loadedHandler, async );
+	return impl_->doLoad( qUrl, loadedHandler, errorHandler, async );
 }
 
 
 //------------------------------------------------------------------------------
-void QmlView::reload()
+void QmlView::reload(const QString& url)
 {
-	impl_->doLoad(impl_->url_ );
+	const QString name(FilePath::getFileNoExtension(url.toUtf8().constData()).c_str());
+	if (impl_->watchedComponents_.find(name) != impl_->watchedComponents_.end())
+	{
+		impl_->doLoad(impl_->url_);
+	}
 }
-
 
 //------------------------------------------------------------------------------
 void QmlView::focusInEvent()
@@ -329,6 +385,23 @@ void QmlView::focusOutEvent()
 	{
 		rootObject->setFocus(false);
 	}
+}
+
+//------------------------------------------------------------------------------
+void QmlView::setNeedsToLoad(bool load)
+{
+	if(load == needLoad_)
+	{
+		return;
+	}
+	needLoad_ = load;
+	emit needsToLoadChanged();
+}
+
+//------------------------------------------------------------------------------
+bool QmlView::getNeedsToLoad() const
+{
+	return needLoad_;
 }
 
 //------------------------------------------------------------------------------

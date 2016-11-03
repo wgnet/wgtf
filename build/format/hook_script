@@ -1,0 +1,48 @@
+#!/bin/sh
+
+exec_clang_format() 
+{
+	files="${1}"
+	if [ -z "${files}" ]; then
+		return
+	fi
+
+	c:/Python27/python.exe build/format/git-clang-format.py --binary build/format/clang-format --skip_merge --style file ${files}
+	error_code=$?
+
+	if [ $error_code -ne 0 ]; then
+	exit $error_code
+	else
+		git add -f ${files}
+	fi
+}
+
+files=""
+
+# collect files that should be formated during this commit
+for file in `git diff-index --cached --name-only HEAD | grep -E "src/core/app|interfaces|lib|plugins|testing"` ; do
+
+	# collect only existed files
+	if [ -f ${file} ]; then
+
+		# collect only file, that are
+		# matched specified extensions 
+		case "$file" in
+			*.cpp | *.hpp | *.mpp)
+				files="$files $file"
+			;;
+			*)
+			;;
+		esac
+
+		# if collected files string length is greater 
+		# than 4096 exec clang format
+		if [ ${#files} -ge 4096 ]; then
+			exec_clang_format "${files}"
+			files=""
+		fi
+	fi
+done
+
+# exec clang format for the rest files
+exec_clang_format "${files}"

@@ -2,6 +2,7 @@
 #define BINARY_STREAM_HPP_INCLUDED
 
 #include "basic_stream.hpp"
+#include "serialization_dll.hpp"
 #include <type_traits>
 #include <string>
 #include <cstdint>
@@ -9,7 +10,7 @@
 
 namespace wgt
 {
-class BinaryStream:
+class SERIALIZATION_DLL BinaryStream:
 	public BasicStream
 {
 	typedef BasicStream base;
@@ -80,8 +81,12 @@ typename std::enable_if< std::is_trivially_copyable< T >::value, BinaryStream& >
 
 
 // string serialization
-BinaryStream& operator<<( BinaryStream& stream, const std::string& value );
-BinaryStream& operator<<( BinaryStream& stream, const char* value );
-BinaryStream& operator>>( BinaryStream& stream, std::string& value );
+SERIALIZATION_DLL BinaryStream& operator<<( BinaryStream& stream, const std::string& value );
+SERIALIZATION_DLL BinaryStream& operator<<( BinaryStream& stream, const char* value );
+SERIALIZATION_DLL BinaryStream& operator>>( BinaryStream& stream, std::string& value );
+
 } // end namespace wgt
+
+#include "wg_types_binary_streaming.hpp"
+
 #endif // BINARY_STREAM_HPP_INCLUDED

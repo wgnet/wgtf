@@ -1,0 +1,14 @@
+#include "../remove_item_command_arg.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(RemoveItemCommandArgument, MetaNoSerialization())
+EXPOSE("model", pModel_, MetaNone())
+EXPOSE("key", key_, MetaNone())
+EXPOSE("value", value_, MetaNone())
+END_EXPOSE()
+} // end namespace wgt

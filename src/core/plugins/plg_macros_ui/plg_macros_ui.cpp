@@ -21,6 +21,14 @@
 
 namespace wgt
 {
+/**
+* A plugin that creates a panel that allow actions to be recorded and played back. 
+*
+* @ingroup plugins
+* @image html plg_macros_ui.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
 class MacrosUIPlugin
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -38,9 +46,6 @@ public:
 
 	void Initialise( IComponentContext& contextManager ) override
 	{
-		Variant::setMetaTypeManager(
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		auto qtFramework = Context::queryInterface< IQtFramework >();
 		if (qtFramework == nullptr)
 		{
@@ -72,10 +77,9 @@ public:
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
-			viewCreator->createView(
+			panel_ = viewCreator->createView(
 				"WGMacros/WGMacroView.qml",
-				macros_,
-				panel_);
+				macros_ );
 		}
 	}
 
@@ -86,17 +90,18 @@ public:
 		{
 			return true;
 		}
-		if (panel_ != nullptr)
+		if (panel_.valid())
 		{
-			uiApplication->removeView( *panel_ );
-			panel_ = nullptr;
+            auto view = panel_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
 		}
 
 		return true;
 	}
 
 private:
-	std::unique_ptr< IView > panel_;
+	wg_future<std::unique_ptr< IView >> panel_;
 	ObjectHandle macros_;
 };
 

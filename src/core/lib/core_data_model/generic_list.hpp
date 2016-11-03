@@ -40,7 +40,7 @@ public:
 	{
 		return nullptr;
 	}
-	Variant getData( int column, size_t roleId ) const override
+	Variant getData( int column, ItemRole::Id roleId ) const override
 	{
 		if (roleId == ValueTypeRole::roleId_)
 		{
@@ -60,7 +60,7 @@ public:
 
 		return Variant();
 	}
-	bool setData( int column, size_t roleId, const Variant & data ) override
+	bool setData( int column, ItemRole::Id roleId, const Variant & data ) override
 	{
 		if (roleId != ValueRole::roleId_)
 		{

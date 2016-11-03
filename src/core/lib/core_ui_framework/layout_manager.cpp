@@ -108,15 +108,15 @@ IRegion * LayoutManager::findBestRegion( IWindow & window, const LayoutHint & hi
 	return bestRegion;
 }
 
-void LayoutManager::addAction( IAction & action, IWindow & window )
+void LayoutManager::addAction( ManagedAction & action, IWindow & window )
 {
-	for(auto & path : action.paths())
+	for(auto & path : action.action_->paths())
 	{
 		auto menus = findAllMenus( window, path.c_str() );
 		for (auto & menu : menus)
 		{
-			menu->addAction( action, path.c_str() );
-			actions_[ &action ].insert( menu );
+			menu->addAction( *action.action_, path.c_str() );
+			action.menus_.insert( menu );
 		}
 	}
 }
@@ -144,14 +144,14 @@ void LayoutManager::refreshActions( IWindow & window )
 	// this will move the action between menus where appropriate
 	for (auto actionIt = actions_.begin(); actionIt != actions_.end(); ++actionIt)
 	{
-		auto action = actionIt->first;
+		auto action = actionIt->action_;
 		if (getWindow( action->windowId() ) != &window)
 		{
 			continue;
 		}
 			
-		assert( actions_[ action ].empty() );
-		addAction( *action, window );
+		assert( actionIt->menus_.empty() );
+		addAction( *actionIt, window );
 	}
 }
 
@@ -176,17 +176,17 @@ void LayoutManager::removeActions( IWindow & window )
 {
 	for (auto actionIt = actions_.begin(); actionIt != actions_.end(); ++actionIt)
 	{
-		auto action = actionIt->first;
+		auto action = actionIt->action_;
 		if (getWindow( action->windowId() ) != &window)
 		{
 			continue;
 		}
 
-		for(auto & menu : actionIt->second)
+		for(auto & menu : actionIt->menus_)
 		{
 			menu->removeAction( *action );
 		}
-		actionIt->second.clear();
+		actionIt->menus_.clear();
 	}
 }
 
@@ -242,7 +242,7 @@ void LayoutManager::update() const
 
 void LayoutManager::addAction( IAction & action )
 {
-	actions_[ &action ] = std::set< IMenu * >();
+	actions_.push_back( &action );
 
 	auto window = getWindow( action.windowId() );
 	if (window == nullptr)
@@ -250,7 +250,7 @@ void LayoutManager::addAction( IAction & action )
 		return;
 	}
 
-	addAction( action, *window );
+	addAction( actions_.back(), *window );
 }
 
 void LayoutManager::addMenu( IMenu & menu )
@@ -265,7 +265,7 @@ void LayoutManager::addMenu( IMenu & menu )
 
 	for (auto actionIt = actions_.begin(); actionIt != actions_.end(); ++actionIt)
 	{
-		auto action = actionIt->first;
+		auto action = actionIt->action_;
 		if (getWindow( action->windowId() ) != window)
 		{
 			continue;
@@ -276,7 +276,7 @@ void LayoutManager::addMenu( IMenu & menu )
 			if (matchMenu( menu, path.c_str() ))
 			{
 				menu.addAction( *action, path.c_str() );
-				actionIt->second.insert( &menu );
+				actionIt->menus_.insert( &menu );
 			}
 		}
 	}
@@ -316,13 +316,14 @@ void LayoutManager::addWindow( IWindow & window )
 
 void LayoutManager::removeAction( IAction & action )
 {
-	auto actionIt = actions_.find( &action );
+	auto actionIt = std::find_if( actions_.begin(), actions_.end(), 
+		[&](ManagedAction & item) { return item.action_ == &action; } );
 	if (actionIt == actions_.end())
 	{
 		return;
 	}
 
-	for(auto & menu : actionIt->second)
+	for(auto & menu : actionIt->menus_)
 	{
 		menu->removeAction( action );
 	}
@@ -339,7 +340,7 @@ void LayoutManager::removeMenu( IMenu & menu )
 
 	for (auto actionIt = actions_.begin(); actionIt != actions_.end(); ++actionIt)
 	{
-		for (auto menuIt = actionIt->second.begin(); menuIt != actionIt->second.end();)
+		for (auto menuIt = actionIt->menus_.begin(); menuIt != actionIt->menus_.end();)
 		{
 			if (*menuIt != &menu)
 			{
@@ -347,8 +348,8 @@ void LayoutManager::removeMenu( IMenu & menu )
 				continue;
 			}
 
-			menu.removeAction( *actionIt->first );
-			menuIt = actionIt->second.erase( menuIt );
+			menu.removeAction( *actionIt->action_ );
+			menuIt = actionIt->menus_.erase( menuIt );
 		}
 	}
 
@@ -366,6 +367,7 @@ void LayoutManager::removeView( IView & view )
 	auto region = viewIt->second;
 	if (region == nullptr)
 	{
+		views_.erase( viewIt );
 		return;
 	}
 

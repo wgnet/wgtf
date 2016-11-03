@@ -8,12 +8,16 @@
 
 namespace wgt
 {
-/*
-	IDEDebugLoggerPlugin
-
-	Registers a logger specific to the IDE. May be configured to support
-	additional IDEs. At this time it supports Windows/Visual Studio output.
- */
+/**
+* Registers an ILogger with the ILoggingSystem specific to the IDE. 
+* May be configured to support additional IDEs. 
+* At this time it supports Windows/Visual Studio debug output.
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - LoggingSystemPlugin
+*/
 class IDEDebugLoggerPlugin
 	: public PluginMain
 {

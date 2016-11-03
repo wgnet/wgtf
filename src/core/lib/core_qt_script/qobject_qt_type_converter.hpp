@@ -17,7 +17,7 @@ public:
 			return false;
 		}
 
-		o_variant = ObjectHandle( qvariant_cast< QObject * >( qVariant ) );
+		o_variant = ObjectHandle(qvariant_cast<QObject*>(qVariant));
 		return true;
 	}
 

@@ -15,11 +15,8 @@ public:
 	TreeExtension();
 	virtual ~TreeExtension();
 
-	QHash< int, QByteArray > roleNames() const override;
-	QVariant data( const QModelIndex &index, int role ) const override;
-	bool setData( const QModelIndex &index,
-		const QVariant &value,
-		int role ) override;
+	QVariant data( const QModelIndex &index, ItemRole::Id roleId ) const override;
+	bool setData( const QModelIndex &index, const QVariant &value, ItemRole::Id roleId ) override;
 
 	void onLayoutAboutToBeChanged(
 		const QList< QPersistentModelIndex > & parents, 
@@ -27,10 +24,24 @@ public:
 	void onLayoutChanged(
 		const QList< QPersistentModelIndex > & parents, 
 		QAbstractItemModel::LayoutChangeHint hint ) override;
+	void onRowsAboutToBeInserted( 
+		const QModelIndex & parent, int first, int last ) override;
+	void onRowsInserted( 
+		const QModelIndex & parent, int first, int last ) override;
 	void onRowsAboutToBeRemoved(
 		const QModelIndex& parent, int first, int last ) override;
 	void onRowsRemoved( 
 		const QModelIndex & parent, int first, int last ) override;
+	virtual void onRowsAboutToBeMoved( const QModelIndex & sourceParent,
+		int sourceFirst,
+		int sourceLast,
+		const QModelIndex & destinationParent,
+		int destinationRow ) override;
+	virtual void onRowsMoved( const QModelIndex & sourceParent,
+		int sourceFirst,
+		int sourceLast,
+		const QModelIndex & destinationParent,
+		int destinationRow ) override;
 
 	Q_INVOKABLE QItemSelection itemSelection( const QModelIndex & first, const QModelIndex & last ) const;
 

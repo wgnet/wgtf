@@ -68,6 +68,14 @@ public:
 
 	void setText( const std::string & value ) { text_ = value; }
 	const std::string & getText() const { return text_; }
+	
+	void setInts( const std::vector< int32_t >& value ) { int32s_ = value; }
+	const std::vector< int32_t >& getInts() const { return int32s_; }	
+
+	const char* getString() const { return "test_string"; }
+
+	void setLink( const ObjectHandleT< TestPolyStruct2 > & link ) { exposedObject_ = link; }
+	const ObjectHandleT< TestPolyStruct2 >& getLink() const { return exposedObject_; }
 
 	TestDefinitionObject();
 	bool operator==( const TestDefinitionObject& tdo ) const;

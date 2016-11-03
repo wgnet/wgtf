@@ -2,7 +2,6 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
 PROJECT( plg_progress_manager )
 
 INCLUDE( WGToolsCoreProject )
-find_package(QT5)
 
 REMOVE_DEFINITIONS( /WX )
 ADD_DEFINITIONS(
@@ -17,11 +16,7 @@ SET( ALL_SRCS
 	progress_manager.hpp
 	progress_manager.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
-
-BW_QT_ADD_QRC(WGProgressManager resources/WGProgressManager)
-BW_GLOB_RESOURCE_FILES()
-
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
 BW_ADD_TOOL_PLUGIN( plg_progress_manager SHARED
@@ -33,13 +28,6 @@ BW_ADD_TOOL_PLUGIN( plg_progress_manager SHARED
 BW_TARGET_LINK_LIBRARIES( plg_progress_manager PRIVATE
 	core_generic_plugin
 	core_command_system
-	core_qt_common
-	core_reflection
-	core_qt_script
-    Qt5::Core
-    Qt5::Gui
-    Qt5::Quick
-    Qt5::Widgets
 )
 
 BW_PROJECT_CATEGORY( plg_progress_manager "Plugins" )

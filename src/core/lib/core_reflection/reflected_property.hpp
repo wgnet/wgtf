@@ -39,7 +39,7 @@ public:
 		auto pObject = reflectedCast< BaseType >( pBase.data(), pBase.type(), definitionManager );
 		if (pObject && memberPtr_)
 		{
-			return ReflectionUtilities::reference( ( pObject->*memberPtr_ ) );
+			return ReflectionUtilities::reference((pObject->*memberPtr_));
 		}
 		else
 		{

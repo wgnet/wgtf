@@ -50,7 +50,7 @@ ObjectHandle::ObjectHandle( const std::nullptr_t & )
 
 ObjectHandle::ObjectHandle( const Variant & variant, const IClassDefinition * definition )
 {
-	if( auto handlePtr = variant.castPtr< ObjectHandle >() )
+	if( auto handlePtr = variant.value< ObjectHandle* >() )
 	{
 		// avoid pointless nesting
 		storage_ = handlePtr->storage_;
@@ -70,7 +70,7 @@ ObjectHandle::ObjectHandle( Variant * variant, const IClassDefinition * definiti
 		return;
 	}
 
-	if( auto handlePtr = variant->castPtr< ObjectHandle >() )
+	if( auto handlePtr = variant->value< ObjectHandle* >() )
 	{
 		// avoid pointless nesting
 		storage_ = handlePtr->storage_;
@@ -309,7 +309,7 @@ namespace
 
 		if( IObjectHandleStorage* storage = value.storage().get() )
 		{
-			metaType = Variant::findType( storage->type() );
+			metaType = MetaType::find( storage->type() );
 			raw = storage->data();
 		}
 
@@ -320,7 +320,7 @@ namespace
 
 
 //------------------------------------------------------------------------------
-TextStream& operator<<( TextStream& stream, const ObjectHandle& value )
+TextStream& operator<<( TextStream& stream, StrongType< const ObjectHandle& > value )
 {
 	metaAction( value, [&]( const MetaType* metaType, void* raw )
 	{
@@ -358,7 +358,7 @@ TextStream& operator>>( TextStream& stream, ObjectHandle& value )
 
 
 //------------------------------------------------------------------------------
-BinaryStream& operator<<( BinaryStream& stream, const ObjectHandle& value )
+BinaryStream& operator<<( BinaryStream& stream, StrongType< const ObjectHandle& > value )
 {
 	metaAction( value, [&]( const MetaType* metaType, void* raw )
 	{

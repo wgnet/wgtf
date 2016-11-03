@@ -6,8 +6,11 @@
 #include "core_data_model/asset_browser/i_asset_browser_model.hpp"
 #include "core_data_model/asset_browser/asset_browser_view_model.hpp"
 #include "core_data_model/asset_browser/asset_browser_event_model.hpp"
-
 #include "core_data_model/asset_browser/file_system_asset_browser_model.hpp"
+#include "core_data_model/asset_browser/i_asset_browser_model20.hpp"
+#include "core_data_model/asset_browser/asset_browser_view_model20.hpp"
+#include "core_data_model/asset_browser/asset_browser_event_model20.hpp"
+#include "core_data_model/asset_browser/file_system_asset_browser_model20.hpp"
 
 #include <QQuickView>
 #include <QQmlContext>
@@ -17,9 +20,9 @@
 
 namespace wgt
 {
-PanelManager::PanelManager( IComponentContext & contextManager )
-	: contextManager_( contextManager )
-	, Depends( contextManager )
+PanelManager::PanelManager(IComponentContext& contextManager)
+    : contextManager_(contextManager)
+    , Depends(contextManager)
 {
 }
 
@@ -31,19 +34,10 @@ PanelManager::~PanelManager()
 	}
 }
 
-void PanelManager::createAssetBrowser(
-	ObjectHandleT<IAssetBrowserModel> dataModel,
-	std::unique_ptr< IView > & o_AssetBrowser,
-	std::unique_ptr<IAssetBrowserEventModel> eventModel )
+wg_future<std::unique_ptr<IView>> PanelManager::createAssetBrowser(
+ObjectHandleT<IAssetBrowserModel> dataModel,
+std::unique_ptr<IAssetBrowserEventModel> eventModel)
 {
-	o_AssetBrowser = nullptr;
-
-	// The variant meta type manager is required for converting an IAssetObjectModel
-	if(Variant::getMetaTypeManager() == nullptr)
-	{
-		Variant::setMetaTypeManager( Context::queryInterface< IMetaTypeManager >() );
-	}
-
 	if ( !eventModel )
 	{
 		eventModel.reset(new AssetBrowserEventModel());
@@ -55,7 +49,7 @@ void PanelManager::createAssetBrowser(
 	assert( uiApplication != nullptr );
 	assert(uiFramework != nullptr);
 	assert(definitionManager != nullptr);
-	
+
 	auto viewDef = definitionManager->getDefinition<IAssetBrowserViewModel>();
 	auto dataDef = definitionManager->getDefinition<IAssetBrowserModel>();
 	auto eventDef = definitionManager->getDefinition<IAssetBrowserEventModel>();
@@ -65,12 +59,48 @@ void PanelManager::createAssetBrowser(
 		types_.emplace_back(contextManager_.registerInterface(eventModel.get(), false));
 		auto assetBrowserEventModel = ObjectHandleT<IAssetBrowserEventModel>(std::move(eventModel), eventDef);
 		auto viewModel = std::unique_ptr<IAssetBrowserViewModel>(new AssetBrowserViewModel(*definitionManager, dataModel, assetBrowserEventModel));
-		
+
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
-			viewCreator->createView("plg_panel_manager/asset_browser_panel.qml", ObjectHandle(std::move(viewModel), viewDef), o_AssetBrowser );
+			return viewCreator->createView("plg_panel_manager/asset_browser_panel.qml", ObjectHandle(std::move(viewModel), viewDef) );
 		}
 	}
+    return std::future<std::unique_ptr<IView>>();
+}
+
+wg_future<std::unique_ptr<IView>> PanelManager::createAssetBrowser20(
+ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel,
+std::unique_ptr<AssetBrowser20::IAssetBrowserEventModel> eventModel)
+{
+	if (!eventModel)
+	{
+		eventModel.reset(new AssetBrowser20::AssetBrowserEventModel());
+	}
+
+	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
+	auto uiFramework = contextManager_.queryInterface<IUIFramework>();
+	auto definitionManager = contextManager_.queryInterface<IDefinitionManager>();
+	assert(uiApplication != nullptr);
+	assert(uiFramework != nullptr);
+	assert(definitionManager != nullptr);
+
+	auto viewDef = definitionManager->getDefinition<AssetBrowser20::IAssetBrowserViewModel>();
+	auto dataDef = definitionManager->getDefinition<AssetBrowser20::IAssetBrowserModel>();
+	auto eventDef = definitionManager->getDefinition<AssetBrowser20::IAssetBrowserEventModel>();
+	if (viewDef && dataDef && eventDef)
+	{
+		dataModel->initialise(contextManager_, *definitionManager);
+		types_.emplace_back(contextManager_.registerInterface(eventModel.get(), false));
+		auto assetBrowserEventModel = ObjectHandleT<AssetBrowser20::IAssetBrowserEventModel>(std::move(eventModel), eventDef);
+		auto viewModel = std::unique_ptr<AssetBrowser20::IAssetBrowserViewModel>(new AssetBrowser20::AssetBrowserViewModel(*definitionManager, dataModel, assetBrowserEventModel));
+
+		auto viewCreator = get<IViewCreator>();
+		if (viewCreator)
+		{
+			return viewCreator->createView("plg_panel_manager/asset_browser_panel20.qml", ObjectHandle(std::move(viewModel), viewDef));
+		}
+	}
+	return std::future<std::unique_ptr<IView>>();
 }
 } // end namespace wgt

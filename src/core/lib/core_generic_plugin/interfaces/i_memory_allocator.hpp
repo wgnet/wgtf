@@ -9,6 +9,7 @@ class IMemoryAllocator
 {
 public:
 	virtual ~IMemoryAllocator() {};
+	virtual void fini(){};
 	virtual void * mem_new( size_t size ) = 0;
 	virtual void * mem_new( size_t size, const std::nothrow_t & throwable ) = 0;
 	virtual void * mem_new_array( size_t size ) = 0;

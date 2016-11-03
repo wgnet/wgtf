@@ -3,47 +3,36 @@
 
 #include "core_command_system/i_command_event_listener.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_logging_system/interfaces/i_logging_system.hpp"
+#include "core_command_system/i_command_manager.hpp"
+#include "core_ui_framework/i_ui_framework.hpp"
 
-#include <QObject>
-#include <QString>
 #include <vector>
-#include <thread>
-
-
-class QQuickView;
-class QTimer;
-class QWindow;
 
 namespace wgt
 {
 class IComponentContext;
 class ILoggingSystem;
 
-typedef std::vector< QString > CommandIdList;
+typedef std::vector<std::string> CommandIdList;
 
 class ProgressManager
-	: public QObject
-	, public ICommandEventListener
+: public ICommandEventListener
+  ,
+  public Depends<ILoggingSystem, ICommandManager, IUIFramework>
 {
-	Q_OBJECT
-
-public slots:
-	/// Handle the progress cancel
-	void onProgressCancelled(bool cancelled);
-
-	/// Hide the view when possible
-	void timedUpdate();
-
 public:
-	ProgressManager();
+	ProgressManager( IComponentContext & contextManager );
 	~ProgressManager();
 
-	/// Cache the context manager and register command status listener
-	void init( IComponentContext & contextManager );
+	/// Register command status listener
+	void init();
 
 	/// Deregister command status listener
 	void fini();
 
+private:
 	/// ICommandEventListener implementation.
 	/// Let the QML know about the status change.
 	void statusChanged( const CommandInstance & commandInstance ) const override;
@@ -65,7 +54,7 @@ public:
 	void onNonBlockingProcessExecution( const char * commandId ) const override;
 
 	/// Create a QQuickView
-	void createQQuickView( const char * commandId = nullptr ) const;
+	void createProgressDialog(const char* commandId = nullptr) const;
 
 	/// Clean up when a command is completed
 	void progressCompleted( const char * commandId = nullptr ) const;
@@ -73,40 +62,25 @@ public:
 	/// Increment the progress dialog value when the command made a progress
 	void perform() const;
 
-	/// Create auto close message box
-	void createAutoCloseMessageBox( const QString & title, const QString & message ) const;
-
 	/// Set "ProgressValue" QML property value with current progressValue_
 	void setProgressValueProperty() const;
 
 	/// Remove a command from our list
 	void removeCommand( const char * commandId = nullptr ) const;
 
-	/// Handle events from the QQuickView
-	bool eventFilter( QObject * object, QEvent * event ) override;
-
 	/// Cancel the current command
-	void cancelCurrentCommand();
+	void cancelCurrentCommand() const;
 
-	QObject * getRootObject() const { return rootObject_; }
-
-private:
-	mutable QObject * rootObject_;
+	bool isCurrentCommandActive() const
+	{
+		return (commandIdList_.size() > 0 && commandIdList_.end() != curCommandId_);
+	}
 	mutable int progressValue_;
 	mutable bool isMultiCommandProgress_;
-	mutable QQuickView * view_;
-	mutable IComponentContext * contextManager_;
 	mutable CommandIdList commandIdList_;
 	mutable CommandIdList::iterator curCommandId_;
 	mutable bool isViewVisible_;
-	mutable std::thread::id threadId_;
-
-	QTimer * timer_;
-	ILoggingSystem * loggingSystem_;
-	QWindow * prevFocusedWindow_;
-
-	bool isCurrentCommandActive() { return (  commandIdList_.size() > 0 && commandIdList_.end() != curCommandId_  ); }
-
+	mutable IProgressDialogPtr dlg_;
 };
 } // end namespace wgt
 #endif // PROGRESS_MANAGER_HPP

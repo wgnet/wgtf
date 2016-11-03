@@ -22,7 +22,7 @@ public:
 	PluginContextManager();
 	virtual ~PluginContextManager();
 
-	IComponentContext * createContext(const PluginId & id) override;
+	IComponentContext* createContext(const PluginId& id, const std::wstring& path) override;
 	IComponentContext * getContext(const PluginId & id) const override;
 	IComponentContext * getGlobalContext() const override;
 	void destroyContext(const PluginId & id) override;
@@ -36,11 +36,11 @@ public:
 private:
 	typedef std::vector< IInterface * > InterfaceCollection;
 	typedef std::map< IComponentContextCreator *, InterfaceCollection > ContextChildrenCollection;
-	ContextChildrenCollection							childContexts_;
-	std::map< PluginId, IComponentContext * >				contexts_;
-	std::map< std::string, IComponentContextCreator * >	contextCreators_;
-	std::unique_ptr< IComponentContext >					globalContext_;
-	const char*											executablepath_;
+	ContextChildrenCollection childContexts_;
+	std::map<PluginId, std::pair<IComponentContext*, std::wstring>> contexts_;
+	std::map<std::string, IComponentContextCreator*> contextCreators_;
+	std::unique_ptr<IComponentContext> globalContext_;
+	const char* executablepath_;
 };
 } // end namespace wgt
 #endif //PLUGIN_CONTEXT_MANAGER_HPP

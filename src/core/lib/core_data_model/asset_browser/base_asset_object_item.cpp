@@ -1,60 +1,62 @@
 #include "base_asset_object_item.hpp"
 #include "core_data_model/i_item_role.hpp"
+#include "core_data_model/common_data_roles.hpp"
 #include "core_data_model/asset_browser/i_asset_presentation_provider.hpp"
+#include <vector>
 
 namespace wgt
 {
 struct BaseAssetObjectItem::Implementation
 {
-	typedef std::vector< BaseAssetObjectItem > BaseAssetObjectItems;
+	typedef std::vector<BaseAssetObjectItem> BaseAssetObjectItems;
 
-	Implementation( BaseAssetObjectItem & self,  const IFileInfoPtr& fileInfo, const IItem * parent, 
-		IFileSystem * fileSystem, IAssetPresentationProvider * presentationProvider )
-		: self_( self )
-		, fileInfo_( fileInfo )
-		, parent_( parent )
-		, fileSystem_( fileSystem )
-		, presentationProvider_( presentationProvider )
-		, displayText_( "" )
+	Implementation(BaseAssetObjectItem& self, const IFileInfoPtr& fileInfo, const IItem* parent,
+	               IFileSystem* fileSystem, IAssetPresentationProvider* presentationProvider)
+	    : self_(self)
+	    , fileInfo_(fileInfo)
+	    , parent_(parent)
+	    , fileSystem_(fileSystem)
+	    , presentationProvider_(presentationProvider)
+	    , displayText_("")
 	{
 	}
 
-	BaseAssetObjectItems & getChildren() const
+	BaseAssetObjectItems& getChildren() const
 	{
 		// Not currently thread safe, only one thread can initialize the children
 		if (fileSystem_ != nullptr && fileInfo_->isDirectory() && children_.empty())
 		{
-			fileSystem_->enumerate( fileInfo_->fullPath(), [&]( IFileInfoPtr && info )
-			{
-				if (!info->isDots() && !(info->attributes() & FileAttributes::Hidden))
-					children_.emplace_back( info, &self_, fileSystem_, presentationProvider_ );
-				return true;
-			});
+			fileSystem_->enumerate(fileInfo_->fullPath(), [&](IFileInfoPtr&& info)
+			                       {
+				                       if (!info->isDots() && !(info->attributes() & FileAttributes::Hidden))
+					                       children_.emplace_back(info, &self_, fileSystem_, presentationProvider_);
+				                       return true;
+				                   });
 		}
 		return children_;
 	}
-	
-	BaseAssetObjectItem & self_;
+
+	BaseAssetObjectItem& self_;
 	IFileInfoPtr fileInfo_;
-	const IItem * parent_;
-	IFileSystem * fileSystem_;
-	IAssetPresentationProvider * presentationProvider_;
-	mutable BaseAssetObjectItems children_;	
+	const IItem* parent_;
+	IFileSystem* fileSystem_;
+	IAssetPresentationProvider* presentationProvider_;
+	mutable BaseAssetObjectItems children_;
 	std::string displayText_;
 };
 
-BaseAssetObjectItem::BaseAssetObjectItem( const BaseAssetObjectItem & rhs )
-	: impl_( new Implementation( *this, 
-								 rhs.impl_->fileInfo_, 
-								 rhs.impl_->parent_, 
-								 rhs.impl_->fileSystem_, 
-								 rhs.impl_->presentationProvider_ ) )
+BaseAssetObjectItem::BaseAssetObjectItem(const BaseAssetObjectItem& rhs)
+    : impl_(new Implementation(*this,
+                               rhs.impl_->fileInfo_,
+                               rhs.impl_->parent_,
+                               rhs.impl_->fileSystem_,
+                               rhs.impl_->presentationProvider_))
 {
 }
 
-BaseAssetObjectItem::BaseAssetObjectItem( const IFileInfoPtr & fileInfo, const IItem * parent, 
-	IFileSystem * fileSystem, IAssetPresentationProvider * assetPresentationProvider )
-	: impl_( new Implementation( *this, fileInfo, parent, fileSystem, assetPresentationProvider ) )
+BaseAssetObjectItem::BaseAssetObjectItem(const IFileInfoPtr& fileInfo, const IItem* parent,
+                                         IFileSystem* fileSystem, IAssetPresentationProvider* assetPresentationProvider)
+    : impl_(new Implementation(*this, fileInfo, parent, fileSystem, assetPresentationProvider))
 {
 }
 
@@ -62,36 +64,36 @@ BaseAssetObjectItem::~BaseAssetObjectItem()
 {
 }
 
-BaseAssetObjectItem & BaseAssetObjectItem::operator=( const BaseAssetObjectItem & rhs )
+BaseAssetObjectItem& BaseAssetObjectItem::operator=(const BaseAssetObjectItem& rhs)
 {
 	if (this != &rhs)
 	{
-		impl_.reset( new Implementation( *this, rhs.impl_->fileInfo_, rhs.impl_->parent_, 
-			rhs.impl_->fileSystem_, rhs.impl_->presentationProvider_ ) );
+		impl_.reset(new Implementation(*this, rhs.impl_->fileInfo_, rhs.impl_->parent_,
+		                               rhs.impl_->fileSystem_, rhs.impl_->presentationProvider_));
 	}
 
 	return *this;
 }
 
-const IItem * BaseAssetObjectItem::getParent() const
+const IItem* BaseAssetObjectItem::getParent() const
 {
 	return impl_->parent_;
 }
 
-IItem* BaseAssetObjectItem::operator[]( size_t index ) const
+IItem* BaseAssetObjectItem::operator[](size_t index) const
 {
 	if (impl_->getChildren().size() > index)
 	{
-		return &impl_->getChildren()[ index ];
+		return &impl_->getChildren()[index];
 	}
 
 	return nullptr;
 }
 
-size_t BaseAssetObjectItem::indexOf( const IItem* item ) const
+size_t BaseAssetObjectItem::indexOf(const IItem* item) const
 {
 	auto& children = impl_->getChildren();
-	return static_cast< const BaseAssetObjectItem * >( item )-&*begin( children );
+	return static_cast<const BaseAssetObjectItem*>(item) - &*begin(children);
 }
 
 bool BaseAssetObjectItem::empty() const
@@ -104,8 +106,8 @@ size_t BaseAssetObjectItem::size() const
 	return impl_->getChildren().size();
 }
 
-const char * BaseAssetObjectItem::getDisplayText( int column ) const
-{	
+const char* BaseAssetObjectItem::getDisplayText(int column) const
+{
 	if (!isDirectory())
 	{
 		return getAssetName();
@@ -125,11 +127,11 @@ const char * BaseAssetObjectItem::getDisplayText( int column ) const
 	return "";
 }
 
-ThumbnailData BaseAssetObjectItem::getThumbnail( int column ) const
+ThumbnailData BaseAssetObjectItem::getThumbnail(int column) const
 {
 	if (impl_->presentationProvider_ != nullptr)
 	{
-		return impl_->presentationProvider_->getThumbnail( this );
+		return impl_->presentationProvider_->getThumbnail(this);
 	}
 
 	return nullptr;
@@ -139,7 +141,7 @@ ThumbnailData BaseAssetObjectItem::getStatusIconData() const
 {
 	if (impl_->presentationProvider_ != nullptr)
 	{
-		return impl_->presentationProvider_->getStatusIconData( this );
+		return impl_->presentationProvider_->getStatusIconData(this);
 	}
 
 	return nullptr;
@@ -149,13 +151,13 @@ const char* BaseAssetObjectItem::getTypeIconResourceString() const
 {
 	if (impl_->presentationProvider_ != nullptr)
 	{
-		return impl_->presentationProvider_->getTypeIconResourceString( this );
+		return impl_->presentationProvider_->getTypeIconResourceString(this);
 	}
 
 	return nullptr;
 }
 
-Variant BaseAssetObjectItem::getData( int column, size_t roleId ) const
+Variant BaseAssetObjectItem::getData(int column, ItemRole::Id roleId) const
 {
 	if (column != 0)
 	{
@@ -164,7 +166,7 @@ Variant BaseAssetObjectItem::getData( int column, size_t roleId ) const
 
 	if (roleId == ValueRole::roleId_)
 	{
-		return getDisplayText( 0 );
+		return getDisplayText(0);
 	}
 	else if (roleId == IndexPathRole::roleId_)
 	{
@@ -172,7 +174,7 @@ Variant BaseAssetObjectItem::getData( int column, size_t roleId ) const
 	}
 	else if (roleId == ThumbnailRole::roleId_)
 	{
-		return getThumbnail( 0 );
+		return getThumbnail(0);
 	}
 	else if (roleId == TypeIconRole::roleId_)
 	{
@@ -206,11 +208,15 @@ Variant BaseAssetObjectItem::getData( int column, size_t roleId ) const
 	{
 		return isCompressed();
 	}
+	else if (roleId == ItemRole::itemIdId)
+	{
+		return intptr_t(this);
+	}
 
 	return Variant();
 }
 
-bool BaseAssetObjectItem::setData( int column, size_t roleId, const Variant & data )
+bool BaseAssetObjectItem::setData(int column, ItemRole::Id roleId, const Variant& data)
 {
 	return false;
 }

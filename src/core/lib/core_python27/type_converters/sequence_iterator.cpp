@@ -15,9 +15,7 @@ namespace wgt
 {
 namespace PythonType
 {
-
-
-namespace Detail
+namespace SequenceIterator_Detail
 {
 
 
@@ -58,8 +56,7 @@ bool setItem< PyScript::ScriptSequence >(
 	return container.setItem( index, scriptValue, PyScript::ScriptErrorPrint() );
 }
 
-} // namespace Detail
-
+} // namespace SequenceIterator_Detail
 
 template< typename T >
 SequenceIterator< T >::SequenceIterator( const ObjectHandle & containerHandle,
@@ -122,13 +119,13 @@ Variant SequenceIterator< T >::value() const /* override */
 		return Variant();
 	}
 
-	PyScript::ScriptObject item = Detail::getItem< T >( container_, index_ );
-	
+	PyScript::ScriptObject item = SequenceIterator_Detail::getItem<T>(container_, index_);
+
 	Variant result;
 	std::string childPath;
-	childPath += INDEX_OPEN;
+	childPath += IClassDefinition::INDEX_OPEN;
 	childPath += std::to_string( index_ );
-	childPath += INDEX_CLOSE;
+	childPath += IClassDefinition::INDEX_CLOSE;
 	const bool success = typeConverters_.toVariant( item, result, containerHandle_, childPath );
 	return result;
 }
@@ -150,7 +147,7 @@ bool SequenceIterator< T >::setValue( const Variant & value ) const /* override 
 		return false;
 	}
 
-	return Detail::setItem< T >( container_, index_, scriptValue );
+	return SequenceIterator_Detail::setItem<T>(container_, index_, scriptValue);
 }
 
 

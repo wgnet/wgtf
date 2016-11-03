@@ -1,10 +1,10 @@
 #include "core_dependency_system/i_interface.hpp"
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
+#include "test_ui/context.hpp"
 #include "test_ui/test_ui.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "test_datasource.hpp"
-#include "core_variant/variant.hpp"
 
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
@@ -19,7 +19,16 @@
 
 namespace wgt
 {
-//==============================================================================
+/**
+* A plugin which creates a TestData option in the menu bar with open and close options. 
+* When open is chosen sample data is displayed in two panels. 
+*
+* @ingroup plugins
+* @image html plg_ui_main_test.png 
+* @note Requires Plugins:
+*       - @ref coreplugins
+*       - ReflectionObjectTestPlugin
+*/
 class MainUITestPlugin
 	: public PluginMain
 {
@@ -48,8 +57,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
 		// register reflected type definition
 		IDefinitionManager* defManager =
 			contextManager.queryInterface< IDefinitionManager >();
@@ -92,6 +99,7 @@ public:
 		REGISTER_DEFINITION( TestPolyColor3 )
 		REGISTER_DEFINITION( TestPage )
 		REGISTER_DEFINITION( TestPage2 )
+		REGISTER_DEFINITION(TestUIContext);
 	}
 
 };

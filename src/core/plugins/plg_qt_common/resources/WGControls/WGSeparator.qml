@@ -1,7 +1,8 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 
 /*!
+ \ingroup wgcontrols
  \brief Two tone vertical or horizontal separator
 
 \code{.js}
@@ -14,6 +15,7 @@ WGSeparator {
 Rectangle {
     id: separatorFrame
     objectName: "WGSeparator"
+    WGComponent { type: "WGSeparator" }
 
     /*! This property toggles between a vertical and horizontal control
         The default value is \c false

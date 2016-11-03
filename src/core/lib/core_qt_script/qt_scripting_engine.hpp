@@ -44,22 +44,25 @@ public:
 
 	void finalise();
 
-	QtScriptObject * createScriptObject( const ObjectHandle & object, QObject* parent );
+	QtScriptObject* createScriptObject(const Variant& object, QObject* parent);
 	void deregisterScriptObject( QtScriptObject & scriptObject );
 	void swapParent( QtScriptObject & scriptObject, QObject * parent );
+	IDefinitionManager* getDefinitionManager();
 
 protected:
 	// TODO: These invokables need to be refactored into different modules to
 	// reduce the bloat of this class
 	Q_INVOKABLE QObject * createObject( QString definition );
 	Q_INVOKABLE bool queueCommand( QString command );
+	Q_INVOKABLE void makeFakeMouseRelease();
 	Q_INVOKABLE void beginUndoFrame();
 	Q_INVOKABLE void endUndoFrame();
 	Q_INVOKABLE void abortUndoFrame();
 	Q_INVOKABLE void deleteMacro( QString command );
-	Q_INVOKABLE void selectControl( WGCopyController* control, bool append = true );
-	Q_INVOKABLE void deselectControl( WGCopyController* control, bool reset = false );
+	Q_INVOKABLE void selectControl( wgt::WGCopyController* control, bool append = true );
+	Q_INVOKABLE void deselectControl( wgt::WGCopyController* control, bool reset = false );
 	Q_INVOKABLE QObject * iterator( const QVariant & collection );
+	Q_INVOKABLE QVariant getProperty( const QVariant & object, QString propertyPath );
 	// this function is used to resolve breaking binding issue for checkbox and pushbutton, since
 	// clicking on checkbox or pushbutton will break the "checked" property binding
 	//see: https://bugreports.qt.io/browse/QTBUG-42505 for reference
@@ -72,8 +75,6 @@ protected:
 	Q_INVOKABLE void closeWindow( const QString & windowId );
 
 private:
-	IDefinitionManager* getDefinitionManager();
-
 	struct Implementation;
 	std::unique_ptr<Implementation> impl_;
 };

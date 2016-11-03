@@ -16,7 +16,8 @@ bool Environment::getValue( const char* name, char* value, size_t valueSize )
 	}
 
 	#if defined( _WIN32 )
-	auto len = GetEnvironmentVariableA( name, value, static_cast< DWORD >( valueSize ) );
+	size_t len;
+	getenv_s(&len, value, valueSize, name);
 	return len > 0 && len < valueSize;
 	#endif
 
@@ -42,7 +43,7 @@ bool Environment::setValue( const char* name, const char* value )
 	}
 
 	#if defined( _WIN32 )
-	int ret = SetEnvironmentVariableA( name, value );
+	int ret = _putenv_s(name, value);
 	#endif
 
 	#ifdef __APPLE__

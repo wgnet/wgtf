@@ -9,75 +9,58 @@
 #include "core_variant/type_id.hpp"
 #include "core_variant/variant.hpp"
 
+#include "variant_dll.hpp"
+
 
 namespace wgt
 {
-// collection and iterator implementations base
+/** Collection iterator implementations base. */
 class CollectionIteratorImplBase;
 typedef std::shared_ptr<CollectionIteratorImplBase> CollectionIteratorImplPtr;
 
-class CollectionIteratorImplBase
+class VARIANT_DLL CollectionIteratorImplBase
 {
 public:
 	typedef std::forward_iterator_tag iterator_category;
 	typedef ptrdiff_t difference_type;
 
-	/**
-	Return element key type.
-
+	/** Return element key type.
 	Variant type itself shouldn't be returned. In case when key is stored in
-	Variant, you should return actual type stored in Variant.
-	*/
+	Variant, you should return actual type stored in Variant. */
 	virtual const TypeId& keyType() const = 0;
 
-	/**
-	Return element value type.
-
+	/** Return element value type.
 	Variant type itself shouldn't be returned. In case when value is stored in
-	Variant, you should return actual type stored in Variant.
-	*/
+	Variant, you should return actual type stored in Variant. */
 	virtual const TypeId& valueType() const = 0;
 
-	/**
-	Return element key.
-	*/
+	/** Return element key. */
 	virtual Variant key() const = 0;
 
-	/**
-	Return element value.
-	*/
+	/** Return element value. */
 	virtual Variant value() const = 0;
 
-	/**
-	Set new element value.
-
+	/** Set new element value.
 	Note that you can't change element key once it's inserted into Collection.
 	The only way to change element key is to delete it and re-add the same value
-	with another key.
-	*/
+	with another key. */
 	virtual bool setValue(const Variant& v) const = 0;
 
-	/**
-	Advance iterator one step forward.
-
+	/** Advance iterator one step forward.
 	Note that Collection iterators are forward-only - you can't step backwards
-	or advance by multiple steps at once. Indexing is not supported as well.
-	*/
+	or advance by multiple steps at once. Indexing is not supported as well. */
 	virtual void inc() = 0;
 
-	/**
-	Check two iterators for equality.
-	*/
+	/** Check two iterators for equality. */
 	virtual bool equals(const CollectionIteratorImplBase& that) const = 0;
 
-	/**
-	Create a new copy of this iterator.
-	*/
+	/** Create a new copy of this iterator. */
 	virtual CollectionIteratorImplPtr clone() const = 0;
 };
 
 
-class CollectionImplBase
+/** Collection implementations base. */
+class VARIANT_DLL CollectionImplBase
 {
 public:
 	// not just bool createNew for future support of multimaps
@@ -90,36 +73,22 @@ public:
 
 	enum Flag
 	{
-		/**
-		Container uses sparse keys (as opposed to indices from `0` to `size - 1`).
-		*/
+		/** Container uses sparse keys (as opposed to indices from `0` to `size - 1`). */
 		MAPPING = 1,
 
-		/**
-		Element data can be changed.
-
-		Note that setting new values can still fail even with this flag.
-		*/
+		/** Element data can be changed.
+		Note that setting new values can still fail even with this flag. */
 		WRITABLE = 2,
 
-		/**
-		Elements can be inserted and erased.
-
-		Note that in some cases insert() or erase() can still fail even with
-		this flag.
-		*/
+		/** Elements can be inserted and erased.
+		Note that in some cases insert() or erase() can still fail even with this flag. */
 		RESIZABLE = 4,
 
-		/**
-		Elements are always sorted by key.
-
-		Sorting predicate is defined by a concrete implementation.
-		*/
+		/** Elements are always sorted by key.
+		Sorting predicate is defined by a concrete implementation. */
 		ORDERED = 8,
 
-		/**
-		Container may have multiple elements with equal key.
-		*/
+		/** Container may have multiple elements with equal key. */
 		NON_UNIQUE_KEYS = 16
 	};
 
@@ -137,38 +106,65 @@ public:
 	typedef std::function< ElementPreChangeCallbackSignature > ElementPreChangeCallback;
 	typedef std::function< ElementPostChangedCallbackSignature > ElementPostChangedCallback;
 
+	/** Returns elements count currently held in collection. */
 	virtual size_t size() const = 0;
+
+	/** Iterator to the first element. */
 	virtual CollectionIteratorImplPtr begin() = 0;
+
+	/** Iterator to the imaginary element after the last one. */
 	virtual CollectionIteratorImplPtr end() = 0;
+
+	/** Find existing element or insert a new one.
+	Returns a pair, with its member pair::first set to an iterator pointing to
+	either the newly inserted element or to the element with an equivalent key
+	in the collection. The pair::second element in the pair is set to @c true
+	if a new element was inserted or @c false if an equivalent key already
+	existed.
+	@note end() can still be returned if key is not found and insertion	failed. */
 	virtual std::pair< CollectionIteratorImplPtr, bool > get( const Variant& key, GetPolicy policy ) = 0;
+
+	/** Insert a new element, with a default value.
+	@return an iterator pointing to the newly inserted element or end() on failure. */
+	virtual CollectionIteratorImplPtr insert(const Variant& key);
+
+	/** Insert a new element, with the given value.
+	@return an iterator pointing to the newly inserted element or end() on failure. */
+	virtual CollectionIteratorImplPtr insert(const Variant& key,
+	                                         const Variant& value) = 0;
+
+	/** Erase the element at pos.
+	@return an iterator pointing to the position immediately following the erased element. */
 	virtual CollectionIteratorImplPtr erase( const CollectionIteratorImplPtr& pos ) = 0;
-	virtual size_t erase( const Variant& key ) = 0;
+
+	/** Erase all elements with given key.
+	Returns amount of elements erased. */
+	virtual size_t eraseKey( const Variant& key ) = 0;
+
+	/** Erase elements between first and last, not including last.
+	@return an iterator pointing to the position immediately following the last
+	of the elements erased. */
 	virtual CollectionIteratorImplPtr erase(
 		const CollectionIteratorImplPtr& first,
 		const CollectionIteratorImplPtr& last ) = 0;
 
+	/** Return TypeId of collection key */
 	virtual const TypeId& keyType() const = 0;
+
+	/** Return TypeId of collection value */
 	virtual const TypeId& valueType() const = 0;
 
-	/**
-	Return type of underlying container itself.
-
+	/** Return type of underlying container itself.
 	This function together with container() can be used to optimize
-	Collection comparison, copying, etc.
-	*/
+	Collection comparison, copying, etc. */
 	virtual const TypeId& containerType() const = 0;
 
-	/**
-	Return pointer to underlying container.
-
+	/** Return pointer to underlying container.
 	This function may return null pointer to indicate that optimized comparison
-	and copying are not applicable.
-	*/
+	and copying are not applicable. */
 	virtual const void* container() const = 0;
 
-	/**
-	Return combination of Flag values that describe some Collection properties.
-	*/
+	/** Return combination of Flag values that describe some Collection properties. */
 	virtual int flags() const = 0;
 
 	virtual Connection connectPreInsert( ElementRangeCallback callback )
@@ -244,9 +240,7 @@ namespace collection_details
 
 }
 
-/**
-Helper function used to create collection implementation for given argument(s).
-*/
+/** Helper function used to create collection implementation for given argument(s). */
 void createCollectionImpl(...);
 
 template<typename T>
@@ -262,16 +256,12 @@ typename std::enable_if<
 }
 
 
-/**
-Wrapper for generic container.
-*/
-class Collection
+/** Wrapper for generic container. */
+class VARIANT_DLL Collection
 {
 public:
-	/**
-	Proxy value that provides transparent read-write access to element value.
-	*/
-	class ValueRef
+	/** Proxy value that provides transparent read-write access to element value. */
+	class VARIANT_DLL ValueRef
 	{
 	public:
 		ValueRef(const CollectionIteratorImplPtr& impl):
@@ -289,12 +279,6 @@ public:
 		T cast() const
 		{
 			return impl_->value().cast<T>();
-		}
-
-		template<typename T>
-		const T& castRef() const
-		{
-			return impl_->value().castRef<T>();
 		}
 
 		template<typename T>
@@ -338,16 +322,12 @@ public:
 
 	};
 
-	/**
-	Read only forward iterator to collection element.
-
+	/** Read only forward iterator to collection element.
 	@warning this iterator implementation doesn't conform fully to standard
 	iterator requirements.
-
 	@warning operator*() could be slow because it returns a copy rather than
-	a reference.
-	*/
-	class ConstIterator
+	a reference. */
+	class VARIANT_DLL ConstIterator
 	{
 	public:
 		typedef CollectionIteratorImplBase::iterator_category iterator_category;
@@ -355,33 +335,27 @@ public:
 		typedef CollectionIteratorImplBase::difference_type
 			difference_type;
 
-		typedef const Variant pointer;
 		typedef const Variant reference;
+		typedef void pointer;
 
 		ConstIterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()):
 			impl_(impl)
 		{
 		}
 
-		/**
-		Type of element key.
-
+		/** Type of element key.
 		If Collection::keyType() reports Variant then this function will return
 		the storage type of actual key. Otherwise results of both functions will
-		match.
-		*/
+		match. */
 		const TypeId& keyType() const
 		{
 			return impl_->keyType();
 		}
 
-		/**
-		Type of element value.
-
+		/** Type of element value.
 		If Collection::valueType() reports Variant then this function will
 		return the storage type of actual value. Otherwise results of both
-		functions will match.
-		*/
+		functions will match. */
 		const TypeId& valueType() const
 		{
 			return impl_->valueType();
@@ -430,13 +404,10 @@ public:
 
 	};
 
-	/**
-	Read-write forward iterator to collection element.
-
-	Note that this iterator implementation doesn't conform fully to standard
-	iterator requirements.
-	*/
-	class Iterator:
+	/** Read-write forward iterator to collection element.
+	@note This iterator implementation doesn't conform fully to standard
+	iterator requirements. */
+	class VARIANT_DLL Iterator:
 		public ConstIterator
 	{
 	public:
@@ -446,9 +417,8 @@ public:
 		typedef ConstIterator::value_type value_type;
 		typedef ConstIterator::difference_type difference_type;
 
-		// Variant does not support pointers and references
-		typedef ValueRef pointer;
 		typedef ValueRef reference;
+		typedef void pointer;
 
 		Iterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()):
 			base(impl)
@@ -480,9 +450,7 @@ public:
 
 	};
 
-	/**
-	Check if specified container type is supported by Collection.
-	*/
+	/** Check if specified container type is supported by Collection. */
 	template<typename Container>
 	struct traits
 	{
@@ -511,46 +479,32 @@ public:
 	typedef std::function< ElementPreChangeCallbackSignature > ElementPreChangeCallback;
 	typedef std::function< ElementPostChangedCallbackSignature > ElementPostChangedCallback;
 
-	/**
-	Construct Collection using given implementation.
-	*/
+	/** Construct Collection using given implementation. */
 	explicit Collection(const CollectionImplPtr& impl = CollectionImplPtr()):
 		impl_(impl)
 	{
 	}
 
-	/**
-	Construct Collection wrapper for given container.
-
-	Note that current implementation allows only pointers to containers.
-	*/
+	/** Construct Collection wrapper for given container.
+	Note that current implementation allows only pointers to containers. */
 	template<typename Container>
 	explicit Collection(Container& container, typename std::enable_if<traits<Container>::is_supported>::type* = nullptr):
 		impl_(createCollectionImpl(container))
 	{
 	}
 
-	/**
-	Check whether Collection has reference to actual data.
-	*/
+	/** Check whether Collection has reference to actual data. */
 	bool isValid() const;
 
-	/**
-	Return TypeId of collection key
-	*/
+	/** Return TypeId of collection key */
 	const TypeId& keyType() const;
 
-	/**
-	Return TypeId of collection value
-	*/
+	/** Return TypeId of collection value */
 	const TypeId& valueType() const;
 
-	/**
-	Try to cast underlying container pointer.
-
-	Please note that cv-qualifiers are not checked, so casting to non-const
-	container may be unsafe. This is subject of future improvements.
-	*/
+	/** Try to cast underlying container pointer.
+	@note cv-qualifiers are not checked, so casting to non-const
+	container may be unsafe. This is subject of future improvements. */
 	template<typename Container>
 	Container* container() const
 	{
@@ -567,135 +521,110 @@ public:
 		return nullptr;
 	}
 
-	/**
-	Check whether underlying container matches a given one.
-	*/
+	/** Check whether underlying container matches a given one. */
 	bool isSame( const void* container ) const;
 
-	/**
-	Check if collection is empty.
-	*/
+	/** Check if collection is empty. */
 	bool empty() const;
 
-	/**
-	Returns elements count currently held in collection.
-	*/
+	/** Returns elements count currently held in collection. */
 	size_t size() const;
 
-	/**
-	Iterator to the first element.
-	*/
+	/** Iterator to the first element. */
 	Iterator begin();
 
+	/** Iterator to the first element. */
 	ConstIterator begin() const;
 
+	/** Iterator to the first element. */
 	ConstIterator cbegin() const
 	{
 		return begin();
 	}
 
-	/**
-	Iterator to the imaginary element after the last one.
-	*/
+	/** Iterator to the imaginary element after the last one. */
 	Iterator end();
 
+	/** Iterator to the imaginary element after the last one. */
 	ConstIterator end() const;
 
+	/** Iterator to the imaginary element after the last one. */
 	ConstIterator cend() const
 	{
 		return end();
 	}
 
-	/**
-	Find existing element.
-
+	/** Find existing element.
 	Returns iterator to the found element or end() if element with the given
-	key doesn't exist.
-	*/
+	key doesn't exist. */
 	Iterator find(const Variant& key);
 
+	/** Find existing element.
+	Returns iterator to the found element or end() if element with the given
+	key doesn't exist. */
 	ConstIterator find(const Variant& key) const;
 
-	/**
-	Try to insert a new element.
-
+	/** Try to insert a new element, with a default value.
 	Returns an iterator to the newly inserted element or end() if an element
 	with the given key couldn't be inserted due to underlying container
 	restrictions (e.g. element with given key already exists, or container
-	doesn't support expanding).
-	*/
+	doesn't support expanding). */
 	Iterator insert(const Variant& key);
 
-	/**
-	Find existing element or insert a new one.
+	/** Try to insert a new element, with the given value.
+	Returns an iterator to the newly inserted element or end() if an element
+	with the given key couldn't be inserted due to underlying container
+	restrictions (e.g. element with given key already exists, or container
+	doesn't support expanding). */
+	Iterator insertValue(const Variant& key, const Variant& value);
 
+	/** Find existing element or insert a new one.
 	Returns a pair, with its member pair::first set to an iterator pointing to
 	either the newly inserted element or to the element with an equivalent key
 	in the collection. The pair::second element in the pair is set to @c true
 	if a new element was inserted or @c false if an equivalent key already
 	existed.
-
-	Note that end() can still be returned if key is not found and insertion was
-	failed.
-	*/
+	@note end() can still be returned if key is not found and insertion	failed. */
 	std::pair<Iterator, bool> get(const Variant& key);
 
+	/** Erase the element at pos.
+	@return an iterator pointing to the position immediately following the erased element. */
 	Iterator erase(const Iterator& pos);
 
-	/**
-	Erase all elements with given key.
+	/** Erase all elements with given key.
+	Returns amount of elements erased. */
+	size_t eraseKey(const Variant& key);
 
-	Returns amount of elements erased.
-	*/
-	size_t erase(const Variant& key);
-
-	/**
-	Erase elements between first and last, not including last.
-
+	/** Erase elements between first and last, not including last.
 	@return an iterator pointing to the position immediately following the last
-		of the elements erased.
-	*/
+		of the elements erased. */
 	Iterator erase(const Iterator& first, const Iterator& last);
 
-	/**
-	Access value associated by given key.
-	*/
+	/** Access value associated by given key. */
 	ValueRef operator[](const Variant& key);
 
-	/**
-	Access value associated by given key.
-	*/
+	/** Access value associated by given key. */
 	const Variant operator[](const Variant& key) const;
 
-	/**
-	Test two collections equality.
-	*/
+	/** Test two collections equality. */
 	bool operator==(const Collection& that) const;
 
-	/**
-	Return combination of Flag values that describe some Collection properties.
-	*/
+	/** Return combination of Flag values that describe some Collection properties. */
 	int flags() const;
 
-	/**
-	Convenience function to test Flag or combination of Flags.
-	*/
+	/** Convenience function to test Flag or combination of Flags. */
 	bool testFlags( int f ) const
 	{
 		return ( flags() & f ) == f;
 	}
 
-	/**
-	Test if the collection is a mapping.
-	*/
+	/** Test if the collection is a mapping. */
 	bool isMapping() const
 	{
 		return testFlags( CollectionImplBase::MAPPING );
 	}
 
-	/**
-	Test if the collection can be resized larger or smaller.
-	*/
+	/** Test if the collection can be resized larger or smaller. */
 	bool canResize() const
 	{
 		return testFlags( CollectionImplBase::RESIZABLE );
@@ -767,7 +696,10 @@ private:
 	T collection_;
 
 };
+
 } // end namespace wgt
+
+META_TYPE_NAME( wgt::Collection, "Collection" )
 
 namespace std
 {

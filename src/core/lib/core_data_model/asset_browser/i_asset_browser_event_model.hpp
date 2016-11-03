@@ -27,17 +27,37 @@ typedef std::function<void(const IAssetObjectItem&)> AssetCallback;
 class IAssetBrowserEventModel
 {
 public:
-	virtual ~IAssetBrowserEventModel(){}
-	virtual void assetSelectionChanged( const Variant& ) {}
-	virtual void breadcrumbSelected( const Variant& ) {}
-	virtual void folderSelectionChanged( const Variant& ) {}
-	virtual void useSelectedAsset( const Variant& ) {}
+	virtual ~IAssetBrowserEventModel()
+	{
+	}
+	virtual void assetSelectionChanged(const Variant&)
+	{
+	}
+	virtual void breadcrumbSelected(const Variant&)
+	{
+	}
+	virtual void folderSelectionChanged(const Variant&)
+	{
+	}
+	virtual void useSelectedAsset(const Variant&)
+	{
+	}
 
-	virtual void connectAssetSelectionChanged(AssetCallback) {}
-	virtual void connectBreadcrumbSelected(VariantCallback) {}
-	virtual void connectFilterChanged(VariantCallback) {}
-	virtual void connectFolderSelectionChanged(VariantCallback) {}
-	virtual void connectUseSelectedAsset(AssetCallback) {}
+	virtual void connectAssetSelectionChanged(AssetCallback)
+	{
+	}
+	virtual void connectBreadcrumbSelected(VariantCallback)
+	{
+	}
+	virtual void connectFilterChanged(VariantCallback)
+	{
+	}
+	virtual void connectFolderSelectionChanged(VariantCallback)
+	{
+	}
+	virtual void connectUseSelectedAsset(AssetCallback)
+	{
+	}
 };
 } // end namespace wgt
 #endif // I_ASSET_BROWSER_EVENT_MODEL_H_

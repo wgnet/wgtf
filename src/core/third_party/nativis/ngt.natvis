@@ -1,11 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  <Type Name="ObjectHandle">
-        <DisplayString Condition="storage_._Ptr == 0">ObjectHandle(empty)</DisplayString>
-        <DisplayString Condition="storage_._Ptr != 0">ObjectHandleT&lt;&gt;></DisplayString>
 
-      <Expand>
-        <ExpandedItem Condition="storage_._Ptr != 0"> *storage_._Ptr </ExpandedItem>
-      </Expand>
-  </Type>
+	<Type Name="wgt::ObjectHandle">
+		<DisplayString Condition="storage_._Ptr == 0">ObjectHandle(empty)</DisplayString>
+		<DisplayString Condition="storage_._Ptr != 0">ObjectHandleT&lt;&gt;</DisplayString>
+		<Expand>
+			<ExpandedItem Condition="storage_._Ptr != 0"> *storage_._Ptr </ExpandedItem>
+		</Expand>
+	</Type>
+
+	<Type Name="wgt::Variant">
+		<DisplayString>{{ {(StorageKind)(((uintptr_t)type_)&amp;0x03),en}: {((wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~0x03))->type_->name_,sb} }}</DisplayString>
+		<Expand>
+			<CustomListItems>
+				<Variable Name="qualifiedType" InitialValue="(wgt::MetaType::Qualified*)(((uintptr_t)type_)&amp;~((uintptr_t)0x03))" />
+				<Variable Name="storageKind" InitialValue="(StorageKind)(((uintptr_t)type_)&amp;0x03)" />
+				<Variable Name="type" InitialValue="qualifiedType->type_" />
+				<Variable Name="payload" InitialValue="(void*)0" />
+
+				<If Condition="storageKind == Inline">
+					<Exec>payload = data_.inline_</Exec>
+				</If>
+				<If Condition="storageKind == RawPointer">
+					<Exec>payload = data_.rawPointer_</Exec>
+				</If>
+				<If Condition="storageKind == SharedPointer">
+					<Exec>payload = ((std::shared_ptr&lt;void&gt;*)(data_.sharedPointer_))->_Ptr</Exec>
+				</If>
+				<If Condition="storageKind == COW">
+					<Exec>payload = data_.cow_ + 1</Exec>
+				</If>
+
+				<Item Name="[storage kind]">storageKind</Item>
+				<Item Name="[type]">type</Item>
+				<Item Name="[type name]">type->name_,sb</Item>
+				<Item Name="[type id]">type->data_.typeId_.name_,sb</Item>
+				<Item Name="[qualifiers]">((wgt::MetaType::Qualifier)(qualifiedType - type->qualified_))</Item>
+				<Item Name="[payload]">payload</Item>
+			</CustomListItems>
+		</Expand>
+	</Type>
+
+	<Type Name="wgt::Collection">
+		<DisplayString Condition="impl_._Ptr == 0">empty</DisplayString>
+		<DisplayString Condition="impl_._Ptr != 0">{*impl_._Ptr}</DisplayString>
+		<Expand>
+			<Item Name="[impl]" Condition="impl_._Ptr != 0">*impl_._Ptr</Item>
+		</Expand>
+	</Type>
+
 </AutoVisualizer>

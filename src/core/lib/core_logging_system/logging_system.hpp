@@ -2,6 +2,7 @@
 #define LOGGING_SYSTEM_HPP
 
 #include "core_dependency_system/i_interface.hpp"
+#include "core_dependency_system/di_ref.hpp"
 #include "interfaces/i_logging_system.hpp"
 #include "log_level.hpp"
 #include <queue>
@@ -19,7 +20,7 @@ class LoggingSystem :
 {
 public:
 
-	LoggingSystem();
+	LoggingSystem( DIRef< IDefinitionManager > definitionManager );
 	virtual ~LoggingSystem();
 
 	virtual bool registerLogger( ILogger* logger );

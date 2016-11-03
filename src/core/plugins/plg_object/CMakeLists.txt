@@ -10,12 +10,8 @@ ADD_DEFINITIONS( -D_CRT_SECURE_NO_WARNINGS )
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-SET( INTERFACE_SRCS
-	interfaces/i_object_manager.hpp
-)
-SOURCE_GROUP( "Interfaces" FILES ${INTERFACE_SRCS} )
-
 SET( ALL_SRCS
+	interfaces/i_object_manager.hpp
 	context_object_manager.cpp
 	context_object_manager.hpp
 	object_manager.hpp
@@ -23,10 +19,9 @@ SET( ALL_SRCS
 	object_manager_creator.hpp
 	plg_object.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_object SHARED
-	${INTERFACE_SRCS}
 	${ALL_SRCS}
 )
 

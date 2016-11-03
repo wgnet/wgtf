@@ -12,5 +12,6 @@ BEGIN_EXPOSE(INodeEditor, MetaNone())
     EXPOSE_METHOD("deleteNode", onDeleteNode)
     EXPOSE_METHOD("createConnection", onCreateConnection)
     EXPOSE_METHOD("deleteConnection", onDeleteConnection)
+    EXPOSE_METHOD("createGroup", CreateGroup, MetaNone())
 END_EXPOSE()
 }

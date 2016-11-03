@@ -41,10 +41,14 @@ PluginMemoryAllocator::PluginMemoryAllocator( const wchar_t * name )
 //==============================================================================
 PluginMemoryAllocator::~PluginMemoryAllocator()
 {
-	NGTAllocator::cleanupContext( memoryContext_ );
 	NGTAllocator::destroyMemoryContext( memoryContext_ );
 }
 
+//==============================================================================
+void PluginMemoryAllocator::fini()
+{
+	NGTAllocator::cleanupContext(memoryContext_);
+}
 
 //==============================================================================
 void * PluginMemoryAllocator::mem_new( size_t size )

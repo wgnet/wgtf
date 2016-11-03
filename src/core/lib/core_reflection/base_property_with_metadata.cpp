@@ -11,7 +11,6 @@ BasePropertyWithMetaData::BasePropertyWithMetaData( const IBasePropertyPtr & pro
 
 BasePropertyWithMetaData::~BasePropertyWithMetaData()
 {
-
 }
 
 const TypeId & BasePropertyWithMetaData::getType() const
@@ -31,7 +30,7 @@ uint64_t BasePropertyWithMetaData::getNameHash() const
 
 MetaHandle BasePropertyWithMetaData::getMetaData() const
 {
-	//TODO
+	//TODO NGT-1582
 	//return property_->getMetaData() + metaData_;
 	return metaData_;
 }
@@ -74,5 +73,10 @@ Variant BasePropertyWithMetaData::invoke( const ObjectHandle & object,
 size_t BasePropertyWithMetaData::parameterCount() const
 {
 	return property_->parameterCount();
+}
+
+IBasePropertyPtr BasePropertyWithMetaData::baseProperty() const
+{
+	return property_;
 }
 } // end namespace wgt

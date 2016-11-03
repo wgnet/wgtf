@@ -13,7 +13,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 SET( ALL_SRCS
 	plg_obj_handle_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_obj_handle_test SHARED
 	${ALL_SRCS}
@@ -24,9 +24,8 @@ BW_TARGET_LINK_LIBRARIES( plg_obj_handle_test PRIVATE
 	core_qt_common
 	core_reflection
 	core_ui_framework
-	core_variant
 	core_data_model
 	core_command_system
-	core_serialization )
+)
 
 BW_PROJECT_CATEGORY( plg_obj_handle_test "Plugins" )

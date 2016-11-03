@@ -4,6 +4,14 @@
 
 namespace wgt
 {
+/**
+* A plugin which implements a context object manager. The interface is empty and currently unused
+*
+* @ingroup plugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+
+*/
 class ObjectPlugin : public PluginMain
 {
 public:
@@ -14,7 +22,7 @@ public:
 
 	bool PostLoad( IComponentContext & context ) override
 	{
-		context.registerInterface( new ObjectManagerCreator( context ) );
+		context.registerInterface(new ObjectManagerCreator(context));
 		return true; 
 	}
 	
@@ -30,7 +38,6 @@ public:
 
 	void Unload( IComponentContext & context ) override
 	{
-
 	}
 };
 

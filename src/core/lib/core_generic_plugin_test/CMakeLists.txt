@@ -12,7 +12,8 @@ SET( ALL_SRCS
 	test_plugin_loader.hpp
 	test_plugin_loader.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
 BW_BLOB_SOURCES( BLOB_SRCS

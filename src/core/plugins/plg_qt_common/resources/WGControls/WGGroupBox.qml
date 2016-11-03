@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+    \ingroup wgcontrols
     \brief A style varition of WGFrame with thin separators top and bottom.
     Good for toggleable groups that enable/disable their contents.
     Not intended to be used as a collapsible group.
@@ -33,6 +34,8 @@ Example:
 
 WGFrame{
     objectName: "WGGroupBox"
+    WGComponent { type: "WGGroupBox" }
+    
     lineFrame: true
     toggleable: true
 }

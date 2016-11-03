@@ -9,7 +9,7 @@ SET( ALL_SRCS
 	i_depot_view.hpp
 	i_result.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
 # Use ADD_CUSTOM_TARGET because this target has no cpp files

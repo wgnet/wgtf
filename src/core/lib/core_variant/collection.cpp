@@ -4,6 +4,11 @@
 
 namespace wgt
 {
+CollectionIteratorImplPtr CollectionImplBase::insert(const Variant& key)
+{
+	return this->get(key, GetPolicy::GET_NEW).first;
+}
+
 Collection::ConstIterator& Collection::ConstIterator::operator++()
 {
 	detach();
@@ -177,6 +182,17 @@ Collection::Iterator Collection::insert(const Variant& key)
 	}
 }
 
+Collection::Iterator Collection::insertValue(const Variant& key, const Variant& value)
+{
+	if (impl_)
+	{
+		return impl_->insert(key, value);
+	}
+	else
+	{
+		return Iterator();
+	}
+}
 
 std::pair<Collection::Iterator, bool> Collection::get(const Variant& key)
 {
@@ -204,11 +220,11 @@ Collection::Iterator Collection::erase(const Iterator& pos)
 }
 
 
-size_t Collection::erase(const Variant& key)
+size_t Collection::eraseKey(const Variant& key)
 {
 	if(impl_)
 	{
-		return impl_->erase(key);
+		return impl_->eraseKey(key);
 	}
 	else
 	{

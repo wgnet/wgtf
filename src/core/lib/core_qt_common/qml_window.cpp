@@ -4,6 +4,7 @@
 #include "qt_status_bar.hpp"
 #include "qt_tab_region.hpp"
 #include "qt_tool_bar.hpp"
+#include "qt_global_settings.hpp"
 #include "i_qt_framework.hpp"
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_view.hpp"
@@ -27,6 +28,9 @@
 #include <QElapsedTimer>
 #include "wg_types/binary_block.hpp"
 #include "wg_types/vector2.hpp"
+#include "core_dependency_system/depends.hpp"
+
+#include "core_qt_common/helpers/qml_component_loader_helper.hpp"
 #include "core_qt_script/qt_script_object.hpp"
 
 namespace wgt
@@ -54,29 +58,243 @@ namespace
     const char * g_internalPreferenceId = "13CC6CD7-E935-488D-9E3D-8BED9454F554";
 }
 
-QmlWindow::QmlWindow( IQtFramework & qtFramework, QQmlEngine & qmlEngine )
-	: qtFramework_( qtFramework )
+struct QmlWindow::Impl
+	: Depends< IQtFramework >
+{
+	QQmlEngine  & qmlEngine_;
+	std::unique_ptr< QQmlContext > qmlContext_;
+	QQuickWidget* mainWindow_;
+	std::string id_;
+	std::string title_;
+	Menus menus_;
+	Regions regions_;
+	std::unique_ptr<IStatusBar> statusBar_;
+	bool released_;
+	Qt::WindowModality modalityFlag_;
+	bool isMaximizedInPreference_;
+	bool firstTimeShow_;
+	QmlWindow & window_;
+	QUrl url_;
+    QtConnectionHolder qtConnections_;
+
+	Impl( IComponentContext & context, QQmlEngine & qmlEngine, QmlWindow & window )
+		: Depends( context )
 		, qmlEngine_( qmlEngine )
 		, qmlContext_( new QQmlContext( qmlEngine.rootContext() ) )
 		, mainWindow_( new QQuickWidget( &qmlEngine, nullptr ) )
 		, released_( false )
-		, application_( nullptr )
 		, isMaximizedInPreference_( false )
 		, firstTimeShow_( true )
+		, window_( window )
 	{
 		mainWindow_->setMinimumSize( QSize( 100, 100 ) );
 		QQmlEngine::setContextForObject( mainWindow_, qmlContext_.get() );
+
+        auto qtFramework = context.queryInterface< IQtFramework >();
+        assert( qtFramework != nullptr );
+        auto globalSettings = qtFramework->qtGlobalSettings();
+
+        qtConnections_ += QObject::connect( globalSettings, &QtGlobalSettings::prePreferencesChanged,
+            &window_, &QmlWindow::onPrePreferencesChanged );
+        qtConnections_ += QObject::connect( globalSettings, &QtGlobalSettings::postPreferencesChanged,
+            &window_, &QmlWindow::onPostPreferencesChanged );
+        qtConnections_ += QObject::connect( globalSettings, &QtGlobalSettings::prePreferencesSaved,
+            &window_, &QmlWindow::onPrePreferencesSaved );
 	}
+
+	void handleLoaded( QQmlComponent * qmlComponent )
+	{
+		auto content = std::unique_ptr< QObject >(
+			qmlComponent->create( qmlContext_.get() ) );
+
+		auto qtFrameWork = get< IQtFramework >();
+		assert( qtFrameWork != nullptr );
+
+		QVariant windowProperty = content->property( "id" );
+		if (windowProperty.isValid())
+		{
+			id_ = windowProperty.toString().toUtf8().data();
+		}
+
+		auto windowMaximizedProperty = content->property("windowMaximized");
+		if (windowMaximizedProperty.isValid())
+		{
+			isMaximizedInPreference_ = windowMaximizedProperty.toBool();
+		}
+
+		QVariant titleProperty = content->property( "title" );
+		if (titleProperty.isValid())
+		{
+			title_ = titleProperty.toString().toUtf8().data();
+		}
+
+		auto menuBars = getChildren< QMenuBar >( *mainWindow_ );
+		for (auto & menuBar : menuBars)
+		{
+			if (menuBar->property( "path" ).isValid())
+			{
+				menus_.emplace_back( new QtMenuBar( *menuBar, id_.c_str() ) );
+			}
+		}
+
+		auto toolBars = getChildren< QToolBar >( *mainWindow_ );
+		for (auto & toolBar : toolBars)
+		{
+			if (toolBar->property( "path" ).isValid())
+			{
+				menus_.emplace_back( new QtToolBar( *toolBar, id_.c_str() ) );
+			}
+		}
+		auto dockWidgets = getChildren< QDockWidget >( *mainWindow_ );
+		if (!dockWidgets.empty())
+		{
+			NGT_WARNING_MSG( "Qml window doesn't support docking" );
+		}
+		auto tabWidgets = getChildren< QTabWidget >( *mainWindow_ );
+		for (auto & tabWidget : tabWidgets)
+		{
+			if ( tabWidget->property( "layoutTags" ).isValid() )
+			{
+				regions_.emplace_back( new QtTabRegion( *this, *tabWidget ) );
+			}
+		}
+		auto statusBar = getChildren<QStatusBar>(*mainWindow_);
+		if ( statusBar.size() > 0 )
+		{
+			statusBar_.reset(new QtStatusBar(*statusBar.at(0)));
+		}
+
+		mainWindow_->setContent( url_, qmlComponent, content.release() );
+		mainWindow_->setResizeMode( QQuickWidget::SizeRootObjectToView );
+		mainWindow_->installEventFilter( &window_ );
+		loadPreference();
+		modalityFlag_ = mainWindow_->windowModality();
+	}
+
+
+	//--------------------------------------------------------------------------
+    bool loadPreference()
+    {
+        auto logDebugMessage = [](const std::string& message)
+        {
+            NGT_DEBUG_MSG( "QML Window Preferences Failed: %s", message.c_str() );
+        };
+
+        auto preferences = get< IQtFramework >()->getPreferences();
+        if (preferences == nullptr)
+        {
+            logDebugMessage( "Could not get preferences" );
+            return false;
+        }
+
+        std::string key = (id_ == "") ? g_internalPreferenceId : id_;
+        if( !preferences->preferenceExists( key.c_str() ))
+        {
+            return false; // No preference has been loaded for this key
+        }
+        auto & preference = preferences->getPreference( key.c_str() );
+        
+        //check the preference data first
+        BinaryBlock geometry;
+        bool isMaximized = false;
+        Vector2 pos;
+        Vector2 size;
+        bool isOk = false;
+
+        auto accessor = preference->findProperty( "geometry" );
+        if (!accessor.isValid())
+        {
+            logDebugMessage( key + " No geometry property" );
+            return false;
+        }
+
+        isOk = preference->get( "geometry", geometry );
+        if (!isOk)
+        {
+            logDebugMessage( key + " Geometry property failed" );
+            return false;
+        }
+
+        accessor = preference->findProperty( "maximized" );
+        if (!accessor.isValid())
+        {
+            logDebugMessage( key + " No maximized property" );
+            return false;
+        }
+
+        isOk = preference->get( "maximized", isMaximized );
+        if (!isOk)
+        {
+            logDebugMessage( key + " Maximized property failed" );
+            return false;
+        }
+
+        if (!isMaximized)
+        {
+            accessor = preference->findProperty( "pos" );
+            if (!accessor.isValid())
+            {
+                logDebugMessage( key + " No pos property" );
+                return false;
+            }
+
+            isOk = preference->get( "pos", pos );
+            if (!isOk)
+            {
+                logDebugMessage( key + " Pos property failed" );
+                return false;
+            }
+
+            accessor = preference->findProperty( "size" );
+            if (!accessor.isValid())
+            {
+                logDebugMessage( key + " No size property" );
+                return false;
+            }
+
+            isOk = preference->get( "size", size );
+            if (!isOk)
+            {
+                logDebugMessage( key + " Size property failed" );
+                return false;
+            }
+        }
+
+        // restore preferences
+        isMaximizedInPreference_ = isMaximized;
+        isOk = mainWindow_->restoreGeometry( QByteArray( geometry.cdata(), static_cast<int>(geometry.length()) ) );
+        if (!isOk)
+        {
+            logDebugMessage( key + " Could not restore geometry" );
+            return false;
+        }
+
+        if (!isMaximized)
+        {
+            mainWindow_->move( QPoint( static_cast<int>( pos.x ), static_cast<int>( pos.y ) ) );
+            mainWindow_->resize( QSize( static_cast<int>( size.x ), static_cast<int>( size.y ) ) );
+        }
+
+        return true;
+    }
+};
+
+QmlWindow::QmlWindow( IComponentContext & context, QQmlEngine & qmlEngine )
+	: impl_( new Impl( context, qmlEngine, *this ) )
+{
+	QObject::connect( impl_->mainWindow_, SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)),
+		this, SLOT(error(QQuickWindow::SceneGraphError, const QString&)) );
+}
 
 QmlWindow::~QmlWindow()
 {
-	if (!released_)
+	if (!impl_->released_)
 	{
         this->savePreference();
-		mainWindow_->removeEventFilter( this );
-		delete mainWindow_;
+		impl_->mainWindow_->removeEventFilter( this );
+		delete impl_->mainWindow_;
 	}
-    qmlEngine_.collectGarbage();
+    impl_->qmlEngine_.collectGarbage();
     // call sendPostedEvents to give chance to QScriptObject's DeferredDeleted event get handled in time
     QApplication::sendPostedEvents( nullptr, QEvent::DeferredDelete );
 }
@@ -86,13 +304,13 @@ void QmlWindow::setContextObject( QObject * object )
 	auto qtScriptObject = dynamic_cast<QtScriptObject *>( object );
 	if(qtScriptObject)
 	{
-		qtScriptObject->setParent( qmlContext_.get() );
+		qtScriptObject->setParent( impl_->qmlContext_.get() );
 	}
 	else
 	{
-		object->setParent(qmlContext_.get());
+		object->setParent(impl_->qmlContext_.get());
 	}
-	qmlContext_->setContextObject( object );
+	impl_->qmlContext_->setContextObject( object );
 }
 
 void QmlWindow::setContextProperty(
@@ -106,15 +324,15 @@ void QmlWindow::setContextProperty(
 			auto qtScriptObject = dynamic_cast<QtScriptObject *>( object );
 			if(qtScriptObject)
 			{
-				qtScriptObject->setParent( qmlContext_.get() );
+				qtScriptObject->setParent( impl_->qmlContext_.get() );
 			}
 			else
 			{
-				object->setParent(qmlContext_.get());
+				object->setParent(impl_->qmlContext_.get());
 			}
         }
     }
-	qmlContext_->setContextProperty( name, property );
+	impl_->qmlContext_->setContextProperty( name, property );
 }
 
 void QmlWindow::error( QQuickWindow::SceneGraphError error, const QString &message )
@@ -125,17 +343,17 @@ void QmlWindow::error( QQuickWindow::SceneGraphError error, const QString &messa
 
 const char * QmlWindow::id() const
 {
-	return id_.c_str();
+	return impl_->id_.c_str();
 }
 
 const char * QmlWindow::title() const
 {
-	return title_.c_str();
+	return impl_->title_.c_str();
 }
 
 void QmlWindow::update()
 {
-	for (auto & menu : menus_)
+	for (auto & menu : impl_->menus_)
 	{
 		menu->update();
 	}
@@ -143,29 +361,29 @@ void QmlWindow::update()
 
 void QmlWindow::close()
 {
-	mainWindow_->close();
+	impl_->mainWindow_->close();
 }
 
 void QmlWindow::setIcon(const char* path)
 {
-	if(!path || !mainWindow_)
+	if(!path || !impl_->mainWindow_)
 		return;
-	mainWindow_->setWindowIcon(QIcon(path));
+	impl_->mainWindow_->setWindowIcon(QIcon(path));
 }
 
 void QmlWindow::show( bool wait /* = false */)
 {
-	mainWindow_->setWindowModality( modalityFlag_ );
-    if(firstTimeShow_ && isMaximizedInPreference_)
+	impl_->mainWindow_->setWindowModality( impl_->modalityFlag_ );
+    if(impl_->firstTimeShow_ && impl_->isMaximizedInPreference_)
     {
-        mainWindow_->setWindowState( Qt::WindowMaximized );
+        impl_->mainWindow_->setWindowState( Qt::WindowMaximized );
     }
-	mainWindow_->show();
+	impl_->mainWindow_->show();
 	if ( title() )
 	{
-		mainWindow_->setWindowTitle(title());
+		impl_->mainWindow_->setWindowTitle(title());
 	}
-    firstTimeShow_ = false;
+    impl_->firstTimeShow_ = false;
 	if (wait)
 	{
 		waitForWindowExposed();
@@ -174,10 +392,10 @@ void QmlWindow::show( bool wait /* = false */)
 
 void QmlWindow::showMaximized( bool wait /* = false */)
 {
-	mainWindow_->setWindowModality( modalityFlag_ );
+	impl_->mainWindow_->setWindowModality( impl_->modalityFlag_ );
 	
-	mainWindow_->showMaximized();
-    firstTimeShow_ = false;
+	impl_->mainWindow_->showMaximized();
+    impl_->firstTimeShow_ = false;
 	if (wait)
 	{
 		waitForWindowExposed();
@@ -186,74 +404,69 @@ void QmlWindow::showMaximized( bool wait /* = false */)
 
 void QmlWindow::showModal()
 {
-	mainWindow_->setWindowModality( Qt::ApplicationModal );
+	impl_->mainWindow_->setWindowModality( Qt::ApplicationModal );
 	if ( title() )
 	{
-		mainWindow_->setWindowTitle(title());
+		impl_->mainWindow_->setWindowTitle(title());
 	}
-    if(firstTimeShow_ && isMaximizedInPreference_)
+    if(impl_->firstTimeShow_ && impl_->isMaximizedInPreference_)
     {
-        mainWindow_->setWindowState( Qt::WindowMaximized );
+        impl_->mainWindow_->setWindowState( Qt::WindowMaximized );
     }
-	mainWindow_->show();
-    firstTimeShow_ = false;
+	impl_->mainWindow_->show();
+    impl_->firstTimeShow_ = false;
 }
 
 void QmlWindow::hide()
 {
-	mainWindow_->hide();
+	impl_->mainWindow_->hide();
+}
+
+void QmlWindow::title(const char* title)
+{
+	impl_->mainWindow_->setWindowTitle(title);
 }
 
 const Menus & QmlWindow::menus() const
 {
-	return menus_;
+	return impl_->menus_;
 }
 
 const Regions & QmlWindow::regions() const
 {
-	return regions_;
-}
-
-void QmlWindow::setApplication( IUIApplication * application )
-{
-	application_ = application;
-}
-
-IUIApplication * QmlWindow::getApplication() const
-{
-	return application_;
+	return impl_->regions_;
 }
 
 IStatusBar* QmlWindow::statusBar() const
 {
-	return statusBar_.get();
+	return impl_->statusBar_.get();
 }
 
 QQuickWidget * QmlWindow::release()
 {
-	released_ = true;
+	impl_->released_ = true;
 	return window();
 }
 
 QQuickWidget * QmlWindow::window() const
 {
-	return mainWindow_;
+	return impl_->mainWindow_;
 }
 
 void QmlWindow::waitForWindowExposed()
 {
-	if (mainWindow_ == nullptr)
+	if (impl_->mainWindow_ == nullptr)
 	{
 		return;
 	}
 	enum { TimeOutMs = 10 };
 	QElapsedTimer timer;
 	const int timeout = 1000;
-	if (!mainWindow_->windowHandle())
+	if (!impl_->mainWindow_->windowHandle())
 	{
-		mainWindow_->createWinId();
+		impl_->mainWindow_->createWinId();
 	}
-	auto window = mainWindow_->windowHandle();
+	auto window = impl_->mainWindow_->windowHandle();
 	timer.start();
 	while (!window->isExposed()) 
 	{
@@ -268,94 +481,43 @@ void QmlWindow::waitForWindowExposed()
 	}
 }
 
-bool QmlWindow::load( QUrl & qUrl )
+
+//------------------------------------------------------------------------------
+bool QmlWindow::load( QUrl & qUrl, bool async,
+	std::function< void() > loadedHandler )
 {
-	auto qmlEngine = qmlContext_->engine();
-	auto qmlComponent = std::unique_ptr< QQmlComponent >(
-		new QQmlComponent( qmlEngine, qUrl, mainWindow_ ) );
-	assert( !qmlComponent->isLoading() );
-	if (!qmlComponent->isReady())
-	{
-		NGT_WARNING_MSG( "Error loading control %s\n",
-			qPrintable( qmlComponent->errorString() ) );
-		return false;
-	}
-
-	auto content = std::unique_ptr< QObject >(
-		qmlComponent->create( qmlContext_.get() ) );
-
-	QVariant windowProperty = content->property( "id" );
-	if (windowProperty.isValid())
-	{
-		id_ = windowProperty.toString().toUtf8().data();
-	}
-
-    auto windowMaximizedProperty = content->property("windowMaximized");
-    if (windowMaximizedProperty.isValid())
-    {
-        isMaximizedInPreference_ = windowMaximizedProperty.toBool();
-    }
-
-	QVariant titleProperty = content->property( "title" );
-	if (titleProperty.isValid())
-	{
-		title_ = titleProperty.toString().toUtf8().data();
-	}
-
-	auto menuBars = getChildren< QMenuBar >( *mainWindow_ );
-	for (auto & menuBar : menuBars)
-	{
-		if (menuBar->property( "path" ).isValid())
-		{
-			menus_.emplace_back( new QtMenuBar( *menuBar, id_.c_str() ) );
-		}
-	}
-
-	auto toolBars = getChildren< QToolBar >( *mainWindow_ );
-	for (auto & toolBar : toolBars)
-	{
-		if (toolBar->property( "path" ).isValid())
-		{
-			menus_.emplace_back( new QtToolBar( *toolBar, id_.c_str() ) );
-		}
-	}
-	auto dockWidgets = getChildren< QDockWidget >( *mainWindow_ );
-	if (!dockWidgets.empty())
-	{
-		NGT_WARNING_MSG( "Qml window doesn't support docking" );
-	}
-	auto tabWidgets = getChildren< QTabWidget >( *mainWindow_ );
-	for (auto & tabWidget : tabWidgets)
-	{
-		if ( tabWidget->property( "layoutTags" ).isValid() )
-		{
-			regions_.emplace_back( new QtTabRegion( qtFramework_, *tabWidget ) );
-		}
-	}
-	auto statusBar = getChildren<QStatusBar>(*mainWindow_);
-	if ( statusBar.size() > 0 )
-	{
-		statusBar_.reset(new QtStatusBar(*statusBar.at(0)));
-	}
-
-	auto preferences = qtFramework_.getPreferences();
-	auto preference = preferences->getPreference( id_.c_str() );
-	auto value = qtFramework_.toQVariant( preference, qmlContext_.get() );
+	impl_->url_ = qUrl;
+	auto qtFrameWork = impl_->get< IQtFramework >();
+	assert( qtFrameWork != nullptr );
+	auto preferences = qtFrameWork->getPreferences();
+	auto preference = preferences->getPreference( impl_->id_.c_str() );
+	auto value = qtFrameWork->toQVariant( preference, impl_->qmlContext_.get() );
 	this->setContextProperty( QString( "Preference" ), value );
+	this->setContextProperty( QString( "View" ), QVariant::fromValue(impl_->mainWindow_ ) );
+	impl_->qmlContext_->setContextProperty(QString("qmlView"), this);
 
-	mainWindow_->setContent( qUrl, qmlComponent.release(), content.release() );
-	mainWindow_->setResizeMode( QQuickWidget::SizeRootObjectToView );
-	QObject::connect( mainWindow_, SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)),
-		this, SLOT(error(QQuickWindow::SceneGraphError, const QString&)) );
-	mainWindow_->installEventFilter( this );
-    loadPreference();
-	modalityFlag_ = mainWindow_->windowModality();
+	auto qmlEngine = impl_->qmlContext_->engine();
+
+	auto qmlComponent = new QQmlComponent( qmlEngine, impl_->mainWindow_ );
+
+	QmlComponentLoaderHelper helper( qmlComponent, qUrl );
+	using namespace std::placeholders;
+	helper.data_->connections_ +=
+		helper.data_->sig_Loaded_.connect(std::bind(&Impl::handleLoaded, impl_.get(), _1));
+	helper.data_->connections_ +=
+		helper.data_->sig_Loaded_.connect([ loadedHandler ]( QQmlComponent * )
+	{
+		loadedHandler();
+	});
+	helper.load( async );
 	return true;
 }
 
+
+//------------------------------------------------------------------------------
 bool QmlWindow::eventFilter( QObject * object, QEvent * event )
 {
-	if (object == mainWindow_)
+	if (object == impl_->mainWindow_)
 	{
 		if (event->type() == QEvent::Close)
 		{
@@ -366,6 +528,9 @@ bool QmlWindow::eventFilter( QObject * object, QEvent * event )
 			if (shouldClose)
 			{
 				this->signalClose();
+				// TODO: remove this workaround
+				// explicitly call this because CollectionModel doesn't emit a signal when underly source changed
+				emit windowClosed();
 			}
 			else
 			{
@@ -380,109 +545,47 @@ bool QmlWindow::eventFilter( QObject * object, QEvent * event )
 
 void QmlWindow::savePreference()
 {
-    auto preferences = qtFramework_.getPreferences();
+    auto qtFramework = impl_->get<IQtFramework>();
+    assert(qtFramework != nullptr);
+    if(qtFramework == nullptr)
+    {
+        return;
+    }
+    auto preferences = qtFramework->getPreferences();
     if (preferences == nullptr)
     {
         return;
     }
-    std::string key = id_ + g_internalPreferenceId ;
+    std::string key = impl_->id_ + g_internalPreferenceId ;
     auto & preference = preferences->getPreference( key.c_str() );
-    QByteArray geometryData = mainWindow_->saveGeometry();
+    QByteArray geometryData = impl_->mainWindow_->saveGeometry();
     std::shared_ptr< BinaryBlock > geometry = 
         std::make_shared< BinaryBlock >(geometryData.constData(), geometryData.size(), false );
     preference->set( "geometry", geometry );
-    bool isMaximized = mainWindow_->isMaximized();
+    bool isMaximized = impl_->mainWindow_->isMaximized();
     preference->set( "maximized", isMaximized );
     if (!isMaximized)
     {
-        auto pos = mainWindow_->pos();
-        auto size = mainWindow_->size();
+        auto pos = impl_->mainWindow_->pos();
+        auto size = impl_->mainWindow_->size();
         preference->set( "pos",Vector2( pos.x(), pos.y() ) );
         preference->set( "size",Vector2( size.width(), size.height() ) );
     }
 }
 
-bool QmlWindow::loadPreference()
+void QmlWindow::onPrePreferencesChanged()
 {
-
-
-    //check the preference data first
-    do 
-    {
-        std::shared_ptr< BinaryBlock > geometry;
-        bool isMaximized = false;
-        Vector2 pos;
-        Vector2 size;
-        bool isOk = false;
-        auto preferences = qtFramework_.getPreferences();
-        if (preferences == nullptr)
-        {
-            break;
-        }
-        std::string key = id_ + g_internalPreferenceId ;
-        auto & preference = preferences->getPreference( key.c_str() );
-        // check the preferences
-        auto accessor = preference->findProperty( "geometry" );
-        if (!accessor.isValid())
-        {
-            break;
-        }
-        isOk = preference->get( "geometry", geometry );
-        if (!isOk)
-        {
-            break;
-        }
-        accessor = preference->findProperty( "maximized" );
-        if (!accessor.isValid())
-        {
-            break;
-        }
-        isOk = preference->get( "maximized", isMaximized );
-        if (!isOk)
-        {
-            break;
-        }
-        if (!isMaximized)
-        {
-            accessor = preference->findProperty( "pos" );
-            if (!accessor.isValid())
-            {
-                break;
-            }
-            isOk = preference->get( "pos", pos );
-            if (!isOk)
-            {
-                break;
-            }
-            accessor = preference->findProperty( "size" );
-            if (!accessor.isValid())
-            {
-                break;
-            }
-            isOk = preference->get( "size", size );
-            if (!isOk)
-            {
-                break;
-            }
-        }
-
-        // restore preferences
-        isMaximizedInPreference_ = isMaximized;
-        isOk = mainWindow_->restoreGeometry( QByteArray( geometry->cdata(), static_cast<int>(geometry->length()) ) );
-        if (!isOk)
-        {
-            break;
-        }
-        if (!isMaximized)
-        {
-            mainWindow_->move( QPoint( static_cast<int>( pos.x ), static_cast<int>( pos.y ) ) );
-            mainWindow_->resize( QSize( static_cast<int>( size.x ), static_cast<int>( size.y ) ) );
-        }
-
-        return true;
-
-    } while (false);
-    NGT_DEBUG_MSG( "Load Qml Window Preferences Failed.\n" );
-    return false;
+    savePreference();
 }
+
+void QmlWindow::onPostPreferencesChanged()
+{
+    impl_->loadPreference();
+}
+
+void QmlWindow::onPrePreferencesSaved()
+{
+    savePreference();
+}
+
 } // end namespace wgt

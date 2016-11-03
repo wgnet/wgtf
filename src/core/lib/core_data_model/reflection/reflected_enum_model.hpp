@@ -12,7 +12,8 @@ class MetaEnumObj;
 class ReflectedEnumModel : public IListModel
 {
 public:
-	ReflectedEnumModel( const PropertyAccessor &, const MetaEnumObj * enumObj );
+    ReflectedEnumModel(const MetaEnumObj* enumObj);
+	ReflectedEnumModel(const PropertyAccessor &, const MetaEnumObj * enumObj);
 	virtual ~ReflectedEnumModel();
 
 	IItem * item( size_t index ) const override;

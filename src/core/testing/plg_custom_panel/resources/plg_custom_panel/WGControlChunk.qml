@@ -410,7 +410,7 @@ Rectangle {
 	}
 
 	Rectangle {
-		z: 10
+		z: 1
 		anchors.horizontalCenter: parent.horizontalCenter
 		anchors.verticalCenter: panelChunk ? undefined : parent.verticalCenter
 		anchors.top: panelChunk ? parent.top : undefined
@@ -466,7 +466,7 @@ Rectangle {
 
 		MouseArea {
 			id: mouseArea
-			z: 10
+			z: 1
 			anchors.fill: parent
 			anchors.margins: -5
 			//width: defaultSpacing.standardMargin + defaultSpacing.minimumRowHeight

@@ -4,10 +4,10 @@
 #include <memory>
 #include "core_dependency_system/depends.hpp"
 #include "core_ui_framework/i_view.hpp"
+#include <unordered_map>
 
 namespace wgt
 {
-class AbstractTreeModel;
 class IAction;
 class IUIApplication;
 class IUIFramework;
@@ -19,16 +19,20 @@ class IDefinitionManager;
 class IReflectionController;
 class IEnvManager;
 class IViewCreator;
+class IFileSystem;
+class ObjectHandle;
 
 class TestUI
-	: Depends<
-		IDefinitionManager,
-		ICommandManager,
-		IReflectionController,
-		IDataSourceManager,
-		IEnvManager,
-		IViewCreator >
-	, public IViewEventListener
+: Depends<
+  IDefinitionManager,
+  ICommandManager,
+  IReflectionController,
+  IDataSourceManager,
+  IEnvManager,
+  IViewCreator,
+  IFileSystem>
+  ,
+  public IViewEventListener
 {
 public:
 	explicit TestUI( IComponentContext & context );
@@ -75,12 +79,13 @@ private:
 	typedef std::vector< std::pair< IDataSource*, int > > DataSrcEnvPairs;
 	DataSrcEnvPairs dataSrcEnvPairs_;
 
-	typedef std::vector< std::unique_ptr<AbstractTreeModel> > TestModels;
-	TestModels test1Models_;
+	typedef std::vector<ObjectHandle> TestContexts;
+	TestContexts test1Contexts_;
 
 	typedef std::vector< std::pair< std::unique_ptr<IView>, int > > TestViews;
 	TestViews test1Views_;
 	TestViews test2Views_;
+	std::unordered_map<int, bool> historyFlags_;
 };
 } // end namespace wgt
 #endif // TEST_UI_H

@@ -1,88 +1,125 @@
 import QtQuick 2.4
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
-import WGControls 1.0 as WG1
+import QtQml.Models 2.2
 import WGControls 2.0
+import WGControls.Views 2.0
 
-WG1.WGPanel {
+WGPanel {
     id: testListPanel
 
-    property var sourceModel: useModel ? source : null
-    property bool useModel: true
-    property int topControlsHeight: 20
+    ListModel {
+        id: qmlModel
+        ListElement {
+            display: "This"
+        }
+        ListElement {
+            display: "Is"
+        }
+        ListElement {
+            display: "A"
+        }
+        ListElement {
+            display: "QML"
+        }
+        ListElement {
+            display: "Model"
+        }
+    }
+
+    property var sourceModel: WGColumnLayoutProxy {
+		sourceModel: useCppModel ? source : qmlModel
+		columnSequence: [0,1,0]
+	}
+    property bool useCppModel: true
+    property bool sortAsc: true
+    property int topControlsHeight: defaultSpacing.minimumRowHeight
 
     title: "ListModel Test 2.0"
     layoutHints: { 'test': 0.1 }
     color: palette.mainWindowColor
 
     // TODO NGT-2493 ScrollView steals keyboard focus
-    Keys.forwardTo: [listView]
+    Keys.forwardTo: [switchModelButton, listView1, listView2]
     focus: true
 
-    Button {
-        id: switchModelButton
-        anchors.top: parent.top
-        anchors.left: parent.left
-        width: 150
-        height: topControlsHeight
-        text: useModel ? "Switch Model Off" : "Switch Model On"
+    WGFrame {
+        id: mainFrame
+        anchors.fill: parent
+        anchors.leftMargin: defaultSpacing.leftMargin
+        anchors.topMargin: defaultSpacing.topBottomMargin
 
-        onClicked: {
-            useModel = !useModel;
-        }
-    }
+        ColumnLayout {
+            id: testLists
 
-    //Temporary code to test if model has data.
-    /*ScrollView {
-        anchors.top: switchModelButton.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+            property alias myHeaderDelegate: myHeaderDelegate
+            property alias myFooterDelegate: myFooterDelegate
+            property alias editDelegate: editDelegate
+            property alias colorDelegate: colorDelegate
 
-        ListView {
-            //leftMargin: 50
-            //rightMargin: 50
-            //topMargin: 50
-            //bottomMargin: 50
-            model: sourceModel
+            anchors.fill: parent
 
-            delegate: Text {
-                text: display
+            Button {
+                id: switchModelButton
+                Layout.preferredWidth: 150
+                Layout.preferredHeight: topControlsHeight
+                text: useCppModel ? "Use QML Model" : "Use C++ Model"
+
+                onClicked: {
+                    useCppModel = !useCppModel;
+                }
             }
-        }
-    }*/
 
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
 
-    ScrollView {
-        anchors.top: switchModelButton.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+                WGScrollView {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: parent.height / 2
+                    WGListView {
+                        id: listView1
+                        //anchors.margins: 10
+                        //leftMargin: 50
+                        //rightMargin: 50
+                        //topMargin: 50
+                        //bottomMargin: 50
+                        columnWidths: [70, 150]
+                        columnSpacing: 1
+                        columnDelegates: [columnDelegate, colorDelegate, editDelegate]
+                        headerDelegate: myHeaderDelegate
+                        footerDelegate: myFooterDelegate
+                        model: sourceModel
+                        clamp: false
+                        currentIndex: 0
+                        minimumColumnWidth: 5
+                    }
+                }
 
-        WGListView {
-            id: listView
-            //anchors.margins: 10
-            //leftMargin: 50
-            //rightMargin: 50
-            //topMargin: 50
-            //bottomMargin: 50
-            columnWidth: 50
-            columnSpacing: 1
-            columnDelegates: [columnDelegate, colorDelegate]
-            headerDelegate: myHeaderDelegate
-            footerDelegate: myFooterDelegate
-            roles: ["value", "headerText", "footerText"]
-            model: sourceModel
-            sortIndicator: indicator
+                WGScrollView {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: parent.height / 2
 
-            Component {
-                id: indicator
-                Item {
-                    height: sortArrowImage.height
-                    Image {
-                        id: sortArrowImage
-                        anchors.centerIn: parent
-                        source: headerSortIndex == 0 ? "icons/sort_up.png" : "icons/sort_down.png"
+                    WGListView {
+                        id: listView2
+                        //anchors.margins: 10
+                        //leftMargin: 50
+                        //rightMargin: 50
+                        //topMargin: 50
+                        //bottomMargin: 50
+                        columnWidths: [70, 150]
+                        columnSpacing: 1
+                        columnDelegates: [columnDelegate, colorDelegate, editDelegate]
+                        headerDelegate: myHeaderDelegate
+                        footerDelegate: myFooterDelegate
+                        model: sourceModel
+                        clamp: true
+                        currentIndex: 0
+                        minimumColumnWidth: 10
                     }
                 }
             }
@@ -90,22 +127,46 @@ WG1.WGPanel {
             Component {
                 id: myHeaderDelegate
 
-                Text {
+                WGTextBox {
                     id: textBoxHeader
-                    color: palette.textColor
-                    text: headerData.headerText
+                    textColor: palette.textColor
+                    text: valid ? headerData.headerText : ""
+                    anchors.left: parent.left
+                    anchors.right: parent.right
                     height: 24
+
+                    property bool valid: headerData !== null &&
+                        typeof headerData !== "undefined" &&
+                        typeof headerData.headerText !== "undefined"
+
+                    onEditAccepted: {
+                        if (valid) {
+                            headerData.headerText = text;
+                        }
+                    }
                 }
             }
 
             Component {
                 id: myFooterDelegate
 
-                Text {
+                WGTextBox {
                     id: textBoxFooter
-                    color: palette.textColor
-                    text: headerData.footerText
+                    textColor: palette.textColor
+                    text: valid ? headerData.footerText : ""
+                    anchors.left: parent.left
+                    anchors.right: parent.right
                     height: 24
+
+                    property bool valid: headerData !== null &&
+                        typeof headerData !== "undefined" &&
+                        typeof headerData.footerText !== "undefined"
+
+                    onEditAccepted: {
+                        if (valid) {
+                            headerData.footerText = text;
+                        }
+                    }
                 }
             }
 
@@ -113,9 +174,13 @@ WG1.WGPanel {
                 id: colorDelegate
 
                 Item {
-                    width: itemWidth
-                    implicitWidth: textItem.implicitWidth
+                    width: parent.width
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    implicitWidth: Math.max(textItem.implicitWidth, 200)
                     implicitHeight: 24
+
+                    property var value: itemData !== null ? itemData.value : ""
 
                     Rectangle {
                         id: colorItem
@@ -124,16 +189,16 @@ WG1.WGPanel {
                         anchors.fill: parent
                         anchors.margins: 1
                         color: {
-                            if (typeof itemData.value === "string")
+                            if (typeof value === "string")
                             {
                                 return "transparent";
                             }
-                        
-                            var colour = itemData.value;
+
+                            var colour = value;
                             var r = colour > 9999 ? (colour / 10000) % 100 + 156 : 0;
                             var g = colour > 99 ? (colour / 100) % 100 + 156 : 0;
                             var b = colour % 100 + 156;
-                        
+
                             return Qt.rgba(r / 255, g / 255, b / 255, 1);
                         }
                     }
@@ -142,9 +207,26 @@ WG1.WGPanel {
                         id: textItem
                         objectName: "colorDelegate_text_" + textItem.text
 
-                        visible: typeof itemData.value === "string"
-                        text: typeof itemData.value === "string" ? itemData.value : ""
+                        visible: typeof value === "string"
+                        text: typeof value === "string" ? value : ""
                         color: palette.textColor
+                        verticalAlignment: Text.AlignVCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+
+            Component {
+                id: editDelegate
+                WGTextBox {
+                    objectName: "editDelegate_" + text
+                    width: parent.width
+                    text: itemValue !== undefined ? itemValue : ""
+                    textColor: palette.textColor
+                    onEditAccepted: {
+                        // For some reason, this must be display and not value
+                        // Even though listView.roles does not contain "display"
+                        itemData.display = text;
                     }
                 }
             }

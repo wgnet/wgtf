@@ -25,7 +25,7 @@ namespace collection_details
 		typedef LinearCollectionIteratorImpl< collection_impl > this_type;
 
 		static const bool can_set =
-			Variant::traits< value_type >::can_downcast &&
+			Variant::traits< value_type >::can_cast &&
 			!std::is_const< container_type >::value &&
 			!std::is_const< value_type >::value;
 
@@ -35,12 +35,21 @@ namespace collection_details
 		{
 		}
 
-		container_type& container() const
-		{
-			return collectionImpl_.container_;
-		}
+	    LinearCollectionIteratorImpl(const collection_impl& collectionImpl,
+	                                 key_type index,
+	                                 const Variant& value)
+	        : collectionImpl_(collectionImpl)
+	        , index_(index)
+	    {
+		    InitImpl<can_set>::setValue(this, value);
+	    }
 
-		key_type index() const
+	    container_type& container() const
+	    {
+		    return collectionImpl_.container_;
+	    }
+
+	    key_type index() const
 		{
 			return index_;
 		}
@@ -115,12 +124,12 @@ namespace collection_details
 					return false;
 				}
 
-				return v.with< value_type >( [ impl, &v ]( const value_type& val )
+				return v.visit< value_type >( [ impl, &v ]( const value_type& val )
 				{
 					auto pos = impl->collectionImpl_.makeIterator( impl->index_ );
 					impl->collectionImpl_.onPreChange_( pos, v );
 					auto&& ref = impl->container()[ impl->index_ ];
-					auto oldValue = ref;
+					value_type oldValue = ref;
 					ref = val;
 					impl->collectionImpl_.onPostChanged_( pos, oldValue );
 				} );
@@ -137,14 +146,37 @@ namespace collection_details
 			}
 		};
 
-		// GetImpl
-		template< typename T, typename Dummy = void >
-		struct GetImpl
-		{
-			static Variant value( const this_type* impl )
-			{
-				return impl->container()[ impl->index_ ];
-			}
+	    // InitImpl
+	    template <bool can_set, typename Dummy = void>
+	    struct InitImpl
+	    {
+		    static bool setValue(const this_type* impl, const Variant& v)
+		    {
+			    return v.visit<value_type>([impl, &v](const value_type& val)
+			                               {
+				                               impl->container()[impl->index_] = val;
+				                           });
+		    }
+	    };
+
+	    template <typename Dummy>
+	    struct InitImpl<false, Dummy>
+	    {
+		    static bool setValue(const this_type*, const Variant&)
+		    {
+			    // nop
+			    return false;
+		    }
+	    };
+
+	    // GetImpl
+	    template <typename T, typename Dummy = void>
+	    struct GetImpl
+	    {
+		    static Variant value(const this_type* impl)
+		    {
+			    return impl->container()[impl->index_];
+		    }
 		};
 
 		template< typename Dummy >
@@ -184,39 +216,82 @@ namespace collection_details
 
 	};
 
+    template <bool can_set, typename Container>
+    struct linear_collection_container_traits
+    {
+	    typedef Container container_type;
+	    typedef typename container_type::value_type value_type;
 
-	template< typename Container >
-	struct linear_collection_container_traits
-	{
-		typedef Container container_type;
+	    static void insertDefaultAt(container_type& container, const typename container_type::iterator& pos)
+	    {
+		    container.emplace(pos);
+	    }
 
-		static void insertDefaultAt( container_type& container, const typename container_type::iterator& pos )
-		{
-			container.emplace( pos );
-		}
-	};
+	    static bool insertValueAt(container_type& container,
+	                              const typename container_type::iterator& pos,
+	                              const Variant& value)
+	    {
+		    value_type realValue;
+		    if (!value.tryCast(realValue))
+		    {
+			    return false;
+		    }
+		    const auto resultItr = container.emplace(pos, realValue);
+		    return resultItr != std::end(container);
+	    }
+    };
 
-	template< typename Allocator >
-	struct linear_collection_container_traits< std::vector< bool, Allocator > >
-	{
-		typedef std::vector< bool, Allocator > container_type;
+    template <typename Container>
+    struct linear_collection_container_traits<false /* can_set */, Container>
+    {
+	    typedef Container container_type;
 
-		static void insertDefaultAt( container_type& container, const typename container_type::iterator& pos )
-		{
-			// std::vector< bool > doesn't have emplace
-			container.insert( pos, false );
-		}
-	};
+	    static void insertDefaultAt(container_type& container, const typename container_type::iterator& pos)
+	    {
+		    container.emplace(pos);
+	    }
 
+	    static bool insertValueAt(container_type& container,
+	                              const typename container_type::iterator& pos,
+	                              const Variant& value)
+	    {
+		    return false;
+	    }
+    };
 
-	template< typename Container, bool can_resize >
-	class LinearCollectionImpl;
+    template <typename Allocator>
+    struct linear_collection_container_traits<true /* can_set */, std::vector<bool, Allocator>>
+    {
+	    typedef std::vector<bool, Allocator> container_type;
+	    typedef typename container_type::value_type value_type;
 
+	    static void insertDefaultAt(container_type& container, const typename container_type::iterator& pos)
+	    {
+		    // std::vector< bool > doesn't have emplace
+		    container.insert(pos, false);
+	    }
 
-	template< typename Container >
-	class LinearCollectionImpl< Container, true >:
-		public CollectionImplBase
-	{
+	    static bool insertValueAt(container_type& container,
+	                              const typename container_type::iterator& pos,
+	                              const Variant& value)
+	    {
+		    value_type realValue;
+		    if (!value.tryCast(realValue))
+		    {
+			    return false;
+		    }
+		    const auto resultItr = container.insert(pos, realValue);
+		    return resultItr != std::end(container);
+	    }
+    };
+
+    template <typename Container, bool can_resize>
+    class LinearCollectionImpl;
+
+    template <typename Container>
+    class LinearCollectionImpl<Container, true> :
+    public CollectionImplBase
+    {
 	public:
 		typedef Container container_type;
 		typedef typename container_type::size_type key_type;
@@ -224,14 +299,19 @@ namespace collection_details
 		typedef LinearCollectionImpl< container_type, true > this_type;
 		typedef LinearCollectionIteratorImpl< this_type > iterator_impl_type;
 
-		friend class LinearCollectionIteratorImpl< this_type >;
+	    static const bool can_set =
+	    Variant::traits<value_type>::can_cast &&
+	    !std::is_const<container_type>::value &&
+	    !std::is_const<value_type>::value;
 
-		template< bool can_set, typename Dummy = void >
-		struct downcaster_impl
-		{
-			static bool downcast( container_type* v, CollectionImplBase& storage )
-			{
-				if( auto storageContainer = storage.container() )
+	    friend class LinearCollectionIteratorImpl<this_type>;
+
+	    template <bool can_set, typename Dummy = void>
+	    struct downcaster_impl
+	    {
+		    static bool downcast(container_type* v, CollectionImplBase& storage)
+		    {
+			    if( auto storageContainer = storage.container() )
 				{
 					if( v && storageContainer == v )
 					{
@@ -370,14 +450,16 @@ namespace collection_details
 				{
 					auto pos = makeIterator( i );
 					onPreInsert_( pos, 1 );
-					linear_collection_container_traits< container_type >::insertDefaultAt( container_, container_.begin() + i );
-					onPostInserted_( pos, 1 );
-				}
+				    linear_collection_container_traits<can_set, container_type>::insertDefaultAt(
+				    container_,
+				    container_.begin() + i);
+				    onPostInserted_(pos, 1);
+			    }
 
-				return result_type( makeIterator( i ), true );
+			    return result_type(makeIterator(i), true);
 
-			case GET_AUTO:
-				{
+		    case GET_AUTO:
+		        {
 					bool found = i < container_.size();
 					if( !found )
 					{
@@ -399,11 +481,43 @@ namespace collection_details
 			}
 		}
 
-		CollectionIteratorImplPtr erase( const CollectionIteratorImplPtr& pos ) override
-		{
-			iterator_impl_type* ii = dynamic_cast< iterator_impl_type* >( pos.get() );
-			assert( ii );
-			assert( &ii->container() == &container_ );
+	    CollectionIteratorImplPtr insert(const Variant& key,
+	                                     const Variant& value) override
+	    {
+		    key_type i;
+		    if (!key.tryCast(i))
+		    {
+			    return makeIterator(container_.size());
+		    }
+
+		    // Cannot insert past end
+		    if (i > container_.size())
+		    {
+			    return makeIterator(container_.size());
+		    }
+
+		    const auto count = 1;
+		    auto notifyPos = makeIterator(i);
+		    onPreInsert_(notifyPos, count);
+		    const auto success =
+		    linear_collection_container_traits<can_set, container_type>::insertValueAt(
+		    container_,
+		    container_.begin() + i,
+		    value);
+		    // Iterator may be invalidated if vector reallocated
+		    notifyPos = makeIterator(i);
+		    onPostInserted_(notifyPos, count);
+
+		    return success ?
+		    notifyPos :
+		    makeIterator(container_.size());
+	    }
+
+	    CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) override
+	    {
+		    iterator_impl_type* ii = dynamic_cast<iterator_impl_type*>(pos.get());
+		    assert(ii);
+		    assert( &ii->container() == &container_ );
 			assert( ii->index() < container_.size() );
 						
 			onPreErase_( pos, 1 );
@@ -415,7 +529,7 @@ namespace collection_details
 			return makeIterator( r - container_.begin() );
 		}
 
-		size_t erase( const Variant& key ) override
+		size_t eraseKey( const Variant& key ) override
 		{
 			key_type i;
 			if( !key.tryCast( i ) )
@@ -511,13 +625,18 @@ namespace collection_details
 		{
 			return std::make_shared< iterator_impl_type >( *this, index );
 		}
-	};
 
+	    CollectionIteratorImplPtr initIterator(key_type index,
+	                                           const Variant& value) const
+	    {
+		    return std::make_shared<iterator_impl_type>(*this, index, value);
+	    }
+    };
 
-	template< typename Container >
-	class LinearCollectionImpl< Container, false >:
-		public CollectionImplBase
-	{
+    template <typename Container>
+    class LinearCollectionImpl<Container, false> :
+    public CollectionImplBase
+    {
 	public:
 		typedef Container container_type;
 		typedef typename container_type::size_type key_type;
@@ -662,12 +781,24 @@ namespace collection_details
 			}
 		}
 
-		CollectionIteratorImplPtr erase( const CollectionIteratorImplPtr& pos ) override
-		{
-			return end();
-		}
+	    CollectionIteratorImplPtr insert(const Variant& key,
+	                                     const Variant& value) override
+	    {
+		    key_type i;
+		    if (!key.tryCast(i))
+		    {
+			    return end();
+		    }
 
-		size_t erase( const Variant& key ) override
+		    return initIterator(i, value);
+	    }
+
+	    CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) override
+	    {
+		    return end();
+	    }
+
+	    size_t eraseKey( const Variant& key ) override
 		{
 			return 0;
 		}
@@ -705,18 +836,22 @@ namespace collection_details
 			return std::make_shared< iterator_impl_type >( *this, index );
 		}
 
-	};
+	    CollectionIteratorImplPtr initIterator(key_type index,
+	                                           const Variant& value) const
+	    {
+		    return std::make_shared<iterator_impl_type>(*this, index, value);
+	    }
+    };
 
+    // std::vector
 
-	// std::vector
+    template <typename T, typename Alloc>
+    LinearCollectionImpl<std::vector<T, Alloc>, true> deduceCollectionImplType(std::vector<T, Alloc>&);
 
-	template< typename T, typename Alloc >
-	LinearCollectionImpl< std::vector< T, Alloc >, true > deduceCollectionImplType( std::vector< T, Alloc >& );
+    template <typename T, typename Alloc>
+    LinearCollectionImpl<const std::vector<T, Alloc>, false> deduceCollectionImplType(const std::vector<T, Alloc>&);
 
-	template< typename T, typename Alloc >
-	LinearCollectionImpl< const std::vector< T, Alloc >, false > deduceCollectionImplType( const std::vector< T, Alloc >& );
-
-	// std::deque
+    // std::deque
 
 	template< typename T, typename Alloc >
 	LinearCollectionImpl< std::deque< T, Alloc >, true > deduceCollectionImplType( std::deque< T, Alloc >& );

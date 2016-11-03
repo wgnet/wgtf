@@ -130,10 +130,10 @@ public:
 
 	bool next()
 	{
-		current_.reset();
 
 		if (iterator_.get() == nullptr)
 		{
+            current_.reset();
 			return false;
 		}
 
@@ -150,14 +150,19 @@ public:
 			}
 
 			auto meta = extractMetaData( name, metaDataDict_ );
-			IBasePropertyPtr property = std::make_shared< ReflectedPython::Property >(
-				context_, name, object_ );
-
-			current_ = meta != nullptr ?
-				std::make_shared< BasePropertyWithMetaData >( property, meta ) : property;
+            if (current_ == nullptr)
+            {
+                current_ = std::make_shared< ReflectedPython::Property >(
+                    context_, name, object_, meta);
+            }
+            else
+            {
+                auto property = static_cast<ReflectedPython::Property*>(current_.get());
+                property->updatePropertyData(name, object_, meta);
+            }
 			return true;
 		}
-
+        current_.reset();
 		return false;
 	}
 
@@ -273,13 +278,10 @@ IBasePropertyPtr DefinitionDetails::directLookupProperty( const char * name ) co
 	}
 
 	auto meta = extractMetaData( name, metaDataDict_ );
-	IBasePropertyPtr property = std::make_shared< ReflectedPython::Property >(
-		context_,
-		name,
-		pythonObject_ );
-
-	return meta != nullptr ?
-		std::make_shared< BasePropertyWithMetaData >( property, meta ) : property;
+    return std::make_shared< ReflectedPython::Property >(
+        context_,
+        name,
+        pythonObject_, meta );
 }
 
 
@@ -299,11 +301,10 @@ IClassDefinitionModifier * DefinitionDetails::getDefinitionModifier() const
 
 IBasePropertyPtr DefinitionDetails::addProperty( const char * name, const TypeId & typeId, MetaHandle metaData )
 {
-	// TODO: update MetaData
 	return std::make_shared< ReflectedPython::Property >( context_,
 		name,
 		typeId,
-		pythonObject_ );
+		pythonObject_, metaData );
 }
 
 

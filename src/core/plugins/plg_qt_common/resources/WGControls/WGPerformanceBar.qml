@@ -1,8 +1,10 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 import WGControls 1.0
+import WGControls.Layouts 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A visual, non-interactive analog bar that changes colour based on the value.
 
 Example:
@@ -31,6 +33,7 @@ WGExpandingRowLayout {
 WGExpandingRowLayout {
     id: mainFrame
     objectName: "WGPerformanceBar"
+    WGComponent { type: "WGPerformanceBar" }
 
     /*! This property sets the implicitWidth of the text box that displays the percentage value
         The default value is derived from WGNumberbox

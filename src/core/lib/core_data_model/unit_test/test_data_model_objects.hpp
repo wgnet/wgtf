@@ -98,8 +98,8 @@ public:
 	virtual const char* getDisplayText( int column ) const;
 	virtual ThumbnailData getThumbnail( int column ) const;
 	virtual void setName( const char * name );
-	virtual Variant getData( int column, size_t roleId ) const;
-	virtual bool setData( int column, size_t roleId, const Variant& data );
+	virtual Variant getData( int column, ItemRole::Id roleId ) const;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant& data );
 
 private:
 	struct Implementation;

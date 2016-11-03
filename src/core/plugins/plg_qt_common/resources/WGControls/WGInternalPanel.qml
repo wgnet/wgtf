@@ -1,6 +1,7 @@
-import QtQuick 2.3
+import QtQuick 2.5
 
 /*!
+ \ingroup wgcontrols
  \brief Panel intended to be placed inside a regular SubPanel.
  Consider using WGFrame for simple panels to group objects that don't need a title or to expand.
 
@@ -41,6 +42,8 @@ WGSubPanel {
 
 WGSubPanel{
     objectName: "WGInternalPanel"
+    WGComponent { type: "WGInternalPanel" }
+    
     colorHeader: palette.mainWindowColor
     colorBody: palette.mainWindowColor
 }

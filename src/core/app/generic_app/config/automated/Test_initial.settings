@@ -1,0 +1,82 @@
+<root>	4	</root>
+<root>	"1972BDC3.423E3023.8921C2B2.5BA75F93"	</root>
+<root>	""	</root>
+<root>	12	</root>
+<root>	"RXhpdA=="	</root>
+<root>	"string"	</root>
+<root>	"UHJlZmVyZW5jZXMuU2hvcnRjdXRz"	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5DdXQ="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5TZWxlY3QgQWxs"	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5Db3B5"	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5QYXN0ZQ=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuQ3V0"	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuUGFzdGU="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdC5GaW5kIEluIEFzc2V0QnJvd3Nlcg=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuQ29weQ=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuU2VsZWN0IEFsbA=="	</root>
+<root>	"string"	</root>
+<root>	"RWRpdHwuRmluZCBJbiBBc3NldEJyb3dzZXI="	</root>
+<root>	"string"	</root>
+<root>	"6A90302F.4B915EC2.49796F9B.BB103C40"	</root>
+<root>	""	</root>
+<root>	0	</root>
+<root>	"EA89FDE1.4BA90BBF.EA36FBA3.7C06E901"	</root>
+<root>	""	</root>
+<root>	4	</root>
+<root>	"geometry"	</root>
+<root>	"BinaryBlock"	</root>
+<root>	"maximized"	</root>
+<root>	"int"	</root>
+<root>	"pos"	</root>
+<root>	"Vector2"	</root>
+<root>	"size"	</root>
+<root>	"Vector2"	</root>
+<root>	"10869111.440970AF.6CD724B9.0956F8C5"	</root>
+<root>	""	</root>
+<root>	3	</root>
+<root>	"geometry"	</root>
+<root>	"BinaryBlock"	</root>
+<root>	"layoutState"	</root>
+<root>	"BinaryBlock"	</root>
+<root>	"maximized"	</root>
+<root>	"int"	</root>
+<root>	4	</root>
+<root>	"0D18FE37-ED9E-473D-8878-3EB4CB8BF916"	</root>
+<root type="1972BDC3.423E3023.8921C2B2.5BA75F93" id="3BEC2562.418DDC65.19A34A90.88F7C258">
+	<property name="RXhpdA==">	"QWx0K0Y0"	</property>
+	<property name="UHJlZmVyZW5jZXMuU2hvcnRjdXRz">	""	</property>
+	<property name="RWRpdC5DdXQ=">	""	</property>
+	<property name="RWRpdC5TZWxlY3QgQWxs">	""	</property>
+	<property name="RWRpdC5Db3B5">	""	</property>
+	<property name="RWRpdC5QYXN0ZQ==">	""	</property>
+	<property name="RWRpdHwuQ3V0">	""	</property>
+	<property name="RWRpdHwuUGFzdGU=">	""	</property>
+	<property name="RWRpdC5GaW5kIEluIEFzc2V0QnJvd3Nlcg==">	""	</property>
+	<property name="RWRpdHwuQ29weQ==">	""	</property>
+	<property name="RWRpdHwuU2VsZWN0IEFsbA==">	""	</property>
+	<property name="RWRpdHwuRmluZCBJbiBBc3NldEJyb3dzZXI=">	""	</property>
+</root>
+<root>	""	</root>
+<root type="6A90302F.4B915EC2.49796F9B.BB103C40" id="516152FB.4EE8D664.B22BF1A3.71686EAC"/>
+<root>	"E28A7FA9-08D4-464F-B073-47CB9DD20F62"	</root>
+<root type="10869111.440970AF.6CD724B9.0956F8C5" id="B5ABFA62.458CDF70.810DC887.87B7A6E1">
+	<property name="geometry" type="BinaryBlock">	"AdnQywACAAAAAAd4////+AAADwcAAAS3AAAIcAAAAJYAAA4PAAAEGQAAAAECAAAAB4A="	</property>
+	<property name="layoutState" type="BinaryBlock">	"AAAA/wAAAAD9AAAAAwAAAAAAAAAAAAAAAPwCAAAAAvwAAAAA/////wAAAAAA////+v////8CAAAAAvsAAAAQAGwAZQBmAHQARABvAGMAawAAAAAA/////wAAABMA////+wAAAB4AbABlAGYAdABEAG8AYwBrAF8AaABpAGQAZABlAG4AAAAAAP////8AAAATAP////sAAAAYAGYAbABvAGEAdABpAG4AZwBEAG8AYwBrAgAACkYAAAFeAAAB9AAAAfQAAAABAAAAAAAAAAD8AgAAAAH7AAAAFAB0AGUAcwB0AFAAYQBuAGUAbABzAAAAAAD/////AAAAJgD///8AAAADAAAAAAAAAAD8AQAAAAH7AAAAFABiAG8AdAB0AG8AbQBEAG8AYwBrAAAAAAD/////AAAAOgD///8AAAeAAAAEhgAAAAQAAAAEAAAACAAAAAj8AAAAAgAAAAIAAAABAAAAHABkAGUAZgBhAHUAbAB0AFQAbwBvAGwAQgBhAHIAAAAAAP////8AAAAAAAAAAAAAAAMAAAABAAAADgB0AG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAA="	</property>
+	<property name="maximized">	1	</property>
+</root>
+<root>	"ShortcutConfig13CC6CD7-E935-488D-9E3D-8BED9454F554"	</root>
+<root type="EA89FDE1.4BA90BBF.EA36FBA3.7C06E901" id="0DF7687D.45F3C1D1.86CC68BF.6ED7F23C">
+	<property name="geometry" type="BinaryBlock">	"AdnQywACAAAAAAAAAAAAAAAAAP4AAAC/AAAAAAAAAAD//////////wAAAAAAAAAAB4A="	</property>
+	<property name="maximized">	0	</property>
+	<property name="pos" type="Vector2">	0,0	</property>
+	<property name="size" type="Vector2">	256,193	</property>
+</root>

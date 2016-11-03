@@ -3,11 +3,13 @@
 
 #include <vector>
 
+#include "reflection_dll.hpp"
+
 namespace wgt
 {
 class Variant;
 
-class ReflectedMethodParameters
+class REFLECTION_DLL ReflectedMethodParameters
 {
 public:
 	typedef Variant value_type;
@@ -36,7 +38,7 @@ public:
 	reference operator[]( size_t index );
 	const_reference operator[]( size_t index ) const;
 
-	struct const_iterator
+	struct REFLECTION_DLL const_iterator
 	{
 		friend class ReflectedMethodParameters;
 		typedef std::random_access_iterator_tag iterator_category;
@@ -59,7 +61,7 @@ public:
 		size_t index_;
 	};
 
-	struct iterator: public const_iterator
+	struct REFLECTION_DLL iterator: public const_iterator
 	{
 		friend class ReflectedMethodParameters;
 		typedef std::random_access_iterator_tag iterator_category;

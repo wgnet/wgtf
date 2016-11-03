@@ -4,6 +4,7 @@
 #include "core_reflection/i_object_manager.hpp"
 #include "core_common/platform_path.hpp"
 #include "core_common/platform_dll.hpp"
+#include "core_logging/logging.hpp"
 #include <locale>
 #include <codecvt>
 
@@ -97,7 +98,7 @@ TestPage::TestPage()
 	wcstombs( str.get(), path, 2 * MAX_PATH );	
 	fileUrl_ = str.get();
 
-	fileUrl_ += "plguins_ui.txt";
+	fileUrl_ += "plugins_ui.txt";
 	assetUrl_ = "file:///sample.png";
 }
 
@@ -110,9 +111,16 @@ void TestPage::init( IDefinitionManager & defManager )
 {
 	if (polyStruct_ == nullptr)
 	{
-		polyStruct_ = 
-			defManager.create<TestPolyStruct>( false ); 
-		polyStruct_->init( defManager );
+		polyStruct_ =
+		defManager.create<TestPolyStruct>(false);
+		if (polyStruct_ == nullptr)
+		{
+			NGT_ERROR_MSG("TestPolyStruct type not registered\n");
+		}
+		else
+		{
+			polyStruct_->init(defManager);
+		}
 	}
 	if (genericObj_ == nullptr)
 	{
@@ -265,25 +273,25 @@ const TestPolyStructPtr & TestPage::getTestPolyStruct() const
 void TestPage::generateEnumFunc(
 	std::map< int, std::wstring > * o_enumMap ) const
 {
-    // change the case just for the purpose of demonstrating dynamically generating dropdown list 
-    // when users click on the dropdownbox
-    static int i = 0;
-    if(i == 0)
-    {
-        o_enumMap->clear();
-        o_enumMap->insert( std::make_pair( 0, L"First Value" ) );
-        o_enumMap->insert( std::make_pair( 1, L"Second Value" ) );
-        o_enumMap->insert( std::make_pair( 2, L"third Value" ) );
-        o_enumMap->insert( std::make_pair( 3, L"Forth Value" ) );
-        i = 1;
-        return;
-    }
-    o_enumMap->clear();
-    o_enumMap->insert( std::make_pair( 0, L"1st Value" ) );
-    o_enumMap->insert( std::make_pair( 1, L"2nd Value" ) );
-    o_enumMap->insert( std::make_pair( 2, L"3rd Value" ) );
-    o_enumMap->insert( std::make_pair( 3, L"4th Value" ) );
-    i = 0;
+	// change the case just for the purpose of demonstrating dynamically generating dropdown list 
+	// when users click on the dropdownbox
+	static int i = 0;
+	if(i == 0)
+	{
+		o_enumMap->clear();
+		o_enumMap->insert( std::make_pair( 0, L"First Value" ) );
+		o_enumMap->insert( std::make_pair( 1, L"Second Value" ) );
+		o_enumMap->insert( std::make_pair( 2, L"third Value" ) );
+		o_enumMap->insert( std::make_pair( 3, L"Forth Value" ) );
+		i = 1;
+		return;
+	}
+	o_enumMap->clear();
+	o_enumMap->insert( std::make_pair( 0, L"1st Value" ) );
+	o_enumMap->insert( std::make_pair( 1, L"2nd Value" ) );
+	o_enumMap->insert( std::make_pair( 2, L"3rd Value" ) );
+	o_enumMap->insert( std::make_pair( 3, L"4th Value" ) );
+	i = 0;
 
 }
 
@@ -307,6 +315,11 @@ void TestPage::setAssetUrl( const std::string & url )
 	assetUrl_ = url;
 }
 
+void TestPage::methodOnly()
+{
+	// Do nothing
+}
+
 TestPage2::TestPage2()
 	: testPage_( nullptr )
 {
@@ -322,6 +335,7 @@ void TestPage2::init( IDefinitionManager & defManager )
 {
 	assert( testPage_ == nullptr );
 	testPage_ = defManager.create<TestPage>( false );
+	assert(testPage_ != nullptr);
 	testPage_->init( defManager );
 }
 

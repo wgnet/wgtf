@@ -20,7 +20,7 @@ SET( ALL_SRCS
 	${QML_SRCS}
 	plg_reflection_object_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_reflection_object_test SHARED
 	${ALL_SRCS}

@@ -1,13 +1,12 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 
 /*!
+ \ingroup wgcontrols
  \brief A raised frame broken up into separate buttons with two small caps on either end.
  In theory it can use any style of button inside the buttonList with text and/or icons.
  By default it splits the bar up into even sized buttons (evenBoxes: true) and tries to make the bar large enough to fit all buttons if no width is provided.
-
-
 
 Example:
 \code{.js}
@@ -53,6 +52,7 @@ WGButtonBar {
 WGButtonFrame {
     id: mainFrame
     objectName: "WGButtonFrame"
+    WGComponent { type: "WGButtonBar" }
 
     /*! This property contains the list of objects, usually WGPushButtons, that will populate the buttonbar */
     property list <QtObject> buttonList

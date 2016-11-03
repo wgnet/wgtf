@@ -13,9 +13,11 @@
 #include "core_reflection/property_accessor.hpp"
 
 #include "i_graph.hpp"
+#include "i_group.hpp"
 
 namespace wgt
 {
+class Vector4;
 /*!
 * \class INodeEditor
 *
@@ -96,6 +98,11 @@ protected:
     /*! Gets current graph model
     */
     virtual const IListModel* GetGraphModel() const = 0;
+
+	virtual void CreateGroup(Collection& collection,
+	                         const Vector4& rectangle,
+	                         const std::string& name,
+	                         const Vector4& color) = 0;
 };
 } // end namespace wgt
 #endif // __I_NODE_EDITOR_H__

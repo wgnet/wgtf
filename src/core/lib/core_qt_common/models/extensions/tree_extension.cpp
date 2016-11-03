@@ -34,13 +34,16 @@ TreeExtension::Implementation::~Implementation()
 
 bool TreeExtension::Implementation::expanded( const QModelIndex& index ) const
 {
-	return self_.dataExt( index, ItemRole::expandedId ).toBool();
+	return self_.extensionData_->dataExt( index, ItemRole::expandedId ).toBool();
 }
 
 
 TreeExtension::TreeExtension()
 	: impl_( new Implementation( *this ) )
 {
+	roles_.push_back( ItemRole::childModelName );
+	roles_.push_back( ItemRole::hasChildrenName );
+	roles_.push_back( ItemRole::expandedName );
 }
 
 
@@ -49,25 +52,12 @@ TreeExtension::~TreeExtension()
 }
 
 
-QHash< int, QByteArray > TreeExtension::roleNames() const
-{
-	QHash< int, QByteArray > roleNames;
-	this->registerRole( ItemRole::childModelName, roleNames );
-	this->registerRole( ItemRole::hasChildrenName, roleNames );
-	this->registerRole( ItemRole::expandedName, roleNames );
-	return roleNames;
-}
-
-
-QVariant TreeExtension::data( const QModelIndex &index, int role ) const
+QVariant TreeExtension::data( const QModelIndex &index, ItemRole::Id roleId ) const
 {
 	auto model = index.model();
-	assert( model != nullptr );
-
-	size_t roleId;
-	if (!this->decodeRole( role, roleId ))
+	if (model == nullptr)
 	{
-		return QVariant( QVariant::Invalid );
+		return QVariant( QVariant::Invalid ); 
 	}
 
 	if (roleId == ItemRole::childModelId)
@@ -85,7 +75,7 @@ QVariant TreeExtension::data( const QModelIndex &index, int role ) const
 		}
 		else
 		{
-			auto pChildModel = new ChildListAdapter( index );
+			auto pChildModel = new ChildListAdapter( index, false );
 			impl_->childModels_.emplace_back( index, pChildModel );
 			return QVariant::fromValue< QAbstractItemModel* >( pChildModel );
 		}
@@ -103,21 +93,17 @@ QVariant TreeExtension::data( const QModelIndex &index, int role ) const
 }
 
 
-bool TreeExtension::setData( 
-	const QModelIndex &index, const QVariant &value, int role )
+bool TreeExtension::setData( const QModelIndex &index, const QVariant &value, ItemRole::Id roleId )
 {
 	auto model = index.model();
-	assert( model != nullptr );
-
-	size_t roleId;
-	if (!this->decodeRole( role, roleId ))
+	if (model == nullptr)
 	{
 		return false;
 	}
 
 	if (roleId == ItemRole::expandedId)
 	{
-		return setDataExt( index, value, roleId );
+		return extensionData_->setDataExt( index, value, roleId );
 	}
 
 	return false;
@@ -128,10 +114,24 @@ void TreeExtension::onLayoutAboutToBeChanged(
 	const QList<QPersistentModelIndex> & parents, 
 	QAbstractItemModel::LayoutChangeHint hint )
 {
+	isolateRedundantIndices(impl_->childModels_, impl_->redundantChildModels_);
 	for (auto it = parents.begin(); it != parents.end(); ++it)
 	{
 		isolateRedundantIndices( 
 			*it, impl_->childModels_, impl_->redundantChildModels_ );
+	}
+
+	// Iterate to initial size of childModels as more models can be added to this list
+	// over the course of these signals. However, redundantChildModels will not change
+	size_t count = impl_->childModels_.size();
+	for (size_t i = 0; i < count; ++i)
+	{
+		impl_->childModels_[i].data_->onParentLayoutAboutToBeChanged(parents, hint);
+	}
+
+	for (auto & redundantChildModel : impl_->redundantChildModels_)
+	{
+		redundantChildModel->onParentLayoutAboutToBeChanged( parents, hint );
 	}
 }
 
@@ -140,22 +140,82 @@ void TreeExtension::onLayoutChanged(
 	const QList<QPersistentModelIndex> & parents, 
 	QAbstractItemModel::LayoutChangeHint hint )
 {
+	// Iterate to initial size of childModels as more models can be added to this list
+	// over the course of these signals. However, redundantChildModels will not change
+	size_t count = impl_->childModels_.size();
+	for (size_t i = 0; i < count; ++i)
+	{
+		impl_->childModels_[i].data_->onParentLayoutChanged(parents, hint);
+	}
+
+	for (auto & redundantChildModel : impl_->redundantChildModels_)
+	{
+		redundantChildModel->onParentLayoutChanged( parents, hint );
+	}
+
 	impl_->redundantChildModels_.clear();
 
-	QVector< int > roles;
-	int role;
-	auto res = this->encodeRole( ItemRole::childModelId, role );
-	assert( res );
-	roles.append( role );
-	res = this->encodeRole( ItemRole::hasChildrenId, role );
-	assert( res );
-	roles.append( role );
+	QVector< ItemRole::Id > extRoles;
+	extRoles.append( ItemRole::childModelId );
+	extRoles.append( ItemRole::hasChildrenId );
 	for (auto it = parents.begin(); it != parents.end(); ++it)
 	{
-		auto model = it->model();
-		assert( model != nullptr );
+		emit extensionData_->dataExtChanged( *it, *it, extRoles );
+	}
+}
 
-		emit const_cast< QAbstractItemModel * >( model )->dataChanged( *it, *it, roles );
+
+void TreeExtension::onRowsAboutToBeInserted(
+	const QModelIndex & parent, int first, int last )
+{
+	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
+
+	// Iterate to initial size of childModels as more models can be added to this list
+	// over the course of these signals. However, redundantChildModels will not change
+	size_t count = impl_->childModels_.size();
+	for (size_t i = 0; i < count; ++i)
+	{
+		impl_->childModels_[i].data_->onParentLayoutAboutToBeChanged(parents, hint);
+	}
+
+	for (auto & redundantChildModel : impl_->redundantChildModels_)
+	{
+		redundantChildModel->onParentLayoutAboutToBeChanged( parents, hint );
+	}
+}
+
+
+void TreeExtension::onRowsInserted(
+	const QModelIndex & parent, int first, int last )
+{
+	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
+
+	// Iterate to initial size of childModels as more models can be added to this list
+	// over the course of these signals. However, redundantChildModels will not change
+	size_t count = impl_->childModels_.size();
+	for (size_t i = 0; i < count; ++i)
+	{
+		impl_->childModels_[i].data_->onParentLayoutChanged(parents, hint);
+	}
+
+	for (auto & redundantChildModel : impl_->redundantChildModels_)
+	{
+		redundantChildModel->onParentLayoutChanged( parents, hint );
+	}
+
+	const auto model = parent.model();
+	if (model == nullptr)
+	{
+		return;
+	}
+
+	if (model->rowCount() == last - first + 1)
+	{
+		QVector< ItemRole::Id > extRoles;
+		extRoles.append( ItemRole::hasChildrenId );
+		emit extensionData_->dataExtChanged( parent, parent, extRoles );
 	}
 }
 
@@ -165,11 +225,80 @@ void TreeExtension::onRowsAboutToBeRemoved(
 {
 	isolateRedundantIndices( parent, first, last,
 		impl_->childModels_, impl_->redundantChildModels_ );
+
+	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
+
+	// Iterate to initial size of childModels as more models can be added to this list
+	// over the course of these signals. However, redundantChildModels will not change
+	size_t count = impl_->childModels_.size();
+	for (size_t i = 0; i < count; ++i)
+	{
+		impl_->childModels_[i].data_->onParentLayoutAboutToBeChanged(parents, hint);
+	}
+
+	for (auto & redundantChildModel : impl_->redundantChildModels_)
+	{
+		redundantChildModel->onParentLayoutAboutToBeChanged( parents, hint );
+	}
 }
 
 
 void TreeExtension::onRowsRemoved(
 	const QModelIndex & parent, int first, int last )
+{
+	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
+
+	// Iterate to initial size of childModels as more models can be added to this list
+	// over the course of these signals. However, redundantChildModels will not change
+	size_t count = impl_->childModels_.size();
+	for (size_t i = 0; i < count; ++i)
+	{
+		impl_->childModels_[i].data_->onParentLayoutChanged(parents, hint);
+	}
+
+	for (auto & redundantChildModel : impl_->redundantChildModels_)
+	{
+		redundantChildModel->onParentLayoutChanged( parents, hint );
+	}
+
+	impl_->redundantChildModels_.clear();
+
+	const auto model = parent.model();
+	if (model == nullptr)
+	{
+		return;
+	}
+
+	if (model->rowCount( parent ) == 0)
+	{
+		QVector< ItemRole::Id > extRoles;
+		extRoles.append( ItemRole::hasChildrenId );
+		emit extensionData_->dataExtChanged( parent, parent, extRoles );
+	}
+}
+
+
+void TreeExtension::onRowsAboutToBeMoved( const QModelIndex & sourceParent,
+	int sourceFirst,
+	int sourceLast,
+	const QModelIndex & destinationParent,
+	int destinationRow ) /* override */
+{
+	isolateRedundantIndices( sourceParent,
+		sourceFirst,
+		sourceLast,
+		impl_->childModels_,
+		impl_->redundantChildModels_ );
+}
+
+
+void TreeExtension::onRowsMoved( const QModelIndex & sourceParent,
+	int sourceFirst,
+	int sourceLast,
+	const QModelIndex & destinationParent,
+	int destinationRow ) /* override */
 {
 	impl_->redundantChildModels_.clear();
 }
@@ -369,7 +498,7 @@ QModelIndex TreeExtension::getPreviousIndex( const QModelIndex & index ) const
 					pModel->hasChildren( it ))
 				{
 					const int lastRow = it.model()->rowCount( it ) - 1;
-					const auto lastChild = sibling.child( lastRow, index.column() );
+					const auto lastChild = it.child(lastRow, index.column());
 					if (lastChild.isValid())
 					{
 						it = lastChild;
@@ -434,18 +563,7 @@ QModelIndex TreeExtension::getForwardIndex( const QModelIndex & index ) const
 		else
 		{
 			// Expand the current item
-			const_cast< TreeExtension * >( this )->setDataExt( index, true, ItemRole::expandedId );
-
-			// Emit the data change
-			int role = 0;
-			auto res = this->encodeRole( ItemRole::expandedId, role );
-			assert( res );
-			QVector< int > roles;
-			roles.append( role );
-			emit const_cast< QAbstractItemModel * >( pModel )->dataChanged( index,
-				index,
-				roles );
-
+			const_cast< TreeExtension * >( this )->extensionData_->setDataExt( index, true, ItemRole::expandedId );
 			return index;
 		}
 	}
@@ -471,18 +589,7 @@ QModelIndex TreeExtension::getBackwardIndex( const QModelIndex & index ) const
 	if (pModel->hasChildren( index ) && impl_->expanded( index ))
 	{
 		// Collapse the current item
-		const_cast< TreeExtension * >( this )->setDataExt( index, false, ItemRole::expandedId );
-
-		// Emit the data change
-		int role = 0;
-		auto res = this->encodeRole( ItemRole::expandedId, role );
-		assert( res );
-		QVector< int > roles;
-		roles.append( role );
-		emit const_cast< QAbstractItemModel * >( pModel )->dataChanged( index,
-			index,
-			roles );
-
+		const_cast< TreeExtension * >( this )->extensionData_->setDataExt( index, false, ItemRole::expandedId );
 		return index;
 	}
 

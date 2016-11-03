@@ -114,8 +114,13 @@ void WGFilteredListModel::onSourceChanged()
 	IListModel * source = nullptr;
 
 	Variant variant = QtHelpers::toVariant( getSource() );
-	if (variant.typeIs< ObjectHandle >())
+	if (variant.typeIs<IListModel>())
 	{
+		source = const_cast<IListModel*>(variant.cast<const IListModel*>());
+	}
+	else if (variant.typeIs<ObjectHandle>())
+	{
+		NGT_WARNING_MSG("Double wrapping found, please wrap IListModel pointer as Variant directly.\n");
 		ObjectHandle provider;
 		if (variant.tryCast( provider ))
 		{

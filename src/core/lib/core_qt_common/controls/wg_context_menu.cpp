@@ -13,6 +13,7 @@
 #include <QString>
 #include <QVariant>
 #include <QQuickWidget>
+#include <QApplication>
 
 namespace wgt
 {
@@ -20,7 +21,7 @@ struct WGContextMenu::Implementation
 {
 	Implementation( WGContextMenu & self )
 		: self_( self )
-		, uiApplication_( nullptr )
+		, pContext_( nullptr )
 		, view_( nullptr )
 	{
 	}
@@ -39,12 +40,9 @@ struct WGContextMenu::Implementation
 		assert( componentContextProperty.isValid() );
 		auto componentContextVariant = QtHelpers::toVariant( componentContextProperty );
 		assert( !componentContextVariant.isVoid() );
-		auto componentContextHandle = componentContextVariant.value< ObjectHandle >();
-		assert( componentContextHandle != nullptr );
-		auto componentContext = componentContextHandle.getBase< IComponentContext >();
+		auto componentContext = componentContextVariant.value<IComponentContext*>();
 		assert( componentContext != nullptr );
-
-		uiApplication_ = componentContext->queryInterface< IUIApplication >();
+		pContext_ = componentContext;
 
 		auto viewProperty = context->contextProperty( "View" );
 		if (viewProperty.isValid())
@@ -65,7 +63,12 @@ struct WGContextMenu::Implementation
 
 	void createMenu()
 	{
-		if (uiApplication_ == nullptr)
+		if(pContext_ == nullptr)
+		{
+			return;
+		}
+		auto uiApplication = pContext_->queryInterface<IUIApplication>();
+		if (uiApplication == nullptr)
 		{
 			return;
 		}
@@ -76,15 +79,21 @@ struct WGContextMenu::Implementation
 		qMenu_->setProperty( "path", QString( path_.c_str() ) );
 		connections_ += QObject::connect( qMenu_.get(), &QMenu::aboutToShow, [&]() { emit self_.aboutToShow(); } );
 		connections_ += QObject::connect( qMenu_.get(), &QMenu::aboutToHide, [&]() { emit self_.aboutToHide(); } );
+		connections_ += QObject::connect( qApp, &QApplication::paletteChanged, [&]() { qtContextMenu_->onPaletteChanged(); });
 
 		assert( qtContextMenu_ == nullptr );
 		qtContextMenu_.reset( new QtContextMenu( *qMenu_, view_, windowId_.c_str() ) );
-		uiApplication_->addMenu( *qtContextMenu_ );
+		uiApplication->addMenu( *qtContextMenu_ );
 	}
 
 	void destroyMenu()
 	{
-		if (uiApplication_ == nullptr)
+		if(pContext_ == nullptr)
+		{
+			return;
+		}
+		auto uiApplication = pContext_->queryInterface<IUIApplication>();
+		if (uiApplication == nullptr)
 		{
 			return;
 		}
@@ -94,7 +103,7 @@ struct WGContextMenu::Implementation
 			return;
 		}
 
-		uiApplication_->removeMenu( *qtContextMenu_ );
+		uiApplication->removeMenu( *qtContextMenu_ );
 
 		connections_.reset();
 		qMenu_.reset();
@@ -123,6 +132,10 @@ struct WGContextMenu::Implementation
 		{
 			return false;
 		}
+
+		// Force set this attribute as Qt won't set it unless the visible attribute is set
+		// which Qt won't set until after it tries to set this attribute....
+		qMenu_->setAttribute(Qt::WA_OutsideWSRange, false);
 
 		qMenu_->popup( QCursor::pos() );
 		return true;
@@ -158,7 +171,7 @@ struct WGContextMenu::Implementation
 
 private:
 	WGContextMenu & self_;
-	IUIApplication * uiApplication_;
+	IComponentContext * pContext_;
 	QQuickWidget * view_;
 	std::string windowId_;
 

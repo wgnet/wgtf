@@ -8,7 +8,6 @@
 #include <cmath>
 
 #include "core_variant/variant.hpp"
-#include "core_variant/interfaces/i_meta_type_manager.hpp"
 
 #include "core_serialization/fixed_memory_stream.hpp"
 #include "core_serialization/resizing_memory_stream.hpp"
@@ -24,7 +23,7 @@ namespace wgt
 namespace
 {
 
-	struct Base : public std::enable_shared_from_this<Base>
+	struct Base
 	{
 		explicit Base(int i = 0):
 			i(i),
@@ -66,9 +65,7 @@ namespace
 	};
 
 
-	typedef std::shared_ptr< Base > BasePtr;
-
-	Base* upcast(Base* v)
+	Base* upcast( Base* v )
 	{
 		return v;
 	}
@@ -77,9 +74,9 @@ namespace
 	template<typename T>
 	typename std::enable_if<std::is_base_of<Base, T>::value, bool>::type downcast(T** v, Base* storage)
 	{
-		if(T* tmp = dynamic_cast<T*>(storage))
+		if( T* tmp = dynamic_cast< T* >( storage ) )
 		{
-			if(v)
+			if( v )
 			{
 				*v = tmp;
 			}
@@ -91,36 +88,52 @@ namespace
 	}
 
 
-	template<typename T>
-	typename std::enable_if<std::is_base_of<Base, T>::value && std::is_base_of<std::enable_shared_from_this<Base>, T>::value,
-		T* >::type upcast( const std::shared_ptr< T >& v )
-	{
-		return v.get();
-	}
-
-
-	template<typename T>
-	typename std::enable_if<std::is_base_of<Base, T >::value && std::is_base_of<std::enable_shared_from_this<Base>, T>::value,
-		bool>::type downcast( std::shared_ptr< T >* v, T* storage )
-	{
-		if(v)
-		{
-			*v = std::dynamic_pointer_cast<T>(storage->shared_from_this());
-		}
-
-		return true;
-	}
-
-
 	template<int I>
 	struct Derived:
-		public Base
+		Base
 	{
 		Derived():
 			Base(I)
 		{
 		}
 	};
+
+
+	template< int I >
+	struct DerivedPtr
+	{
+		typedef Derived< I > D;
+		explicit DerivedPtr( D* ptr = nullptr ):
+			ptr( ptr )
+		{
+		}
+
+		bool operator==( const DerivedPtr& that ) const
+		{
+			return ptr == that.ptr;
+		}
+
+		D* ptr;
+	};
+
+
+	template< int I >
+	Derived< I >* upcast( const DerivedPtr< I >& v )
+	{
+		return v.ptr;
+	}
+
+
+	template< int I >
+	bool downcast( DerivedPtr< I >* v, Derived< I >* storage )
+	{
+		if( v )
+		{
+			v->ptr = storage;
+		}
+
+		return true;
+	}
 
 
 	TextStream& operator<<(TextStream& stream, const Base& v)
@@ -133,21 +146,6 @@ namespace
 	{
 		stream >> v.i >> v.f >> quoted( v.s );
 		return stream;
-	}
-
-
-	void registerTestType()
-	{
-		if(Variant::typeIsRegistered<Base>())
-		{
-			return;
-		}
-
-		static const MetaTypeImpl<Base> s_sMetaType("Base");
-		static const MetaTypeImpl<Base*> s_psMetaType("pBase");
-
-		Variant::registerType(&s_sMetaType);
-		Variant::registerType(&s_psMetaType);
 	}
 
 
@@ -189,6 +187,10 @@ namespace
 		// type
 		CHECK(v.typeIs<T>());
 		CHECK(!v.isVoid());
+
+		// everything can be casted to `const void*`, i.e. to its storage address
+		CHECK(v.canCast<const void*>());
+		CHECK(v.cast<const void*>());
 
 		// cast
 		CHECK(areEqual(v.cast<T>(), check));
@@ -236,6 +238,8 @@ namespace
 		Variant tmp = T(); // give type to deserializer
 		s.seek(0);
 		s >> tmp;
+
+		RETURN_ON_FAIL_CHECK(!s.fail());
 
 		CHECK(areEqual(tmp.cast<T>(), check));
 		CHECK(areEqual(tmp, check));
@@ -427,8 +431,6 @@ TEST(Variant_string)
 
 TEST(Variant_custom_type)
 {
-	registerTestType();
-
 	Variant v = Base(42);
 	variantCheck<Base>(EXTRA_ARGS, v, Base(42), "42 0.5 \"hello\"");
 
@@ -451,17 +453,128 @@ TEST(Variant_custom_type)
 }
 
 
+TEST(Variant_qualifiers)
+{
+	const Base b(42);
+	Variant v = &b;
+
+	variantCheck<Base>(EXTRA_ARGS, v, Base(42), "42 0.5 \"hello\"");
+
+	castFailCheck<int64_t>(EXTRA_ARGS, v);
+	castFailCheck<int32_t>(EXTRA_ARGS, v);
+	castFailCheck<int16_t>(EXTRA_ARGS, v);
+	castFailCheck<int8_t>(EXTRA_ARGS, v);
+	castFailCheck<uint64_t>(EXTRA_ARGS, v);
+	castFailCheck<uint32_t>(EXTRA_ARGS, v);
+	castFailCheck<uint16_t>(EXTRA_ARGS, v);
+	castFailCheck<uint8_t>(EXTRA_ARGS, v);
+	castFailCheck<double>(EXTRA_ARGS, v);
+	castFailCheck<float>(EXTRA_ARGS, v);
+
+	castCheck<std::string>(EXTRA_ARGS, v, "42 0.5 \"hello\"");
+
+	castCheck<Base>(EXTRA_ARGS, v, Base(42));
+
+	CHECK(v.cast<Base>() != Base(1));
+
+	CHECK(!v.canCast<Base&>());
+	CHECK(v.canCast<const Base&>());
+	CHECK(!v.canCast<volatile Base&>());
+	CHECK(v.canCast<const volatile Base&>());
+}
+
+
+/*TEST(Variant_qualified_upcast)
+{
+	const Derived<42> d;
+	Variant v = &d;
+
+	variantCheck<Base>(EXTRA_ARGS, v, Base(42), "42 0.5 \"hello\"");
+
+	castFailCheck<int64_t>(EXTRA_ARGS, v);
+	castFailCheck<int32_t>(EXTRA_ARGS, v);
+	castFailCheck<int16_t>(EXTRA_ARGS, v);
+	castFailCheck<int8_t>(EXTRA_ARGS, v);
+	castFailCheck<uint64_t>(EXTRA_ARGS, v);
+	castFailCheck<uint32_t>(EXTRA_ARGS, v);
+	castFailCheck<uint16_t>(EXTRA_ARGS, v);
+	castFailCheck<uint8_t>(EXTRA_ARGS, v);
+	castFailCheck<double>(EXTRA_ARGS, v);
+	castFailCheck<float>(EXTRA_ARGS, v);
+
+	castCheck<std::string>(EXTRA_ARGS, v, "42 0.5 \"hello\"");
+
+	castCheck<Base>(EXTRA_ARGS, v, Base(42));
+
+	CHECK(v.cast<Base>() != Base(1));
+
+	CHECK(!v.canCast<Base&>());
+	CHECK(v.canCast<const Base&>());
+	CHECK(!v.canCast<volatile Base&>());
+	CHECK(v.canCast<const volatile Base&>());
+}*/
+
+
+TEST(Variant_void_pointer)
+{
+	int i = 42;
+	void* p = &i;
+
+	Variant v = p;
+
+	CHECK(v.typeIs<void>());
+	CHECK(!v.isVoid());
+	CHECK(v.isPointer());
+	CHECK(!v.isNullPointer());
+
+	CHECK(v.cast<void*>() == &i);
+	CHECK(v.cast<const void*>() == &i);
+	CHECK(v.cast<volatile void*>() == &i);
+	CHECK(v.cast<const volatile void*>() == &i);
+
+	// marshaling
+	{
+		Variant tmp = v.cast<void*>();
+		CHECK(tmp == v);
+		CHECK(tmp == p);
+	}
+}
+
+
+TEST(Variant_const_void_pointer)
+{
+	const void* p = nullptr;
+
+	Variant v = p;
+
+	CHECK(v.typeIs<void>());
+	CHECK(!v.isVoid());
+	CHECK(v.isPointer());
+	CHECK(v.isNullPointer());
+
+	CHECK(!v.canCast<void*>());
+	CHECK(v.cast<const void*>() == nullptr);
+	CHECK(!v.canCast<volatile void*>());
+	CHECK(v.cast<const volatile void*>() == nullptr);
+
+	// marshaling
+	{
+		Variant tmp = v.cast<const void*>();
+		CHECK(tmp == v);
+		CHECK(tmp == p);
+	}
+}
+
+
 TEST(Variant_pointer)
 {
-	registerTestType();
-
 	Base tmp(42);
 
 	Variant v = &tmp;
-	variantCheck<Base*>(EXTRA_ARGS, v, &tmp);
+	variantCheck<Base>(EXTRA_ARGS, v, Base(42), "42 0.5 \"hello\"");
 
 	CHECK(v.isPointer());
-	CHECK(v.cast<void*>() == &tmp);
+	CHECK(!v.isNullPointer());
 
 	castFailCheck<int64_t>(EXTRA_ARGS, v);
 	castFailCheck<int32_t>(EXTRA_ARGS, v);
@@ -475,32 +588,19 @@ TEST(Variant_pointer)
 	castFailCheck<float>(EXTRA_ARGS, v);
 
 	castCheck<Base*>(EXTRA_ARGS, v, &tmp);
-
-	// const type != type
-	const Base ctmp;
-	bool const_to_mutable_conversion_failed = false;
-	try
-	{
-		Variant v = &ctmp;
-	}
-	catch(const std::bad_cast&)
-	{
-		const_to_mutable_conversion_failed = true;
-	}
-	CHECK(const_to_mutable_conversion_failed);
+	castCheck<void*>(EXTRA_ARGS, v, &tmp);
+	castCheck<const void*>(EXTRA_ARGS, v, &tmp);
 }
 
 
 TEST(Variant_cast)
 {
-	registerTestType();
-
 	Derived<1> tmp;
 	Base* tmp_b = &tmp;
 
 	// upcast Derived<1>* to Base*
 	Variant v = &tmp;
-	variantCheck<Base*>(EXTRA_ARGS, v, tmp_b);
+	variantCheck<Base>(EXTRA_ARGS, v, *tmp_b);
 	CHECK(v.isPointer());
 	CHECK(v.cast<void*>() == tmp_b);
 
@@ -510,45 +610,35 @@ TEST(Variant_cast)
 
 	// conversion to/from string
 	Variant vs = v.cast<std::string>();
-	CHECK(vs.cast<void*>() == tmp_b);
-	CHECK(vs.cast<Derived<1>*>() == &tmp);
-	CHECK(!vs.canCast<Derived<2>*>());
+	CHECK(vs.cast<Base>() == tmp);
+	CHECK(!vs.canCast<Base&>());
+	CHECK(vs.setType<Base>());
+	CHECK(vs.cast<Base&>() == tmp);
 }
 
 
 TEST(Variant_recursive_cast)
 {
-	registerTestType();
+	Derived< 1 > d;
+	typedef DerivedPtr< 1 > Ptr;
+	Ptr tmp( &d );
 
-	typedef std::shared_ptr<Derived<1>> Ptr;
-	Ptr tmp(new Derived<1>());
-
-	// upcast Derived<1>* to Base*
+	// upcast DerivedPtr<1> -> Derived<1>* -> Base*
 	Variant v = tmp;
-	variantCheck<Base*>(EXTRA_ARGS, v, tmp.get());
+	variantCheck<Base>(EXTRA_ARGS, v, Base(1));
 	CHECK(v.isPointer());
-	CHECK(v.cast<void*>() == tmp.get());
-
-	// downcast Base* to Derived<1>*
-	CHECK(v.cast<Derived<1>*>() == tmp.get());
+	CHECK(v.cast<void*>() == tmp.ptr);
+	CHECK(v.cast<Base*>() == tmp.ptr);
+	CHECK(v.cast<Derived<1>*>() == tmp.ptr);
 	CHECK(v.cast<Ptr>() == tmp);
+
 	CHECK(!v.canCast<Derived<2>*>());
-	CHECK(!v.canCast<std::shared_ptr<Derived<2>>>());
-
-	// conversion to/from string
-	Variant vs = v.cast<std::string>();
-	CHECK(vs.cast<void*>() == tmp.get());
-	CHECK(vs.cast<Derived<1>*>() == tmp.get());
-	CHECK(v.cast<Ptr>() == tmp);
-	CHECK(!vs.canCast<Derived<2>*>());
-	CHECK(!v.canCast<std::shared_ptr<Derived<2>>>());
+	CHECK(!v.canCast<DerivedPtr<2>>());
 }
 
 
 TEST(Variant_interchange)
 {
-	registerTestType();
-
 	Variant v;
 	CHECK(v.typeIs<void>());
 	CHECK(v.isVoid());
@@ -640,17 +730,17 @@ TEST(Variant_with)
 	int withCalls = 0;
 
 	Variant v;
-	CHECK(!v.with<int>([](const int&){}));
+	CHECK(!v.visit<int>([](const int&){}));
 
 	v = 42;
-	CHECK(v.with<int>([&](const int& i)
+	CHECK(v.visit<int>([&](const int& i)
 	{
 		CHECK_EQUAL(42, i);
 		withCalls += 1;
 	}));
 	CHECK_EQUAL(1, withCalls);
 
-	CHECK(v.with<unsigned>([&](const unsigned& u)
+	CHECK(v.visit<unsigned>([&](const unsigned& u)
 	{
 		CHECK_EQUAL(42, u);
 		withCalls += 1;
@@ -658,14 +748,14 @@ TEST(Variant_with)
 	CHECK_EQUAL(2, withCalls);
 
 	v = Base(8);
-	CHECK(v.with<Base>([&](const Base& b)
+	CHECK(v.visit<Base>([&](const Base& b)
 	{
 		CHECK_EQUAL(8, b.i);
 		withCalls += 1;
 	}));
 	CHECK_EQUAL(3, withCalls);
 
-	CHECK(v.with<Variant>([&](const Variant& t)
+	CHECK(v.visit<Variant>([&](const Variant& t)
 	{
 		CHECK(&t == &v);
 		CHECK(t == Base(8));
@@ -675,65 +765,44 @@ TEST(Variant_with)
 }
 
 
-TEST( Variant_value_castPtr )
+TEST( Variant_value_cast_ptr_and_ref )
 {
-	registerTestType();
-
 	Variant v = Base( 42 );
 
 	// matching pointer
-	Base* pb = v.castPtr< Base >();
-	CHECK( pb );
+	Base* pb = v.value< Base* >();
+	RETURN_ON_FAIL_CHECK( pb != nullptr );
 	CHECK_EQUAL( 42, pb->i );
 	pb->i = 1;
 	CHECK( v == Base( 1 ) );
 
 	// matching reference
-	Base& rb = v.castRef< Base >();
+	Base& rb = v.cast< Base& >();
 	CHECK( &rb == pb );
 	CHECK_EQUAL( 1, rb.i );
 	rb.i = 13;
 	CHECK( v == Base( 13 ) );
-
-	// base pointer
-	std::enable_shared_from_this<Base>* pbb = v.castPtr< std::enable_shared_from_this<Base> >();
-	CHECK( pbb );
-	CHECK( pbb == pb );
-
-	// base reference
-	std::enable_shared_from_this<Base>& rbb = v.castRef< std::enable_shared_from_this<Base> >();
-	CHECK( &rbb == pb );
 }
 
 
-TEST( Variant_ptr_castPtr )
+TEST( Variant_ptr_cast_ptr_and_ref )
 {
-	registerTestType();
-
-	Base b( 42 );
-	Variant v = &b;
+	Derived< 42 > d;
+	DerivedPtr< 42 > dp( &d );
+	Variant v = dp;
 
 	// matching pointer
-	Base* pb = v.castPtr< Base >();
-	CHECK( pb == &b );
+	Base* pb = v.cast< Base* >();
+	CHECK( pb == &d );
 	CHECK_EQUAL( 42, pb->i );
 	pb->i = 1;
-	CHECK( b == Base( 1 ) );
+	CHECK( v == Base( 1 ) );
 
 	// matching reference
-	Base& rb = v.castRef< Base >();
+	Base& rb = v.cast< Base& >();
 	CHECK( &rb == pb );
 	CHECK_EQUAL( 1, rb.i );
 	rb.i = 13;
-	CHECK( b == Base( 13 ) );
-
-	// base pointer
-	std::enable_shared_from_this<Base>* pbb = v.castPtr< std::enable_shared_from_this<Base> >();
-	CHECK( pbb );
-	CHECK( pbb == pb );
-
-	// base reference
-	std::enable_shared_from_this<Base>& rbb = v.castRef< std::enable_shared_from_this<Base> >();
-	CHECK( &rbb == pb );
+	CHECK( v == Base( 13 ) );
 }
 } // end namespace wgt

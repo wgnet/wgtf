@@ -2,11 +2,13 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 import QtQuick.Window 2.1
+
 import WGControls 1.0
 
 WGPanel {
 	id: mainFrame
-
+    WGComponent { type: "asset_browser_panel" }
+    
 	title: "Asset Browser"
 
 	layoutHints: { 'assetbrowser': 1.0, 'bottom': 0.5 }

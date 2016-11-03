@@ -23,17 +23,14 @@ void handleWrite( const std::string & msg, bool isStderr );
  *	This method implements the Python write method. It is used to redirect the
  *	write calls to this object's pOwner_.
  */
-static PyObject * py_write( PyObject * self, PyObject * args )
+static PyObject* write(PyObject* self, PyObject* args, bool isStderr)
 {
-	// TODO
-	const bool isStderr_ = false;
-
 	char * msg = NULL;
 	Py_ssize_t msglen = 0;
 
 	if (!PyArg_ParseTuple( args, "s#", &msg, &msglen ))
 	{
-		NGT_ERROR_MSG( "PyOutputStream::py_write: Bad args\n" );
+		NGT_ERROR_MSG("Bad args\n");
 		return NULL;
 	}
 
@@ -44,20 +41,34 @@ static PyObject * py_write( PyObject * self, PyObject * args )
 				PyTuple_GET_ITEM( args, 0 ) ),
 			ScriptObject::FROM_NEW_REFERENCE );
 
-		handleWrite( std::string( PyString_AsString( repr.get() ),
-			PyString_GET_SIZE( repr.get() ) ), isStderr_ );
+		handleWrite(std::string(PyString_AsString(repr.get()),
+		                        PyString_GET_SIZE(repr.get())),
+		            isStderr);
 
 		Py_RETURN_NONE;
 	}
 
-	handleWrite( std::string( msg, msglen ), isStderr_ );
+	handleWrite(std::string(msg, msglen), isStderr);
 	Py_RETURN_NONE;
-
 }
 
+static PyObject* writeStdout(PyObject* self, PyObject* args)
+{
+	const auto isStderr = false;
+	return write(self, args, isStderr);
+}
 
+static PyObject* writeStderr(PyObject* self, PyObject* args)
+{
+	const auto isStderr = true;
+	return write(self, args, isStderr);
+}
 
-
+static PyObject* flush(PyObject* self, PyObject* args)
+{
+	NGT_FLUSH_MSG();
+	Py_RETURN_NONE;
+}
 
 // -----------------------------------------------------------------------------
 // Section: PythonOutputWriter
@@ -74,20 +85,36 @@ PyMODINIT_FUNC PyInit_ScriptOutputWriter()
 {
 	assert( Py_IsInitialized() );
 
-	static PyMethodDef s_methods[] =
+	static PyMethodDef s_stdoutMethods[] =
 	{
-		{ "write", &py_write, METH_VARARGS, "Write text to console" },
-		{ NULL, NULL, 0, NULL }
+	  { "write", &writeStdout, METH_VARARGS, "Write text to console" },
+	  { "flush", &flush, METH_VARARGS, "Flush text to console" },
+	  { NULL, NULL, 0, NULL }
 	};
 
-	PyObject *m = Py_InitModule( "scriptoutputwriter", s_methods );
-	assert( m != nullptr );
-
-	if (m != nullptr)
+	static PyMethodDef s_stderrMethods[] =
 	{
-		const int stdoutSet = PySys_SetObject( "stdout", m );
+	  { "write", &writeStderr, METH_VARARGS, "Write error to console" },
+	  { "flush", &flush, METH_VARARGS, "Flush error to console" },
+	  { NULL, NULL, 0, NULL }
+	};
+
+	PyScript::ScriptModule stdoutModule(Py_InitModule("stdoutwriter", s_stdoutMethods),
+	                                    PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
+	assert(stdoutModule.exists());
+	PyScript::ScriptModule stderrModule(Py_InitModule("stderrwriter", s_stderrMethods),
+	                                    PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
+	assert(stderrModule.exists());
+	auto combinedModule = PyScript::ScriptModule::getOrCreate("scriptoutputwriter",
+	                                                          PyScript::ScriptErrorPrint());
+	combinedModule.addObject("stdout", stdoutModule, PyScript::ScriptErrorPrint());
+	combinedModule.addObject("stderr", stderrModule, PyScript::ScriptErrorPrint());
+
+	if (stdoutModule != nullptr)
+	{
+		const int stdoutSet = PySys_SetObject("stdout", stdoutModule.get());
 		assert( stdoutSet == 0 );
-		const int stderrSet = PySys_SetObject( "stderr", m );
+		const int stderrSet = PySys_SetObject("stderr", stderrModule.get());
 		assert( stderrSet == 0 );
 	}
 }

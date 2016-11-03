@@ -5,10 +5,13 @@ INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
 SET( ALL_SRCS
+    action_manager.cpp
+    action_manager.hpp
 	generic_component_provider.hpp
 	i_action.hpp
 	i_component.hpp
 	i_component_provider.hpp
+	i_dialog.hpp
 	i_menu.hpp
 	i_menu_handler.cpp
 	i_menu_handler.hpp
@@ -19,6 +22,7 @@ SET( ALL_SRCS
 	i_view.hpp
 	i_window.hpp
 	i_preferences.hpp
+	i_progress_dialog.hpp
 	layout_hint.cpp
 	layout_hint.hpp
 	layout_manager.cpp
@@ -26,7 +30,8 @@ SET( ALL_SRCS
 	layout_tags.hpp
 	simple_component_provider.hpp
 )
-SOURCE_GROUP( "Source" FILES ${ALL_SRCS} )
+
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}

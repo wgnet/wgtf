@@ -3,16 +3,18 @@
 
 #include "interfaces/i_base_property.hpp"
 #include "metadata/meta_base.hpp"
+#include "reflection_dll.hpp"
 
 #include <memory>
 
 namespace wgt
 {
-class BasePropertyWithMetaData : public IBaseProperty
+
+class REFLECTION_DLL BasePropertyWithMetaData : public IBaseProperty
 {
 public:
 	BasePropertyWithMetaData( const IBasePropertyPtr & property, MetaHandle metaData );
-	~BasePropertyWithMetaData();
+	virtual ~BasePropertyWithMetaData();
 
 	virtual const TypeId & getType() const override;
 
@@ -42,9 +44,12 @@ public:
 
 	virtual size_t parameterCount() const override;
 
+	IBasePropertyPtr baseProperty() const;
+
 private:
 	IBasePropertyPtr property_;
 	MetaHandle metaData_;
 };
+
 } // end namespace wgt
 #endif // BASE_REFLECTED_PROPERTY_HPP

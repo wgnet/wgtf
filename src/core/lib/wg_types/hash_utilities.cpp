@@ -91,5 +91,15 @@ uint64_t compute( uint64_t value )
 	return compute( ( const void* )&value, sizeof( uint64_t ) );
 }
 
+void directCombine(uint64_t & seed, uint64_t value)
+{
+    seed ^= value +
+        //2^64/phi.
+        0x9E3779B97F4A7C15 +
+        //make sure bits spread across the output even if input hashes
+        //have a small output range.
+        (seed << 5) + (seed >> 3);
+}
+
 }
 } // end namespace wgt

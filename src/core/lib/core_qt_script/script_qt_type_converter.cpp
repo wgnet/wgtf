@@ -38,6 +38,15 @@ bool ScriptQtTypeConverter::toVariant( const QVariant& qVariant,
 bool ScriptQtTypeConverter::toQVariant( const Variant& variant,
 	QVariant& o_qVariant, QObject* parent ) const
 {
+	auto typeId = variant.type()->typeId();
+	auto defManager = scriptingEngine_.getDefinitionManager();
+	assert(defManager != nullptr);
+	auto definition = defManager->getDefinition(typeId.getName());
+	if (definition != nullptr)
+	{
+		ObjectHandle obj(variant, definition);
+		return this->toQVariant(obj, o_qVariant, parent);
+	}
 	if (variant.typeIs< ObjectHandle >())
 	{
 		ObjectHandle provider;
@@ -45,8 +54,7 @@ bool ScriptQtTypeConverter::toQVariant( const Variant& variant,
 		{
 			return false;
 		}
-
-		return this->toQVariant( provider, o_qVariant, parent );
+		return this->toQVariant(provider, o_qVariant, parent);
 	}
 
 	return false;

@@ -23,7 +23,7 @@ namespace
 			, text_( text ) 
 		{}
 
-		Variant getData( int column, size_t roleId ) const override
+		Variant getData( int column, ItemRole::Id roleId ) const override
 		{
 			if (roleId == ValueRole::roleId_)
 			{
@@ -36,7 +36,7 @@ namespace
 			return Variant();
 		}
 		
-		bool setData( int column, size_t roleId, const Variant & data ) override
+		bool setData( int column, ItemRole::Id roleId, const Variant & data ) override
 		{
 			return false;
 		}

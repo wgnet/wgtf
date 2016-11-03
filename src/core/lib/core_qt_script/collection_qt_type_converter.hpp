@@ -7,17 +7,24 @@
 
 namespace wgt
 {
+
+class IComponentContext;
+
 /**
  *	Converts between QVariant and Collection.
  */
 class CollectionQtTypeConverter : public IQtTypeConverter
 {
 public:
+	CollectionQtTypeConverter( IComponentContext & context );
+
 	bool toVariant(const QVariant & qVariant,
 		Variant & o_variant) const override;
 
 	bool toQVariant(const Variant& variant,
 		QVariant& o_qVariant, QObject* parent = nullptr) const override;
+private:
+	IComponentContext & context_;
 };
 } // end namespace wgt
 #endif // COLLECTION_QT_TYPE_CONVERTER_HPP

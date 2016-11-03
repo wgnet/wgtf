@@ -1,6 +1,7 @@
 #ifndef __CUSTOM_CONNECTION_H__
 #define __CUSTOM_CONNECTION_H__
 
+#include "core_dependency_system/i_interface.hpp"
 #include "plugins/plg_node_editor/interfaces/i_connection.hpp"
 
 namespace wgt

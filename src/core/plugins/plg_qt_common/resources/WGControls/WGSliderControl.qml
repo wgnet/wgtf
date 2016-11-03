@@ -1,14 +1,15 @@
 import QtQuick 2.5
-import QtQuick.Controls 1.2
+import QtQuick.Controls 1.4
 import QtQuick.Controls.Private 1.0
-import QtQuick.Layouts 1.1
+import QtQuick.Layouts 1.3
 
 import WGControls 1.0
-
-//TODO: Test orientation = vertical. Create vertical slider. Remove option here
-//Resizing the slider could be smarter. Does not take into account content of spinner width
+import WGControls.Layouts 1.0
+import WGControls.Styles 1.0
+import WGControls.Private 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief Slider with value spinbox.
  Purpose: Provide the user with a single value clamped between min and max value
 
@@ -22,12 +23,17 @@ WGSliderControl {
     value: 40
 }
 \endcode
+
+ \todo Test orientation = vertical. Create vertical slider. Remove option here
+       Resizing the slider could be smarter. Does not take into account content of spinner width
+
 */
 
 Item {
     id: sliderFrame
     objectName: "WGSliderControl"
-
+    WGComponent { type: "WGSliderControl" }
+    
     /*! This property holds the maximum value of the slider.
         The default value is \c{1.0}.
     */
@@ -133,7 +139,7 @@ Item {
     property alias buttonFrame: sliderValue.buttonFrame
 
     implicitHeight: defaultSpacing.minimumRowHeight
-    implicitWidth: defaultSpacing.standardMargin
+    implicitWidth: slider.implicitWidth + sliderValue.implicitWidth + sliderLayout.spacing
 
     onValueChanged: {
         setValueHelper(slider, "value", sliderFrame.value);

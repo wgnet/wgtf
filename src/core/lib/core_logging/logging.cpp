@@ -27,4 +27,35 @@ int logMessage( const char* format, ... )
 
 	return result;
 }
+
+int logMessageNewline(const char* format, ...)
+{
+    const size_t bufferSize = 4095;
+    char buffer[bufferSize];
+
+    va_list args;
+    va_start( args, format );
+
+    const int result = vsnprintf( buffer,
+        sizeof(buffer) - 1,
+        format,
+        args );
+    buffer[sizeof( buffer ) - 1] = '\0';
+
+    va_end( args );
+
+    OutputDebugStringA( buffer );
+
+    if ( strrchr( buffer, '\n' ) == nullptr )
+    {
+        OutputDebugStringA( "\n" );
+    }
+
+    return result;
+}
+
+void flushMessage()
+{
+	FlushDebugString();
+}
 } // end namespace wgt

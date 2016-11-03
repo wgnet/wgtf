@@ -20,8 +20,6 @@ class ColorPicker
 	: Depends< IUIFramework, IUIApplication, IDefinitionManager, IViewCreator >
 
 {
-	typedef Depends< IUIFramework, IUIApplication, IDefinitionManager > DepsBase;
-
 public:
 	ColorPicker( IComponentContext & context );
 
@@ -29,7 +27,7 @@ public:
 	void removePanel();
 
 private:
-	std::unique_ptr< IView > colorView_;
+	wg_future<std::unique_ptr< IView >> colorView_;
 	ObjectHandle colorPickerContext_;
 };
  

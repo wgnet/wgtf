@@ -1,4 +1,3 @@
-plugins/plg_variant
 plugins/plg_logging_system
 plugins/plg_reflection
 plugins/plg_object
@@ -7,6 +6,7 @@ plugins/plg_command_system
 plugins/plg_python27
 plugins/plg_qt_app
 plugins/plg_qt_common
+plugins/plg_qt_resource
 plugins/plg_editor_interaction
 plugins/plg_macros_ui
 plugins/plg_reflection_object_test
@@ -22,6 +22,7 @@ plugins/plg_panel_manager
 plugins/plg_panel_manager_test
 plugins/plg_test_active_filters
 plugins/plg_list_model_test
+plugins/plg_table_model_test
 plugins/plg_tree_model_test
 plugins/plg_modal_dlg_test
 plugins/plg_context_menu_test
@@ -32,3 +33,8 @@ plugins/plg_curve_editor
 plugins/plg_curve_editor_test
 plugins/plg_node_editor
 plugins/plg_node_editor_test
+plugins/plg_color_picker
+plugins/plg_qml_preferences
+plugins/plg_grid_editor_test
+plugins/plg_dialog_test
+plugins/plg_hotloading_test

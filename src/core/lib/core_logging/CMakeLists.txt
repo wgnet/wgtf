@@ -9,8 +9,8 @@ SET( ALL_SRCS
 	logging.cpp
 	logging.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
 
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_BLOB_SOURCES( BLOB_SRCS 
 	${ALL_SRCS}

@@ -30,7 +30,6 @@
 #include "wg_types/vector4.hpp"
 
 #include "metadata/demo_objects.mpp"
-#include "metadata/demo_objects_fix_mixin.mpp"
 
 #include <stdio.h>
 #include "core_command_system/i_env_system.hpp"
@@ -60,6 +59,7 @@ public:
 	DemoDoc( IComponentContext & context, const char* name, IEnvManager* envManager, IUIFramework* uiFramework,
 		IUIApplication* uiApplication, ObjectHandle demo );
 	~DemoDoc();
+    void select();
 
 	// IViewEventListener
 	virtual void onFocusIn( IView* view ) override;
@@ -69,7 +69,7 @@ public:
 private:
 	IEnvManager* envManager_;
 	IUIApplication* uiApplication_;
-	std::unique_ptr< IView > centralView_;
+	wg_future<std::unique_ptr< IView >> centralView_;
 	int envId_;
 };
 
@@ -82,42 +82,54 @@ DemoDoc::DemoDoc(
 	, uiApplication_(uiApplication)
 {
 	envId_ = envManager_->addEnv( name );
-	envManager_->selectEnv( envId_ );
 
-	auto viewCreator = get< IViewCreator >();
-	if (viewCreator)
-	{
-		viewCreator->createView(
-			"DemoTest/Demo.qml", demo,
-			[ this ]( std::unique_ptr< IView > & view )
-		{
-			centralView_ = std::move( view );
-			centralView_->registerListener( this );
-		});
-	}
+    auto viewCreator = get< IViewCreator >();
+    if (viewCreator)
+    {
+        centralView_ = viewCreator->createView(
+            "DemoTest/Demo.qml", demo, 
+            [&](IView & view)
+            {
+                view.registerListener( this );
+            } );
+    }
 }
 
 DemoDoc::~DemoDoc()
 {
-	if (centralView_ != nullptr)
+	if (centralView_.valid())
 	{
-		uiApplication_->removeView( *centralView_ );
-		centralView_->deregisterListener( this );
+        auto view = centralView_.get();
+		uiApplication_->removeView( *view );
+		view->deregisterListener( this );
+        view = nullptr;
 	}
 
 	envManager_->removeEnv( envId_ );
 }
 
+void DemoDoc::select()
+{
+    envManager_->selectEnv( envId_ );
+}
+
 void DemoDoc::onFocusIn(IView* view)
 {
-	envManager_->selectEnv( envId_ );
+    this->select();
 }
 
 void DemoDoc::onFocusOut(IView* view)
 {
 }
 
-//==============================================================================
+/**
+* A plugin which creates a 3D viewport that displays sample models which can be interacted with.
+*
+* @ingroup plugins
+* @image html plg_demo_test.png 
+* @note Only works on vs2013+. Requires Plugins:
+*       - @ref coreplugins
+*/
 class DemoTestPlugin
 	: public PluginMain
 	, public Depends< IViewCreator >
@@ -126,9 +138,9 @@ private:
 	
 	std::unique_ptr< DemoDoc > demoDoc_;
 	std::unique_ptr< DemoDoc > demoDoc2_;
-	std::unique_ptr< IView > propertyView_;
-	std::unique_ptr< IView > sceneBrowser_;
-	std::unique_ptr< IView > viewport_;
+	wg_future<std::unique_ptr< IView >> propertyView_;
+	wg_future<std::unique_ptr< IView >> sceneBrowser_;
+	wg_future<std::unique_ptr< IView >> viewport_;
 	ObjectHandle demoModel_;
 
 	IReflectionController* controller_;
@@ -151,9 +163,6 @@ public:
 	//==========================================================================
 	void Initialise( IComponentContext & contextManager )
 	{
-		Variant::setMetaTypeManager( 
-			contextManager.queryInterface< IMetaTypeManager >() );
-
 		defManager_ =
 			contextManager.queryInterface< IDefinitionManager >();
 		assert(defManager_ != nullptr);
@@ -161,8 +170,8 @@ public:
 
 		controller_ = contextManager.queryInterface< IReflectionController >();
 
-		demoModel_ = defManager_->create<DemoObjectsFixMixIn>();
-		demoModel_.getBase< DemoObjectsFixMixIn >()->init( contextManager );
+		demoModel_ = defManager_->create<DemoObjects>();
+		demoModel_.getBase<DemoObjects>()->init(contextManager);
 
 		auto uiApplication = contextManager.queryInterface< IUIApplication >();
 		auto uiFramework = contextManager.queryInterface< IUIFramework >();
@@ -172,28 +181,34 @@ public:
 			return;
 		}
 
-		demoDoc_.reset( new DemoDoc( contextManager, "sceneModel0", envManager, uiFramework, uiApplication, demoModel_) );
+		demoDoc_.reset( new DemoDoc( contextManager, "sceneModel0", envManager, uiFramework, uiApplication, demoModel_ ) );
 		demoDoc2_.reset( new DemoDoc( contextManager, "sceneModel1", envManager, uiFramework, uiApplication, demoModel_) );
+        demoDoc_->select();
 
 		auto viewCreator = get< IViewCreator >();
 		if (viewCreator)
 		{
-			viewCreator->createView(
+			propertyView_ = viewCreator->createView(
 				"DemoTest/DemoPropertyPanel.qml",
-				demoModel_, propertyView_ );
+				demoModel_ );
 
-			viewCreator->createView(
+			sceneBrowser_ = viewCreator->createView(
 				"DemoTest/DemoListPanel.qml",
-				demoModel_, sceneBrowser_);
+				demoModel_ );
 
-			viewCreator->createView(
+#ifdef USE_Qt5_WEB_ENGINE
+			viewport_ = viewCreator->createView(
 				"DemoTest/Framebuffer.qml",
-				demoModel_, viewport_);
+				demoModel_ );
+#endif
 		}
+
+        uiFramework->loadActionData( ":/DemoTest/actions.xml", IUIFramework::ResourceType::File );
+
 		createAction_ = uiFramework->createAction(
-			"New Object", 
-			[&] (const IAction * action) { createObject(); },
-			[&] (const IAction * action) { return canCreate(); } );
+			"NewObject", 
+			[this] (const IAction * action) { createObject(); },
+			[this] (const IAction * action) { return canCreate(); } );
 
 		uiApplication->addAction( *createAction_ );
 	}
@@ -206,25 +221,33 @@ public:
 		{
 			return false;
 		}
-		if (propertyView_ != nullptr)
+		if (propertyView_.valid())
 		{
-			uiApplication->removeView( *propertyView_ );
+            auto view = propertyView_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
 		}
-		if (sceneBrowser_ != nullptr)
+		if (sceneBrowser_.valid())
 		{
-			uiApplication->removeView( *sceneBrowser_ );
+            auto view = sceneBrowser_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
 		}
-		if (viewport_ != nullptr)
+		if (viewport_.valid())
 		{
-			uiApplication->removeView( *viewport_ );
+            auto view = viewport_.get();
+			uiApplication->removeView( *view );
+            view = nullptr;
+		}
+		if(createAction_ != nullptr)
+		{
+			uiApplication->removeAction( *createAction_ );
+			createAction_ = nullptr;
 		}
 
-		propertyView_ = nullptr;
-		sceneBrowser_ = nullptr;
-		viewport_ = nullptr;
 		demoDoc_ = nullptr;
 		demoDoc2_ = nullptr;
-		demoModel_.getBase< DemoObjectsFixMixIn >()->fini();
+		demoModel_.getBase<DemoObjects>()->fini();
 		demoModel_ = nullptr;
 		return true;
 	}
@@ -237,29 +260,17 @@ public:
 	void initReflectedTypes( IDefinitionManager & definitionManager )
 	{
 		REGISTER_DEFINITION( DemoObjects )
-		REGISTER_DEFINITION( DemoObjectsFixMixIn )
 	}
 
 private:
 	void createObject()
 	{
-		IClassDefinition* def = defManager_->getDefinition<DemoObjectsFixMixIn>();
+		IClassDefinition* def = defManager_->getDefinition<DemoObjects>();
 		PropertyAccessor pa = def->bindProperty( "New Object", demoModel_ );
 		assert( pa.isValid() );
 		ReflectedMethodParameters parameters;
 		parameters.push_back( Vector3( 0.f, 0.f, -10.f) );
 		Variant returnValue = controller_->invoke( pa, parameters );
-
-		/*std::unique_ptr<ReflectedMethodCommandParameters> commandParameters( new ReflectedMethodCommandParameters() );
-		commandParameters->setId( key.first );
-		commandParameters->setPath( key.second.c_str() );
-		commandParameters->setParameters( parameters );
-
-		commandManager_->queueCommand(
-			getClassIdentifier<InvokeReflectedMethodCommand>(), ObjectHandle( std::move( commandParameters ),
-			pa.getDefinitionManager()->getDefinition<ReflectedMethodCommandParameters>() ) )
-
-		demoModel_.getBase< DemoObjects >()->createObject();*/
 	}
 
 	bool canCreate() { return true; }

@@ -2,6 +2,7 @@
 #define TEST_ASSET_PRESENTATION_PROVIDER_HPP
 
 #include "core_data_model/asset_browser/i_asset_presentation_provider.hpp"
+#include "core_data_model/asset_browser/i_asset_presentation_provider20.hpp"
 #include <map>
 
 namespace wgt
@@ -15,17 +16,21 @@ namespace wgt
 class TestAssetPresentationProvider : public IAssetPresentationProvider
 {
 public:
-	TestAssetPresentationProvider() {}
-	virtual ~TestAssetPresentationProvider() {}
+	TestAssetPresentationProvider()
+	{
+	}
+	virtual ~TestAssetPresentationProvider()
+	{
+	}
 
 	// Pre-generate the binary block data for the thumbnails and status icons so we aren't creating them 
 	// every time an asset is evaluated for its thumbnail needs.
 	void generateData();
 
 	// IAssetPresentationProvider Implementation
-	virtual ThumbnailData getThumbnail( const IAssetObjectItem * asset ) override;
-	virtual ThumbnailData getStatusIconData( const IAssetObjectItem * asset ) override;
-	virtual const char* getTypeIconResourceString( const IAssetObjectItem * asset ) const override;
+	virtual ThumbnailData getThumbnail(const IAssetObjectItem* asset) override;
+	virtual ThumbnailData getStatusIconData(const IAssetObjectItem* asset) override;
+	virtual const char* getTypeIconResourceString(const IAssetObjectItem* asset) const override;
 
 private:
 	// Enumeration of thumbnail files we've cached
@@ -50,6 +55,50 @@ private:
 
 	// Cached thumbnail data for easy retrieval
 	std::map< unsigned int, ThumbnailData > testThumbnails_;
+	ThumbnailData testStatusIcon_;
+};
+
+class TestAssetPresentationProvider20 : public AssetBrowser20::IAssetPresentationProvider
+{
+public:
+	TestAssetPresentationProvider20()
+	{
+	}
+	virtual ~TestAssetPresentationProvider20()
+	{
+	}
+
+	// Pre-generate the binary block data for the thumbnails and status icons so we aren't creating them
+	// every time an asset is evaluated for its thumbnail needs.
+	void generateData();
+
+	// IAssetPresentationProvider Implementation
+	virtual ThumbnailData getThumbnail(const AssetBrowser20::IAssetObjectItem* asset) override;
+	virtual ThumbnailData getStatusIconData(const AssetBrowser20::IAssetObjectItem* asset) override;
+	virtual const char* getTypeIconResourceString(const AssetBrowser20::IAssetObjectItem* asset) const override;
+
+private:
+	// Enumeration of thumbnail files we've cached
+	enum CachedThumbnails
+	{
+		CACHED_DEFAULT = 0,
+		CACHED_SCRIPT = 1,
+		CACHED_XML = 2,
+		CACHED_DECAL = 3,
+	};
+
+	// Returns a binary block of data for the designated file
+	ThumbnailData getBinaryDataFromFile(const char* filename);
+
+	// Reads the thumbnail file and creates the BinaryBlock data to cache away
+	void addThumbnail(int index, const char* filename);
+
+	// Gets the extension value from the asset name
+	const char* getExtension(const char* assetName) const;
+
+private:
+	// Cached thumbnail data for easy retrieval
+	std::map<unsigned int, ThumbnailData> testThumbnails_;
 	ThumbnailData testStatusIcon_;
 };
 } // end namespace wgt

@@ -53,7 +53,13 @@ namespace
 			free(ptr);
 		}
 
-	} s_defaultAllocator;
+	};
+
+	IMemoryAllocator* getDefaultAllocator()
+	{
+		static DefaultMemoryAllocator s_defaultAllocator;
+		return &s_defaultAllocator;
+	}
 
 	IMemoryAllocator * getMemoryAllocator()
 	{
@@ -67,7 +73,7 @@ namespace
 			}
 			if (s_allocator == nullptr)
 			{
-				s_allocator = &s_defaultAllocator;
+				s_allocator = getDefaultAllocator();
 				return s_allocator;
 			}
 		}

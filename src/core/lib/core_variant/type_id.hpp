@@ -5,10 +5,11 @@
 #include <functional>
 #include <typeinfo>
 #include <string>
+#include "variant_dll.hpp"
 
 namespace wgt
 {
-class TypeId
+class VARIANT_DLL TypeId
 {
 private:
 	TypeId( const std::string & name );
@@ -44,6 +45,13 @@ public:
 		return s_typeId;
 	}
 
+	template< typename T >
+	static const TypeId& getType(T* ptr)
+	{
+		static const TypeId s_typeId( typeid( *ptr ).name() );
+		return s_typeId;
+	}
+
 private:
 	const char *	name_;
 	uint64_t		hashCode_;
@@ -53,6 +61,18 @@ private:
 
 namespace std
 {
+	template<>
+	struct hash< wgt::TypeId >
+		: public unary_function< wgt::TypeId, size_t >
+	{
+	public:
+		size_t operator()( const wgt::TypeId & v ) const
+		{
+			hash< uint64_t > hash_fn;
+			return hash_fn( v.getHashcode() );
+		}
+	};
+
 	template<>
 	struct hash< const wgt::TypeId >
 		: public unary_function< const wgt::TypeId, size_t >

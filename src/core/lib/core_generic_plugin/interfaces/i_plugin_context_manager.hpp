@@ -14,7 +14,7 @@ public:
 	typedef std::wstring PluginId;
 
 	virtual ~IPluginContextManager() {}
-	virtual IComponentContext * createContext(const PluginId & id) = 0;
+	virtual IComponentContext* createContext(const PluginId& id, const std::wstring& path) = 0;
 	virtual IComponentContext * getContext(const PluginId & id) const = 0;
 	virtual IComponentContext * getGlobalContext() const = 0;
 	virtual void destroyContext(const PluginId & id) = 0;

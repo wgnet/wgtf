@@ -1,9 +1,12 @@
 import QtQuick 2.0
-import WGControls 1.0 as WGOne
+
 import WGControls 2.0
+import WGControls.Canvas 2.0
 
 Canvas {
     id: curve
+    WGComponent { type: "Curve" }
+    
     anchors.fill: parent
     // Bezier Point Data has 3 points, the position and two control points relative to the position
     // point{
@@ -108,7 +111,7 @@ Canvas {
     {
         if(index === -1 || index >= pointRepeater.count)
             return null;
-        return pointRepeater.itemAt(index).point
+        return pointRepeater.itemAt(index);
     }
 
     function constrainHandles(pointIndex)
@@ -124,12 +127,40 @@ Canvas {
         }
     }
 
-    WGOne.WGListModel
+    function getLinearGradient(index, subD)
+    {
+        //Returns an array of approximate linear points (subD + 2)
+        //One sub-division means 3 stops start->subD->end
+        // starts at point (index)
+        // split into (subD) subdivisions
+        // ends at point(index+1) if possible
+
+        var startPoint = curveModel.atIndex(index)
+        var endPoint = curveModel.atIndex(index)
+
+        var yPoints = []
+
+        if(index < pointRepeater.count - 1)
+        {
+            endPoint = curveModel.atIndex(index + 1)
+        }
+
+        var timeInterval = (endPoint.x - startPoint.x) / (subD + 1)
+        for (var i = 0; i <= subD + 1; i++)
+        {
+            var xVal = startPoint.x + (timeInterval * i)
+            yPoints.push(Qt.point(xVal, curveModel.atTime(xVal)))
+        }
+
+        return yPoints
+    }
+
+    WGListModel
     {
         id: pointModel
         source: points
 
-        WGOne.ValueExtension {}
+        ValueExtension {}
     }
 
     Repeater
@@ -137,7 +168,7 @@ Canvas {
         id: pointRepeater
         model: pointModel
         delegate: Point{
-            objectName: index
+            objectName: "point" + index + "_" + curve.objectName
             point: value;
             parentCurve: curve;
             baseColor: curve.color;
@@ -169,6 +200,7 @@ Canvas {
         ctx.clearRect(0, 0, width, height);
 
         var curveIt = iterator(curve.points)
+        /*
         if(curveIt.moveNext()){
             // -- Glow line
             ctx.lineWidth = 4.0;
@@ -197,14 +229,14 @@ Canvas {
             } while(curveIt.moveNext())
             ctx.lineTo(viewTransform.transformX(1), pos.y);
             ctx.stroke();
-        }
+        }*/
         var curveIt = iterator(curve.points)
         // Until we can get the length property we iterate the collection to count
         var count = 0;
         if(curveIt.moveNext()){
             // -- Solid line
-            ctx.lineWidth = 1.0;
-            ctx.strokeStyle = enabled ? color : Qt.darker(color);
+            ctx.lineWidth = enabled ? 2.0 : 4.0;
+            ctx.strokeStyle = enabled ? color : Qt.rgba(color.r, color.g, color.b, 0.3);
 
             ctx.beginPath();
             var point = curveIt.current;

@@ -6,6 +6,7 @@
 
 class QQmlComponent;
 class QQmlEngine;
+class QFileSystemWatcher;
 class QVariant;
 class QWidget;
 class QObject;
@@ -23,6 +24,9 @@ public:
 	virtual ~IQtFramework() {}
 
 	virtual QQmlEngine * qmlEngine() const = 0;
+	virtual QFileSystemWatcher* qmlWatcher() const = 0;
+	virtual void setIncubationTime( int msecs ) = 0;
+	virtual void incubate() = 0;
 	virtual const QtPalette * palette() const = 0;
 	virtual QtGlobalSettings * qtGlobalSettings() const = 0;
 	virtual void registerTypeConverter( IQtTypeConverter & converter ) = 0;

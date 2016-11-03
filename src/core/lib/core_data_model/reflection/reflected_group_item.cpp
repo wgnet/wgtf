@@ -33,21 +33,10 @@ ReflectedGroupItem::ReflectedGroupItem( const MetaGroupObj * groupObj, Reflected
 
 const char * ReflectedGroupItem::getDisplayText( int column ) const
 {
-	switch (column)
-	{
-	case 0:
-		return displayName_.c_str();
-
-	case 1:
-		return "Reflected Group";
-
-	default:
-		assert( false );
-		return "";
-	}
+	return displayName_.c_str();
 }
 
-Variant ReflectedGroupItem::getData( int column, size_t roleId ) const
+Variant ReflectedGroupItem::getData( int column, ItemRole::Id roleId ) const
 {
 	auto obj = getRootObject();
 	if (obj == nullptr)
@@ -127,7 +116,7 @@ bool ReflectedGroupItem::isSameGroup(const MetaGroupObj* group) const
 		&& (group == groupObj_ || group->getGroupNameHash() == groupObj_->getGroupNameHash());
 }
 
-bool ReflectedGroupItem::setData( int column, size_t roleId, const Variant & data )
+bool ReflectedGroupItem::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	auto controller = getController();
 	if (controller == nullptr)

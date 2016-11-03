@@ -3,6 +3,7 @@
 
 #include "core_variant/variant.hpp"
 #include "wg_types/binary_block.hpp"
+#include "core_data_model/i_item_role.hpp"
 
 namespace wgt
 {
@@ -24,8 +25,8 @@ public:
 
 	/// TODO thumbnails will become "data"
 	virtual ThumbnailData getThumbnail( int column ) const = 0;
-	virtual Variant getData( int column, size_t roleId ) const = 0;
-	virtual bool setData( int column, size_t roleId, const Variant & data ) = 0;
+	virtual Variant getData( int column, ItemRole::Id roleId ) const = 0;
+	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data ) = 0;
 };
 } // end namespace wgt
 #endif // I_ITEM_HPP

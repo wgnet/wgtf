@@ -1,6 +1,7 @@
 #ifndef __DEFAULT_NODE_EDITOR_H__
 #define __DEFAULT_NODE_EDITOR_H__
 
+#include "core_dependency_system/depends.hpp"
 #include "core_dependency_system/i_interface.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_data_model/generic_list.hpp"
@@ -9,13 +10,21 @@
 
 namespace wgt
 {
+class IComponentContext;
+class IDefinitionManager;
+
 class NodeEditor : public Implements<INodeEditor>
+                   ,
+                   public Depends<IDefinitionManager>
 {
 	DECLARE_REFLECTED
 public:
-    virtual ~NodeEditor(){}
-	
-    void SetGraph(std::shared_ptr<IGraph> graph) override;
+	NodeEditor(IComponentContext& context);
+	virtual ~NodeEditor()
+	{
+	}
+
+	void SetGraph(std::shared_ptr<IGraph> graph) override;
 
 	std::shared_ptr<INode> CreateNode(std::string nodeClass, float x, float y) override;
 	INode* GetNode(size_t id) override;
@@ -34,6 +43,11 @@ private:
     void onDeleteConnection(size_t connectionId) override;
 
     const IListModel* GetGraphModel() const override { return &graphModel; }
+
+	virtual void CreateGroup(Collection& collection,
+	                         const Vector4& rectangle,
+	                         const std::string& name,
+	                         const Vector4& color) override;
 
 private:
     GenericListT<ObjectHandleT<IGraph>> graphModel;

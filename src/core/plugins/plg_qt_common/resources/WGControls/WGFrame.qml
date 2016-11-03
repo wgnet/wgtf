@@ -1,7 +1,8 @@
-import QtQuick 2.3
-import QtQuick.Layouts 1.1
+import QtQuick 2.5
+import QtQuick.Layouts 1.3
 
 /*!
+    \ingroup wgcontrols
     \brief Stripped back dark or light frame. Not expandable, not toggleable, no title.
 
     These will match WGSubPanel
@@ -45,6 +46,7 @@ WGFrame {
 Item {
     id: baseFrame
     objectName: "WGFrame"
+    WGComponent { type: "WGFrame" }
 
     /*! This property sets the frame colour to dark
         The default value is \c true
@@ -138,15 +140,7 @@ Item {
         anchors {left: parent.left; right: parent.right}
         anchors.top: parent.top
         visible: lineFrame
-
-        Text {
-            id: frameLabel
-            color: palette.highlightTextColor
-            anchors.left: parent.left
-            anchors.top: parent.top
-            text: baseFrame.text
-            visible: toggleable ? false : true
-        }
+        anchors.leftMargin: defaultSpacing.leftMargin
 
         WGCheckBox {
             id: toggleableBox
@@ -158,6 +152,15 @@ Item {
             checked: true
             anchors.left: parent.left
             anchors.top: parent.top
+        }
+
+        Text {
+            id: frameLabel
+            color: palette.highlightTextColor
+            anchors.left: parent.left
+            anchors.top: parent.top
+            text: baseFrame.text
+            visible: toggleable ? false : true
         }
 
         WGSeparator {

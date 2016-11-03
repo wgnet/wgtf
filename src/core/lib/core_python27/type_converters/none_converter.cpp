@@ -9,7 +9,6 @@ namespace wgt
 namespace PythonType
 {
 
-
 bool NoneConverter::toVariant( const PyScript::ScriptObject & inObject,
 	Variant & outVariant ) /* override */
 {
@@ -19,24 +18,14 @@ bool NoneConverter::toVariant( const PyScript::ScriptObject & inObject,
 		return false;
 	}
 
-	void * noneType = nullptr;
-	outVariant = Variant( noneType );
+	outVariant = Variant(nullptr);
 	return true;
 }
-
 
 bool NoneConverter::toScriptType( const Variant & inVariant,
 	PyScript::ScriptObject & outObject, void* userData ) /* override */
 {
-	// null void * -> None
-	if (!inVariant.typeIs< Variant::traits< void * >::storage_type >())
-	{
-		return false;
-	}
-
-	void * ptr = nullptr;
-	const bool success = inVariant.tryCast< void * >( ptr );
-	if (success && (ptr == nullptr))
+	if (inVariant.typeIs<void>() || inVariant.isNullPointer())
 	{
 		outObject = PyScript::ScriptObject::none();
 		return true;

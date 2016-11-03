@@ -5,6 +5,12 @@
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_variant/type_id.hpp"
 
+#define INTERFACE_REQUEST(type, var, holder, retOnFalse)\
+    type* var##Pointer = holder.get<type>(); \
+    if (var##Pointer == nullptr)\
+        return retOnFalse;\
+    type& var = *var##Pointer;
+
 namespace wgt
 {
 class DummyDependsType {};
@@ -13,57 +19,57 @@ class DummyDependsType {};
 // Change this to support as many classes as we need to inherit, until we have
 // support for variadic templates
 //==============================================================================
+
 template<
 	typename T1,
 	typename T2 = DummyDependsType,
 	typename T3 = DummyDependsType,
 	typename T4 = DummyDependsType,
 	typename T5 = DummyDependsType,
-	typename T6 = DummyDependsType>
+	typename T6 = DummyDependsType,
+	typename T7 = DummyDependsType,
+	typename T8 = DummyDependsType,
+	typename T9 = DummyDependsType>
 class DependsImpl
-	: public DependsImpl< T2, T3, T4, T5, T6 > 
+	: public DependsImpl< T2, T3, T4, T5, T6, T7, T8, T9 > 
 {
 protected:
-	typedef DependsImpl< T2, T3, T4, T5, T6 > Base;
+	typedef DependsImpl< T2, T3, T4, T5, T6, T7, T8, T9 > Base;
 
 	DependsImpl()
 		: pValue_( nullptr )
 	{
 	}
 
-
-	//--------------------------------------------------------------------------
-	template< typename T >
-	T * baseGet( IComponentContext & context ) const
+	DependsImpl & operator=( const DependsImpl & that )
 	{
-		return Base::template get< T >( context );
+		pValue_ = that.pValue_;
+
+		Base::operator=( that );
+
+		return *this;
 	}
 
-
-	template<bool isSameType, bool _dummy = false>
+	template<typename T, bool = false>
 	struct GetHelper
 	{
 		//--------------------------------------------------------------------------
-		template< typename Source, typename Target, typename DependsType >
-		static Target * get( IComponentContext & context, Source * & pValue, DependsType & pThis )
+		template< typename Source >
+		static T * get( IComponentContext & context, Source * pValue, const DependsImpl & pThis )
 		{
-			if(pValue == nullptr)
-			{
-				pValue = context.queryInterface< Source >();
-			}
-			return pValue;
+			return pThis.Base::template get< T >( context );
 		}
 	};
 
 
 	template<bool _dummy>
-	struct GetHelper<false, _dummy>
+	struct GetHelper<T1, _dummy>
 	{
 		//--------------------------------------------------------------------------
-		template< typename Source, typename Target, typename DependsType >
-		static Target * get( IComponentContext & context, Source * & pValue, DependsType & pThis )
+		template< typename Source >
+		static T1 * get( IComponentContext & context, Source * pValue, const DependsImpl & pThis )
 		{
-			return pThis.template baseGet< Target >( context );
+			return pValue;
 		}
 	};
 
@@ -72,7 +78,7 @@ protected:
 	template< typename T >
 	T * get( IComponentContext & context ) const
 	{
-		return GetHelper< std::is_same< T1, T >::value >::template get< T1, T >( context, pValue_, *this );
+		return GetHelper< T >::get( context, pValue_, *this );
 	}
 
 
@@ -117,8 +123,16 @@ protected:
 		}
 		Base::onInterfaceDeregistered( caster );
 	}
+
+
+	void initValue( IComponentContext & context )
+	{
+		pValue_ = context.queryInterface< T1 >();
+		Base::initValue( context );
+	}
+
 private:
-	mutable T1 * pValue_;
+	T1 * pValue_;
 };
 
 //==============================================================================
@@ -128,6 +142,13 @@ template<>
 class DependsImpl< DummyDependsType >
 {
 protected:
+	DependsImpl & operator=( const DependsImpl & that )
+	{
+		//Do nothing
+		return *this;
+	}
+
+
 	//--------------------------------------------------------------------------
 	template< typename T >
 	T * get( IComponentContext & context ) const
@@ -155,6 +176,11 @@ protected:
 		//Do nothing
 	}
 
+	void initValue( IComponentContext & context )
+	{
+		//Do nothing
+	}
+
 };
 
 
@@ -168,24 +194,53 @@ template<
 	typename T3 = DummyDependsType,
 	typename T4 = DummyDependsType,
 	typename T5 = DummyDependsType,
-	typename T6 = DummyDependsType>
+	typename T6 = DummyDependsType,
+	typename T7 = DummyDependsType,
+	typename T8 = DummyDependsType,
+	typename T9 = DummyDependsType>
 class Depends
 	: public IComponentContextListener
-	, private DependsImpl< T1, T2, T3, T4, T5, T6 >
+	, private DependsImpl< T1, T2, T3, T4, T5, T6, T7, T8, T9 >
 {
-	typedef DependsImpl< T1, T2, T3, T4, T5, T6 > Base;
+	typedef DependsImpl< T1, T2, T3, T4, T5, T6, T7, T8, T9 > Base;
 public:
 	Depends( IComponentContext & context )
-		: context_( context )
+		: context_( &context )
 	{
-		context_.registerListener( *this );
+		context_->registerListener( *this );
+
+		// call init after registration to avoid races
+		Base::initValue( *context_ );
+	}
+
+
+	Depends( const Depends & that )
+		: context_( that.context_ )
+	{
+		context_->registerListener( *this );
+		Base::operator=( that );
 	}
 
 
 	//--------------------------------------------------------------------------
 	~Depends()
 	{
-		context_.deregisterListener( *this );
+		context_->deregisterListener( *this );
+	}
+
+
+	Depends & operator=( const Depends & that )
+	{
+		if(context_ != that.context_)
+		{
+			context_->deregisterListener( *this );
+			context_ = that.context_;
+			context_->registerListener( *this );
+		}
+
+		Base::operator=( that );
+
+		return *this;
 	}
 
 
@@ -193,7 +248,7 @@ public:
 	template< typename T >
 	T * get() const
 	{
-		return Base::template get< T >( context_ );
+		return Base::template get< T >( *context_ );
 	}
 
 
@@ -201,7 +256,12 @@ public:
 	template< typename T >
 	void get( std::vector< T * > & interfaces ) const
 	{
-		Base::template get< T >( context_, interfaces );
+		Base::template get< T >( *context_, interfaces );
+	}
+
+	operator IComponentContext&()
+	{
+		return *context_;
 	}
 
 
@@ -219,7 +279,7 @@ private:
 		Base::onInterfaceDeregistered( caster );
 	}
 
-	IComponentContext & context_;
+	IComponentContext * context_;
 };
 } // end namespace wgt
 #endif //DEPENDS_HPP

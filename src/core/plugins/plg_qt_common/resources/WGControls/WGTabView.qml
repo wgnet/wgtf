@@ -1,8 +1,10 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Controls.Styles 1.2
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Controls.Styles 1.4
+import WGControls.Styles 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A styled tab control.
 
 Example:
@@ -21,6 +23,7 @@ WGTabView{
 TabView {
     id: baseTabView
     objectName: "WGTabView"
+    WGComponent { type: "WGTabView" }
 
     clip: true
 

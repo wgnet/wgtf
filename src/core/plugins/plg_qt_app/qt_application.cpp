@@ -1,6 +1,5 @@
 #include "qt_application.hpp"
 
-#include "core_automation/interfaces/automation_interface.hpp"
 #include "core_common/ngt_windows.hpp"
 #include "core_common/platform_env.hpp"
 
@@ -57,20 +56,20 @@ namespace
 	};
 }
 
-QtApplication::QtApplication( int argc, char** argv )
-	: application_( nullptr )
-	, argc_( argc )
-	, argv_( argv )
-	, qtFramework_(nullptr)
-	, splash_( nullptr )
-	, bQuit_( false )
+QtApplication::QtApplication(IComponentContext& context, int argc, char** argv)
+    : Depends<IQtFramework, ISplash>(context)
+    , application_(nullptr)
+    , argc_(argc)
+    , argv_(argv)
+    , splash_(nullptr)
+    , bQuit_(false)
 
 {
-	char ngtHome[MAX_PATH];
+	char wgtHome[MAX_PATH];
 
-	if (Environment::getValue< MAX_PATH >( "NGT_HOME", ngtHome ))
+	if (Environment::getValue< MAX_PATH >( "WGT_HOME", wgtHome ))
 	{
-		QCoreApplication::addLibraryPath( ngtHome );
+		QCoreApplication::addLibraryPath( wgtHome );
 	}
 	
 	application_.reset( new QApplication( argc_, argv_ ) );
@@ -86,9 +85,32 @@ QtApplication::QtApplication( int argc, char** argv )
 	QObject::connect( dispatcher, &QAbstractEventDispatcher::aboutToBlock, idleLoop, &IdleLoop::start );
 	QObject::connect( dispatcher, &QAbstractEventDispatcher::awake, idleLoop, &IdleLoop::stop );
 
-	//Splash
-	QPixmap pixmap( ":/qt_app/splash" );
-	splash_.reset( new QSplashScreen( pixmap ) );
+	// Splash
+	QPixmap pixmap;
+
+	// Query for custom splash screens
+	bool foundCustomSplash = false;
+	const auto pSplash = this->get<ISplash>();
+	if (pSplash != nullptr)
+	{
+		std::unique_ptr<BinaryBlock> splashData;
+		std::string format;
+		const auto loaded = pSplash->loadData(splashData, format);
+		if (loaded)
+		{
+			foundCustomSplash = pixmap.loadFromData(static_cast<const uchar*>(splashData->data()),
+			                                        static_cast<uint>(splashData->length()),
+			                                        format.c_str());
+		}
+	}
+
+	// Use default splash screen
+	if (!foundCustomSplash)
+	{
+		pixmap.load(":/qt_app/splash");
+	}
+
+	splash_.reset(new QSplashScreen(pixmap));
 	splash_->show();
 }
 
@@ -96,13 +118,13 @@ QtApplication::~QtApplication()
 {
 }
 
-void QtApplication::initialise( IQtFramework * qtFramework )
+void QtApplication::initialise()
 {
-	qtFramework_ = qtFramework;
-	assert( qtFramework_ != nullptr );
-	if(qtFramework_ != nullptr)
+	auto qtFramework = this->get<IQtFramework>();
+	assert(qtFramework != nullptr);
+	if (qtFramework != nullptr)
 	{
-		auto palette = qtFramework_->palette();
+		auto palette = qtFramework->palette();
 		if (palette != nullptr)
 		{
 			application_->setPalette( palette->toQPalette() );
@@ -117,17 +139,14 @@ void QtApplication::finalise()
 
 void QtApplication::update()
 {
-	AutomationInterface* pAutomation =
-		Context::queryInterface< AutomationInterface >();
-	if (pAutomation)
-	{
-		if (pAutomation->timedOut())
-		{
-			this->quitApplication();
-		}
-	}
-
+	// Only called while app is idle
+	// App may or may not have idle time
 	layoutManager_.update();
+	auto qtFramework = this->get<IQtFramework>();
+	if (qtFramework != nullptr)
+	{
+		qtFramework->incubate();
+	}
 
 	signalUpdate();
 }
@@ -153,18 +172,12 @@ void QtApplication::quitApplication()
 
 void QtApplication::addWindow( IWindow & window )
 {
-	assert( window.getApplication() == nullptr );
-
-	window.setApplication( this );
 	layoutManager_.addWindow( window );
 }
 
 void QtApplication::removeWindow( IWindow & window )
 {
-	assert( window.getApplication() == this );
-
 	layoutManager_.removeWindow( window );
-	window.setApplication( nullptr );
 }
 
 void QtApplication::addView( IView & view )

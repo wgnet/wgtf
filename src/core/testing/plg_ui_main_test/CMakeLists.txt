@@ -6,52 +6,42 @@ ADD_DEFINITIONS( -DNOMINMAX )
 INCLUDE( WGToolsCoreProject )
 find_package(QT5)
 
-REMOVE_DEFINITIONS( /WX )
-ADD_DEFINITIONS(
-	-D_CRT_SECURE_NO_WARNINGS
-)
-
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-SET( METADATA_IMPL
-	pages/metadata/test_page.mpp
-	pages/metadata/test_polymorphism.mpp
+SET( QML_FILES
+	resources/testing_ui_main/actions.xml
+	resources/testing_ui_main/test_property_tree_panel.qml
+	resources/testing_ui_main/test_reflected_tree_panel.qml
 )
-SOURCE_GROUP( "Page\\Metadata" FILES ${METADATA_IMPL} )
-
-SET( PAGE_IMPL
-	pages/test_page.hpp
-	pages/test_page.cpp
-	pages/test_polymorphism.hpp
-	pages/test_polymorphism.cpp
-)
-SOURCE_GROUP( "Page\\Impl" FILES ${PAGE_IMPL} )
-
-SET( INTERFACES
-	interfaces/i_datasource.hpp
-)
-SOURCE_GROUP( "Interfaces" FILES ${INTERFACES} )
-
+SOURCE_GROUP( "QML" FILES ${QML_FILES} )
 BW_QT_ADD_QRC(testing_ui_main resources/testing_ui_main)
 BW_GLOB_RESOURCE_FILES()
 
 SET( ALL_SRCS
+	pages/metadata/test_page.mpp
+	pages/metadata/test_polymorphism.mpp
+	pages/test_page.hpp
+	pages/test_page.cpp
+	pages/test_polymorphism.hpp
+	pages/test_polymorphism.cpp
+	interfaces/i_datasource.hpp
+	test_ui/context.cpp
+	test_ui/context.hpp
+	test_ui/metadata/context.mpp
 	test_ui/test_ui.cpp
 	test_ui/test_ui.hpp
 	test_datasource.cpp
 	test_datasource.hpp
 	plg_ui_main_test.cpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_ui_main_test  SHARED
 	${ALL_SRCS}
 	${RESOURCE_FILES}
 	${COMPILED_RESOURCES}
-	${INTERFACES}
-	${PAGE_IMPL}
-	${METADATA_IMPL}
+	${QML_FILES}
 )
 
 IF( BW_PLATFORM_WINDOWS )
@@ -75,7 +65,6 @@ BW_TARGET_LINK_LIBRARIES( plg_ui_main_test PRIVATE
 	core_reflection
 	reflection_objects_test
 	core_command_system
-	core_serialization
 	core_ui_framework
     Qt5::Core
 	${PLATFORM_LIBRARIES}

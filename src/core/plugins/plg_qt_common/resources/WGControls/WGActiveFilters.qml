@@ -1,14 +1,23 @@
-import QtQuick 2.3
+import QtQuick 2.5
 import QtQuick.Dialogs 1.2
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.0
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
+import QtQuick.Controls.Private 1.0
+import Qt.labs.controls 1.0 as Labs
+
 import WGControls 1.0
+import WGControls.Styles 1.0
 import WGCopyableFunctions 1.0
+import WGControls.Layouts 1.0
+
+// TODO: Make Active Filters use all 2.0 plugins
+import WGControls.Views 2.0
 
 /*!
+ \ingroup wgcontrols
  \brief A control used to represent the presence of a user definable filter.
- When the user inputs a search word a new active filter is created and displayed alongside the search bar.
- Individual filters and be toggled on/off or removed.
+  When the user inputs a search word a new active filter is created and displayed alongside the search bar.
+  Individual filters and be toggled on/off or removed.
 
 Example:
 \code{.js}
@@ -17,11 +26,19 @@ WGActiveFilters {
     dataModel: filtersModel
 }
 \endcode
+
+\todo
+  1. Have an option for search filter to be at top or bottom of active filters control when inlinetags false
+  2. Once the filter text has gone onto a new line it will always stay on its own line.. it should continue the
+  inline behviour onto the second line if there is > __minimumFilterTextWidth space
+  3. Add backspace entered into an empty filterText field to remove filter tags. Only if empty!
+  4. Put filterText into an item so that the clearCurrentFilterButton does not obuscure large text entries
 */
 
-Item {
+ColumnLayout {
     id: rootFrame
     objectName: "WGActiveFilters"
+    WGComponent { type: "WGActiveFilters" }
 
     // Public properties
     /*! This property holds the dataModel containing all filters */
@@ -33,10 +50,45 @@ Item {
     property var stringValue: __internalStringValue
 
     /*! This property makes the filter tags appear to the left of the search text instead of below it.
-        When the search tags exceed half the width of the search field they are moved to a flow layout beneath the search text field
+        When false the filterText will always be place on its own line
+        When the filterText width falls below __minimumFilterTextWidth it will be placed on a new line
         The default value is true
     */
     property bool inlineTags: true
+
+    /*! The string list for autocomplete */
+    // TODO: This needs to be populated with possible matches
+    property var autoCompleteData: []
+
+    /*! Have the filter text automatically complete based on the autoCompleteData
+
+        The default is true if autoCompleteData contains any strings. */
+    property bool useAutoComplete: autoCompleteData.length > 0
+
+    /*! Show a dropdown menu of suggestions based on autoCompleteData
+
+        The default is true if useAutoComplete is true. */
+    property bool showSuggestions: useAutoComplete
+
+    /*! The searchType for autoComplete.
+
+        Valid entries are:
+        Qt.MatchExactly
+        Qt.CaseSensitive
+        Qt.MatchFixedString
+
+        The default is Qt.MatchFixedString. */
+    property int searchType: Qt.MatchFixedString
+
+    /*! Allows filter tags to be edited after they have been created.
+
+        The default value is true
+    */
+    property bool editableTags: true
+
+    // current filter term to use for autocomplete
+    /*! \internal */
+    property string currentFilterText: ""
 
     // Locals for referencing interior fields
     /*! \internal */
@@ -49,30 +101,34 @@ Item {
     /*! \internal */
     property var __splitterChar: ","
 
-    /*  This property holds the original inlineTags value.
-        inLineTags can change and the original state must be kept. */
     /*! \internal */
-    property bool __originalInlineTagSetting: false
-
-    /*! \internal */
-    property int __currentFilterWidth: 0
-
-    /*! \internal */
-    property int __filterTags: 0
-
-    // This property holds the flip state between filter tags being drawn inline or on a new line
-    /*! \internal */
-    property bool __changeLayout: false
+    property alias __filterTags: filterRepeater.count
 
     // This property indicates what the currently loaded filter is
     /*! \internal */
     property var __loadedFilterId: ""
+
+    //This property holds the mimimum width the filterText will remain on the same line as filter tags
+    /*! \internal */
+    property int __minimumFilterTextWidth: 100
+
+    // This property holds the original minimumWidth value.
+    /*! \internal */
+    property int __originalMinimumWidth: __minimumWidth
+
+    // This property holds the minimum width for binding purposes
+    /* \internal */
+    property var __minimumWidth: 100
 
     //------------------------------------------
     // Signals
     //------------------------------------------
 
     signal changeFilterWidth(int filterWidth, bool add)
+
+    signal beforeAddFilter(var filter)
+
+    signal updateAutoComplete()
 
     //------------------------------------------
     // Functions
@@ -82,16 +138,19 @@ Item {
     /*! \internal */
     function addFilter( text ) {
         //remove extra whitespace at start and end and check string contains some characters
-        text = text.trim()
-        if (text != "")
+        var filter = {"display": text, "value": text, "active": true}
+        beforeAddFilter( filter )
+        if (filter.value != "")
         {
-            rootFrame.dataModel.addFilterTerm(text);
-            filterText.text = "";
+            rootFrame.dataModel.addFilterTerm(filter.display, filter.value, filter.active);
+            // Get the newly added filter, sadly VariantList doesn't have easy access so iterate to it
+            var filtersIter = iterator( rootFrame.dataModel.currentFilterTerms );
+            var newFilter = filtersIter.current;
+            while (filtersIter.moveNext()) {
+                newFilter = filtersIter.current;
+            }
         }
-        else
-        {
             filterText.text = "";
-        }
     }
 
     // Handles updating the string value when the active filters list model
@@ -102,17 +161,30 @@ Item {
         var iteration = 0;
         var filtersIter = iterator( rootFrame.dataModel.currentFilterTerms );
         while (filtersIter.moveNext()) {
+            if (filtersIter.current.active == true) {
             if (iteration != 0) {
                 combinedStr += __splitterChar;
             }
-
-            if (filtersIter.current.active == true) {
                 combinedStr += filtersIter.current.value;
                 ++iteration;
             }
         }
 
         __internalStringValue = combinedStr;
+    }
+
+    function termExists( newTerm ) {
+        var filtersIter = iterator( rootFrame.dataModel.currentFilterTerms );
+        var termMatches = false
+        while (filtersIter.moveNext()) {
+            if (filtersIter.current.active == true) {
+                if (newTerm == filtersIter.current.value)
+                {
+                    termMatches = true
+                }
+            }
+        }
+        return termMatches
     }
 
     // Handles saving an active filter
@@ -124,67 +196,87 @@ Item {
         }
     }
 
-    // Moves active filters to and from a flow layout when containter is resized
-    /*! \internal */
-    function checkActiveFilterSize(){
-        if (__originalInlineTagSetting && inlineTags)
+    // If the filterText.width is less than half the remaining textFrame.width it will be put on a new line
+    function updateLayout(){
+        // Update the minimum width to fit the longest term
+        var minWidth = __originalMinimumWidth
+        for(var i = 0; i< filterRepeater.count; ++i)
         {
-            if (__currentFilterWidth > textFrame.width / 2)
-            {
-                __filterTags = 0 // all filter tags are rebuilt when inlineTags changes, must reset value
-                __currentFilterWidth = 0
-                inlineTags = false // move to flow layout
-            }
+            minWidth = Math.max(minWidth, filterRepeater.itemAt(i).width)
         }
-        if (__originalInlineTagSetting && !inlineTags)
-        {
-            if (__currentFilterWidth < textFrame.width / 2)
-            {
-                __filterTags = 0
-                __currentFilterWidth = 0
-                inlineTags = true
-            }
-        }
-    }
 
-    Component.onCompleted: {
-        __originalInlineTagSetting = inlineTags
-    }
+        rootFrame.__minimumWidth = Math.max(__minimumFilterTextWidth, minWidth)
 
-    onChangeFilterWidth: {
-        if(add)
+        if (inlineTags)
         {
-            __currentFilterWidth += filterWidth
-            __filterTags += 1
-            if (__originalInlineTagSetting && inlineTags)
+            if(filterRepeater.count > 0)
             {
-                // are the filters taking up more than half the space?
-                if (__currentFilterWidth > (textFrame.width / 2))
-                {
-                    __filterTags = 0 // all filter tags are rebuilt when inlineTags changes, must reset value
-                    __currentFilterWidth = 0
-                    inlineTags = false
+                var currentLineWidth = 0
+                var longestLine = 0
+
+                for (var i=0; i < filterRepeater.count; i++) {
+                    if (currentLineWidth + filterRepeater.itemAt(i).width + activeFiltersLayout.spacing > textFrame.width)
+                    {
+                        longestLine = Math.max(longestLine, currentLineWidth)
+                        currentLineWidth = filterRepeater.itemAt(i).width + activeFiltersLayout.spacing
+                    }
+                    else
+                    {
+                        currentLineWidth += filterRepeater.itemAt(i).width + activeFiltersLayout.spacing
+                        longestLine = Math.max(longestLine, currentLineWidth)
+                    }
                 }
-            }
-        }
-        else // active filter being removed
-        {
-            __currentFilterWidth -= filterWidth
-            __filterTags -= 1
-            if (__originalInlineTagSetting && !inlineTags)
-            {
-                if (__currentFilterWidth > (textFrame.width / 2))
+
+                var remainingWidth = textFrame.width - currentLineWidth
+
+                if (remainingWidth + activeFiltersLayout.spacing < __minimumFilterTextWidth)
                 {
-                    inlineTags = false
+                    filterEditFrame.width = textFrame.width
                 }
                 else
                 {
-                    __filterTags = 0
-                    __currentFilterWidth = 0
-                    inlineTags = true
+                    filterEditFrame.width = remainingWidth
                 }
             }
+            else
+            {
+                filterEditFrame.width = textFrame.width
+            }
         }
+        else //inlineTags == false
+        {
+            filterEditFrame.width = textFrame.width
+        }
+    }
+
+    function find (text, searchType) {
+        for (var i = 0 ; i < autoCompleteData.length ; ++i) {
+            var currentString = autoCompleteData[i]
+            if (searchType === Qt.MatchExactly) {
+                if (text === currentString)
+                    return i;
+            } else if (searchType === Qt.CaseSensitive) {
+                if (currentString.indexOf(text) === 0)
+                    return i;
+            } else if (searchType === Qt.MatchFixedString) {
+                if (currentString.toLowerCase().indexOf(text.toLowerCase()) === 0
+                        && currentString.length === text.length)
+                    return i;
+            } else if (currentString.toLowerCase().indexOf(text.toLowerCase()) === 0) {
+                return i
+            }
+        }
+        return -1;
+    }
+
+    Component.onCompleted: {
+        __originalMinimumWidth = __minimumWidth
+        updateAutoComplete()
+    }
+
+    onBeforeAddFilter: {
+        filter.display = filter.display.trim()
+        filter.value = filter.value.trim()
     }
 
     //------------------------------------------
@@ -218,43 +310,25 @@ Item {
         ValueExtension {}
     }
 
-
-    //------------------------------------------
-    // Main Layout
-    //------------------------------------------
-
-    MessageDialog {
-        id: overwritePromptDialog
-        objectName: "overwrite_dialog"
-        title: "Overwrite?"
-        icon: StandardIcon.Question
-        text: "This filter already exists. Would you like to overwrite it with the new terms?"
-        standardButtons: StandardButton.Yes | StandardButton.No | StandardButton.Abort
-        modality: Qt.WindowModal
-        visible: false
-
-        onYes: {
-            saveActiveFilter( true );
-        }
-
-        onNo: {
-            saveActiveFilter( false );
-        }
-    }
-
-
-    ColumnLayout {
-        id: mainRowLayout
-        anchors {left: parent.left; top: parent.top; right: parent.right}
-
         //------------------------------------------
         // Top Row - Text Area and Buttons
         //------------------------------------------
         WGExpandingRowLayout {
             id: inputRow
+            Layout.minimumWidth: rootFrame.__minimumWidth + btnListviewFilters.width + spacing
             Layout.fillWidth: true
-            Layout.preferredHeight: childrenRect.height
             Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+
+            property int termEditing: -1
+
+            signal clickAutoMenu( string term )
+
+            onTermEditingChanged: {
+                if (termEditing == -1)
+                {
+                    filterText.focus = true
+                }
+            }
 
             WGPushButton {
                 //Save filters and load previous filters
@@ -264,12 +338,14 @@ Item {
 
                 tooltip: "Filter Options"
 
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+
                 menu: WGMenu {
                     id: activeFiltersMenu
                     title: "Filters"
 
                     MenuItem {
-                        text: "Save New Filter..."
+                        text: "Save New Filter"
                         onTriggered: {
                             // TODO - Refine saving to allow for naming of the filter
                             // JIRA - NGT-1484
@@ -324,39 +400,268 @@ Item {
                 id: textFrame
                 color: palette.textBoxColor
                 Layout.fillWidth: true
-                Layout.preferredHeight: childrenRect.height + defaultSpacing.standardBorderSize
-                Layout.maximumHeight: childrenRect.height + defaultSpacing.standardBorderSize
                 Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+            Layout.preferredHeight: childrenRect.height
+                Layout.minimumWidth: rootFrame.__minimumWidth
 
-                onWidthChanged: {
-                    checkActiveFilterSize()
-                }
+            onWidthChanged: { updateLayout() }
 
-                // can only be a single row
+            Flow {
+                id: activeFiltersLayout
+                spacing: defaultSpacing.rowSpacing
+                width: textFrame.width
 
-                WGExpandingRowLayout {
-                    id: inputLine
-                    anchors {left: parent.left; top: parent.top; right: parent.right}
-                    height: defaultSpacing.minimumRowHeight
+                Repeater {
+                    id: filterRepeater
+                    model: filtersModel
+                    onItemAdded: { updateLayout() }
+                    onItemRemoved: { updateLayout() }
 
-                    Loader {
-                        id: activeFiltersInlineRect
-                        visible: __filterTags > 0 && inlineTags
-                        Layout.preferredWidth: __currentFilterWidth + (defaultSpacing.rowSpacing * __filterTags) + defaultSpacing.rowSpacing
-                        Layout.alignment: Qt.AlignLeft | Qt.AlignTop
-                        sourceComponent: inlineTags ? filterTagList : null
-                    } // activeFiltersLayoutRect
+                        delegate: WGButtonFrame {
+                            id: tagFrame
+                        property var myValue: value;
 
-                    WGTextBox {
+                            objectName: "filterTagFrame_" + myValue.display
+
+                            height: defaultSpacing.minimumRowHeight
+
+                            width: defaultSpacing.doubleMargin + closeButton.width + Math.max(tagWidth.width + defaultSpacing.doubleMargin, tagEditTextWidth.width + defaultSpacing.doubleMargin)
+
+                            onWidthChanged: {
+                                if(inputRow.termEditing == index)
+                                {
+                                    updateLayout()
+                                }
+                            }
+
+                            TextMetrics {
+                                id: tagWidth
+                                text: myValue.display
+                            }
+
+                            TextMetrics {
+                                id: tagEditTextWidth
+                                text: tagEdit.text
+                            }
+
+                            Row {
+                                Item { height: parent.height; width: defaultSpacing.standardMargin;}
+                                spacing: 0
+
+                                WGToolButton {
+                                    id: closeButton
+                                    objectName: "closeButton_" + filterString.text
+                                    iconSource: hovered || activeFocus ? "icons/delete_sml_16x16.png" : "icons/close_sml_16x16.png"
+
+                                    y: pressed ? 1 : 0
+
+                                    radius: 0
+
+                                    height: parent.height
+                                    width: 10
+
+                                    onClicked: {
+                                        filterText.focus = true
+                                        rootFrame.currentFilterText = ""
+                                        rootFrame.dataModel.removeFilterTerm(index);
+                                    }
+
+                                    style: WGToolButtonStyle {
+                                        background: Item{}
+                                    }
+                                }
+
+                                WGPushButton {
+                                    id: filterString
+                                    objectName: "filterStringButton_" + text
+                                    visible: inputRow.termEditing != index
+                                    text: myValue.display
+                                    checkable: true
+                                    checked: myValue.active
+                                    style: WGTagButtonStyle{
+                                        __textColor: palette.disabledTextColor
+                                    }
+
+                                    radius: 0
+
+                                    width: tagWidth.width + defaultSpacing.doubleMargin
+
+                                    property bool doubleCheck: false
+
+                                    tooltip: myValue.value
+
+                                    Connections {
+                                        target: myValue
+                                        onActiveChanged: {
+                                            updateStringValue();
+                                        }
+                                    }
+
+                                    onClicked: {
+                                        if(!doubleCheck)
+                                        {
+                                            filterString.doubleCheck = true
+                                        }
+                                        else if (editableTags)
+                                        {
+                                            inputRow.termEditing = index
+                                            tagEdit.focus = true
+                                            tagEdit.selectAll()
+                                            filterString.doubleCheck = false
+                                        }
+                                    }
+
+                                    Timer {
+                                        //Double click check timer
+                                        running: filterString.doubleCheck == true
+                                        interval: 200
+                                        onTriggered: {
+                                            myValue.active = !myValue.active
+                                            filterString.doubleCheck = false
+                                        }
+                                    }
+                                }
+
+                                // editable tag text box
+                                WGTextBoxAutoComplete {
+                                    id: tagEdit
+                                    objectName: "tagEdit_" + text
+                                    visible: inputRow.termEditing == index
+                                    text: myValue.display
+
+                                    useAutoComplete: rootFrame.useAutoComplete
+
+                                    autoCompleteData: rootFrame.autoCompleteData
+
+                                    width: Math.max(tagWidth.width + defaultSpacing.doubleMargin, tagEditTextWidth.width + defaultSpacing.doubleMargin)
+                                    height: defaultSpacing.minimumRowHeight - defaultSpacing.doubleBorderSize
+
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    onTextChanged: {
+                                        if(visible)
+                                        {
+                                            currentFilterText = text
+                                            if (text != "")
+                                            {
+                                                inputRow.termEditing = index
+                                            }
+                                        }
+                                    }
+
+                                    onEditingFinished: {
+                                        text = text.trim()
+
+                                        if(text == "")
+                                        {
+                                            //Delete tag if string is empty
+                                            //TODO: Clearing an empty tag this way does not seem to set focus back to the edit box properly
+                                            filterText.focus = true
+                                            inputRow.termEditing = -1
+                                            rootFrame.currentFilterText = ""
+                                            rootFrame.dataModel.removeFilterTerm(index);
+                                        }
+                                        else if (termExists(text))
+                                        {
+                                            //reset tag to model data if tag already exists
+                                            text = myValue.display
+                                            filterText.focus = true
+                                            inputRow.termEditing = -1
+                                            rootFrame.currentFilterText = ""
+                                            updateLayout()
+                                        }
+                                        else
+                                        {
+                                            //change data
+                                            myValue.value = text
+                                            myValue.display = text
+                                            updateStringValue();
+                                            filterText.focus = true
+                                            inputRow.termEditing = -1
+                                            rootFrame.currentFilterText = ""
+                                            updateLayout()
+                                        }
+                                    }
+
+                                    Keys.onUpPressed: {
+                                        if( useAutoComplete && inputRow.termEditing == index)
+                                        {
+                                            autoCompleteList.currentIndex = Math.max(0, autoCompleteList.currentIndex - 1)
+                                            text = autoCompleteData[autoCompleteList.currentIndex]
+                                        }
+                                        else
+                                        {
+                                            event.accepted = false
+                                        }
+                                    }
+
+                                    Keys.onDownPressed: {
+                                        if( useAutoComplete && inputRow.termEditing == index)
+                                        {
+                                            autoCompleteList.currentIndex = Math.min(autoCompleteData.length - 1, autoCompleteList.currentIndex + 1)
+                                            text = autoCompleteData[autoCompleteList.currentIndex]
+                                        }
+                                        else
+                                        {
+                                            event.accepted = false
+                                        }
+                                    }
+
+                                    Connections {
+                                        target: inputRow
+                                        onClickAutoMenu: {
+                                            if (index == inputRow.termEditing)
+                                            {
+                                                tagEdit.text = term
+                                                inputRow.termEditing = -1
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Item { height: parent.height; width: defaultSpacing.standardMargin;}
+                            }
+                        }
+                    }
+                Item {
+                    id: filterEditFrame
+                    implicitWidth: __minimumFilterTextWidth
+                    implicitHeight: defaultSpacing.minimumRowHeight
+                    onXChanged: updateLayout()
+
+                    WGTextBoxAutoComplete {
                         id: filterText
                         objectName: "filterText"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                        height: defaultSpacing.minimumRowHeight
+                        anchors.fill: parent
+                        anchors.rightMargin: clearCurrentFilterButton.width
 
                         style: WGInvisTextBoxStyle{}
 
                         placeholderText: "Filter"
-                        Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+
+                        autoCompleteData: rootFrame.autoCompleteData
+
+                        useAutoComplete: rootFrame.useAutoComplete
+
+                        onActiveFocusChanged: {
+                            if(activeFocus)
+                            {
+                                inputRow.termEditing = rootFrame.__filterTags
+                            }
+                        }
+
+                        onTextChanged: {
+                            currentFilterText = text
+                            if (text != "")
+                            {
+                                inputRow.termEditing = rootFrame.__filterTags
+                            }
+                            else
+                            {
+                                inputRow.termEditing = -1
+                            }
+                        }
 
                         Component.onCompleted: {
                             WGCopyableHelper.disableChildrenCopyable(filterText);
@@ -364,108 +669,198 @@ Item {
 
                         Keys.onReturnPressed: {
                             addFilter( text );
+                            inputRow.termEditing = -1
+                            rootFrame.currentFilterText = ""
                         }
 
                         Keys.onEnterPressed: {
                             addFilter( text );
+                            inputRow.termEditing = -1
+                            rootFrame.currentFilterText = ""
+                        }
+
+                        Keys.onTabPressed: {
+                            addFilter( text );
+                            inputRow.termEditing = -1
+                            rootFrame.currentFilterText = ""
+                        }
+
+                        Keys.onUpPressed: {
+                            if( useAutoComplete && inputRow.termEditing == rootFrame.__filterTags)
+                            {
+                                autoCompleteList.currentIndex = Math.max(0, autoCompleteList.currentIndex - 1)
+                                text = autoCompleteData[autoCompleteList.currentIndex]
+                            }
+                            else
+                            {
+                                event.accepted = false
+                            }
+                        }
+
+                        Keys.onDownPressed: {
+                            if( useAutoComplete && inputRow.termEditing == rootFrame.__filterTags)
+                            {
+                                autoCompleteList.currentIndex = Math.min(autoCompleteData.length - 1, autoCompleteList.currentIndex + 1)
+                                text = autoCompleteData[autoCompleteList.currentIndex]
+                            }
+                            else
+                            {
+                                event.accepted = false
+                            }
+                        }
+
+                        Keys.onPressed: {
+                            //Delete last tag if no text is entered and backspace/delete is not held down
+                            if (event.key == Qt.Key_Backspace || event.key == Qt.Key_Delete && inputRow.termEditing == rootFrame.__filterTags)
+                            {
+                                if(filterText.text == "" && __filterTags > 0 && !event.isAutoRepeat)
+                                {
+                                    rootFrame.dataModel.removeFilterTerm(__filterTags - 1);
+                                }
+                            }
                         }
                     }
+
                     WGToolButton {
                         id: clearCurrentFilterButton
                         objectName: "clearFilterButton"
                         iconSource: "icons/close_sml_16x16.png"
+                        anchors.right: parent.right
+                        anchors.top: parent.top
 
-                        tooltip: "Clear Filters"
-                        Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+                        tooltip: "Clear All Filters"
 
                         onClicked: {
+                            filterText.text = ""
+                            rootFrame.currentFilterText = ""
                             rootFrame.dataModel.clearCurrentFilter();
                             rootFrame.__internalStringValue = "";
-                            __currentFilterWidth = 0
-                            __filterTags = 0
                         }
                     }
-
                 }
-            }
-        } // inputRow
+            } // Flow
 
-        //------------------------------------------
-        // Bottom Area with Filter Entries
-        //------------------------------------------
-        Loader {
-            id: activeFiltersBelowLoader
-            visible: !inlineTags && __filterTags > 0
-            Layout.fillWidth: true
-            sourceComponent: inlineTags ? null : filterTagList
-        }
+            Labs.Popup
+            {
+                //auto complete suggestion drop down menu
+                id: autoCompleteMenu
+                width: parent.width
+                height: 200
+                y: parent.height
 
-        Rectangle {
-            id: spacer
-            visible: !inlineTags && __filterTags > 0
-            Layout.fillWidth: true
-            Layout.minimumHeight: defaultSpacing.doubleBorderSize
-            color: "transparent"
-        }
+                visible: (inputRow.termEditing >= 0 && showSuggestions && __filterText.activeFocus)
 
-        Component {
-            id: filterTagList
-            Flow {
-                id: activeFiltersLayout
-                spacing: defaultSpacing.rowSpacing
+                padding: 0
+                margins: 0
 
-                Repeater {
-                    id: filterRepeater
-                    model: filtersModel
-                    onItemAdded: {
-                        changeFilterWidth(item.width, true)
+                ListModel {
+                    id: autoCompleteListModel
+                }
+
+                /*TODO:
+                    This is a pretty big hack to refresh the model of strings... but no other way to have
+                    the dropdown repopulate if the array of strings changes.
+                */
+                Connections {
+                    target: rootFrame
+                    onUpdateAutoComplete: {
+                        autoCompleteListModel.clear()
+                        for(var i = 0; i < rootFrame.autoCompleteData.length; i++)
+                        {
+                            autoCompleteListModel.append({"term": rootFrame.autoCompleteData[i]})
+                        }
                     }
-                    onItemRemoved: {
-                        changeFilterWidth(item.width, false)
-                    }
+                }
 
-                    delegate: WGButtonBar {
-                        property var myValue: value;
-                        showSeparators: false
-                        evenBoxes: false
-                        buttonList: [
-                            WGPushButton {
-                                id: filterString
-                                objectName: "filterStringButton"
-                                text: myValue.value
-                                checkable: true
-                                checked: myValue.active
-                                style: WGTagButtonStyle{}
+                contentItem: WGScrollView {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    implicitHeight: Math.min(200, autoCompleteData.length * defaultSpacing.minimumRowHeight)
+                    clip: true
 
-                                Binding {
-                                    target: myValue
-                                    property: "active"
-                                    value: filterString.checked
+                    ListView {
+                        id: autoCompleteList
+
+                        anchors.fill: parent
+
+                        model: autoCompleteListModel
+
+                        highlightResizeDuration: 0
+                        highlightMoveDuration: 0
+
+                        delegate: Item {
+                            width: autoCompleteMenu.width
+                            height: defaultSpacing.minimumRowHeight
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: defaultSpacing.standardMargin
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: model.term
+                                color: palette.TextColor
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onEntered: {
+                                    autoCompleteList.currentIndex = index
                                 }
-
-                                Connections {
-                                    target: myValue
-                                    onActiveChanged: {
-                                        updateStringValue();
+                                onClicked: {
+                                    if(inputRow.termEditing == rootFrame.__filterTags)
+                                    {
+                                        addFilter( autoCompleteData[index] );
+                                        inputRow.termEditing = -1
+                                        rootFrame.currentFilterText = ""
+                                    }
+                                    else if (inputRow.termEditing >= 0)
+                                    {
+                                        inputRow.clickAutoMenu( autoCompleteData[index] )
                                     }
                                 }
-                            },
-                            WGToolButton {
-                                id: closeButton
-                                objectName: "closeButton"
-                                iconSource: "icons/close_sml_16x16.png"
-
-                                onClicked: {
-                                    rootFrame.dataModel.removeFilterTerm(index);
-                                }
                             }
-                        ]
+                        }
 
-                    }
+                        highlight: WGHighlightFrame {
+                            width: autoCompleteList.width
+                            height: defaultSpacing.minimumRowHeight
+                        }
+
+                        Connections {
+                            target: rootFrame
+                            onCurrentFilterTextChanged: {
+                                autoCompleteList.currentIndex = find(currentFilterText, searchType)
+                            }
+                        }
+                    } // List View
+                } //Scroll View
+
+                background: Rectangle {              // background
+                    color: palette.mainWindowColor
+                    border.width: defaultSpacing.standardBorderSize
+                    border.color: palette.darkColor
                 }
-            } // activeFiltersBelowRect
-        } //filterTags
-    } // mainRowLayout
+            } // Labs Popup
+        } // textFrame
+    } // inputRow
+
+    MessageDialog {
+        id: overwritePromptDialog
+        objectName: "overwrite_dialog"
+        title: "Overwrite?"
+        icon: StandardIcon.Question
+        text: "This filter already exists. Would you like to overwrite it with the new terms?"
+        standardButtons: StandardButton.Yes | StandardButton.No | StandardButton.Abort
+        modality: Qt.WindowModal
+        visible: false
+
+        onYes: {
+            saveActiveFilter( true );
+        }
+
+        onNo: {
+            saveActiveFilter( false );
+        }
+    }
 
     /*! Deprecated */
     property alias internalStringValue: rootFrame.__internalStringValue
@@ -477,18 +872,14 @@ Item {
     property alias splitterChar: rootFrame.__splitterChar
 
     /*! Deprecated */
-    property alias _originalInlineTagSetting: rootFrame.__originalInlineTagSetting
-
-    /*! Deprecated */
-    property alias _currentFilterWidth: rootFrame.__currentFilterWidth
+    property int _currentFilterWidth
 
     /*! Deprecated */
     property alias _filterTags: rootFrame.__filterTags
 
     /*! Deprecated */
-    property alias _changeLayout: rootFrame.__changeLayout
-
-    /*! Deprecated */
     property alias _loadedFilterId: rootFrame.__loadedFilterId
+
+    property alias placeHolderText: filterText.placeholderText
 
 } // rootFrame

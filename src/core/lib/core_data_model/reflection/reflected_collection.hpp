@@ -8,36 +8,39 @@ namespace wgt
 {
 class IReflectionController;
 
+namespace ReflectedCollectionDetails
+{
+	class ReflectedCollectionListener;
+}
+
+/** Wrapper class around a reflected collection to provide standard collection functionality. */
 class ReflectedCollection : public CollectionImplBase
 {
 public:
 	ReflectedCollection( const PropertyAccessor & pa, IReflectionController * controller );
 	virtual ~ReflectedCollection();
-
-	void reset();
-
+	
 	virtual size_t size() const override;
-
 	virtual CollectionIteratorImplPtr begin() override;
-
 	virtual CollectionIteratorImplPtr end() override;
-
 	virtual std::pair< CollectionIteratorImplPtr, bool > get(const Variant& key, GetPolicy policy) override;
+	virtual CollectionIteratorImplPtr insert(const Variant& key,
+	                                         const Variant& value) override;
 
+	/** This method is disabled.
+	Erasing is only allowed using eraseKey. */
 	virtual CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) override;
 
-	virtual size_t erase(const Variant& key) override;
+	virtual size_t eraseKey(const Variant& key) override;
 
+	/** This method is disabled.
+	Erasing is only allowed using eraseKey. */
 	virtual CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& first, const CollectionIteratorImplPtr& last) override;
 
 	virtual const TypeId& keyType() const override;
-
 	virtual const TypeId& valueType() const override;
-
 	virtual const TypeId& containerType() const override;
-
 	virtual const void* container() const override;
-
 	virtual int flags() const override;
 
 	Connection connectPreInsert( ElementRangeCallback callback ) override
@@ -70,7 +73,11 @@ public:
 		return onPostChanged_.connect( callback );
 	}
 
-public:
+private:
+	void reset();
+
+	friend class ReflectedCollectionDetails::ReflectedCollectionListener;
+
 	PropertyAccessor pa_;
 	std::shared_ptr< PropertyAccessorListener > listener_;
 	IReflectionController * controller_;

@@ -1,0 +1,9 @@
+plugins/plg_reflection
+plugins/plg_serialization
+plugins/plg_command_system
+plugins/plg_qt_app
+plugins/plg_qt_common
+plugins/plg_qt_resource
+plugins/plg_editor_interaction
+plugins/plg_window_test
+plugins/plg_file_system

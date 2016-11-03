@@ -214,7 +214,13 @@ void ProjectManager::openProject()
     {
          this->closeProject();
     }
+
+    //load the project settings
+    auto preferences = contextManager_->queryInterface<IPreferences>();
+    assert( preferences );
+    preferences->loadPreferenceFromFile( genProjectSettingFileName( curProject_->getProjectName() ).c_str() );
 }
+
 void ProjectManager::saveProject() const
 {
     
@@ -238,6 +244,11 @@ void ProjectManager::saveProject() const
         serializer.sync();
         fileSystem->writeFile( 
             projectFile.c_str(), stream.buffer().c_str(), stream.buffer().size(), std::ios::out | std::ios::binary );
+
+        //save the project settings
+        auto preferences = contextManager_->queryInterface<IPreferences>();
+        assert( preferences );
+        preferences->writePreferenceToFile( genProjectSettingFileName( curProject_->getProjectName() ).c_str() );
     }
     else
     {

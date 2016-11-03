@@ -146,6 +146,8 @@ void Curve::enumerate(PointCallback callback)
 	}
 }
 
+static const float EPSILON = 0.0005f;
+
 void Curve::removeAt(float time, bool triggerCallback)
 {
 	ObjectHandleT<BezierPoint> bezierPoint;
@@ -153,7 +155,7 @@ void Curve::removeAt(float time, bool triggerCallback)
 	for ( auto iter = std::begin(points_); iter != std::end(points_); ++iter, ++index )
 	{
 		auto& point = *( *iter );
-		if ( point.pos->getX() == time )
+		if ( abs(point.pos->getX() - time) < EPSILON )
 		{
 			bezierPoint = *iter;
 			break;
@@ -161,34 +163,41 @@ void Curve::removeAt(float time, bool triggerCallback)
 	}
 
 	if(bezierPoint.get() == nullptr)
+	{
+		NGT_ERROR_MSG("Failed to find point at time %lf\n", time);
+		pushModification([](){}, [](){});
 		return;
+	}
 
 	auto& points = points_;
 	auto& removedCallback = removed_;
 	auto removeListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint){ removeListeners(bezierPoint); };
-	auto executeFunc = [time, removeListenersFunc, triggerCallback, &points, &removedCallback]()
+	auto executeFunc = [index, bezierPoint, removeListenersFunc, triggerCallback, &points, &removedCallback]()
 	{
-		auto index = 0;
-		for( auto iter = std::begin(points); iter != std::end(points); ++iter, ++index )
+		auto currentIndex = 0;
+		auto iter = std::begin(points);
+		for ( ; iter != std::end(points); ++iter, ++currentIndex )
 		{
-			auto& point = *(*iter);
-			if ( point.pos->getX() == time )
-			{
-				removeListenersFunc(*iter);
-				points.erase(iter);
-				if(triggerCallback)
-				{
-					BezierPointData data = {
-						{ point.pos->getX(), point.pos->getY() },
-						{ point.cp1->getX(), point.cp1->getY() },
-						{ point.cp2->getX(), point.cp2->getY() }
-					};
-					PointUpdateData removed;
-					removed.point = data;
-					removed.index = index;
-					removedCallback(removed);
-				}
+			if ( currentIndex == index )
 				break;
+		}
+
+		auto& point = *(*iter);
+		if ( &point == bezierPoint.get() )
+		{
+			removeListenersFunc(*iter);
+			points.erase(iter);
+			if(triggerCallback)
+			{
+				BezierPointData data = {
+					{ point.pos->getX(), point.pos->getY() },
+					{ point.cp1->getX(), point.cp1->getY() },
+					{ point.cp2->getX(), point.cp2->getY() }
+				};
+				PointUpdateData removed;
+				removed.point = data;
+				removed.index = index;
+				removedCallback(removed);
 			}
 		}
 	};

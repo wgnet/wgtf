@@ -1,0 +1,8 @@
+<Actions>
+	<darkThemeAction     text="Dark"            shortcut="" path="Preferences.UI Themes" group="preferences"/>
+    <lightAction         text="Light"           shortcut="" path="Preferences.UI Themes" group="preferences"/>
+    <battleRedAction     text="Battle Red"      shortcut="" path="Preferences.UI Themes" group="preferences"/>
+    <armyBrownAction     text="Army Brown"      shortcut="" path="Preferences.UI Themes" group="preferences"/>
+    <airForceGreenAction text="Air Force Green" shortcut="" path="Preferences.UI Themes" group="preferences"/>
+    <navyBlueAction      text="Navy Blue"       shortcut="" path="Preferences.UI Themes" group="preferences"/>
+</Actions>

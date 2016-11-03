@@ -1,0 +1,13 @@
+module WGControls.Overlay
+
+# 2.0 Unchanged Controls
+WGOverlayDropDownBox 2.0 WGOverlayDropDownBox.qml
+WGOverlayLabel 2.0 WGOverlayLabel.qml
+WGOverlaySlider 2.0 WGOverlaySlider.qml
+WGOverlaySliderHandle 2.0 WGOverlaySliderHandle.qml
+
+# 1.0 Controls
+WGOverlayDropDownBox 1.0 WGOverlayDropDownBox.qml
+WGOverlayLabel 1.0 WGOverlayLabel.qml
+WGOverlaySlider 1.0 WGOverlaySlider.qml
+WGOverlaySliderHandle 1.0 WGOverlaySliderHandle.qml

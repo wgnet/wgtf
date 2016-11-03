@@ -1,17 +1,22 @@
-import QtQuick 2.3
-import QtQuick.Controls 1.2
-import QtQuick.Layouts 1.0
-import QtQuick.Window 2.1
+import QtQuick 2.5
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
+import QtQuick.Window 2.2
+
 import WGControls 1.0
+import WGControls.Private 1.0
+import WGControls.Views 1.0
+import WGControls.Layouts 1.0
 
 /*!
+ \ingroup wgcontrols
  \brief A control used for display, browsing and interaction of assets on disc.
 
 ----------------------------------------------------------------------------------------------
  Preliminary Layout Designed but not Finalised! Icons and menus currently placeholders only.
 
  It is operating off data models for file folders and the listview. The layout is based upon:
-		Search for Asset Browser Qt Prototype on the Wargaming Confluence
+        Search for Asset Browser Qt Prototype on the Wargaming Confluence
 ----------------------------------------------------------------------------------------------
 
 Example:
@@ -28,6 +33,8 @@ WGAssetBrowser {
 Rectangle {
     id: rootFrame
     objectName: "WGAssetBrowser"
+    WGComponent { type: "WGAssetBrowser" }
+
     color: palette.mainWindowColor
 
     //Public properties
@@ -292,13 +299,14 @@ Rectangle {
         filter: WGTokenizedStringFilter {
             id: folderFilter
             filterText: activeFilters_.stringValue
-            itemRole: "value"
+            itemRole: "indexPath"
             splitterChar: ","
         }
 
         ValueExtension {}
         ColumnExtension {}
         ComponentExtension {}
+        AssetItemExtension {}
         TreeExtension {
             id: folderTreeExtension
             selectionExtension: selector
@@ -307,32 +315,6 @@ Rectangle {
         ThumbnailExtension {}
         SelectionExtension {
             id: selector
-            onSelectionChanged: {
-                if (!folderTreeExtension.blockSelection && !folderContentsModel.isFiltering)
-                {
-                    // Source change
-                    folderModelSelectionHelper.select(getSelection());
-                    if (rootFrame.shouldTrackFolderHistory)
-                    {
-                        // Prune history as needed based on maximum length allowed
-                        if (folderHistoryIndices.length >= maxHistoryItems) {
-                            __folderHistoryIndices.splice(0, 1);
-                            folderHistoryNames.remove(0);
-                        }
-
-                        // Track the folder selection indices history
-                        __folderHistoryIndices.push(selector.selectedIndex);
-                        folderHistoryNames.append({"name" : rootFrame.viewModel.getSelectedTreeItemName()});
-                        __currentFolderHistoryIndex = __folderHistoryIndices.length - 1;
-                        __maxFolderHistoryIndices = __folderHistoryIndices.length - 1;
-                    }
-
-                    // Reset the flag to track the folder history
-                    rootFrame.shouldTrackFolderHistory = true;
-                }
-
-                folderTreeExtension.blockSelection = false;
-            }
         }
     }
 
@@ -355,7 +337,7 @@ Rectangle {
         filter: WGTokenizedStringFilter {
             id: folderContentsFilter
             filterText: activeFilters_.stringValue
-            itemRole: "value"
+            itemRole: "indexPath"
             splitterChar: ","
         }
 
@@ -895,23 +877,14 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: defaultSpacing.minimumRowHeight + defaultSpacing.doubleBorderSize
 
-            Rectangle {
-                id: activeFiltersRect
-                Layout.fillWidth: true
-                Layout.minimumHeight: defaultSpacing.minimumRowHeight + defaultSpacing.doubleBorderSize
-                Layout.preferredHeight: childrenRect.height
-                color: "transparent"
-
                 WGActiveFilters {
                     id: activeFilters
                     objectName: "activeFilters"
-                    anchors {left: parent.left; top: parent.top; right: parent.right}
-                    height: childrenRect.height
-                    inlineTags: true
+                Layout.fillWidth: true
+                Layout.minimumHeight: defaultSpacing.minimumRowHeight + defaultSpacing.doubleBorderSize
                     __splitterChar: ","
                     dataModel: rootFrame.viewModel.data.activeFilters
                 }
-            }
 
             // Apply custom filters to data that do not get overridden by
             // the text-based filters. Temporary solution until a more
@@ -921,11 +894,13 @@ Rectangle {
             WGLabel {
                 text: "File Type:"
                 visible: customContentFiltersList.count > 0
+                Layout.alignment: Qt.AlignTop
             }
 
             WGDropDownBox {
                 id: customContentFiltersMenu
                 Layout.preferredWidth: 150
+                Layout.alignment: Qt.AlignTop
                 visible: customContentFiltersList.count > 0
 
                 model: customContentFiltersList
@@ -1087,9 +1062,49 @@ Rectangle {
                         backgroundColourMode: uniformRowBackgroundColours
                         lineSeparator: true
 
-                        property Component foldersColumnDelegate:
-                            Item {
+                        property Component foldersColumnDelegate: Item {
                                 id: folderIconHeaderContainer
+
+                                property var mimeKeys:{
+                                    return ["text/uri-list"];
+                                }
+                                property var mimeData: {
+                                    "text/uri-list" : "file:///" + itemData.indexPath.replace(new RegExp('\\\\', 'g'), '/') 
+                                }
+
+                                Connections {
+                                    target: selector
+                                    onSelectionChanged: {
+                                        if (!folderTreeExtension.blockSelection && !folderContentsModel.isFiltering) {
+                                            if(!(itemData.itemId == selector.selectedItem)) {
+                                                return;
+                                            }
+                                            if(itemData.isDirectory) {
+                                                folderModelSelectionHelper.select(selector.getSelection());
+                                                if (rootFrame.shouldTrackFolderHistory) {
+                                                    // Prune history as needed based on maximum length allowed
+                                                    if (folderHistoryIndices.length >= maxHistoryItems) {
+                                                        __folderHistoryIndices.splice(0, 1);
+                                                        folderHistoryNames.remove(0);
+                                                    }
+
+                                                    // Track the folder selection indices history
+                                                    __folderHistoryIndices.push(selector.selectedIndex);
+                                                    folderHistoryNames.append({"name" : rootFrame.viewModel.getSelectedTreeItemName()});
+                                                    __currentFolderHistoryIndex = __folderHistoryIndices.length - 1;
+                                                    __maxFolderHistoryIndices = __folderHistoryIndices.length - 1;
+                                                }
+
+                                                // Reset the flag to track the folder history
+                                                rootFrame.shouldTrackFolderHistory = true;
+                                            }
+                                            // Prepare the context menu for the selected folder
+                                            folderContextMenu.contextObject = selector.selectedItem;
+                                        }
+                                        folderTreeExtension.blockSelection = false;
+                                    }
+                                }
+
                                 Image{
                                     id: folderFileIcon
                                     objectName: typeof(itemData.value) != "undefined" ? "folderFileIcon_" + itemData.value : "folderFileIcon"
@@ -1114,6 +1129,24 @@ Rectangle {
                                     elide: Text.ElideRight
                                 }
                             }
+
+                        //--------------------------------------
+                        // Folder Context Menu
+                        //--------------------------------------
+                        WGContextArea {
+                            id: folderContextArea
+                            objectName: "folderContextArea"
+                            onAboutToShow: {
+                                // Prepare the context menu by passing the selected asset from the
+                                // list model and telling the menu to show, which will update
+                                // the actions data with the selected asset for processing.
+                                contextMenu.contextObject = selector.selectedItem;
+                            }
+                            WGContextMenu {
+                                id: folderContextMenu
+                                path: "WGAssetBrowserFolderMenu"
+                            }
+                        }
                     }// TreeView
                         /*
                         Rectangle {
@@ -1287,15 +1320,15 @@ Rectangle {
                                             id: icon_file
                                             anchors.fill: parent
                                             source: {
-                                                if (  isDirectory == true )
+                                                if (  isDirectory === true )
                                                     return "icons/folder_128x128.png"
-                                                else if ( thumbnail != undefined )
+                                                else if ( thumbnail !== undefined )
                                                     return thumbnail
                                                 else
                                                     return "icons/file_128x128.png"
                                             }
                                             Image {
-                                                source: statusIcon != undefined ? statusIcon : ""
+                                                source: statusIcon !== undefined ? statusIcon : ""
                                                 anchors.left: icon_file.left
                                                 anchors.bottom: icon_file.bottom
                                                 anchors.leftMargin: iconSize > 32 ? Math.round(iconSize / 12) : 0
@@ -1345,30 +1378,57 @@ Rectangle {
                                     }
                                 }
 
-                                MouseArea {
-                                    id: assetMouseArea
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
+                                function replaceAt(str, index, character) {
+                                    return str.substr(0, index) + character + str.substr(index+character.length);
+                                }
 
-                                    acceptedButtons: Qt.RightButton | Qt.LeftButton
+                                Item {
+                                    anchors.fill:parent
+                                    Drag.active: assetMouseArea.drag.active;
+                                    Drag.hotSpot.x: width * 0.5
+                                    Drag.hotSpot.y: height * 0.5
+                                    Drag.source: assetEntryRect
+                                    Drag.dragType: Drag.Automatic 
+                                    Drag.proposedAction: Qt.CopyAction
+                                    Drag.supportedActions: Qt.CopyAction
+                                    Drag.keys:["text/uri-list"]
 
-                                    onPressed: {
-                                        if(mouse.button == Qt.LeftButton){
-                                            assetGrid.currentIndex = index
-                                        }
+                                    Drag.mimeData: {
+                                        "text/uri-list" : "file:///" + indexPath.replace(new RegExp('\\\\', 'g'), '/')
                                     }
 
-                                    onClicked: {
-                                        if(mouse.button == Qt.RightButton){
-                                            assetGrid.currentIndex = index
-                                        }
-                                        fileContextMenu.onClicked(mouse)
+                                    Drag.onDragFinished: {
+                                        makeFakeMouseRelease();
+                                        x = parent.x;
+                                        y = parent.y;
                                     }
 
-                                    onDoubleClicked: {
-                                        if(mouse.button == Qt.LeftButton){
-                                            assetGrid.currentIndex = index
-                                            onUseSelectedAsset()
+                                    MouseArea {
+                                        id: assetMouseArea
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        drag.target: parent
+
+                                        acceptedButtons: Qt.RightButton | Qt.LeftButton
+
+                                        onPressed: {
+                                            if(mouse.button == Qt.LeftButton){
+                                                assetGrid.currentIndex = index
+                                            }
+                                        }
+
+                                        onClicked: {
+                                            if(mouse.button == Qt.RightButton){
+                                                assetGrid.currentIndex = index
+                                            }
+                                            fileContextMenu.clicked(mouse)
+                                        }
+
+                                        onDoubleClicked: {
+                                            if(mouse.button == Qt.LeftButton){
+                                                assetGrid.currentIndex = index
+                                                onUseSelectedAsset()
+                                            }
                                         }
                                     }
                                 }

@@ -15,6 +15,7 @@
 #include <mutex>
 #include <memory>
 #include <vector>
+#include <algorithm>
 
 namespace wgt
 {
@@ -216,16 +217,22 @@ public:
 	}
 
 	template <class TArg1, class TArg2, class TArg3, class TArg4>
-	void operator()(TArg1 && arg1, TArg2 && arg2, TArg3 && arg3, TArg4 && arg4) const
+	void operator()( TArg1 && arg1, TArg2 && arg2, TArg3 && arg3, TArg4 && arg4 ) const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3), std::forward<TArg4>(arg4)) )
+		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>( arg1 ), std::forward<TArg2>( arg2 ), std::forward<TArg3>( arg3 ), std::forward<TArg4>( arg4 )) )
+	}
+
+	template <class TArg1, class TArg2, class TArg3, class TArg4, class TArg5>
+	void operator()( TArg1 && arg1, TArg2 && arg2, TArg3 && arg3, TArg4 && arg4, TArg5 && arg5 ) const
+	{
+		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>( arg1 ), std::forward<TArg2>( arg2 ), std::forward<TArg3>( arg3 ), std::forward<TArg4>( arg4 ), std::forward<TArg5>( arg5 )) )
 	}
 
 #undef CALL_FUNCTION_ITERATE_ENTRIES
+	Signal& operator=(const Signal&);
 
 private:
 	Signal(const Signal &);
-	Signal & operator=(const Signal &);
 };
 } // end namespace wgt
 #endif // SIGNAL_H_

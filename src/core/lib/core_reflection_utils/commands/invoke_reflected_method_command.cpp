@@ -8,6 +8,10 @@
 #include "core_data_model/variant_list.hpp"
 #include "core_reflection/interfaces/i_base_property.hpp"
 #include "core_reflection/reflected_method.hpp"
+#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/base_property_with_metadata.hpp"
+#include "core_reflection/generic/generic_object.hpp"
 
 namespace wgt
 {
@@ -131,17 +135,33 @@ void ReflectedMethodCommandParameters::setParameters( const ReflectedMethodParam
 
 struct InvokeReflectedMethodCommand::Implementation
 {
-	Implementation( InvokeReflectedMethodCommand& self, const IDefinitionManager& definitionManager )
-		: self_( self ), definitionManager_( definitionManager )
+	Implementation(InvokeReflectedMethodCommand& self, IDefinitionManager& definitionManager)
+	    : self_(self)
+	    , definitionManager_(definitionManager)
 	{}
 
+	IBasePropertyPtr getProperty(const ObjectHandle& arguments) const
+	{
+		auto objectManager = definitionManager_.getObjectManager();
+		assert(objectManager != nullptr);
+
+		auto commandParameters = arguments.getBase<ReflectedMethodCommandParameters>();
+		const ObjectHandle& object = objectManager->getObject(commandParameters->getId());
+		auto definition = object.getDefinition(definitionManager_);
+
+		PropertyAccessor methodAccessor = definition->bindProperty(commandParameters->getPath(), object);
+		IBasePropertyPtr classMember = methodAccessor.getProperty();
+		assert(classMember->isMethod());
+
+		return classMember;
+	}
+
 	InvokeReflectedMethodCommand& self_;
-	const IDefinitionManager& definitionManager_;
+	IDefinitionManager& definitionManager_;
 };
 
-
-InvokeReflectedMethodCommand::InvokeReflectedMethodCommand( const IDefinitionManager& definitionManager )
-	: impl_( new Implementation( *this, definitionManager ) )
+InvokeReflectedMethodCommand::InvokeReflectedMethodCommand(IDefinitionManager& definitionManager)
+    : impl_(new Implementation(*this, definitionManager))
 {
 }
 
@@ -233,26 +253,49 @@ CommandThreadAffinity InvokeReflectedMethodCommand::threadAffinity() const
 	return CommandThreadAffinity::UI_THREAD;
 }
 
-
-bool InvokeReflectedMethodCommand::canUndo( const ObjectHandle& arguments ) const
+ObjectHandle InvokeReflectedMethodCommand::getCommandDescription(const ObjectHandle& arguments) const
 {
-	auto objectManager = impl_->definitionManager_.getObjectManager();
-	assert( objectManager != nullptr );
+	IBasePropertyPtr classMember = impl_->getProperty(arguments);
 
-	auto commandParameters = arguments.getBase<ReflectedMethodCommandParameters>();
-	const ObjectHandle& object = objectManager->getObject( commandParameters->getId() );
-	auto defintion = object.getDefinition( impl_->definitionManager_ );
+	// Check if a method with meta data to use for the description
+	auto methodWithMetaData = dynamic_cast<BasePropertyWithMetaData*>(classMember.get());
+	if (methodWithMetaData != nullptr)
+	{
+		auto description = findFirstMetaData<MetaDescriptionObj>(
+		methodWithMetaData->getMetaData(), impl_->definitionManager_);
 
-	PropertyAccessor methodAccessor = defintion->bindProperty( commandParameters->getPath(), object );
-	IBasePropertyPtr classMember = methodAccessor.getProperty();
-	assert( classMember->isMethod() );
+		if (description != nullptr && description->getDescription() != nullptr)
+		{
+			auto object = GenericObject::create(impl_->definitionManager_);
+			assert(object != nullptr);
+			object->set("Name", std::wstring(description->getDescription()));
+			object->set("Type", "Unknown");
+			return object;
+		}
+	}
+
+	return ObjectHandle();
+}
+
+bool InvokeReflectedMethodCommand::canUndo(const ObjectHandle& arguments) const
+{
+	IBasePropertyPtr classMember = impl_->getProperty(arguments);
 
 	// Bad cast if classMember is a ReflectedPython::Property*
 	auto method = dynamic_cast<ReflectedMethod*>( classMember.get() );
-	if (method == nullptr)
+	if (method != nullptr)
 	{
-		return false;
+		return method->getUndoMethod() != nullptr;
 	}
-	return method->getUndoMethod() != nullptr;
+
+	// Check if a method with meta data
+	auto methodWithMetaData = dynamic_cast<BasePropertyWithMetaData*>(classMember.get());
+	if (methodWithMetaData != nullptr && methodWithMetaData->baseProperty())
+	{
+		auto baseMethod = dynamic_cast<ReflectedMethod*>(methodWithMetaData->baseProperty().get());
+		return baseMethod->isMethod() && baseMethod->getUndoMethod() != nullptr;
+	}
+
+	return false;
 }
 } // end namespace wgt

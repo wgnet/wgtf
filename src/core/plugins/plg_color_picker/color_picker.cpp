@@ -19,8 +19,8 @@ bool ColorPicker::addPanel()
 	auto viewCreator = get< IViewCreator >();
 	if (viewCreator)
 	{
-		viewCreator->createView(
-			"WGColorPicker/WGColorPickerPanel.qml", colorPickerContext_, colorView_ );
+		colorView_ = viewCreator->createView(
+			"WGColorPicker/WGColorPickerPanel.qml", colorPickerContext_);
 	}
 	return true;
 }
@@ -34,9 +34,11 @@ void ColorPicker::removePanel()
 		return;
 	}
 
-	if (colorView_ != nullptr)
+	if (colorView_.valid())
 	{
-		uiApplication->removeView( *colorView_ );
+        auto view = colorView_.get();
+		uiApplication->removeView( *view );
+        view = nullptr;
 	}
 }
 } // end namespace wgt

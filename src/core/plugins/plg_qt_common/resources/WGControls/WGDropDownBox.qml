@@ -1,13 +1,12 @@
 import QtQuick 2.5
-import QtQuick.Controls 1.2
-import QtQuick.Controls.Styles 1.2
+import QtQuick.Controls 1.4
+import QtQuick.Controls.Styles 1.4
 import QtQuick.Controls.Private 1.0
 import WGControls 1.0
 
-//TODO: Does this control require some more work as indicated in the brief?
-
 /*!
- \  brief Drop Down box with styleable menu
+    \ingroup wgcontrols
+    \brief Drop Down box with styleable menu
     This control is still a WIP
     The default QML ComboBox is feature lacking.
     This modification adds a styleable menu into it but still has most of its other problems.
@@ -26,20 +25,30 @@ WGDropDownBox {
     }
 }
 \endcode
+
+    \todo Does this control require some more work as indicated in the brief?
 */
 
 ComboBox {
     id: box
     objectName: "WGDropDownBox"
+    WGComponent { type: "WGDropDownBox" }
 
     /*! This property is used to define the buttons label when used in a WGFormLayout
         The default value is an empty string
     */
     property string label: ""
 
+    /*! property indicates if the control represetnts multiple data values */
+    property bool multipleValues: false
+
     /*! \internal */
     // helper property for text color so states can all be in the background object
     property color __textColor: palette.neutralTextColor
+
+    /*! the property containing the string to be displayed when multiple values are represented by the control
+    */
+    property string __multipleValuesString: multipleValues ? "Multiple Values" : ""
 
     activeFocusOnTab: true
 
@@ -47,7 +56,7 @@ ComboBox {
 
     currentIndex: 0
 
-    implicitWidth: textMetricsCreator.maxWidth + defaultSpacing.leftMargin + defaultSpacing.rightMargin + defaultSpacing.doubleMargin
+    implicitWidth: Math.max(textMetricsCreator.maxWidth, multiValueTextMeasurement.width) + defaultSpacing.leftMargin + defaultSpacing.rightMargin + defaultSpacing.doubleMargin
 
     implicitHeight: defaultSpacing.minimumRowHeight ? defaultSpacing.minimumRowHeight : 22
 
@@ -71,6 +80,12 @@ ComboBox {
             }
         }
     }
+
+    TextMetrics {
+        id: multiValueTextMeasurement
+        text: __multipleValuesString
+    }
+
 
     // support copy&paste
     WGCopyable {
@@ -166,7 +181,7 @@ ComboBox {
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignLeft
             color : box.__textColor
-            text: control.currentText
+            text: box.multipleValues ? box.__multipleValuesString : control.currentText
             renderType: globalSettings.wgNativeRendering ? Text.NativeRendering : Text.QtRendering
         }
 

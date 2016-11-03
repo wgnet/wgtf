@@ -12,7 +12,7 @@ class ObjectHandle;
 
 DECLARE_INTERFACE_BEGIN( IPythonScriptingEngine, 0, 0 )
 
-	/**
+/**
 	 *	Add a path the the "sys.path" list to search when importing modules.
 	 *	
 	 *	Ideally two paths are appended:
@@ -22,6 +22,8 @@ DECLARE_INTERFACE_BEGIN( IPythonScriptingEngine, 0, 0 )
 	 *	Use this function to set the path to source *.py files as described in 1.
 	 *	
 	 *	@pre interpreter must be initialized.
+	 *	@note appendSourcePath() should be used before appendBinPath() to allow
+	 *		pydev debuggers to find the source.
 	 *	
 	 *	@param path to be added to the "sys.path" list.
 	 *		Does not check if the path is valid.
@@ -30,13 +32,13 @@ DECLARE_INTERFACE_BEGIN( IPythonScriptingEngine, 0, 0 )
 	 *	
 	 *	@return true on success.
 	 */
-	virtual bool appendSourcePath( const wchar_t * path ) = 0;
+virtual bool appendSourcePath(const wchar_t* path) = 0;
 
-	/**
+/**
 	 *	@see appendSourcePath()
 	 *	Use this function to set the path to deployed *.pyc files as described in 2.
 	 */
-	virtual bool appendBinPath( const wchar_t * path ) = 0;
+    virtual bool appendBinPath( const wchar_t * path ) = 0;
 
 	/**
 	 *	Import a Python module using the search paths in "sys.path".

@@ -17,7 +17,7 @@ SET( ALL_SRCS
 	custom_xml_serializer.cpp
 	custom_xml_serializer.hpp
 )
-SOURCE_GROUP( "" FILES ${ALL_SRCS} )
+WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 BW_ADD_TOOL_PLUGIN( plg_custom_xml_serialization_test SHARED
 	${ALL_SRCS}
@@ -25,9 +25,7 @@ BW_ADD_TOOL_PLUGIN( plg_custom_xml_serialization_test SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_custom_xml_serialization_test PRIVATE
 	core_generic_plugin
-	core_variant
 	core_reflection
-	core_serialization
 	)
 
 

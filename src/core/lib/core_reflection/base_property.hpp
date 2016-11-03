@@ -3,10 +3,12 @@
 
 #include "interfaces/i_base_property.hpp"
 #include "core_variant/type_id.hpp"
+#include "reflection_dll.hpp"
 
 namespace wgt
 {
-class BaseProperty
+
+class REFLECTION_DLL BaseProperty
 	: public IBaseProperty
 {
 public:

@@ -48,10 +48,12 @@ public:
 	virtual result_type get(
 		const Variant & key,
 		CollectionImplBase::GetPolicy policy ) override;
+	virtual CollectionIteratorImplPtr insert(const Variant& key,
+	                                         const Variant& value) override;
 
 	virtual CollectionIteratorImplPtr erase(
 		const CollectionIteratorImplPtr & pos ) override;
-	virtual size_t erase( const Variant & key ) override;
+	virtual size_t eraseKey( const Variant & key ) override;
 	virtual CollectionIteratorImplPtr erase(
 		const CollectionIteratorImplPtr & first,
 		const CollectionIteratorImplPtr& last ) override;

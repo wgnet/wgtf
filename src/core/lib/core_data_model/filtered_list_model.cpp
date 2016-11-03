@@ -102,8 +102,8 @@ struct FilteredListModel::Implementation
 
 	FilterUpdateType checkUpdateType( size_t sourceIndex , size_t& newIndex ) const;
 
-	void preItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data );
-	void postItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data );
+	void preItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
+	void postItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
 	void preItemsInserted( size_t index, size_t count );
 	void postItemsInserted( size_t index, size_t count );
 	void preItemsRemoved( size_t index, size_t count );
@@ -347,14 +347,14 @@ FilteredListModel::Implementation::FilterUpdateType FilteredListModel::Implement
 	return FilterUpdateType::IGNORE;
 }
 
-void FilteredListModel::Implementation::preItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data )
+void FilteredListModel::Implementation::preItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
 {
 	eventControlMutex_.lock();
 	self_.signalPreItemDataChanged( item, column, roleId, data );
 	indexMapMutex_.lock();
 }
 
-void FilteredListModel::Implementation::postItemDataChanged( const IItem * item, int column, size_t roleId, const Variant & data )
+void FilteredListModel::Implementation::postItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
 {
 	std::lock_guard<std::mutex> blockEvents( eventControlMutex_, std::adopt_lock );
 	indexMapMutex_.unlock();
@@ -572,7 +572,7 @@ int FilteredListModel::columnCount() const
 	return impl_->model_->columnCount();
 }
 
-Variant FilteredListModel::getData( int column, size_t roleId ) const
+Variant FilteredListModel::getData( int column, ItemRole::Id roleId ) const
 {
 	if (impl_->model_ == nullptr)
 	{
@@ -582,7 +582,7 @@ Variant FilteredListModel::getData( int column, size_t roleId ) const
 	return impl_->model_->getData( column, roleId );
 }
 
-bool FilteredListModel::setData( int column, size_t roleId, const Variant & data )
+bool FilteredListModel::setData( int column, ItemRole::Id roleId, const Variant & data )
 {
 	if (impl_->model_ == nullptr)
 	{

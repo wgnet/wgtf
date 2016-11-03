@@ -87,9 +87,10 @@ ObjectHandle MacroObject::executeMacro() const
 	return ins;
 }
 
-ObjectHandle MacroObject::getTreeModel() const
+const ITreeModel* MacroObject::getTreeModel() const
 {
-	return std::unique_ptr< ITreeModel >( new ReflectedTreeModel( argsEdit_, *pDefManager_, controller_ ) );
+	treeModel_.reset(new ReflectedTreeModel(argsEdit_, *pDefManager_, controller_));
+	return treeModel_.get();
 }
 
 std::pair<ObjectHandle, ObjectHandle> MacroObject::bind( size_t idx, ReflectedPropertyCommandArgument* rpca ) const

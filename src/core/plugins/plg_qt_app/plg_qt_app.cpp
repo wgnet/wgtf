@@ -14,18 +14,27 @@
 
 namespace wgt
 {
-class QtPlugin
+/**
+* A plugin which creates and registers an IUIApplication interface for Qt to allow adding UI Components to the application.
+* Mutually exclusive with MayaAdapterPlugin.
+*
+* @ingroup plugins
+* @ingroup coreplugins
+* @note Requires Plugins:
+*       - @ref coreplugins
+*/
+class QtPluginApplication
 	: public PluginMain
 {
 public:
-	QtPlugin( IComponentContext & contextManager ){}
+	QtPluginApplication( IComponentContext & contextManager ){}
 
 	bool PostLoad( IComponentContext & contextManager ) override
 	{
 		auto clp = contextManager.queryInterface< ICommandLineParser >();
 		assert( clp != nullptr );
 
-		qtApplication_ = new QtApplication( clp->argc(), clp->argv() );
+		qtApplication_ = new QtApplication(contextManager, clp->argc(), clp->argv());
 		types_.push_back(
 			contextManager.registerInterface( qtApplication_ ) );
 		return true;
@@ -33,13 +42,7 @@ public:
 
 	void Initialise( IComponentContext & contextManager ) override
 	{
-		Variant::setMetaTypeManager( contextManager.queryInterface< IMetaTypeManager >() );
-
-		IQtFramework* qtFramework =
-			contextManager.queryInterface< IQtFramework >();
-		assert( qtFramework != nullptr );
-
-		qtApplication_->initialise( qtFramework );
+		qtApplication_->initialise();
 	}
 
 	bool Finalise( IComponentContext & contextManager ) override
@@ -64,5 +67,5 @@ private:
 	std::vector< IInterface * > types_;
 };
 
-PLG_CALLBACK_FUNC( QtPlugin )
+PLG_CALLBACK_FUNC( QtPluginApplication )
 } // end namespace wgt

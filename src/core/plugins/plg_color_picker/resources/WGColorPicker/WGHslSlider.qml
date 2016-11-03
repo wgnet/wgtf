@@ -2,9 +2,8 @@ import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
 
-
 import WGControls 2.0
-import WGColorPicker 1.0
+import WGColorPicker 2.0
 
 /*!
  \Three WGColorSliders with color gradients representing Hue, Saturation and Lightness.
@@ -23,6 +22,7 @@ WGHslSlider {
 
 ColumnLayout {
     id: hslSlider
+    WGComponent { type: "WGHslSlider" }
 
     /*!
         The value of the hue slider from 0 to 1.0
