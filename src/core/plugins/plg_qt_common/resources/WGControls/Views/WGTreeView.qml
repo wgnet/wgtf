@@ -3,6 +3,7 @@ import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 import WGControls 1.0
 import WGControls.Views 1.0
+import QtQuick 2.4
 
 /*!
  \ingroup wgcontrols
@@ -467,6 +468,7 @@ Item {
     /*! This Component is used by the property columnDelegate if no other column delegate is defined
     */
     property Component defaultColumnDelegate: Text {
+        id: itemText
         property bool autoSizeOnDoubleClick: true
         color: palette.textColor
         clip: itemData != null && itemData.component != null
@@ -474,6 +476,12 @@ Item {
         font.bold: itemData != null && itemData.hasChildren
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
+
+        WGToolTip
+        {
+            id: tooltip
+            text: itemData.description !== undefined ? itemData.description : ""
+        }
     }
 
     WGTreeItem {

@@ -1,8 +1,5 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_reflection/type_class_definition.hpp"
-#include <QWidget>
-#include <QQmlEngine>
-#include <QQmlContext>
 
 #include "core_generic_plugin/interfaces/i_plugin_context_manager.hpp"
 
@@ -13,8 +10,6 @@
 #include "core_ui_framework/i_window.hpp"
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
-#include "core_qt_common/i_qt_framework.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
 
 #include "core_dependency_system/depends.hpp"
 
@@ -26,28 +21,26 @@
 #include "models/curve.hpp"
 #include "metadata/i_curve_editor.mpp"
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
-
-/** 
+/**
 * A plugin which registers an ICurveEditor interface on a panel that allows curves to be displayed and manipulated
-* 
+*
 * @ingroup plugins
-* @image html plg_curve_editor.png 
+* @image html plg_curve_editor.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class CurveEditorPlugin
-	: public PluginMain
-	, public Depends< IViewCreator, ICurveEditor >
+class CurveEditorPlugin : public PluginMain, public Depends<IViewCreator, ICurveEditor>
 {
 public:
-	CurveEditorPlugin(IComponentContext & contextManager)
-		: Depends( contextManager )
+	CurveEditorPlugin(IComponentContext& contextManager) : Depends(contextManager)
 	{
 	}
 
-	bool PostLoad( IComponentContext & contextManager ) override
+	bool PostLoad(IComponentContext& contextManager) override
 	{
 		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
 		assert(definitionManager != nullptr);
@@ -60,47 +53,46 @@ public:
 		definitionManager->registerDefinition<TypeClassDefinition<ICurve>>();
 		definitionManager->registerDefinition<TypeClassDefinition<ICurveEditor>>();
 
-		contextManager.registerInterface( new CurveEditor() );
+		contextManager.registerInterface(new CurveEditor());
 
 		return true;
 	}
 
-	void Initialise( IComponentContext & contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
-		auto viewCreator = get< IViewCreator >();
-		auto curveModel = get< ICurveEditor >();
+		auto viewCreator = get<IViewCreator>();
+		auto curveModel = get<ICurveEditor>();
 
 		if (viewCreator != nullptr)
 		{
-			curvePanel_ = viewCreator->createView(
-				"plg_curve_editor/CurveEditor.qml", curveModel);
+			curvePanel_ = viewCreator->createView("plg_curve_editor/CurveEditor.qml", curveModel);
 		}
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
-		auto uiApplication = contextManager.queryInterface< IUIApplication >();
-		if(uiApplication && (curvePanel_.valid()))
+		auto uiApplication = contextManager.queryInterface<IUIApplication>();
+		if (uiApplication && (curvePanel_.valid()))
 		{
-            auto view = curvePanel_.get();
+			auto view = curvePanel_.get();
 			uiApplication->removeView(*view);
-            view = nullptr;
+			view = nullptr;
 		}
-		
+
 		return true;
 	}
 
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for ( auto type : types_ )
+		for (auto type : types_)
 		{
 			contextManager.deregisterInterface(type);
 		}
 	}
 
 private:
-	std::vector< IInterface * > types_;
-	wg_future<std::unique_ptr< IView >> curvePanel_;
+	std::vector<IInterface*> types_;
+	wg_future<std::unique_ptr<IView>> curvePanel_;
 };
 
 PLG_CALLBACK_FUNC(CurveEditorPlugin)

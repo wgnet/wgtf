@@ -1,14 +1,12 @@
 #ifndef OBJECT_HANDLE_STORAGE_VARIANT_HPP_INCLUDED
 #define OBJECT_HANDLE_STORAGE_VARIANT_HPP_INCLUDED
 
-
 #include "object_handle_storage.hpp"
 #include "core_variant/variant.hpp"
 
 namespace wgt
 {
-class ObjectHandleVariantStorage
-: public IObjectHandleStorage
+class ObjectHandleVariantStorage : public IObjectHandleStorage
 {
 public:
 	ObjectHandleVariantStorage(const Variant& variant, const IClassDefinition* definition);

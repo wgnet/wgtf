@@ -14,8 +14,6 @@ BW_QT_ADD_QRC( Scripts resources/Scripts )
 BW_GLOB_RESOURCE_FILES()
 
 SET( ALL_SRCS
-	main_application.cpp
-	main_application.hpp
 	pch.cpp
 	pch.hpp
 	plg_python27_interface_test.cpp
@@ -38,7 +36,6 @@ BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_generic_plugin
 	core_reflection
 	core_unit_test
-	Qt5::Core
 )
 
 BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )

@@ -417,7 +417,7 @@ textarea,
 }
 .fa-lg {
     font-size: 1.33333em;
-    line-height: .75em;
+    line-height: 0.75em;
     vertical-align: -15%
 }
 .fa-2x {
@@ -448,7 +448,7 @@ textarea,
     position: absolute;
     left: -2.14286em;
     width: 2.14286em;
-    top: .14286em;
+    top: 0.14286em;
     text-align: center
 }
 .fa-li.fa-lg {
@@ -3053,7 +3053,7 @@ legend {
 }
 label {
     display: block;
-    margin: 0 0 .3125em 0;
+    margin: 0 0 0.3125em 0;
     color: #333;
     font-size: 90%
 }
@@ -3223,7 +3223,7 @@ textarea {
     display: block;
     color: #999;
     font-size: 70%;
-    margin-top: .3125em;
+    margin-top: 0.3125em;
     font-style: italic
 }
 .wy-form-message p {
@@ -3272,7 +3272,7 @@ input[type="color"] {
     transition: border 0.3s linear
 }
 input[type="datetime-local"] {
-    padding: .34375em .625em
+    padding: 0.34375em 0.625em
 }
 input[disabled] {
     cursor: default
@@ -3283,7 +3283,7 @@ input[type="radio"] {
     -moz-box-sizing: border-box;
     box-sizing: border-box;
     padding: 0;
-    margin-right: .3125em;
+    margin-right: 0.3125em;
     *height: 13px;
     *width: 13px
 }
@@ -3368,7 +3368,7 @@ textarea {
 }
 select,
 textarea {
-    padding: .5em .625em;
+    padding: 0.5em 0.625em;
     display: inline-block;
     border: 1px solid #ccc;
     font-size: 80%;
@@ -3512,7 +3512,7 @@ input[type="checkbox"][disabled] {
     white-space: nowrap
 }
 .wy-inline-validate .wy-input-context {
-    padding: .5em .625em;
+    padding: 0.5em 0.625em;
     display: inline-block;
     font-size: 80%
 }
@@ -4404,7 +4404,7 @@ div[class^='highlight'] pre {
 .wy-menu-vertical li.current a {
     color: gray;
     border-right: solid 1px #c9c9c9;
-    padding: .4045em 2.427em
+    padding: 0.4045em 2.427em
 }
 .wy-menu-vertical li.current a:hover {
     background: #d6d6d6
@@ -4429,7 +4429,7 @@ div[class^='highlight'] pre {
 .wy-menu-vertical li.on a,
 .wy-menu-vertical li.current>a {
     color: #404040;
-    padding: .4045em 1.618em;
+    padding: 0.4045em 1.618em;
     font-weight: bold;
     position: relative;
     background: #fcfcfc;
@@ -4463,12 +4463,12 @@ div[class^='highlight'] pre {
 }
 .wy-menu-vertical li.toctree-l2.current>a {
     background: #c9c9c9;
-    padding: .4045em 2.427em
+    padding: 0.4045em 2.427em
 }
 .wy-menu-vertical li.toctree-l2.current li.toctree-l3>a {
     display: block;
     background: #c9c9c9;
-    padding: .4045em 4.045em
+    padding: 0.4045em 4.045em
 }
 .wy-menu-vertical li.toctree-l2 a:hover span.toctree-expand {
     color: gray
@@ -4481,12 +4481,12 @@ div[class^='highlight'] pre {
 }
 .wy-menu-vertical li.toctree-l3.current>a {
     background: #bdbdbd;
-    padding: .4045em 4.045em
+    padding: 0.4045em 4.045em
 }
 .wy-menu-vertical li.toctree-l3.current li.toctree-l4>a {
     display: block;
     background: #bdbdbd;
-    padding: .4045em 5.663em;
+    padding: 0.4045em 5.663em;
     border-top: none;
     border-bottom: none
 }
@@ -4517,7 +4517,7 @@ div[class^='highlight'] pre {
 .wy-menu-vertical a {
     display: inline-block;
     line-height: 18px;
-    padding: .4045em 1.618em;
+    padding: 0.4045em 1.618em;
     display: block;
     position: relative;
     font-size: 90%;
@@ -4541,15 +4541,15 @@ div[class^='highlight'] pre {
 .wy-side-nav-search {
     display: block;
     width: 300px;
-    padding: .809em;
-    margin-bottom: .809em;
+    padding: 0.809em;
+    margin-bottom: 0.809em;
     z-index: 200;
     background-color: #2980B9;
     text-align: center;
-    padding: .809em;
+    padding: 0.809em;
     display: block;
     color: #fcfcfc;
-    margin-bottom: .809em
+    margin-bottom: 0.809em
 }
 .wy-side-nav-search input[type=text] {
     width: 100%;
@@ -4559,7 +4559,7 @@ div[class^='highlight'] pre {
 }
 .wy-side-nav-search img {
     display: block;
-    margin: auto auto .809em auto;
+    margin: auto auto 0.809em auto;
     height: 45px;
     width: 45px;
     background-color: #2980B9;
@@ -4573,7 +4573,7 @@ div[class^='highlight'] pre {
     font-weight: bold;
     display: inline-block;
     padding: 4px 6px;
-    margin-bottom: .809em
+    margin-bottom: 0.809em
 }
 .wy-side-nav-search>a:hover,
 .wy-side-nav-search .wy-dropdown>a:hover {
@@ -4594,8 +4594,8 @@ div[class^='highlight'] pre {
     margin-top: 0.85em
 }
 .wy-side-nav-search>div.version {
-    margin-top: -.4045em;
-    margin-bottom: .809em;
+    margin-top: -0.4045em;
+    margin-bottom: 0.809em;
     font-weight: normal;
     color: rgba(255, 255, 255, 0.3)
 }
@@ -4667,7 +4667,7 @@ div[class^='highlight'] pre {
     display: none;
     background: #2980B9;
     color: #fff;
-    padding: .4045em .809em;
+    padding: 0.4045em 0.809em;
     position: relative;
     line-height: 50px;
     text-align: center;
@@ -5195,7 +5195,7 @@ footer span.commit .rst-content tt,
 .rst-content tt.literal,
 .rst-content tt.literal,
 .rst-content code.literal {
-    color: #404040
+    color: #E74C3C
 }
 .rst-content tt.xref,
 a .rst-content tt,
@@ -5235,7 +5235,7 @@ a .rst-content code {
     font-size: 90%;
     line-height: normal;
     background: #e7f2fa;
-	width: 100%;
+    width: 100%;
     color: #2980B9;
     border-top: solid 3px #6ab0de;
     padding: 6px;
@@ -5370,14 +5370,3 @@ span[id*='MathJax-Span'] {
     src: local("Roboto Slab Bold"), local("RobotoSlab-Bold"), url(../fonts/RobotoSlab-Bold.ttf) format("truetype")
 }
 /*# sourceMappingURL=theme.css.map */
-/* override table width restrictions */
-
-.wy-table-responsive table td,
-.wy-table-responsive table th {
-    white-space: normal !important;
-}
-.wy-table-responsive {
-    margin-bottom: 24px;
-    max-width: 100%;
-    overflow: visible !important;
-}

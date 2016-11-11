@@ -58,10 +58,14 @@ WGListViewBase {
     property alias footerDelegate: itemView.footerDelegate
     /** Clamp (fix) width of the view to the containing component and adjust contents when width resized.*/
     property alias clamp: itemView.clamp
+    /** The model containing the selected items/indices.*/
+    property alias selectionModel: itemView.selectionModel
     /** A replacement for ListView's currentIndex that uses a QModelIndex from the selection model.*/
     property var currentIndex: itemView.selectionModel.currentIndex
     /** The combined common and view extensions.*/
     property var extensions: []
+
+    signal selectionChanged(var selected, var deselected)
 
     onCurrentIndexChanged: {
         if (typeof( currentIndex ) == "number") {
@@ -74,6 +78,8 @@ WGListViewBase {
     }
     Connections {
         target: itemView.selectionModel
+
+        onSelectionChanged: selectionChanged(selected, deselected)
         onCurrentChanged: {
             if (current != previous) {
                 currentIndex = current;

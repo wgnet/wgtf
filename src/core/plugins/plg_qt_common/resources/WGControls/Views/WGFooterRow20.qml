@@ -26,32 +26,94 @@ Item {
     }
     /**/
 
-    Row {
+	Row {
         id: row
-		spacing: view.columnSpacing
+        property var minX: 0
+        property var maxX: row.width - lastColumnHandleSpacer.width
+		Row {
+			 id: columnsLayout
+			spacing: view.columnSpacing
 
-        Repeater {
-            model: columnCount()
+			Repeater {
+				model: columnCount()
 
-            Item {
-                id: footerItem
-                width: view.columnWidths[index]
-                height: childrenRect.height
-                clip: true
+				delegate: Item {
+                    id: columnContainer
+                    objectName: "FooterColumnContainer_" + index
+                    width: view.columnWidths[index]
+                    height: childrenRect.height
+                    clip: true
 
-                /** Loader of the custom footer cell component.*/
-                Loader {
-                    id: columnDelegateLoader
-                    sourceComponent: view.getFooterDelegate(index)
+                    /** Cell with styling, excluding indent gap in front of first cell.*/
+                    Item {
+                        id: column
+                        objectName: "FooterColumn"
+                        x: Math.max(row.minX - columnContainer.x, 0)
+                        width: Math.max(Math.min(row.maxX - columnContainer.x, columnContainer.width) - x, 0)
+                        height: childrenRect.height
+                        clip: true
 
-                    /** Provides the custom footer cell component access to header roles.*/
-                    property var headerData: view.columnSequence.length <= index ? view.headerData[index] :  view.headerData[view.columnSequence[index]]
-					/** Exposes current column index to the custom cell component.*/
-                    property int headerColumnIndex: index
+                        /** Specifies minimum bound for cell.*/
+                        property var minX: 0
+                        /** Specifies maximum bound for cell.*/
+                        property var maxX: column.width
 
-                    onLoaded: item.parent = footerItem
+                        /** Cell inside styling.*/
+                        Item {
+                            id: itemContainer
+                            objectName: "FooterItemContainer"
+                            x: column.minX
+                            width: Math.max(column.maxX - x, 0)
+                            height: childrenRect.height
+                            clip: true
+
+                            /** Loader of the custom header cell component.*/
+                            Loader {
+                                id: footerDelegate
+                                sourceComponent: view.getFooterDelegate(index)
+
+                	            /** Provides the custom header cell component access to header roles.*/
+            	                property var headerData: view.columnSequence.length <= index ? view.headerData[index] :  view.headerData[view.columnSequence[index]]
+					            /** Exposes current column index to the custom cell component.*/
+                                property int headerColumnIndex: index
+
+                                onLoaded: {
+                                    item.parent = itemContainer
+                                    itemContainer.updateColumnImplicitWidths();
+                                }
+                            }
+
+                            Connections {
+                                target: footerDelegate.item
+                                onImplicitWidthChanged: {
+                                    if (footerDelegate.status === Loader.Ready) {
+                                        itemContainer.updateColumnImplicitWidths();
+                                    }
+                                }
+                            }
+
+                            /** Updates the implicit widths of the row,
+                            when custom cell components' implict widths change.*/
+                            function updateColumnImplicitWidths()
+                            {
+                                var implicitWidths = view.implicitColumnWidths;
+                                var oldImplicitWidth = index in implicitWidths ? implicitWidths[index] : 0;
+                                var indent = index === 0 ? row.minX : 0;
+                                var newImplicitWidth = footerDelegate.item.implicitWidth + indent;
+                                implicitWidths[index] = Math.max(oldImplicitWidth, newImplicitWidth);
+                                view.implicitColumnWidths = implicitWidths;
+                            }
+                        }
+                    }
                 }
             }
+        }
+
+        Item {
+            id: lastColumnHandleSpacer
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: view.clamp ? 0 : columnSpacing
         }
     }
 }

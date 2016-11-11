@@ -17,7 +17,7 @@ public:
 	virtual void clearMessage() override;
 
 private:
-	QStatusBar & qStatusBar_;
+	QStatusBar& qStatusBar_;
 };
 } // end namespace wgt
-#endif//QT_STATUS_BAR_HPP
+#endif // QT_STATUS_BAR_HPP

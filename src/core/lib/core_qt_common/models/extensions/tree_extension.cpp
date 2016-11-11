@@ -6,94 +6,85 @@
 
 namespace wgt
 {
-ITEMROLE( childModel )
-ITEMROLE( hasChildren )
-ITEMROLE( expanded )
+ITEMROLE(childModel)
+ITEMROLE(hasChildren)
+ITEMROLE(expanded)
 
 struct TreeExtension::Implementation
 {
-	Implementation( TreeExtension& self );
+	Implementation(TreeExtension& self);
 	~Implementation();
-	bool expanded( const QModelIndex& index ) const;
+	bool expanded(const QModelIndex& index) const;
 
 	TreeExtension& self_;
-	std::vector< IndexedAdapter< ChildListAdapter > > childModels_;
-	std::vector< std::unique_ptr< ChildListAdapter > > redundantChildModels_;
+	std::vector<IndexedAdapter<ChildListAdapter>> childModels_;
+	std::vector<std::unique_ptr<ChildListAdapter>> redundantChildModels_;
 };
 
-TreeExtension::Implementation::Implementation( TreeExtension & self )
-	: self_( self )
+TreeExtension::Implementation::Implementation(TreeExtension& self) : self_(self)
 {
-
 }
 
 TreeExtension::Implementation::~Implementation()
 {
 }
 
-
-bool TreeExtension::Implementation::expanded( const QModelIndex& index ) const
+bool TreeExtension::Implementation::expanded(const QModelIndex& index) const
 {
-	return self_.extensionData_->dataExt( index, ItemRole::expandedId ).toBool();
+	return self_.extensionData_->dataExt(index, ItemRole::expandedId).toBool();
 }
 
-
-TreeExtension::TreeExtension()
-	: impl_( new Implementation( *this ) )
+TreeExtension::TreeExtension() : impl_(new Implementation(*this))
 {
-	roles_.push_back( ItemRole::childModelName );
-	roles_.push_back( ItemRole::hasChildrenName );
-	roles_.push_back( ItemRole::expandedName );
+	roles_.push_back(ItemRole::childModelName);
+	roles_.push_back(ItemRole::hasChildrenName);
+	roles_.push_back(ItemRole::expandedName);
 }
-
 
 TreeExtension::~TreeExtension()
 {
 }
 
-
-QVariant TreeExtension::data( const QModelIndex &index, ItemRole::Id roleId ) const
+QVariant TreeExtension::data(const QModelIndex& index, ItemRole::Id roleId) const
 {
 	auto model = index.model();
 	if (model == nullptr)
 	{
-		return QVariant( QVariant::Invalid ); 
+		return QVariant(QVariant::Invalid);
 	}
 
 	if (roleId == ItemRole::childModelId)
 	{
 		if (!model->hasChildren(index))
 		{
-			return QVariant( QVariant::Invalid );
+			return QVariant(QVariant::Invalid);
 		}
 
-		auto it = std::find( impl_->childModels_.begin(), 
-			impl_->childModels_.end(), index );
+		auto it = std::find(impl_->childModels_.begin(), impl_->childModels_.end(), index);
 		if (it != impl_->childModels_.end())
 		{
-			return QVariant::fromValue< QAbstractItemModel* >( it->data_.get() );
+			return QVariant::fromValue<QAbstractItemModel*>(it->data_.get());
 		}
 		else
 		{
-			auto pChildModel = new ChildListAdapter( index, false );
-			impl_->childModels_.emplace_back( index, pChildModel );
-			return QVariant::fromValue< QAbstractItemModel* >( pChildModel );
+			auto pChildModel = new ChildListAdapter(index, false);
+			impl_->childModels_.emplace_back(index, pChildModel);
+			return QVariant::fromValue<QAbstractItemModel*>(pChildModel);
 		}
 	}
 	else if (roleId == ItemRole::hasChildrenId)
 	{
-		return model->hasChildren( index );
+		return model->hasChildren(index);
 	}
 	else if (roleId == ItemRole::expandedId)
 	{
-		return impl_->expanded( index );
+		return impl_->expanded(index);
 	}
 
-	return QVariant( QVariant::Invalid );
+	return QVariant(QVariant::Invalid);
 }
 
-
-bool TreeExtension::setData( const QModelIndex &index, const QVariant &value, ItemRole::Id roleId )
+bool TreeExtension::setData(const QModelIndex& index, const QVariant& value, ItemRole::Id roleId)
 {
 	auto model = index.model();
 	if (model == nullptr)
@@ -103,106 +94,86 @@ bool TreeExtension::setData( const QModelIndex &index, const QVariant &value, It
 
 	if (roleId == ItemRole::expandedId)
 	{
-		return extensionData_->setDataExt( index, value, roleId );
+		return extensionData_->setDataExt(index, value, roleId);
 	}
 
 	return false;
 }
 
-
-void TreeExtension::onLayoutAboutToBeChanged(
-	const QList<QPersistentModelIndex> & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void TreeExtension::onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+                                             QAbstractItemModel::LayoutChangeHint hint)
 {
 	isolateRedundantIndices(impl_->childModels_, impl_->redundantChildModels_);
-	for (auto it = parents.begin(); it != parents.end(); ++it)
+	if (parents.empty())
 	{
-		isolateRedundantIndices( 
-			*it, impl_->childModels_, impl_->redundantChildModels_ );
+		isolateRedundantIndices(QModelIndex(), impl_->childModels_, impl_->redundantChildModels_);
+	}
+	else
+	{
+		for (auto it = parents.begin(); it != parents.end(); ++it)
+		{
+			isolateRedundantIndices(*it, impl_->childModels_, impl_->redundantChildModels_);
+		}
 	}
 
 	// Iterate to initial size of childModels as more models can be added to this list
-	// over the course of these signals. However, redundantChildModels will not change
+	// over the course of these signals
 	size_t count = impl_->childModels_.size();
 	for (size_t i = 0; i < count; ++i)
 	{
 		impl_->childModels_[i].data_->onParentLayoutAboutToBeChanged(parents, hint);
 	}
-
-	for (auto & redundantChildModel : impl_->redundantChildModels_)
-	{
-		redundantChildModel->onParentLayoutAboutToBeChanged( parents, hint );
-	}
 }
 
-
-void TreeExtension::onLayoutChanged(
-	const QList<QPersistentModelIndex> & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void TreeExtension::onLayoutChanged(const QList<QPersistentModelIndex>& parents,
+                                    QAbstractItemModel::LayoutChangeHint hint)
 {
 	// Iterate to initial size of childModels as more models can be added to this list
-	// over the course of these signals. However, redundantChildModels will not change
+	// over the course of these signals
 	size_t count = impl_->childModels_.size();
 	for (size_t i = 0; i < count; ++i)
 	{
 		impl_->childModels_[i].data_->onParentLayoutChanged(parents, hint);
-	}
-
-	for (auto & redundantChildModel : impl_->redundantChildModels_)
-	{
-		redundantChildModel->onParentLayoutChanged( parents, hint );
 	}
 
 	impl_->redundantChildModels_.clear();
 
-	QVector< ItemRole::Id > extRoles;
-	extRoles.append( ItemRole::childModelId );
-	extRoles.append( ItemRole::hasChildrenId );
+	QVector<ItemRole::Id> extRoles;
+	extRoles.append(ItemRole::childModelId);
+	extRoles.append(ItemRole::hasChildrenId);
 	for (auto it = parents.begin(); it != parents.end(); ++it)
 	{
-		emit extensionData_->dataExtChanged( *it, *it, extRoles );
+		emit extensionData_->dataExtChanged(*it, *it, extRoles);
 	}
 }
 
-
-void TreeExtension::onRowsAboutToBeInserted(
-	const QModelIndex & parent, int first, int last )
+void TreeExtension::onRowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
 {
-	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QList<QPersistentModelIndex> parents;
+	parents.append(parent);
 	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
 
 	// Iterate to initial size of childModels as more models can be added to this list
-	// over the course of these signals. However, redundantChildModels will not change
+	// over the course of these signals
 	size_t count = impl_->childModels_.size();
 	for (size_t i = 0; i < count; ++i)
 	{
 		impl_->childModels_[i].data_->onParentLayoutAboutToBeChanged(parents, hint);
 	}
-
-	for (auto & redundantChildModel : impl_->redundantChildModels_)
-	{
-		redundantChildModel->onParentLayoutAboutToBeChanged( parents, hint );
-	}
 }
 
-
-void TreeExtension::onRowsInserted(
-	const QModelIndex & parent, int first, int last )
+void TreeExtension::onRowsInserted(const QModelIndex& parent, int first, int last)
 {
-	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QList<QPersistentModelIndex> parents;
+	parents.append(parent);
 	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
 
 	// Iterate to initial size of childModels as more models can be added to this list
-	// over the course of these signals. However, redundantChildModels will not change
+	// over the course of these signals
 	size_t count = impl_->childModels_.size();
 	for (size_t i = 0; i < count; ++i)
 	{
 		impl_->childModels_[i].data_->onParentLayoutChanged(parents, hint);
-	}
-
-	for (auto & redundantChildModel : impl_->redundantChildModels_)
-	{
-		redundantChildModel->onParentLayoutChanged( parents, hint );
 	}
 
 	const auto model = parent.model();
@@ -213,54 +184,41 @@ void TreeExtension::onRowsInserted(
 
 	if (model->rowCount() == last - first + 1)
 	{
-		QVector< ItemRole::Id > extRoles;
-		extRoles.append( ItemRole::hasChildrenId );
-		emit extensionData_->dataExtChanged( parent, parent, extRoles );
+		QVector<ItemRole::Id> extRoles;
+		extRoles.append(ItemRole::hasChildrenId);
+		emit extensionData_->dataExtChanged(parent, parent, extRoles);
 	}
 }
 
-
-void TreeExtension::onRowsAboutToBeRemoved( 
-	const QModelIndex& parent, int first, int last )
+void TreeExtension::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-	isolateRedundantIndices( parent, first, last,
-		impl_->childModels_, impl_->redundantChildModels_ );
+	isolateRedundantIndices(parent, first, last, impl_->childModels_, impl_->redundantChildModels_);
 
-	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QList<QPersistentModelIndex> parents;
+	parents.append(parent);
 	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
 
 	// Iterate to initial size of childModels as more models can be added to this list
-	// over the course of these signals. However, redundantChildModels will not change
+	// over the course of these signals
 	size_t count = impl_->childModels_.size();
 	for (size_t i = 0; i < count; ++i)
 	{
 		impl_->childModels_[i].data_->onParentLayoutAboutToBeChanged(parents, hint);
 	}
-
-	for (auto & redundantChildModel : impl_->redundantChildModels_)
-	{
-		redundantChildModel->onParentLayoutAboutToBeChanged( parents, hint );
-	}
 }
 
-
-void TreeExtension::onRowsRemoved(
-	const QModelIndex & parent, int first, int last )
+void TreeExtension::onRowsRemoved(const QModelIndex& parent, int first, int last)
 {
-	QList<QPersistentModelIndex> parents; parents.append( parent );
+	QList<QPersistentModelIndex> parents;
+	parents.append(parent);
 	QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::VerticalSortHint;
 
 	// Iterate to initial size of childModels as more models can be added to this list
-	// over the course of these signals. However, redundantChildModels will not change
+	// over the course of these signals
 	size_t count = impl_->childModels_.size();
 	for (size_t i = 0; i < count; ++i)
 	{
 		impl_->childModels_[i].data_->onParentLayoutChanged(parents, hint);
-	}
-
-	for (auto & redundantChildModel : impl_->redundantChildModels_)
-	{
-		redundantChildModel->onParentLayoutChanged( parents, hint );
 	}
 
 	impl_->redundantChildModels_.clear();
@@ -271,40 +229,27 @@ void TreeExtension::onRowsRemoved(
 		return;
 	}
 
-	if (model->rowCount( parent ) == 0)
+	if (model->rowCount(parent) == 0)
 	{
-		QVector< ItemRole::Id > extRoles;
-		extRoles.append( ItemRole::hasChildrenId );
-		emit extensionData_->dataExtChanged( parent, parent, extRoles );
+		QVector<ItemRole::Id> extRoles;
+		extRoles.append(ItemRole::hasChildrenId);
+		emit extensionData_->dataExtChanged(parent, parent, extRoles);
 	}
 }
 
-
-void TreeExtension::onRowsAboutToBeMoved( const QModelIndex & sourceParent,
-	int sourceFirst,
-	int sourceLast,
-	const QModelIndex & destinationParent,
-	int destinationRow ) /* override */
+void TreeExtension::onRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+                                         const QModelIndex& destinationParent, int destinationRow) /* override */
 {
-	isolateRedundantIndices( sourceParent,
-		sourceFirst,
-		sourceLast,
-		impl_->childModels_,
-		impl_->redundantChildModels_ );
+	isolateRedundantIndices(sourceParent, sourceFirst, sourceLast, impl_->childModels_, impl_->redundantChildModels_);
 }
 
-
-void TreeExtension::onRowsMoved( const QModelIndex & sourceParent,
-	int sourceFirst,
-	int sourceLast,
-	const QModelIndex & destinationParent,
-	int destinationRow ) /* override */
+void TreeExtension::onRowsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+                                const QModelIndex& destinationParent, int destinationRow) /* override */
 {
 	impl_->redundantChildModels_.clear();
 }
 
-
-QItemSelection TreeExtension::itemSelection( const QModelIndex & first, const QModelIndex & last ) const
+QItemSelection TreeExtension::itemSelection(const QModelIndex& first, const QModelIndex& last) const
 {
 	if (!first.isValid() && !last.isValid())
 	{
@@ -312,11 +257,11 @@ QItemSelection TreeExtension::itemSelection( const QModelIndex & first, const QM
 	}
 	if (!first.isValid() && last.isValid())
 	{
-		return QItemSelection( last, last );
+		return QItemSelection(last, last);
 	}
 	if (first.isValid() && !last.isValid())
 	{
-		return QItemSelection( first, first );
+		return QItemSelection(first, first);
 	}
 
 	auto begin = first;
@@ -397,35 +342,35 @@ QItemSelection TreeExtension::itemSelection( const QModelIndex & first, const QM
 		}
 
 		// Move next
-		const auto next = this->getNextIndex( it );
-		assert( it != next );	
+		const auto next = this->getNextIndex(it, const_cast<QAbstractItemModel*>(it.model()));
+		assert(it != next);
 		it = next;
 	}
-	
+
 	return itemSelection;
 }
 
-
-QModelIndex TreeExtension::getNextIndex( const QModelIndex & index ) const
+QModelIndex TreeExtension::getNextIndex(const QModelIndex& index, QAbstractItemModel* pModel) const
 {
-	if (!index.isValid())
+	// If index is invalid, return an index to the first item
+	// The index can be invalid if the user tabbed to the view, instead of clicking
+	if (!index.isValid() || (index.model() == nullptr))
 	{
-		return index;
+		if (pModel == nullptr)
+		{
+			return index;
+		}
+		return pModel->index(0, 0);
 	}
-	const auto pModel = index.model();
-	if (pModel == nullptr)
-	{
-		return index;
-	}
+	assert(index.model() == pModel);
 
 	// Move to next child
 	// > a    - start
 	//  | b   - end
 	//  | c
-	if (impl_->expanded( index ) &&
-		pModel->hasChildren( index ))
+	if (impl_->expanded(index) && pModel->hasChildren(index))
 	{
-		const auto child = index.child( 0, index.column() );
+		const auto child = index.child(0, index.column());
 		if (child.isValid())
 		{
 			return child;
@@ -441,9 +386,9 @@ QModelIndex TreeExtension::getNextIndex( const QModelIndex & index ) const
 		// > c    - end
 		const auto parent = it.parent();
 		const auto row = it.row() + 1;
-		if (row < it.model()->rowCount( parent ))
+		if (row < it.model()->rowCount(parent))
 		{
-			const auto sibling = it.sibling( row, index.column() );
+			const auto sibling = it.sibling(row, index.column());
 			if (sibling.isValid())
 			{
 				return sibling;
@@ -461,18 +406,19 @@ QModelIndex TreeExtension::getNextIndex( const QModelIndex & index ) const
 	return index;
 }
 
-
-QModelIndex TreeExtension::getPreviousIndex( const QModelIndex & index ) const
+QModelIndex TreeExtension::getPreviousIndex(const QModelIndex& index, QAbstractItemModel* pModel) const
 {
-	if (!index.isValid())
+	// If index is invalid, return an index to the first item
+	// The index can be invalid if the user tabbed to the view, instead of clicking
+	if (!index.isValid() || (index.model() == nullptr))
 	{
-		return index;
+		if (pModel == nullptr)
+		{
+			return index;
+		}
+		return pModel->index(0, 0);
 	}
-	const auto pModel = index.model();
-	if (pModel == nullptr)
-	{
-		return index;
-	}
+	assert(index.model() == pModel);
 
 	// Move back to previous sibling
 	// > a
@@ -481,7 +427,7 @@ QModelIndex TreeExtension::getPreviousIndex( const QModelIndex & index ) const
 	const auto row = index.row() - 1;
 	if (row >= 0)
 	{
-		const auto sibling = index.sibling( row, index.column() );
+		const auto sibling = index.sibling(row, index.column());
 		if (sibling.isValid())
 		{
 			// Move forward to last child in the sibling
@@ -494,10 +440,9 @@ QModelIndex TreeExtension::getPreviousIndex( const QModelIndex & index ) const
 			while (it.isValid())
 			{
 				// Has children, move to last one
-				if (impl_->expanded( it ) &&
-					pModel->hasChildren( it ))
+				if (impl_->expanded(it) && pModel->hasChildren(it))
 				{
-					const int lastRow = it.model()->rowCount( it ) - 1;
+					const int lastRow = it.model()->rowCount(it) - 1;
 					const auto lastChild = it.child(lastRow, index.column());
 					if (lastChild.isValid())
 					{
@@ -523,7 +468,7 @@ QModelIndex TreeExtension::getPreviousIndex( const QModelIndex & index ) const
 	//  > b   - end
 	//    | d - start
 	//    | e
-	//  | c   
+	//  | c
 	const auto parent = index.parent();
 	if (parent.isValid())
 	{
@@ -534,27 +479,27 @@ QModelIndex TreeExtension::getPreviousIndex( const QModelIndex & index ) const
 	return index;
 }
 
-
-QModelIndex TreeExtension::getForwardIndex( const QModelIndex & index ) const
+QModelIndex TreeExtension::getForwardIndex(const QModelIndex& index, QAbstractItemModel* pModel) const
 {
-	if (!index.isValid())
+	// If index is invalid, return an index to the first item
+	// The index can be invalid if the user tabbed to the view, instead of clicking
+	if (!index.isValid() || (index.model() == nullptr))
 	{
-		return index;
+		if (pModel == nullptr)
+		{
+			return index;
+		}
+		return pModel->index(0, 0);
 	}
-
-	const auto pModel = index.model();
-	if (pModel == nullptr)
-	{
-		return index;
-	}
+	assert(index.model() == pModel);
 
 	// Make sure the current item has children
-	if (pModel->hasChildren( index ) )
+	if (pModel->hasChildren(index))
 	{
-		if (impl_->expanded( index ))
+		if (impl_->expanded(index))
 		{
 			// Select the first child if the current item is expanded
-			const auto child = index.child( 0, index.column() );
+			const auto child = index.child(0, index.column());
 			if (child.isValid())
 			{
 				return child;
@@ -563,36 +508,74 @@ QModelIndex TreeExtension::getForwardIndex( const QModelIndex & index ) const
 		else
 		{
 			// Expand the current item
-			const_cast< TreeExtension * >( this )->extensionData_->setDataExt( index, true, ItemRole::expandedId );
+			const_cast<TreeExtension*>(this)->extensionData_->setDataExt(index, true, ItemRole::expandedId);
 			return index;
 		}
 	}
 
-	return this->getNextIndex( index );
+	return this->getNextIndex(index, pModel);
 }
 
+QModelIndex TreeExtension::getBackwardIndex(const QModelIndex& index, QAbstractItemModel* pModel) const
+{
+	// If index is invalid, return an index to the first item
+	// The index can be invalid if the user tabbed to the view, instead of clicking
+	if (!index.isValid() || (index.model() == nullptr))
+	{
+		if (pModel == nullptr)
+		{
+			return index;
+		}
+		return pModel->index(0, 0);
+	}
+	assert(index.model() == pModel);
 
-QModelIndex TreeExtension::getBackwardIndex( const QModelIndex & index ) const
+	// Move up to the parent if there are no children or not expanded
+	if (pModel->hasChildren(index) && impl_->expanded(index))
+	{
+		// Collapse the current item
+		const_cast<TreeExtension*>(this)->extensionData_->setDataExt(index, false, ItemRole::expandedId);
+		return index;
+	}
+
+	return this->getPreviousIndex(index, pModel);
+}
+
+void TreeExtension::expand(const QModelIndex& index)
 {
 	if (!index.isValid())
 	{
-		return index;
+		return;
 	}
 
 	const auto pModel = index.model();
-	if (pModel == nullptr)
+	assert(pModel != nullptr);
+	if (pModel->hasChildren(index))
 	{
-		return index;
+		extensionData_->setDataExt(index, true, ItemRole::expandedId);
+	}
+	expand(pModel->parent(index));
+}
+
+void TreeExtension::collapse(const QModelIndex& index)
+{
+	if (!index.isValid())
+	{
+		return;
 	}
 
-	// Move up to the parent if there are no children or not expanded
-	if (pModel->hasChildren( index ) && impl_->expanded( index ))
-	{
-		// Collapse the current item
-		const_cast< TreeExtension * >( this )->extensionData_->setDataExt( index, false, ItemRole::expandedId );
-		return index;
-	}
+	extensionData_->setDataExt(index, false, ItemRole::expandedId);
+}
 
-	return this->getPreviousIndex( index );
+void TreeExtension::toggle(const QModelIndex& index)
+{
+	if (impl_->expanded(index))
+	{
+		collapse(index);
+	}
+	else
+	{
+		expand(index);
+	}
 }
 } // end namespace wgt

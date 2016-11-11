@@ -9,7 +9,7 @@ class IDefinitionManager;
 
 namespace Reflection
 {
-	REFLECTION_DLL void initReflectedTypes( IDefinitionManager & definitionManager );
+REFLECTION_DLL void initReflectedTypes(IDefinitionManager& definitionManager);
 }
 } // end namespace wgt
 #endif

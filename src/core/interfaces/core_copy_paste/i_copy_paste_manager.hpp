@@ -12,12 +12,13 @@ class ICopyableObject;
 typedef std::map<std::string, std::vector<char>> MimeData;
 class ICopyPasteManager
 {
-
 public:
-	virtual ~ICopyPasteManager(){}
+	virtual ~ICopyPasteManager()
+	{
+	}
 
-	virtual void onSelect( ICopyableObject* pObject, bool append = false ) = 0;
-	virtual void onDeselect( ICopyableObject* pObject, bool reset = true ) = 0;
+	virtual void onSelect(ICopyableObject* pObject, bool append = false) = 0;
+	virtual void onDeselect(ICopyableObject* pObject, bool reset = true) = 0;
 	virtual bool copy() = 0;
 	virtual bool paste() = 0;
 	virtual bool canCopy() const = 0;

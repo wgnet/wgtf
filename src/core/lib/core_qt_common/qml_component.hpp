@@ -13,13 +13,13 @@ namespace wgt
 class QmlComponent : public IComponent
 {
 public:
-	QmlComponent( QQmlEngine & qmlEngine );
+	QmlComponent(QQmlEngine& qmlEngine);
 	virtual ~QmlComponent();
 
-	QQmlComponent * component() const;
+	QQmlComponent* component() const;
 
 private:
-	std::unique_ptr< QQmlComponent > qmlComponent_;
+	std::unique_ptr<QQmlComponent> qmlComponent_;
 };
 } // end namespace wgt
 #endif

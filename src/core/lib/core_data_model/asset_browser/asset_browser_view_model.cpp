@@ -30,24 +30,19 @@ static const size_t NO_SELECTION = SIZE_MAX;
 
 struct AssetBrowserViewModel::AssetBrowserViewModelImplementation
 {
-	AssetBrowserViewModelImplementation(
-	IDefinitionManager& definitionManager,
-	ObjectHandleT<IAssetBrowserModel> data,
-	ObjectHandleT<IAssetBrowserEventModel> events)
-	    : definitionManager_(definitionManager)
-	    , currentSelectedAssetIndex_(-1)
-	    , currentFolderHistoryIndex_(NO_SELECTION)
-	    , selectedTreeItem_(nullptr)
-	    , data_(std::move(data))
-	    , events_(std::move(events))
-	    , breadcrumbsModel_(nullptr)
+	AssetBrowserViewModelImplementation(IDefinitionManager& definitionManager, ObjectHandleT<IAssetBrowserModel> data,
+	                                    ObjectHandleT<IAssetBrowserEventModel> events)
+	    : definitionManager_(definitionManager), currentSelectedAssetIndex_(-1),
+	      currentFolderHistoryIndex_(NO_SELECTION), selectedTreeItem_(nullptr), data_(std::move(data)),
+	      events_(std::move(events)), breadcrumbsModel_(nullptr)
 	{
-		connections_ += folderSelectionHandler_.signalPostSelectionChanged.connect(std::bind(
-		&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderDataChanged, this));
-		connections_ += folderContentSelectionHandler_.signalPostSelectionChanged.connect(std::bind(
-		&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderContentDataChanged, this));
+		connections_ += folderSelectionHandler_.signalPostSelectionChanged.connect(
+		std::bind(&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderDataChanged, this));
+		connections_ += folderContentSelectionHandler_.signalPostSelectionChanged.connect(
+		std::bind(&AssetBrowserViewModel::AssetBrowserViewModelImplementation::onPostFolderContentDataChanged, this));
 
-		breadcrumbsModel_ = std::unique_ptr<AssetBrowserBreadcrumbsModel>(new AssetBrowserBreadcrumbsModel(definitionManager));
+		breadcrumbsModel_ =
+		std::unique_ptr<AssetBrowserBreadcrumbsModel>(new AssetBrowserBreadcrumbsModel(definitionManager));
 	}
 
 	~AssetBrowserViewModelImplementation()
@@ -98,13 +93,10 @@ struct AssetBrowserViewModel::AssetBrowserViewModelImplementation
 	ConnectionHolder connections_;
 };
 
-AssetBrowserViewModel::AssetBrowserViewModel(
-IDefinitionManager& definitionManager,
-ObjectHandleT<IAssetBrowserModel> data,
-ObjectHandleT<IAssetBrowserEventModel> events)
-    :
-    impl_(new AssetBrowserViewModelImplementation(definitionManager, std::move(data),
-                                                  std::move(events)))
+AssetBrowserViewModel::AssetBrowserViewModel(IDefinitionManager& definitionManager,
+                                             ObjectHandleT<IAssetBrowserModel> data,
+                                             ObjectHandleT<IAssetBrowserEventModel> events)
+    : impl_(new AssetBrowserViewModelImplementation(definitionManager, std::move(data), std::move(events)))
 {
 	if (impl_->events_.get())
 	{
@@ -139,7 +131,7 @@ void AssetBrowserViewModel::currentSelectedAssetIndex(const int& index)
 
 IAssetObjectItem* AssetBrowserViewModel::getSelectedAssetData() const
 {
-	//TODO: This will need to support multi-selection. Right now it is a single item
+	// TODO: This will need to support multi-selection. Right now it is a single item
 	// selection, but the QML is the same way.
 	auto dataModel = impl_->data_.get();
 	if (dataModel != nullptr)

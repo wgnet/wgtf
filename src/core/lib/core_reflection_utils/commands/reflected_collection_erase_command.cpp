@@ -7,37 +7,34 @@
 
 namespace wgt
 {
-ReflectedCollectionEraseCommand::ReflectedCollectionEraseCommand( IDefinitionManager & definitionManager )
-	: definitionManager_( definitionManager )
+ReflectedCollectionEraseCommand::ReflectedCollectionEraseCommand(IDefinitionManager& definitionManager)
+    : definitionManager_(definitionManager)
 {
-
 }
 
 ReflectedCollectionEraseCommand::~ReflectedCollectionEraseCommand()
 {
-
 }
 
-const char * ReflectedCollectionEraseCommand::getId() const
+const char* ReflectedCollectionEraseCommand::getId() const
 {
-	static const char * s_Id = getClassIdentifier<ReflectedCollectionEraseCommand>();
+	static const char* s_Id = getClassIdentifier<ReflectedCollectionEraseCommand>();
 	return s_Id;
 }
 
-ObjectHandle ReflectedCollectionEraseCommand::execute(const ObjectHandle & arguments) const
+ObjectHandle ReflectedCollectionEraseCommand::execute(const ObjectHandle& arguments) const
 {
-	auto commandArgs = arguments.getBase< ReflectedCollectionEraseCommandParameters >();
+	auto commandArgs = arguments.getBase<ReflectedCollectionEraseCommandParameters>();
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert( objManager != nullptr );
-	auto object = objManager->getObject( commandArgs->id_ );
+	assert(objManager != nullptr);
+	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 
-	auto property = object.getDefinition( definitionManager_ )->bindProperty( 
-		commandArgs->path_.c_str(), object );
+	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
@@ -45,20 +42,20 @@ ObjectHandle ReflectedCollectionEraseCommand::execute(const ObjectHandle & argum
 
 	Collection collection;
 	auto value = property.getValue();
-	if (!value.tryCast( collection ))
+	if (!value.tryCast(collection))
 	{
-		return CommandErrorCode::INVALID_ARGUMENTS; 
+		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 
-	auto it = collection.find( commandArgs->key_ );
+	auto it = collection.find(commandArgs->key_);
 	if (it == collection.end())
 	{
 		return CommandErrorCode::INVALID_VALUE;
 	}
-	
+
 	commandArgs->value_ = *it;
-	
-	commandArgs->erased_ = property.erase( commandArgs->key_ );
+
+	commandArgs->erased_ = property.erase(commandArgs->key_);
 	if (!commandArgs->erased_)
 	{
 		return CommandErrorCode::INVALID_VALUE;
@@ -72,43 +69,42 @@ bool ReflectedCollectionEraseCommand::customUndo() const
 	return true;
 }
 
-bool ReflectedCollectionEraseCommand::undo( const ObjectHandle & arguments ) const
+bool ReflectedCollectionEraseCommand::undo(const ObjectHandle& arguments) const
 {
-	ReflectedCollectionEraseCommandParameters * commandArgs =
-		arguments.getBase< ReflectedCollectionEraseCommandParameters >();
+	ReflectedCollectionEraseCommandParameters* commandArgs =
+	arguments.getBase<ReflectedCollectionEraseCommandParameters>();
 	if (!commandArgs->erased_)
 	{
 		return true;
 	}
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert( objManager != nullptr );
-	auto object = objManager->getObject( commandArgs->id_ );
+	assert(objManager != nullptr);
+	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return false;
 	}
 
-	auto property = object.getDefinition( definitionManager_ )->bindProperty( 
-		commandArgs->path_.c_str(), object );
+	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return false;
 	}
 
-	return property.insert( commandArgs->key_, commandArgs->value_ );
+	return property.insert(commandArgs->key_, commandArgs->value_);
 }
 
-bool ReflectedCollectionEraseCommand::redo( const ObjectHandle & arguments ) const
+bool ReflectedCollectionEraseCommand::redo(const ObjectHandle& arguments) const
 {
-	execute( arguments );
+	execute(arguments);
 	return true;
 }
 
-ObjectHandle ReflectedCollectionEraseCommand::getCommandDescription(const ObjectHandle & arguments) const
+ObjectHandle ReflectedCollectionEraseCommand::getCommandDescription(const ObjectHandle& arguments) const
 {
-	auto object = GenericObject::create( definitionManager_ );
-	assert( object != nullptr );
+	auto object = GenericObject::create(definitionManager_);
+	assert(object != nullptr);
 	object->set("Name", "Erase");
 	object->set("Type", "Unknown");
 	return object;

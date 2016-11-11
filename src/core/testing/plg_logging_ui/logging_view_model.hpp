@@ -15,11 +15,11 @@ class LoggingViewModel
 	DECLARE_REFLECTED
 
 public:
-	bool initialise( IComponentContext& componentContext );
-	std::shared_ptr< ILoggingModel > getModel() const;
+	bool initialise(IComponentContext& componentContext);
+	std::shared_ptr<ILoggingModel> getModel() const;
 
 private:
-	std::shared_ptr< LoggingDataModel > dataModel_;
+	std::shared_ptr<LoggingDataModel> dataModel_;
 };
 } // end namespace wgt
 

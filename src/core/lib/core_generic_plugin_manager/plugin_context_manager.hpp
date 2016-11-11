@@ -12,30 +12,28 @@
 
 namespace wgt
 {
-class PluginContextManager
-	: public Implements < IPluginContextManager >
-	, public IComponentContextListener
+class PluginContextManager : public Implements<IPluginContextManager>, public IComponentContextListener
 {
-	typedef std::vector< IComponentContextCreator * > ContextCreatorCollection;
+	typedef std::vector<IComponentContextCreator*> ContextCreatorCollection;
 
 public:
 	PluginContextManager();
 	virtual ~PluginContextManager();
 
 	IComponentContext* createContext(const PluginId& id, const std::wstring& path) override;
-	IComponentContext * getContext(const PluginId & id) const override;
-	IComponentContext * getGlobalContext() const override;
-	void destroyContext(const PluginId & id) override;
+	IComponentContext* getContext(const PluginId& id) const override;
+	IComponentContext* getGlobalContext() const override;
+	void destroyContext(const PluginId& id) override;
 
-	virtual void onContextCreatorRegistered(IComponentContextCreator *) override;
-	virtual void onContextCreatorDeregistered(IComponentContextCreator *) override;
+	virtual void onContextCreatorRegistered(IComponentContextCreator*) override;
+	virtual void onContextCreatorDeregistered(IComponentContextCreator*) override;
 
 	void setExecutablePath(const char* path) override;
 	const char* getExecutablePath() const override;
 
 private:
-	typedef std::vector< IInterface * > InterfaceCollection;
-	typedef std::map< IComponentContextCreator *, InterfaceCollection > ContextChildrenCollection;
+	typedef std::vector<IInterface*> InterfaceCollection;
+	typedef std::map<IComponentContextCreator*, InterfaceCollection> ContextChildrenCollection;
 	ContextChildrenCollection childContexts_;
 	std::map<PluginId, std::pair<IComponentContext*, std::wstring>> contexts_;
 	std::map<std::string, IComponentContextCreator*> contextCreators_;
@@ -43,4 +41,4 @@ private:
 	const char* executablepath_;
 };
 } // end namespace wgt
-#endif //PLUGIN_CONTEXT_MANAGER_HPP
+#endif // PLUGIN_CONTEXT_MANAGER_HPP

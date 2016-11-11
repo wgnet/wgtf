@@ -6,9 +6,9 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( MacrosObject, MetaNoSerialization() )
-	EXPOSE( "Macros", getMacros, MetaNoSerialization() )
-	EXPOSE( "SelectedMacro", getSelectedCompoundCommand, MetaNoSerialization() )
-	EXPOSE_METHOD( "setSelectedRow", setSelectedRow )
+BEGIN_EXPOSE(MacrosObject, MetaNoSerialization())
+EXPOSE("Macros", getMacros, MetaNoSerialization())
+EXPOSE("SelectedMacro", getSelectedCompoundCommand, MetaNoSerialization())
+EXPOSE_METHOD("setSelectedRow", setSelectedRow)
 END_EXPOSE()
 } // end namespace wgt

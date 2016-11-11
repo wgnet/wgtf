@@ -7,8 +7,8 @@
 namespace wgt
 {
 BEGIN_EXPOSE(IConnection, MetaNone())
-    EXPOSE("id", Id, MetaNone())
-    EXPOSE("input", Input, MetaNone())
-    EXPOSE("output", Output, MetaNone())
+EXPOSE("id", Id, MetaNone())
+EXPOSE("input", Input, MetaNone())
+EXPOSE("output", Output, MetaNone())
 END_EXPOSE()
 }

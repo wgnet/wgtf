@@ -11,90 +11,78 @@
 #include <unordered_map>
 #include <memory>
 
-
 namespace wgt
 {
-
 namespace
 {
+struct MetaTypeIndex
+{
+	std::unordered_map<wgt::StringRef, const MetaType*> nameIndex_;
+	std::unordered_map<const TypeId, const MetaType*> typeIdIndex_;
+};
 
-	struct MetaTypeIndex
-	{
-		std::unordered_map<wgt::StringRef, const MetaType*> nameIndex_;
-		std::unordered_map<const TypeId, const MetaType*> typeIdIndex_;
-	};
-
-	DLink& s_metaTypes()
-	{
-		static DLink inst;
-		return inst;
-	}
-
-	std::unique_ptr< MetaTypeIndex > s_index;
-
-
-	bool convertFromString( const MetaType* toType, void* to, const MetaType* fromType, const void* from )
-	{
-		if( fromType->typeId() != TypeId::getType< std::string >() )
-		{
-			return false;
-		}
-
-		if( !to || !from )
-		{
-			return true;
-		}
-
-		const std::string& fromStr = *reinterpret_cast<const std::string*>( from );
-		FixedMemoryStream dataStream( fromStr.c_str(), fromStr.size() );
-		TextStream stream( dataStream );
-		toType->streamIn( stream, to );
-		return
-			!stream.fail() && // conversion succeeded
-			stream.peek() == EOF; // whole string was consumed
-	}
-
+DLink& s_metaTypes()
+{
+	static DLink inst;
+	return inst;
 }
 
+std::unique_ptr<MetaTypeIndex> s_index;
 
-MetaType::MetaType( const char* name, const Data& data ):
-	data_( data ),
-	name_( name ? name : data.typeId_.getName() ),
-	link_()
+bool convertFromString(const MetaType* toType, void* to, const MetaType* fromType, const void* from)
 {
-	for( int i = 0; i <= QualifiersMask; ++i )
+	if (fromType->typeId() != TypeId::getType<std::string>())
+	{
+		return false;
+	}
+
+	if (!to || !from)
+	{
+		return true;
+	}
+
+	const std::string& fromStr = *reinterpret_cast<const std::string*>(from);
+	FixedMemoryStream dataStream(fromStr.c_str(), fromStr.size());
+	TextStream stream(dataStream);
+	toType->streamIn(stream, to);
+	return !stream.fail() && // conversion succeeded
+	stream.peek() == EOF; // whole string was consumed
+}
+}
+
+MetaType::MetaType(const char* name, const Data& data)
+    : data_(data), name_(name ? name : data.typeId_.getName()), link_()
+{
+	for (int i = 0; i <= QualifiersMask; ++i)
 	{
 		// Qualified instance must be at least 4 bytes aligned (Variant uses 2 lower bits for storage type)
-		assert( ( reinterpret_cast< uintptr_t >( qualified_ + i ) & 0x03 ) == 0 );
-		qualified_[ i ].type_ = this;
+		assert((reinterpret_cast<uintptr_t>(qualified_ + i) & 0x03) == 0);
+		qualified_[i].type_ = this;
 	}
 
-	s_metaTypes().prepend( &link_ );
+	s_metaTypes().prepend(&link_);
 	s_index.reset();
 }
-
 
 MetaType::~MetaType()
 {
 	s_index.reset();
 }
 
-
-const MetaType::Qualified* MetaType::qualified( int qualifiers ) const
+const MetaType::Qualified* MetaType::qualified(int qualifiers) const
 {
-	assert( qualifiers >= 0 );
-	assert( qualifiers < QualifiersMask );
+	assert(qualifiers >= 0);
+	assert(qualifiers < QualifiersMask);
 
 	return qualified_ + qualifiers;
 }
 
-
-bool MetaType::convertFrom( void* to, const MetaType* fromType, const void* from ) const
+bool MetaType::convertFrom(void* to, const MetaType* fromType, const void* from) const
 {
-	if( fromType == this )
+	if (fromType == this)
 	{
 		// identity conversion
-		copy( to, from );
+		copy(to, from);
 		return true;
 	}
 
@@ -105,13 +93,12 @@ bool MetaType::convertFrom( void* to, const MetaType* fromType, const void* from
 		return true;
 	}
 
-	return convertFromString( this, to, fromType, from );
+	return convertFromString(this, to, fromType, from);
 }
 
-
-bool MetaType::canConvertFrom( const MetaType* fromType ) const
+bool MetaType::canConvertFrom(const MetaType* fromType) const
 {
-	if( fromType == this )
+	if (fromType == this)
 	{
 		// identity conversion
 		return true;
@@ -123,30 +110,27 @@ bool MetaType::canConvertFrom( const MetaType* fromType ) const
 		return true;
 	}
 
-	return convertFrom( nullptr, fromType, nullptr );
+	return convertFrom(nullptr, fromType, nullptr);
 }
 
-
-bool MetaType::convertTo( const MetaType* toType, void* to, const void* from ) const
+bool MetaType::convertTo(const MetaType* toType, void* to, const void* from) const
 {
-	return toType->convertFrom( to, this, from );
+	return toType->convertFrom(to, this, from);
 }
 
-
-bool MetaType::canConvertTo( const MetaType* toType ) const
+bool MetaType::canConvertTo(const MetaType* toType) const
 {
-	return toType->canConvertFrom( this );
+	return toType->canConvertFrom(this);
 }
 
-
-bool MetaType::castPtr( const TypeId& destType, void** dest, void* src ) const
+bool MetaType::castPtr(const TypeId& destType, void** dest, void* src) const
 {
-	if( destType != data_.typeId_ )
+	if (destType != data_.typeId_)
 	{
 		return false;
 	}
 
-	if( dest )
+	if (dest)
 	{
 		*dest = src;
 	}
@@ -154,14 +138,10 @@ bool MetaType::castPtr( const TypeId& destType, void** dest, void* src ) const
 	return true;
 }
 
-
-bool MetaType::operator==( const MetaType& other ) const
+bool MetaType::operator==(const MetaType& other) const
 {
-	return
-		data_.typeId_ == other.data_.typeId_ &&
-		std::strcmp( name_, other.name_ ) == 0;
+	return data_.typeId_ == other.data_.typeId_ && std::strcmp(name_, other.name_) == 0;
 }
-
 
 const MetaType* MetaType::find(const char* name)
 {
@@ -188,21 +168,20 @@ const MetaType* MetaType::find(const char* name)
 		name = "Collection";
 	}
 	auto it = s_index->nameIndex_.find(name);
-	if(it != s_index->nameIndex_.end())
+	if (it != s_index->nameIndex_.end())
 	{
 		return it->second;
 	}
 
 	return nullptr;
 }
-
 
 const MetaType* MetaType::find(const TypeId& typeId)
 {
 	validateIndex();
 
 	auto it = s_index->typeIdIndex_.find(typeId);
-	if(it != s_index->typeIdIndex_.end())
+	if (it != s_index->typeIdIndex_.end())
 	{
 		return it->second;
 	}
@@ -210,19 +189,18 @@ const MetaType* MetaType::find(const TypeId& typeId)
 	return nullptr;
 }
 
-
 void MetaType::validateIndex()
 {
-	if(!s_index)
+	if (!s_index)
 	{
 		auto index = new MetaTypeIndex();
-		for( auto link = s_metaTypes().next(); link != &s_metaTypes(); link = link->next() )
+		for (auto link = s_metaTypes().next(); link != &s_metaTypes(); link = link->next())
 		{
-			auto metaType = dlink_holder( MetaType, link_, link );
+			auto metaType = dlink_holder(MetaType, link_, link);
 			index->nameIndex_.emplace(metaType->name(), metaType);
 			index->typeIdIndex_.emplace(metaType->typeId(), metaType);
 		}
-		s_index.reset( index );
+		s_index.reset(index);
 	}
 }
 

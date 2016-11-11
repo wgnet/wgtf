@@ -1,7 +1,6 @@
 #include "test_ui.hpp"
 #include "context.hpp"
 #include "core_command_system/i_command_manager.hpp"
-#include "core_command_system/compound_command.hpp"
 #include "core_command_system/i_env_system.hpp"
 #include "core_logging/logging.hpp"
 #include "core_reflection/interfaces/i_reflection_property_setter.hpp"
@@ -9,7 +8,6 @@
 #include "core_reflection/i_definition_manager.hpp"
 #include "interfaces/i_datasource.hpp"
 
-#include "core_data_model/reflection/reflected_tree_model.hpp"
 #include "core_data_model/reflection_proto/property_tree_model.hpp"
 
 #include "core_ui_framework/i_action.hpp"
@@ -31,28 +29,24 @@ static const char* s_historyVersion = "_ui_main_ver_1_0_15";
 typedef XMLSerializer HistorySerializer;
 }
 //==============================================================================
-TestUI::TestUI( IComponentContext & context )
-	: Depends( context )
-	, context_( context )
+TestUI::TestUI(IComponentContext& context) : Depends(context), context_(context)
 {
 }
 
 //==============================================================================
 TestUI::~TestUI()
 {
-
 }
 
 //==============================================================================
-void TestUI::init( IUIApplication & uiApplication, IUIFramework & uiFramework )
+void TestUI::init(IUIApplication& uiApplication, IUIFramework& uiFramework)
 {
 	app_ = &uiApplication;
 	fw_ = &uiFramework;
-	uiFramework.loadActionData(
-	":/testing_ui_main/actions.xml", IUIFramework::ResourceType::File);
+	uiFramework.loadActionData(":/testing_ui_main/actions.xml", IUIFramework::ResourceType::File);
 
-	createActions( uiFramework );
-	addActions( uiApplication );
+	createActions(uiFramework);
+	addActions(uiApplication);
 }
 
 //------------------------------------------------------------------------------
@@ -63,22 +57,15 @@ void TestUI::fini()
 }
 
 // =============================================================================
-void TestUI::createActions( IUIFramework & uiFramework )
+void TestUI::createActions(IUIFramework& uiFramework)
 {
 	// hook open/close
-	testOpen_ = uiFramework.createAction(
-		"Open", 
-		std::bind( &TestUI::open, this ),
-		std::bind( &TestUI::canOpen, this ) );
+	testOpen_ = uiFramework.createAction("Open", std::bind(&TestUI::open, this), std::bind(&TestUI::canOpen, this));
 
-	testClose_ = uiFramework.createAction(
-		"Close", 
-		std::bind( &TestUI::close, this ),
-		std::bind( &TestUI::canClose, this ) );
+	testClose_ = uiFramework.createAction("Close", std::bind(&TestUI::close, this), std::bind(&TestUI::canClose, this));
 
-	ICommandManager * commandSystemProvider =
-		get< ICommandManager >();
-	assert( commandSystemProvider );
+	ICommandManager* commandSystemProvider = get<ICommandManager>();
+	assert(commandSystemProvider);
 	if (commandSystemProvider == NULL)
 	{
 		return;
@@ -86,65 +73,45 @@ void TestUI::createActions( IUIFramework & uiFramework )
 }
 
 // =============================================================================
-void TestUI::createViews( IUIFramework & uiFramework, IDataSource* dataSrc, int envIdx )
+void TestUI::createViews(IUIFramework& uiFramework, IDataSource* dataSrc, int envIdx)
 {
-	auto defManager = get<IDefinitionManager>(); 
-	assert( defManager != nullptr );
+	assert(app_ != nullptr);
+	auto defManager = get<IDefinitionManager>();
+	assert(defManager != nullptr);
 	auto controller = get<IReflectionController>();
-	assert( controller != nullptr );
-	auto viewCreator = get< IViewCreator >();
-	assert(viewCreator != nullptr);
+	assert(controller != nullptr);
 
 	const bool managed = true;
 	auto contextObject = defManager->create<TestUIContext>(managed);
 	assert(contextObject != nullptr);
-	contextObject->initialize(std::unique_ptr<AbstractTreeModel>(
-	new proto::PropertyTreeModel(context_, dataSrc->getTestPage())));
+	contextObject->initialize(
+	std::unique_ptr<AbstractTreeModel>(new proto::PropertyTreeModel(context_, dataSrc->getTestPage())));
 	test1Contexts_.emplace_back(contextObject);
 	std::string uniqueName1 = dataSrc->description() + std::string("testing_ui_main/test_property_tree_panel.qml");
-	auto view = viewCreator->createView(
-	"testing_ui_main/test_property_tree_panel.qml",
-	test1Contexts_.back(),
-	[&](IView& view)
-	{
-		view.registerListener(this);
-	},
-	uniqueName1.c_str());
-	test1Views_.emplace_back( TestViews::value_type( std::move( view.get() ), envIdx ) );
-
-    auto model = std::unique_ptr< ITreeModel >(
-        new ReflectedTreeModel( dataSrc->getTestPage2(), *defManager, controller ) );
-	std::string uniqueName2 = dataSrc->description() + std::string("testing_ui_main/test_reflected_tree_panel.qml");
-
-	view = viewCreator->createView(
-		"testing_ui_main/test_reflected_tree_panel.qml",
-		std::move(model),
-		[&] ( IView & view )
-		{
-            view.registerListener(this);
-		},
-		uniqueName2.c_str());
-	test2Views_.emplace_back(TestViews::value_type(std::move( view.get() ), envIdx ) );
+	auto viewAsync = uiFramework.createViewAsync(uniqueName1.c_str(), "testing_ui_main/test_property_tree_panel.qml",
+	                                             IUIFramework::ResourceType::Url, test1Contexts_.back());
+	test1Views_.emplace_back(TestViews::value_type(std::move(viewAsync.get()), envIdx));
+	auto view = test1Views_.back().first.get();
+	view->registerListener(this);
+	app_->addView(*view);
 }
 
 // =============================================================================
 void TestUI::destroyActions()
 {
-	assert( app_ != nullptr );
-	app_->removeAction( *testOpen_ );
-	app_->removeAction( *testClose_ );
+	assert(app_ != nullptr);
+	app_->removeAction(*testOpen_);
+	app_->removeAction(*testClose_);
 	testOpen_.reset();
 	testClose_.reset();
 }
 
 // =============================================================================
-void TestUI::destroyViews( size_t idx )
+void TestUI::destroyViews(size_t idx)
 {
-	assert( test1Views_.size() == test2Views_.size() );
-	removeViews( idx );
+	removeViews(idx);
 	test1Contexts_.erase(test1Contexts_.begin() + idx);
-	test1Views_.erase( test1Views_.begin() + idx );
-	test2Views_.erase( test2Views_.begin() + idx );
+	test1Views_.erase(test1Views_.begin() + idx);
 }
 
 // =============================================================================
@@ -155,47 +122,37 @@ void TestUI::closeAll()
 		close();
 	}
 
-	assert( test1Views_.empty() );
-	assert( test2Views_.empty() );
+	assert(test1Views_.empty());
 }
 
 // =============================================================================
-void TestUI::addActions( IUIApplication & uiApplication )
+void TestUI::addActions(IUIApplication& uiApplication)
 {
-	uiApplication.addAction( *testOpen_ );
-	uiApplication.addAction( *testClose_ );
+	uiApplication.addAction(*testOpen_);
+	uiApplication.addAction(*testClose_);
 }
 
 // =============================================================================
-void TestUI::removeViews( size_t idx )
+void TestUI::removeViews(size_t idx)
 {
-	assert( app_ != nullptr );
+	assert(app_ != nullptr);
 	if (test1Views_[idx].first != nullptr)
 	{
-		app_->removeView( *test1Views_[idx].first );
-	}
-	if (test2Views_[idx].first != nullptr)
-	{
-		app_->removeView( *test2Views_[idx].first );
+		app_->removeView(*test1Views_[idx].first);
 	}
 }
 
-void TestUI::onFocusIn( IView* view )
+void TestUI::onFocusIn(IView* view)
 {
 	// NGT_MSG("%s focus in\n", view->title());
 
-	auto pr = [&]( TestViews::value_type& x ) { return x.first.get() == view; };
+	auto pr = [&](TestViews::value_type& x) { return x.first.get() == view; };
 
-	auto it1 = std::find_if( test1Views_.begin(), test1Views_.end(), pr );
-	auto it2 = std::find_if(test2Views_.begin(), test2Views_.end(), pr);
+	auto it1 = std::find_if(test1Views_.begin(), test1Views_.end(), pr);
 	int envId = -1;
-	if ( it1 != test1Views_.end() )
+	if (it1 != test1Views_.end())
 	{
 		envId = it1->second;
-	}
-	if ( it2 != test2Views_.end() )
-	{
-		envId = it2->second;
 	}
 	assert(envId != -1);
 	get<IEnvManager>()->selectEnv(envId);
@@ -231,7 +188,7 @@ void TestUI::onFocusIn( IView* view )
 	}
 }
 
-void TestUI::onFocusOut( IView* view )
+void TestUI::onFocusOut(IView* view)
 {
 	// NGT_MSG("%s focus out\n", view->title());
 }
@@ -244,18 +201,18 @@ void TestUI::open()
 	IDataSource* dataSrc = dataSrcMngr->openDataSource();
 
 	IEnvManager* em = get<IEnvManager>();
-	int envIdx = em->addEnv( dataSrc->description() );
+	int envIdx = em->addEnv(dataSrc->description());
 	auto findIt = historyFlags_.find(envIdx);
 	assert(findIt == historyFlags_.end());
 	historyFlags_[envIdx] = false;
 
-	dataSrcEnvPairs_.push_back( DataSrcEnvPairs::value_type( dataSrc, envIdx ) );
-	createViews( *fw_, dataSrc, envIdx );
+	dataSrcEnvPairs_.push_back(DataSrcEnvPairs::value_type(dataSrc, envIdx));
+	createViews(*fw_, dataSrc, envIdx);
 }
 
 void TestUI::close()
 {
-	assert( dataSrcEnvPairs_.size() > 0 );
+	assert(dataSrcEnvPairs_.size() > 0);
 
 	IDataSource* dataSrc = dataSrcEnvPairs_.back().first;
 	int envIdx = dataSrcEnvPairs_.back().second;
@@ -263,7 +220,7 @@ void TestUI::close()
 	assert(findIt != historyFlags_.end());
 	historyFlags_.erase(envIdx);
 	dataSrcEnvPairs_.pop_back();
-	destroyViews( dataSrcEnvPairs_.size() );
+	destroyViews(dataSrcEnvPairs_.size());
 
 	auto cmdMgr = get<ICommandManager>();
 	auto defManager = get<IDefinitionManager>();
@@ -276,24 +233,23 @@ void TestUI::close()
 	file += s_historyVersion;
 	auto fileSystem = get<IFileSystem>();
 	assert(fileSystem != nullptr);
-	fileSystem->writeFile(file.c_str(), stream.buffer().c_str(), stream.buffer().size(), std::ios::out | std::ios::binary);
+	fileSystem->writeFile(file.c_str(), stream.buffer().c_str(), stream.buffer().size(),
+	                      std::ios::out | std::ios::binary);
 
 	IEnvManager* em = get<IEnvManager>();
-	em->removeEnv( envIdx );
+	em->removeEnv(envIdx);
 
 	auto dataSrcMngr = get<IDataSourceManager>();
-	dataSrcMngr->closeDataSource( dataSrc );
+	dataSrcMngr->closeDataSource(dataSrc);
 }
 
 bool TestUI::canOpen() const
 {
-	assert(test1Views_.size() == test2Views_.size());
 	return test1Views_.size() < 5;
 }
 
 bool TestUI::canClose() const
 {
-	assert(test1Views_.size() == test2Views_.size());
 	return test1Views_.size() > 0;
 }
 } // end namespace wgt

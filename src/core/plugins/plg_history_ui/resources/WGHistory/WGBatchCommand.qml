@@ -2,67 +2,42 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
-import WGControls 1.0
-import WGControls.Layouts 1.0
+import WGControls 2.0
+import WGControls.Layouts 2.0
 
 
-// Component for dislaying batch commands
 ColumnLayout {
     id: batchCommand
     objectName: "batchCommand"
     WGComponent { type: "WGBatchCommand" }
 
-    // -- Begin Interface
-    property variant displayObject: null
-    property bool isCurrentItem: false
-    property bool isApplied: false
+    property var historyItem: null
+    property bool currentItem: false
+    property bool applied: false
     property int columnIndex: 0
-    // -- End Interface
 
-    // Single command instance or batch title
     WGCommandInstance {
         id: childCommand
-
         Layout.fillWidth: true
-
-        displayObject: parent.displayObject
-        isCurrentItem: parent.isCurrentItem
-        isApplied: parent.isApplied
-        columnIndex: parent.columnIndex
+        historyItem: batchCommand.historyItem
+        currentItem: batchCommand.currentItem
+        applied: batchCommand.applied
+        columnIndex: batchCommand.columnIndex
     }
-
-
-    // Child instances
-    WGListModel {
-        id: batchModel
-
-        source: ((typeof displayObject !== 'undefined') && (typeof displayObject !== 'undefined')) ?
-            displayObject.Children :
-            null
-
-        ValueExtension {}
-    }
-
 
     Column {
         id: batchChildColumn
 
         Repeater {
             id: batchChildList
-            model: batchModel
+            model: typeof historyItem === "undefined" ? null : historyItem.Children
 
-            // TODO is displaying batches of batches possible?
             delegate: WGCommandInstance {
                 id: batchChild
-
-                property variant itemData: value
-
-                // -- Begin Interface
-                displayObject: itemData
-                isCurrentItem: batchCommand.isCurrentItem
-                isApplied: batchCommand.isApplied
+                historyItem: itemData.value
+                currentItem: batchCommand.currentItem
+                applied: batchCommand.applied
                 columnIndex: batchCommand.columnIndex
-                // -- End Interface
             }
         }
     }

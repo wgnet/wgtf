@@ -3,7 +3,8 @@
 
 #include <ios>
 
-//#include "i_datastream.hpp" // break cyclic include: i_datastream.hpp -> variant.hpp -> text_stream.hpp -> basic_stream.hpp -> i_datastream.hpp
+//#include "i_datastream.hpp" // break cyclic include: i_datastream.hpp -> variant.hpp -> text_stream.hpp ->
+// basic_stream.hpp -> i_datastream.hpp
 #include "serialization_dll.hpp"
 
 namespace wgt

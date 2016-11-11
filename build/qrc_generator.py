@@ -41,7 +41,8 @@ for base, dirnames, filenames in os.walk(directory):
 		if filename.startswith( "." ) or \
 			filename.endswith( ".swp" ) or \
 			filename.endswith( ".orig" ) or \
-			filename.endswith( ".pyc" ):
+			filename.endswith( ".pyc" ) or \
+			filename.endswith( ".autosave" ):
 			continue
 		files.append(os.path.join(base, filename).replace( '\\', '/' ))
 

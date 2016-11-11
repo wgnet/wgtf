@@ -11,19 +11,17 @@ namespace wgt
 class AlertObjectModel
 {
 public:
-
 	AlertObjectModel();
-	AlertObjectModel( const AlertObjectModel& rhs );
-	AlertObjectModel( const char* message );
+	AlertObjectModel(const AlertObjectModel& rhs);
+	AlertObjectModel(const char* message);
 
 	virtual ~AlertObjectModel();
 
-	void init( const char* message );
+	void init(const char* message);
 
 	const char* getMessage() const;
 
 private:
-
 	struct Implementation;
 	std::unique_ptr<Implementation> impl_;
 };
@@ -31,26 +29,24 @@ private:
 class AlertPageModel
 {
 public:
-
 	AlertPageModel();
-	AlertPageModel( const AlertPageModel& rhs );
+	AlertPageModel(const AlertPageModel& rhs);
 
 	virtual ~AlertPageModel();
 
-	void init( IComponentContext& contextManager );
+	void init(IComponentContext& contextManager);
 
-	void addAlert( const char* message );
+	void addAlert(const char* message);
 
 	ObjectHandle removeAlert() const;
 
-	const int & currentSelectedRowIndex() const;
-	void currentSelectedRowIndex( const int & index );
+	const int& currentSelectedRowIndex() const;
+	void currentSelectedRowIndex(const int& index);
 
 private:
-
 	DECLARE_REFLECTED
 
-	const IListModel * getAlerts() const;
+	const IListModel* getAlerts() const;
 
 	struct Implementation;
 	std::unique_ptr<Implementation> impl_;

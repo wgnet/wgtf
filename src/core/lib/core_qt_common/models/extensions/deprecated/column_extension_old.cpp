@@ -6,95 +6,77 @@ namespace wgt
 {
 struct ColumnExtensionOld::Implementation
 {
-	std::vector< IndexedAdapter< ColumnListAdapter > > columnModels_;
-	std::vector< std::unique_ptr< ColumnListAdapter > > redundantColumnModels_;
+	std::vector<IndexedAdapter<ColumnListAdapter>> columnModels_;
+	std::vector<std::unique_ptr<ColumnListAdapter>> redundantColumnModels_;
 };
 
-
-ColumnExtensionOld::ColumnExtensionOld()
-	: impl_( new Implementation() )
+ColumnExtensionOld::ColumnExtensionOld() : impl_(new Implementation())
 {
 }
-
 
 ColumnExtensionOld::~ColumnExtensionOld()
 {
 }
 
-
-QHash< int, QByteArray > ColumnExtensionOld::roleNames() const
+QHash<int, QByteArray> ColumnExtensionOld::roleNames() const
 {
-	QHash< int, QByteArray > roleNames;
-	this->registerRole( ColumnModelRole::roleName_, roleNames );
+	QHash<int, QByteArray> roleNames;
+	this->registerRole(ColumnModelRole::roleName_, roleNames);
 	return roleNames;
 }
 
-
-QVariant ColumnExtensionOld::data( const QModelIndex &index, int role ) const
+QVariant ColumnExtensionOld::data(const QModelIndex& index, int role) const
 {
 	ItemRole::Id roleId;
-	if (!this->decodeRole( role, roleId ))
+	if (!this->decodeRole(role, roleId))
 	{
-		return QVariant( QVariant::Invalid );
+		return QVariant(QVariant::Invalid);
 	}
 
 	if (roleId != ColumnModelRole::roleId_)
 	{
-		return QVariant( QVariant::Invalid );
+		return QVariant(QVariant::Invalid);
 	}
 
-	auto it = std::find( impl_->columnModels_.begin(), 
-		impl_->columnModels_.end(), index );
+	auto it = std::find(impl_->columnModels_.begin(), impl_->columnModels_.end(), index);
 	if (it != impl_->columnModels_.end())
 	{
-		return QVariant::fromValue< QAbstractItemModel* >( it->data_.get() );
+		return QVariant::fromValue<QAbstractItemModel*>(it->data_.get());
 	}
 	else
 	{
-		auto pColumnModel = new ColumnListAdapter( index );
-		impl_->columnModels_.emplace_back( index, pColumnModel );
-		return QVariant::fromValue< QAbstractItemModel* >( pColumnModel );
+		auto pColumnModel = new ColumnListAdapter(index);
+		impl_->columnModels_.emplace_back(index, pColumnModel);
+		return QVariant::fromValue<QAbstractItemModel*>(pColumnModel);
 	}
 }
 
-
-bool ColumnExtensionOld::setData( 
-	const QModelIndex &index, const QVariant &value, int role )
+bool ColumnExtensionOld::setData(const QModelIndex& index, const QVariant& value, int role)
 {
 	return false;
 }
 
-
-void ColumnExtensionOld::onLayoutAboutToBeChanged(
-	const QList<QPersistentModelIndex> & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void ColumnExtensionOld::onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+                                                  QAbstractItemModel::LayoutChangeHint hint)
 {
 	for (auto it = parents.begin(); it != parents.end(); ++it)
 	{
-		isolateRedundantIndices( 
-			*it, impl_->columnModels_, impl_->redundantColumnModels_ );
+		isolateRedundantIndices(*it, impl_->columnModels_, impl_->redundantColumnModels_);
 	}
 }
 
-
-void ColumnExtensionOld::onLayoutChanged(
-	const QList<QPersistentModelIndex> & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void ColumnExtensionOld::onLayoutChanged(const QList<QPersistentModelIndex>& parents,
+                                         QAbstractItemModel::LayoutChangeHint hint)
 {
 	impl_->redundantColumnModels_.clear();
 }
 
-
-void ColumnExtensionOld::onRowsAboutToBeRemoved( 
-	const QModelIndex& parent, int first, int last )
+void ColumnExtensionOld::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-	isolateRedundantIndices( parent, first, last,
-		impl_->columnModels_, impl_->redundantColumnModels_ );
+	isolateRedundantIndices(parent, first, last, impl_->columnModels_, impl_->redundantColumnModels_);
 }
 
-
-void ColumnExtensionOld::onRowsRemoved(
-	const QModelIndex & parent, int first, int last )
+void ColumnExtensionOld::onRowsRemoved(const QModelIndex& parent, int first, int last)
 {
 	impl_->redundantColumnModels_.clear();
 }

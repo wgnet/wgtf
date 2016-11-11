@@ -12,13 +12,9 @@ class WGFilteredListModel : public WGListModel
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QObject* filter
-				READ getFilter
-				WRITE setFilter
-				NOTIFY filterChanged )
+	Q_PROPERTY(QObject* filter READ getFilter WRITE setFilter NOTIFY filterChanged)
 
-	Q_PROPERTY( bool isFiltering
-				READ getIsFiltering )
+	Q_PROPERTY(bool isFiltering READ getIsFiltering)
 
 	DECLARE_QT_MEMORY_HANDLER
 
@@ -27,12 +23,12 @@ public:
 	virtual ~WGFilteredListModel();
 
 protected:
-	virtual IListModel * getModel() const override;
+	virtual IListModel* getModel() const override;
 
 private:
 	void onSourceChanged();
-	QObject * getFilter() const;
-	void setFilter( QObject * filter );
+	QObject* getFilter() const;
+	void setFilter(QObject* filter);
 	bool getIsFiltering() const;
 
 signals:

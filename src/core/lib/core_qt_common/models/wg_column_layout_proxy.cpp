@@ -101,6 +101,33 @@ struct WGColumnLayoutProxy::Impl
 		return it;
 	}
 
+	void removeMapping(const QModelIndex& source_parent, const WGColumnLayoutProxy& proxyModel)
+	{
+		if (!source_parent.isValid())
+		{
+			clearMapping();
+			return;
+		}
+
+		auto it = sourceIndexMapping_.find(source_parent);
+		if (it == sourceIndexMapping_.constEnd()) // not mapped
+		{
+			return;
+		}
+
+		auto source = source_parent.model();
+		assert(source != nullptr);
+		auto rowCount = source->rowCount(source_parent);
+		for (auto row = 0; row < rowCount; ++row)
+		{
+			auto source_row = proxyModel.createIndex(row, 0, *it);
+			removeMapping(source_row, proxyModel);
+		}
+
+		delete *it;
+		sourceIndexMapping_.erase(it);
+	}
+
 	void clearMapping()
 	{
 		qDeleteAll(sourceIndexMapping_);
@@ -112,8 +139,7 @@ struct WGColumnLayoutProxy::Impl
 	QHash<QModelIndex, Mapping*> sourceIndexMapping_;
 };
 
-WGColumnLayoutProxy::WGColumnLayoutProxy()
-    : impl_(new Impl())
+WGColumnLayoutProxy::WGColumnLayoutProxy() : impl_(new Impl())
 {
 }
 
@@ -128,24 +154,42 @@ void WGColumnLayoutProxy::setSourceModel(QAbstractItemModel* sourceModel)
 	impl_->connections_.reset();
 	if (sourceModel != nullptr)
 	{
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::modelAboutToBeReset, this, &WGColumnLayoutProxy::onSourceModelAboutToBeReset);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::modelReset, this, &WGColumnLayoutProxy::onSourceModelReset);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::dataChanged, this, &WGColumnLayoutProxy::onSourceDataChanged);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::headerDataChanged, this, &WGColumnLayoutProxy::onSourceHeaderDataChanged);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::layoutAboutToBeChanged, this, &WGColumnLayoutProxy::onSourceLayoutAboutToBeChanged);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::layoutChanged, this, &WGColumnLayoutProxy::onSourceLayoutChanged);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeInserted, this, &WGColumnLayoutProxy::onSourceRowsAboutToBeInserted);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsInserted, this, &WGColumnLayoutProxy::onSourceRowsInserted);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &WGColumnLayoutProxy::onSourceRowsAboutToBeRemoved);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsRemoved, this, &WGColumnLayoutProxy::onSourceRowsRemoved);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeMoved, this, &WGColumnLayoutProxy::onSourceRowsAboutToBeMoved);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsMoved, this, &WGColumnLayoutProxy::onSourceRowsMoved);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeInserted, this, &WGColumnLayoutProxy::onSourceColumnsAboutToBeInserted);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsInserted, this, &WGColumnLayoutProxy::onSourceColumnsInserted);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeRemoved, this, &WGColumnLayoutProxy::onSourceColumnsAboutToBeRemoved);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsRemoved, this, &WGColumnLayoutProxy::onSourceColumnsRemoved);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeMoved, this, &WGColumnLayoutProxy::onSourceColumnsAboutToBeMoved);
-		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsMoved, this, &WGColumnLayoutProxy::onSourceColumnsMoved);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::modelAboutToBeReset, this,
+		                                        &WGColumnLayoutProxy::onSourceModelAboutToBeReset);
+		impl_->connections_ +=
+		QObject::connect(sourceModel, &QAbstractItemModel::modelReset, this, &WGColumnLayoutProxy::onSourceModelReset);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::dataChanged, this,
+		                                        &WGColumnLayoutProxy::onSourceDataChanged);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::headerDataChanged, this,
+		                                        &WGColumnLayoutProxy::onSourceHeaderDataChanged);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::layoutAboutToBeChanged, this,
+		                                        &WGColumnLayoutProxy::onSourceLayoutAboutToBeChanged);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::layoutChanged, this,
+		                                        &WGColumnLayoutProxy::onSourceLayoutChanged);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeInserted, this,
+		                                        &WGColumnLayoutProxy::onSourceRowsAboutToBeInserted);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsInserted, this,
+		                                        &WGColumnLayoutProxy::onSourceRowsInserted);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeRemoved, this,
+		                                        &WGColumnLayoutProxy::onSourceRowsAboutToBeRemoved);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsRemoved, this,
+		                                        &WGColumnLayoutProxy::onSourceRowsRemoved);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeMoved, this,
+		                                        &WGColumnLayoutProxy::onSourceRowsAboutToBeMoved);
+		impl_->connections_ +=
+		QObject::connect(sourceModel, &QAbstractItemModel::rowsMoved, this, &WGColumnLayoutProxy::onSourceRowsMoved);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeInserted, this,
+		                                        &WGColumnLayoutProxy::onSourceColumnsAboutToBeInserted);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsInserted, this,
+		                                        &WGColumnLayoutProxy::onSourceColumnsInserted);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeRemoved, this,
+		                                        &WGColumnLayoutProxy::onSourceColumnsAboutToBeRemoved);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsRemoved, this,
+		                                        &WGColumnLayoutProxy::onSourceColumnsRemoved);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeMoved, this,
+		                                        &WGColumnLayoutProxy::onSourceColumnsAboutToBeMoved);
+		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsMoved, this,
+		                                        &WGColumnLayoutProxy::onSourceColumnsMoved);
 	}
 	QAbstractProxyModel::setSourceModel(sourceModel);
 	endResetModel();
@@ -390,7 +434,8 @@ void WGColumnLayoutProxy::onSourceModelReset()
 	endResetModel();
 }
 
-void WGColumnLayoutProxy::onSourceDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+void WGColumnLayoutProxy::onSourceDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+                                              const QVector<int>& roles)
 {
 	if (!topLeft.isValid())
 	{
@@ -472,15 +517,40 @@ void WGColumnLayoutProxy::onSourceHeaderDataChanged(Qt::Orientation orientation,
 	}
 }
 
-void WGColumnLayoutProxy::onSourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents, QAbstractItemModel::LayoutChangeHint hint)
+void WGColumnLayoutProxy::onSourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+                                                         QAbstractItemModel::LayoutChangeHint hint)
 {
-	emit layoutAboutToBeChanged();
+	QList<QPersistentModelIndex> proxy_parents;
+	for (auto& parent : parents)
+	{
+		auto proxy_parent = mapFromSourceParent(parent);
+		proxy_parents.append(proxy_parent);
+	}
+	emit layoutAboutToBeChanged(proxy_parents, hint);
 }
 
-void WGColumnLayoutProxy::onSourceLayoutChanged(const QList<QPersistentModelIndex>& parents, QAbstractItemModel::LayoutChangeHint hint)
+void WGColumnLayoutProxy::onSourceLayoutChanged(const QList<QPersistentModelIndex>& parents,
+                                                QAbstractItemModel::LayoutChangeHint hint)
 {
-	impl_->clearMapping();
-	emit layoutChanged();
+	if (parents.empty())
+	{
+		impl_->clearMapping();
+	}
+	else
+	{
+		for (auto& parent : parents)
+		{
+			impl_->removeMapping(parent, *this);
+		}
+	}
+
+	QList<QPersistentModelIndex> proxy_parents;
+	for (auto& parent : parents)
+	{
+		auto proxy_parent = mapFromSourceParent(parent);
+		proxy_parents.append(proxy_parent);
+	}
+	emit layoutChanged(proxy_parents, hint);
 }
 
 void WGColumnLayoutProxy::onSourceRowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
@@ -505,14 +575,16 @@ void WGColumnLayoutProxy::onSourceRowsRemoved()
 	endRemoveRows();
 }
 
-void WGColumnLayoutProxy::onSourceRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd, const QModelIndex& destinationParent, int destinationRow)
+void WGColumnLayoutProxy::onSourceRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd,
+                                                     const QModelIndex& destinationParent, int destinationRow)
 {
 	auto proxy_sourceParent = mapFromSourceParent(sourceParent);
 	auto proxy_destinationParent = mapFromSourceParent(destinationParent);
 	beginMoveRows(proxy_sourceParent, sourceStart, sourceEnd, proxy_destinationParent, destinationRow);
 }
 
-void WGColumnLayoutProxy::onSourceRowsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
+void WGColumnLayoutProxy::onSourceRowsMoved(const QModelIndex& parent, int start, int end,
+                                            const QModelIndex& destination, int row)
 {
 	endMoveRows();
 }
@@ -539,12 +611,14 @@ void WGColumnLayoutProxy::onSourceColumnsRemoved()
 	emit layoutChanged();
 }
 
-void WGColumnLayoutProxy::onSourceColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd, const QModelIndex& destinationParent, int destinationColumn)
+void WGColumnLayoutProxy::onSourceColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd,
+                                                        const QModelIndex& destinationParent, int destinationColumn)
 {
 	layoutAboutToBeChanged();
 }
 
-void WGColumnLayoutProxy::onSourceColumnsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int column)
+void WGColumnLayoutProxy::onSourceColumnsMoved(const QModelIndex& parent, int start, int end,
+                                               const QModelIndex& destination, int column)
 {
 	impl_->clearMapping();
 	emit layoutChanged();

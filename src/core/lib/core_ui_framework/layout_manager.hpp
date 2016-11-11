@@ -24,48 +24,50 @@ public:
 
 	void update() const;
 
-	void addAction( IAction & action );
-	void addMenu( IMenu & menu );
-	void addView( IView & view );
-	void addWindow( IWindow & window );
+	void addAction(IAction& action);
+	void addMenu(IMenu& menu);
+	void addView(IView& view);
+	void addWindow(IWindow& window);
 
-	void removeAction( IAction & action );
-	void removeMenu( IMenu & menu );
-	void removeView( IView & view );
-	void removeWindow( IWindow & window );
+	void removeAction(IAction& action);
+	void removeMenu(IMenu& menu);
+	void removeView(IView& view);
+	void removeWindow(IWindow& window);
 
-	void setWindowIcon( const char* path, const char* windowId );
-	const Windows & windows() const;
+	void setWindowIcon(const char* path, const char* windowId);
+	const Windows& windows() const;
 
 private:
-	bool matchMenu( IMenu & menu, const char * path );
+	bool matchMenu(IMenu& menu, const char* path);
 
-	std::vector< IMenu * > findAllMenus( IWindow & window, const char * path );
-	IRegion * findBestRegion( IWindow & window, const LayoutHint & hint );
+	std::vector<IMenu*> findAllMenus(IWindow& window, const char* path);
+	IRegion* findBestRegion(IWindow& window, const LayoutHint& hint);
 
 	struct ManagedAction
 	{
-		ManagedAction( IAction * action ) : action_( action ) {}
+		ManagedAction(IAction* action) : action_(action)
+		{
+		}
 
-		IAction * action_;
-		std::set< IMenu * > menus_;
+		IAction* action_;
+		std::set<IMenu*> menus_;
 	};
 
-	void addAction( ManagedAction & action, IWindow & window );
-	void addView( IView & view, IWindow & window );
+	void addAction(ManagedAction& action, IWindow& window);
+	void addView(IView& view, IWindow& window);
 
-	void refreshActions( IWindow & window );
-	void refreshViews( IWindow & window );
+	void refreshActions(IWindow& window);
+	void refreshViews(IWindow& window);
 
-	void removeActions( IWindow & window );
-	void removeViews( IWindow & window );
+	void removeActions(IWindow& window);
+	void removeViews(IWindow& window);
 
-	IWindow * getWindow( const char * windowId );
+	IWindow* getWindow(const char* windowId);
 
-	std::vector< ManagedAction > actions_;
-	std::map< IView *, IRegion * > views_;
-	std::vector< IMenu * > dynamicMenus_;
+	std::vector<ManagedAction> actions_;
+	std::map<IView*, IRegion*> views_;
+	std::vector<IMenu*> dynamicMenus_;
 	Windows windows_;
 };
 } // end namespace wgt
-#endif//LAYOUT_MANAGER_HPP
+#endif // LAYOUT_MANAGER_HPP

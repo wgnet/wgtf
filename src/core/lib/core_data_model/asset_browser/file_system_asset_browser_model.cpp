@@ -31,21 +31,12 @@ static const int NO_SELECTION = -1;
 
 struct FileSystemAssetBrowserModel::FileSystemAssetBrowserModelImplementation
 {
-	FileSystemAssetBrowserModelImplementation(
-	FileSystemAssetBrowserModel& self,
-	IFileSystem& fileSystem,
-	IDefinitionManager& definitionManager,
-	IAssetPresentationProvider& presentationProvider)
-	    : self_(self)
-	    , folders_(nullptr)
-	    , activeFiltersModel_(nullptr)
-	    , definitionManager_(definitionManager)
-	    , presentationProvider_(presentationProvider)
-	    , fileSystem_(fileSystem)
-	    , folderContentsFilter_("")
-	    , contentFilterIndexNotifier_(NO_SELECTION)
-	    , currentCustomFilterIndex_(-1)
-	    , iconSize_(64)
+	FileSystemAssetBrowserModelImplementation(FileSystemAssetBrowserModel& self, IFileSystem& fileSystem,
+	                                          IDefinitionManager& definitionManager,
+	                                          IAssetPresentationProvider& presentationProvider)
+	    : self_(self), folders_(nullptr), activeFiltersModel_(nullptr), definitionManager_(definitionManager),
+	      presentationProvider_(presentationProvider), fileSystem_(fileSystem), folderContentsFilter_(""),
+	      contentFilterIndexNotifier_(NO_SELECTION), currentCustomFilterIndex_(-1), iconSize_(64)
 	{
 	}
 
@@ -85,11 +76,11 @@ struct FileSystemAssetBrowserModel::FileSystemAssetBrowserModelImplementation
 	int iconSize_;
 };
 
-FileSystemAssetBrowserModel::FileSystemAssetBrowserModel(
-const AssetPaths& assetPaths, const CustomContentFilters& customContentFilters,
-IFileSystem& fileSystem, IDefinitionManager& definitionManager, IAssetPresentationProvider& presentationProvider)
-    : impl_(new FileSystemAssetBrowserModelImplementation(*this, fileSystem,
-                                                          definitionManager, presentationProvider))
+FileSystemAssetBrowserModel::FileSystemAssetBrowserModel(const AssetPaths& assetPaths,
+                                                         const CustomContentFilters& customContentFilters,
+                                                         IFileSystem& fileSystem, IDefinitionManager& definitionManager,
+                                                         IAssetPresentationProvider& presentationProvider)
+    : impl_(new FileSystemAssetBrowserModelImplementation(*this, fileSystem, definitionManager, presentationProvider))
 {
 	for (auto& path : assetPaths)
 	{
@@ -117,8 +108,7 @@ void FileSystemAssetBrowserModel::finalise()
 
 void FileSystemAssetBrowserModel::addAssetPath(const std::string& path)
 {
-	if (std::find(impl_->assetPaths_.begin(), impl_->assetPaths_.end(), path)
-	    == impl_->assetPaths_.end())
+	if (std::find(impl_->assetPaths_.begin(), impl_->assetPaths_.end(), path) == impl_->assetPaths_.end())
 	{
 		if (!impl_->fileSystem_.exists(path.c_str()))
 		{
@@ -198,8 +188,7 @@ void FileSystemAssetBrowserModel::getSelectedCustomFilterText(std::string& value
 	}
 
 	auto& variant = impl_->customContentFilters_[index];
-	if (variant.typeIs<const char*>() ||
-	    variant.typeIs<std::string>())
+	if (variant.typeIs<const char*>() || variant.typeIs<std::string>())
 	{
 		variant.tryCast(value);
 	}
@@ -287,7 +276,7 @@ void FileSystemAssetBrowserModel::addFolderItems(const AssetPaths& paths)
 			// TODO: For search/filtering we should add all resources on a separate thread
 			// We don't want to block the main UI thread
 			// For now do not add sub-folders to avoid performance issues
-			//else if (!info.isDots())
+			// else if (!info.isDots())
 			//{
 			//	directories.push_back( info.fullPath );
 			//}

@@ -6,8 +6,7 @@
 
 namespace wgt
 {
-class CAssertTestPluginApplication
-: public Implements<IApplication>
+class CAssertTestPluginApplication : public Implements<IApplication>
 {
 public:
 	int startApplication() override
@@ -27,8 +26,7 @@ public:
  *
  * @ingroup plugins
  */
-class CAssertTestPluginTestPlugin
-: public PluginMain
+class CAssertTestPluginTestPlugin : public PluginMain
 {
 public:
 	CAssertTestPluginTestPlugin(IComponentContext& contextManager)

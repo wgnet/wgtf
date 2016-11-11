@@ -23,8 +23,8 @@ Item {
     property var rowIndex: modelIndex
     /** Switch to load asynchronously or synchronously.*/
     property bool asynchronous: false
-	/** item row index.*/
-	property int itemRowIndex: index
+    /** item row index.*/
+    property int itemRowIndex: index
 
     /** Signals that this item received a mouse press.
     \param mouse The mouse data at the time.
@@ -39,11 +39,14 @@ Item {
     \param itemIndex The index of the item.*/
     signal itemDoubleClicked(var mouse, var itemIndex)
 
+    /* Aliasing the isSelected state for automated testing.*/
+    property alias isSelected: rowBackground.isSelected
+
     Loader {
         id: rowBackground
         objectName: "RowBackground"
         anchors.fill: row
-		asynchronous: itemRow.asynchronous
+        asynchronous: itemRow.asynchronous
         sourceComponent: view.style.rowBackground
 
         property bool isSelected: view.selectionModel.isSelected(modelIndex)
@@ -61,7 +64,6 @@ Item {
     /** Row contents with traling column sizer.*/
     Row {
         id: row
-
         property var minX: rowHeader.width
         property var maxX: rowFooter.x - lastColumnHandleSpacer.width
 
@@ -76,7 +78,7 @@ Item {
                 id: columns
                 objectName: "Columns"
 
-				model: WGSequenceList {
+                model: WGSequenceList {
                     id: rowModel
                     model: columnModel
                     sequence: view.columnSequence
@@ -106,7 +108,7 @@ Item {
                         id: columnBackground
                         objectName: "ColumnBackground"
                         anchors.fill: column
-		                asynchronous: itemRow.asynchronous
+                        asynchronous: itemRow.asynchronous
                         sourceComponent: view.style.columnBackground
 
                         /** Checks if this row is selected.*/
@@ -115,43 +117,46 @@ Item {
                         property bool isCurrent: columnContainer.isCurrent
                     }
 
-					DropArea {
-						id: dropArea
-						anchors.fill: columnBackground
-						keys: itemRow.view.mimeTypes()
+                    DropArea {
+                        id: dropArea
+                        anchors.fill: columnBackground
+                        keys: itemRow.view.mimeTypes()
 
-						onDropped: {
-							var mimeData = {};
-							for (var i = 0; i < drop.formats.length; ++i) {
-								var format = drop.formats[i];
-								var value = drop.getDataAsArrayBuffer(format);
-								mimeData[format] = value;
-							}
+                        onDropped: {
+                            var mimeData = {};
+                            for (var i = 0; i < drop.formats.length; ++i) {
+                                var format = drop.formats[i];
+                                var value = drop.getDataAsArrayBuffer(format);
+                                mimeData[format] = value;
+                            }
 
-							if (view.dropMimeData(mimeData, drop.proposedAction, modelIndex)) {
-								drop.acceptProposedAction();
-							}
-						}
-					}
+                            if (view.dropMimeData(mimeData, drop.proposedAction, modelIndex)) {
+                                drop.acceptProposedAction();
+                            }
+                        }
+                    }
 
                     MouseArea {
                         id: columnMouseArea
                         objectName: "ColumnMouseArea"
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: column.top
+                        anchors.bottom: column.bottom
                         acceptedButtons: Qt.RightButton | Qt.LeftButton;
-						drag.target: columnMouseArea
+                        drag.target: columnMouseArea
 
-						property var dragActive: drag.active
-						onDragActiveChanged: {
-							if (drag.active) {
-								Drag.mimeData = view.mimeData(itemRow.view.selectionModel.selectedIndexes)
-								Drag.active = true
-							}
-						}
+                        property var dragActive: drag.active
+                        onDragActiveChanged: {
+                            if (drag.active) {
+                                Drag.mimeData = view.mimeData(itemRow.view.selectionModel.selectedIndexes)
+                                Drag.active = true
+                            }
+                        }
 
-						Drag.dragType: Drag.Automatic 
-						Drag.proposedAction: Qt.MoveAction
-						Drag.supportedActions: Qt.MoveAction | Qt.CopyAction
+                        Drag.dragType: Drag.Automatic
+                        Drag.proposedAction: Qt.MoveAction
+                        Drag.supportedActions: Qt.MoveAction | Qt.CopyAction
 
                         /** Signals that this item received a mouse press.
                         \param mouse The mouse data at the time.
@@ -166,9 +171,9 @@ Item {
                         \param modelIndex The index of the item.*/
                         onDoubleClicked: itemDoubleClicked(mouse, modelIndex)
 
-						Drag.onDragStarted: {
+                        Drag.onDragStarted: {
                             Drag.hotSpot.x = mouseX
-							Drag.hotSpot.y = mouseY
+                            Drag.hotSpot.y = mouseY
                         }
 
                         Drag.onDragFinished: {
@@ -182,7 +187,7 @@ Item {
                         objectName: "Column"
                         x: Math.max(row.minX - columnContainer.x, 0)
                         width: Math.max(Math.min(row.maxX - columnContainer.x, columnContainer.width) - x, 0)
-                        height: childrenRect.height
+                        height: itemContainer.height
                         clip: true
 
                         /** Specifies minimum bound for cell.*/
@@ -216,12 +221,12 @@ Item {
                                 property bool isSelected: columnContainer.isSelected
                                 /** Exposes current index check to the custom cell component.*/
                                 property bool isCurrent: columnContainer.isCurrent
-								/** Exposes current row index to the custom cell component.*/
-								property int itemRowIndex: itemRow.itemRowIndex
-								/** Exposes current column index to the custom cell component.*/
-								property int itemColumnIndex: index
-								/** Exposes current modelIndex to the custom cell component.*/
-								property var itemModelIndex: modelIndex
+                                /** Exposes current row index to the custom cell component.*/
+                                property int itemRowIndex: itemRow.itemRowIndex
+                                /** Exposes current column index to the custom cell component.*/
+                                property int itemColumnIndex: index
+                                /** Exposes current modelIndex to the custom cell component.*/
+                                property var itemModelIndex: modelIndex
 
                                 onLoaded: {
                                     item.parent = itemContainer
@@ -313,7 +318,7 @@ Item {
     Loader {
         id: rowFooter
         objectName: "RowFooter"
-		asynchronous: itemRow.asynchronous
+        asynchronous: itemRow.asynchronous
         x: row.width - width
         height: row.height
         width: sourceComponent.width

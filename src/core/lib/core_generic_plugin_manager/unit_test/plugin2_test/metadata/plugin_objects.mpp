@@ -10,15 +10,15 @@
 namespace wgt
 {
 BEGIN_EXPOSE(TestPlugin2TestObject, MetaNone())
-	EXPOSE("counter", counter_, MetaNone())
-	EXPOSE("text", text_, MetaNone())
-	EXPOSE("values", values_, MetaNone())
-	EXPOSE("functional counter", getCounter, setCounter, MetaNone())
-	EXPOSE("functional text", getText, setText, MetaNone())
-	EXPOSE("counter getter", getCounter, MetaNone())
-	EXPOSE("text getter", getText, MetaNone())
+EXPOSE("counter", counter_, MetaNone())
+EXPOSE("text", text_, MetaNone())
+EXPOSE("values", values_, MetaNone())
+EXPOSE("functional counter", getCounter, setCounter, MetaNone())
+EXPOSE("functional text", getText, setText, MetaNone())
+EXPOSE("counter getter", getCounter, MetaNone())
+EXPOSE("text getter", getText, MetaNone())
 END_EXPOSE()
 
-BEGIN_EXPOSE( TestPlugin2Interface, MetaNone() )
+BEGIN_EXPOSE(TestPlugin2Interface, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

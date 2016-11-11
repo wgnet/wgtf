@@ -13,7 +13,6 @@
 
 #include <string>
 
-
 namespace wgt
 {
 /**
@@ -23,13 +22,13 @@ class Base64
 {
 public:
 	static std::string encode(const char* data, size_t len);
-	static std::string encode( const std::string & data )
+	static std::string encode(const std::string& data)
 	{
-		return encode( data.data(), data.size() );
+		return encode(data.data(), data.size());
 	}
 
-	static int decode(const std::string & data, char* results, size_t bufSize);
-	static bool decode( const std::string & inData, std::string & outData );
+	static int decode(const std::string& data, char* results, size_t bufSize);
+	static bool decode(const std::string& inData, std::string& outData);
 };
 } // end namespace wgt
 #endif // Base64_HPP

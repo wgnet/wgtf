@@ -18,7 +18,8 @@ public:
 	Q_INVOKABLE virtual QModelIndex mapToSource(const QModelIndex& proxyIndex) const override;
 	Q_INVOKABLE virtual QModelIndex mapFromSource(const QModelIndex& sourceIndex) const override;
 
-	Q_INVOKABLE virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+	Q_INVOKABLE virtual QModelIndex index(int row, int column,
+	                                      const QModelIndex& parent = QModelIndex()) const override;
 	Q_INVOKABLE virtual QModelIndex parent(const QModelIndex& child) const override;
 
 	Q_INVOKABLE virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -26,7 +27,8 @@ public:
 	Q_INVOKABLE virtual bool hasChildren(const QModelIndex& parent = QModelIndex()) const override;
 
 	Q_INVOKABLE virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
-	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role = Qt::EditRole) override;
+	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value,
+	                           int role = Qt::EditRole) override;
 
 	virtual QHash<int, QByteArray> roleNames() const override;
 

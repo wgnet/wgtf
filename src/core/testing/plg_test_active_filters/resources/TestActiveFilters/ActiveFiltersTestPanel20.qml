@@ -6,7 +6,7 @@ import WGControls.Views 2.0
 import WGControls.Layouts 2.0
 
 WGPanel {
-    title: "Active Filters Control Test 2.0"
+    title: "Active Filters Control Test"
     layoutHints: { 'test': 0.1 }
 
     color: palette.mainWindowColor
@@ -30,9 +30,7 @@ WGPanel {
                 objectName: "testActiveFilters"
                 anchors {left: parent.left; top: parent.top; right: parent.right}
                 height: childrenRect.height
-                inlineTags: true
                 splitterChar: ","
-                dataModel: filtersModel
             }
         }
 
@@ -48,11 +46,11 @@ WGPanel {
 
             WGTreeView {
                 id: sampleDataListView
-                model: sampleDataToFilterNew
+                model: sampleDataToFilter
                 anchors.fill: parent
                 clamp: true
                 filterObject: QtObject {
-                    property var filterText: activeFilters.stringValue
+                    property var filterText: activeFilters.filterString
                     property var filterTokens: []
 
                     onFilterTextChanged: {

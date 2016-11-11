@@ -22,8 +22,6 @@ SET( ALL_SRCS
 	plg_panel_manager_test.cpp
 	test_asset_browser_folder_context_menu.cpp
 	test_asset_browser_folder_context_menu.hpp
-	test_asset_presentation_provider.cpp
-	test_asset_presentation_provider.hpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 

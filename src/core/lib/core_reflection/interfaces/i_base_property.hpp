@@ -8,9 +8,9 @@
 
 #include "core_reflection/reflection_dll.hpp"
 
-//TODO:
-//add #include "i_class_member.hpp"
-//inherit from IClassMember and make IMethod inherit from it as well.
+// TODO:
+// add #include "i_class_member.hpp"
+// inherit from IClassMember and make IMethod inherit from it as well.
 
 namespace wgt
 {
@@ -20,31 +20,34 @@ class MetaBase;
 class Variant;
 class IDefinitionManager;
 
-template<typename T> class ObjectHandleT;
+template <typename T>
+class ObjectHandleT;
 class MetaBase;
-typedef ObjectHandleT< MetaBase > MetaHandle;
+typedef ObjectHandleT<MetaBase> MetaHandle;
 
 class IBaseProperty;
-typedef std::shared_ptr< IBaseProperty > IBasePropertyPtr;
+typedef std::shared_ptr<IBaseProperty> IBasePropertyPtr;
 
 /**
  *	Interface for storing info about a member/method of a class.
  *	A collection of all members of a class is stored in an IClassDefinition.
  */
-class REFLECTION_DLL IBaseProperty: public IMethod
+class REFLECTION_DLL IBaseProperty : public IMethod
 {
 public:
-	virtual ~IBaseProperty() {}
+	virtual ~IBaseProperty()
+	{
+	}
 
 	/**
 	 *	Get the type identifier of the property.
 	 */
-	virtual const TypeId & getType() const = 0;
+	virtual const TypeId& getType() const = 0;
 
 	/**
 	 *	Get the name of the property.
 	 */
-	virtual const char * getName() const = 0;
+	virtual const char* getName() const = 0;
 
 	/**
 	 *	Get the hash of the property.
@@ -58,7 +61,7 @@ public:
 	virtual MetaHandle getMetaData() const = 0;
 	virtual bool readOnly() const = 0;
 
-	//TODO: remove isMethod and add separate accessors to the class definition for properties and methods.
+	// TODO: remove isMethod and add separate accessors to the class definition for properties and methods.
 	virtual bool isMethod() const = 0;
 
 	/**
@@ -69,71 +72,64 @@ public:
 	 */
 	virtual bool isValue() const = 0;
 
-
 	/**
 	 *	Set the value on the given property.
-	 *	
+	 *
 	 *	@param handle the object which contains the value.
 	 *	@param value the desired value to be set on the handle.
 	 *	@param definitionManager manager which should contain the
 	 *		IClassDefinition for the given handle and this property.
-	 *	
+	 *
 	 *	@pre the handle must have this property in its IClassDefinition.
 	 *	@pre the property must not be a method.
 	 *	@pre the IClassDefinition for the given handle must be contained in
 	 *		the given definitionManager.
 	 *	@pre readOnly() must return false.
-	 *	
+	 *
 	 *	@return true if the property was successfully set.
 	 */
-	virtual bool set( const ObjectHandle & handle,
-		const Variant & value,
-		const IDefinitionManager & definitionManager ) const = 0;
-
+	virtual bool set(const ObjectHandle& handle, const Variant& value,
+	                 const IDefinitionManager& definitionManager) const = 0;
 
 	/**
 	 *	Get the value from the given property.
-	 *	
+	 *
 	 *	@param handle the object which contains the value.
 	 *	@param definitionManager manager which should contain the
 	 *		IClassDefinition for the given handle and this property.
-	 *	
+	 *
 	 *	@pre the handle must have this property in its IClassDefinition.
 	 *	@pre the property must not be a method.
 	 *	@pre the IClassDefinition for the given handle must be contained in
 	 *		the given definitionManager.
 	 *	@pre isValue() must return true.
-	 *	
+	 *
 	 *	@return a Variant containing the value of the property on success.
 	 *		A Variant containing 0 on failure.
 	 */
-	virtual Variant get( const ObjectHandle & handle,
-		const IDefinitionManager & definitionManager ) const = 0;
-
+	virtual Variant get(const ObjectHandle& handle, const IDefinitionManager& definitionManager) const = 0;
 
 	/**
 	 *	If this property is a method, call it as a function.
-	 *	
+	 *
 	 *	@param object the object which contains the method.
 	 *	@param parameters arguments to the method.
-	 *	
+	 *
 	 *	@pre the object must have this property in its IClassDefinition.
 	 *	@pre the property must be a method, not a member variable.
 	 *	@pre isMethod() must return true.
-	 *	
+	 *
 	 *	@return a Variant containing the result of the function call on success.
 	 *		A Variant containing 0 on failure.
 	 */
-	virtual Variant invoke( const ObjectHandle & object,
-		const IDefinitionManager & definitionManager,
-		const ReflectedMethodParameters & parameters ) = 0;
-
+	virtual Variant invoke(const ObjectHandle& object, const IDefinitionManager& definitionManager,
+	                       const ReflectedMethodParameters& parameters) = 0;
 
 	/**
 	 *	If this property is a method, get the number of arguments it takes.
-	 *	
+	 *
 	 *	@pre the property must be a method, not a member variable.
-	 *	
+	 *
 	 *	@return the number of arguments or 0 on failure.
 	 */
 	virtual size_t parameterCount() const = 0;

@@ -10,9 +10,7 @@ class IComponentContext;
 
 namespace PythonType
 {
-
 class Converters;
-
 
 /**
  *	Attempts to convert ScriptList<->Collection<->Variant.
@@ -20,20 +18,17 @@ class Converters;
 class ListConverter final : public IParentConverter
 {
 public:
-	ListConverter( IComponentContext & context,
-		const Converters & typeConverters );
+	ListConverter(IComponentContext& context, const Converters& typeConverters);
 
-	virtual bool toVariant( const PyScript::ScriptObject & inObject,
-		Variant & outVariant,
-		const ObjectHandle & parentHandle,
-		const std::string & childPath ) override;
-	virtual bool toScriptType( const Variant & inVariant,
-		PyScript::ScriptObject & outObject, void* userData = nullptr ) override;
+	virtual bool toVariant(const PyScript::ScriptObject& inObject, Variant& outVariant,
+	                       const ObjectHandle& parentHandle, const std::string& childPath) override;
+	virtual bool toScriptType(const Variant& inVariant, PyScript::ScriptObject& outObject,
+	                          void* userData = nullptr) override;
+
 private:
-	IComponentContext & context_;
-	const Converters & typeConverters_;
+	IComponentContext& context_;
+	const Converters& typeConverters_;
 };
-
 
 } // namespace PythonType
 } // end namespace wgt

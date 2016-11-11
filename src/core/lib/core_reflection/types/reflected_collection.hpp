@@ -8,16 +8,13 @@
 
 namespace wgt
 {
-class REFLECTION_DLL ReflectedCollectionImpl
-: public IEnumGenerator
+class REFLECTION_DLL ReflectedCollectionImpl : public IEnumGenerator
 {
 public:
 	ReflectedCollectionImpl(const IBasePropertyPtr& baseProperty);
 	virtual ~ReflectedCollectionImpl();
 
-	Collection getCollection(
-	const ObjectHandle& provider,
-	const IDefinitionManager& definitionManager) override;
+	Collection getCollection(const ObjectHandle& provider, const IDefinitionManager& definitionManager) override;
 
 private:
 	IBasePropertyPtr baseProperty_;

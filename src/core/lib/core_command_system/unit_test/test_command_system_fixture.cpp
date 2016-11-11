@@ -16,86 +16,77 @@ namespace wgt
 {
 //==============================================================================
 TestCommandSystemFixture::TestCommandSystemFixture()
-	: application_( new TestApplication )
-	, objectManager_( new ObjectManager() )
-	, definitionManager_( new DefinitionManager( *objectManager_ ) )
-	, commandManager_( new CommandManager( *definitionManager_ ) )
-	, setReflectedPropertyCmd_( new SetReflectedPropertyCommand( *definitionManager_ ) )
-	, invokeReflectedMethodCmd_( new InvokeReflectedMethodCommand( *definitionManager_ ) )
-	, reflectionController_( new ReflectionController() )
-	, envManager_( new EnvManager )
-	, multiCommandStatus_( MultiCommandStatus_Begin )
+    : application_(new TestApplication), objectManager_(new ObjectManager()),
+      definitionManager_(new DefinitionManager(*objectManager_)),
+      commandManager_(new CommandManager(*definitionManager_)),
+      setReflectedPropertyCmd_(new SetReflectedPropertyCommand(*definitionManager_)),
+      invokeReflectedMethodCmd_(new InvokeReflectedMethodCommand(*definitionManager_)),
+      reflectionController_(new ReflectionController()), envManager_(new EnvManager),
+      multiCommandStatus_(MultiCommandStatus_Begin)
 {
-	objectManager_->init( definitionManager_.get() );
-	Reflection::initReflectedTypes( *definitionManager_ );
-	Reflection_Utils::initReflectedTypes( *definitionManager_ );
-	CommandSystem::initReflectedTypes( *definitionManager_ );
+	objectManager_->init(definitionManager_.get());
+	Reflection::initReflectedTypes(*definitionManager_);
+	Reflection_Utils::initReflectedTypes(*definitionManager_);
+	CommandSystem::initReflectedTypes(*definitionManager_);
 
-	commandManager_->init( *application_, *envManager_, nullptr, nullptr );
-	commandManager_->registerCommand( setReflectedPropertyCmd_.get() );
-	commandManager_->registerCommand( invokeReflectedMethodCmd_.get() );
+	commandManager_->init(*application_, *envManager_, nullptr, nullptr);
+	commandManager_->registerCommand(setReflectedPropertyCmd_.get());
+	commandManager_->registerCommand(invokeReflectedMethodCmd_.get());
 
-	reflectionController_->init( *commandManager_ );
-	commandManager_->registerCommandStatusListener( this );
+	reflectionController_->init(*commandManager_);
+	commandManager_->registerCommandStatusListener(this);
 }
-
 
 //==============================================================================
 TestCommandSystemFixture::~TestCommandSystemFixture()
 {
-	commandManager_->deregisterCommandStatusListener( this );
+	commandManager_->deregisterCommandStatusListener(this);
 
-	commandManager_->deregisterCommand( invokeReflectedMethodCmd_->getId() );
-	commandManager_->deregisterCommand( setReflectedPropertyCmd_->getId() );
+	commandManager_->deregisterCommand(invokeReflectedMethodCmd_->getId());
+	commandManager_->deregisterCommand(setReflectedPropertyCmd_->getId());
 	commandManager_->fini();
 
 	invokeReflectedMethodCmd_.reset();
 	setReflectedPropertyCmd_.reset();
-	objectManager_.reset(); 
+	objectManager_.reset();
 	definitionManager_.reset();
 	reflectionController_.reset();
 	commandManager_.reset();
 }
 
-
 //==============================================================================
-IObjectManager & TestCommandSystemFixture::getObjectManager() const
+IObjectManager& TestCommandSystemFixture::getObjectManager() const
 {
 	return *objectManager_;
 }
 
-
 //==============================================================================
-IDefinitionManager & TestCommandSystemFixture::getDefinitionManager() const
+IDefinitionManager& TestCommandSystemFixture::getDefinitionManager() const
 {
 	return *definitionManager_;
 }
 
-
 //==============================================================================
-ICommandManager & TestCommandSystemFixture::getCommandSystemProvider() const
+ICommandManager& TestCommandSystemFixture::getCommandSystemProvider() const
 {
 	return *commandManager_;
 }
 
-
 //==============================================================================
-ReflectionController & TestCommandSystemFixture::getReflectionController() const
+ReflectionController& TestCommandSystemFixture::getReflectionController() const
 {
 	return *reflectionController_;
 }
 
-
 //==============================================================================
-const ICommandEventListener::MultiCommandStatus & TestCommandSystemFixture::getMultiCommandStatus() const
+const ICommandEventListener::MultiCommandStatus& TestCommandSystemFixture::getMultiCommandStatus() const
 {
 	return multiCommandStatus_;
 }
 
-
 //==============================================================================
-void TestCommandSystemFixture::multiCommandStatusChanged( 
-	ICommandEventListener::MultiCommandStatus multiCommandStatus ) const
+void TestCommandSystemFixture::multiCommandStatusChanged(
+ICommandEventListener::MultiCommandStatus multiCommandStatus) const
 {
 	multiCommandStatus_ = multiCommandStatus;
 }

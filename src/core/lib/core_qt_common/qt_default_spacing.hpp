@@ -5,7 +5,7 @@
 
 namespace wgt
 {
-class QtDefaultSpacing: public QQuickItem
+class QtDefaultSpacing : public QQuickItem
 {
 	Q_OBJECT
 
@@ -30,22 +30,22 @@ public:
 		labelColumnWidth_ = 0;
 	}
 
-	Q_PROPERTY( int minimumRowHeight MEMBER minimumRowHeight_ CONSTANT )
-	Q_PROPERTY( int rowSpacing MEMBER rowSpacing_ CONSTANT )
-	Q_PROPERTY( int leftMargin MEMBER leftMargin_ CONSTANT )
-	Q_PROPERTY( int rightMargin MEMBER rightMargin_ CONSTANT )
-	Q_PROPERTY( int topBottomMargin MEMBER topBottomMargin_ CONSTANT )
-	Q_PROPERTY( int scrollBarSize MEMBER scrollBarSize_ CONSTANT )
-	Q_PROPERTY( int separatorWidth MEMBER separatorWidth_ CONSTANT )
-	Q_PROPERTY( int childIndentation MEMBER childIndentation_ CONSTANT )
-	Q_PROPERTY( int minimumPanelWidth MEMBER minimumPanelWidth_ CONSTANT )
-	Q_PROPERTY( int standardBorderSize MEMBER standardBorderSize_ CONSTANT )
-	Q_PROPERTY( int doubleBorderSize MEMBER doubleBorderSize_ CONSTANT )
-	Q_PROPERTY( int standardRadius MEMBER standardRadius_ CONSTANT )
-	Q_PROPERTY( int halfRadius MEMBER halfRadius_ CONSTANT )
-	Q_PROPERTY( int standardMargin MEMBER standardMargin_ CONSTANT )
-	Q_PROPERTY( int doubleMargin MEMBER doubleMargin_ CONSTANT )
-	Q_PROPERTY( int labelColumnWidth MEMBER labelColumnWidth_ NOTIFY labelColumnWidthChanged )
+	Q_PROPERTY(int minimumRowHeight MEMBER minimumRowHeight_ CONSTANT)
+	Q_PROPERTY(int rowSpacing MEMBER rowSpacing_ CONSTANT)
+	Q_PROPERTY(int leftMargin MEMBER leftMargin_ CONSTANT)
+	Q_PROPERTY(int rightMargin MEMBER rightMargin_ CONSTANT)
+	Q_PROPERTY(int topBottomMargin MEMBER topBottomMargin_ CONSTANT)
+	Q_PROPERTY(int scrollBarSize MEMBER scrollBarSize_ CONSTANT)
+	Q_PROPERTY(int separatorWidth MEMBER separatorWidth_ CONSTANT)
+	Q_PROPERTY(int childIndentation MEMBER childIndentation_ CONSTANT)
+	Q_PROPERTY(int minimumPanelWidth MEMBER minimumPanelWidth_ CONSTANT)
+	Q_PROPERTY(int standardBorderSize MEMBER standardBorderSize_ CONSTANT)
+	Q_PROPERTY(int doubleBorderSize MEMBER doubleBorderSize_ CONSTANT)
+	Q_PROPERTY(int standardRadius MEMBER standardRadius_ CONSTANT)
+	Q_PROPERTY(int halfRadius MEMBER halfRadius_ CONSTANT)
+	Q_PROPERTY(int standardMargin MEMBER standardMargin_ CONSTANT)
+	Q_PROPERTY(int doubleMargin MEMBER doubleMargin_ CONSTANT)
+	Q_PROPERTY(int labelColumnWidth MEMBER labelColumnWidth_ NOTIFY labelColumnWidthChanged)
 
 signals:
 	void labelColumnWidthChanged();

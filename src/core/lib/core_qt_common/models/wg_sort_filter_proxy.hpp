@@ -7,14 +7,13 @@
 
 namespace wgt
 {
-
 class WGSortFilterProxy : public QSortFilterProxyModel
 {
 	Q_OBJECT
 	DECLARE_QT_MEMORY_HANDLER
 
-	Q_PROPERTY( QObject * sortObject READ getSortObject WRITE setSortObject NOTIFY sortObjectChanged )
-	Q_PROPERTY( QObject * filterObject READ getFilterObject WRITE setFilterObject NOTIFY filterObjectChanged )
+	Q_PROPERTY(QObject* sortObject READ getSortObject WRITE setSortObject NOTIFY sortObjectChanged)
+	Q_PROPERTY(QObject* filterObject READ getFilterObject WRITE setFilterObject NOTIFY filterObjectChanged)
 
 signals:
 	void sortObjectChanged();
@@ -24,31 +23,33 @@ public:
 	WGSortFilterProxy();
 	virtual ~WGSortFilterProxy();
 
-	Q_INVOKABLE void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
+	Q_INVOKABLE QModelIndex mapToSource(const QModelIndex& proxyIndex) const override;
+	Q_INVOKABLE QModelIndex mapFromSource(const QModelIndex& sourceIndex) const override;
+
+	Q_INVOKABLE void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 	Q_INVOKABLE void invalidateFilter();
 
 private:
-	QObject * getSortObject() const;
-	void setSortObject( QObject * sortObject );
+	QObject* getSortObject() const;
+	void setSortObject(QObject* sortObject);
 
-	QObject * getFilterObject() const;
-	void setFilterObject( QObject * filterObject );
+	QObject* getFilterObject() const;
+	void setFilterObject(QObject* filterObject);
 
 	void onSourceModelChanged();
 	void onSortObjectChanged();
 	void onFilterObjectChanged();
 
-	bool filterAcceptsRowNonRecursive(int source_row, const QModelIndex &source_parent) const;
-	bool filterAcceptsColumnNonRecursive(int source_column, const QModelIndex &source_parent) const;
+	bool filterAcceptsRowNonRecursive(int source_row, const QModelIndex& source_parent) const;
+	bool filterAcceptsColumnNonRecursive(int source_column, const QModelIndex& source_parent) const;
 
-	bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
-	bool filterAcceptsColumn(int source_column, const QModelIndex &source_parent) const override;
-	bool lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const override;
+	bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
+	bool filterAcceptsColumn(int source_column, const QModelIndex& source_parent) const override;
+	bool lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const override;
 
 	struct Impl;
-	std::unique_ptr< Impl > impl_;
+	std::unique_ptr<Impl> impl_;
 };
-
 }
 
 #endif // WG_SORT_FILTER_PROXY_HPP

@@ -6,11 +6,11 @@
 
 namespace wgt
 {
-typedef bool(*CallbackFunc)(GenericPluginLoadState loadState);
+typedef bool (*CallbackFunc)(GenericPluginLoadState loadState);
 class NotifyPlugin
 {
 public:
-	NotifyPlugin(GenericPluginManager & pluginManager, GenericPluginLoadState loadState);
+	NotifyPlugin(GenericPluginManager& pluginManager, GenericPluginLoadState loadState);
 
 	bool operator()(HMODULE hPlugin);
 
@@ -18,22 +18,20 @@ private:
 	static CallbackFunc GetPluginCallbackFunc(HMODULE hPlugin);
 
 protected:
-	GenericPluginManager & pluginManager_;
+	GenericPluginManager& pluginManager_;
 	GenericPluginLoadState loadState_;
 };
 
-
-class NotifyPluginPostLoad
-	: public NotifyPlugin
+class NotifyPluginPostLoad : public NotifyPlugin
 {
 public:
-	NotifyPluginPostLoad(GenericPluginManager & pluginManager);
+	NotifyPluginPostLoad(GenericPluginManager& pluginManager);
 	~NotifyPluginPostLoad();
 
 	bool operator()(HMODULE hPlugin);
 
 private:
-	std::vector< HMODULE > pluginsToUnload_;
+	std::vector<HMODULE> pluginsToUnload_;
 };
 } // end namespace wgt
-#endif //NOTIFY_PLUGIN_HPP
+#endif // NOTIFY_PLUGIN_HPP

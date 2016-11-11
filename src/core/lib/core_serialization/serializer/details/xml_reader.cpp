@@ -10,79 +10,61 @@
 #include <cstring>
 #include <cassert>
 
-
 namespace wgt
 {
-XMLReader::StackItem::StackItem( Variant value ):
-	value( std::move( value ) ),
-	object(),
-	collection( nullptr ),
-	property( nullptr ),
-	pos(),
-	characterData(),
-	hasChildren( false ),
-	assumedKey( 0 ),
-	objectId( RefObjectId::zero() ),
-	needResolve( false )
+XMLReader::StackItem::StackItem(Variant value)
+    : value(std::move(value)), object(), collection(nullptr), property(nullptr), pos(), characterData(),
+      hasChildren(false), assumedKey(0), objectId(RefObjectId::zero()), needResolve(false)
 {
 }
 
-
-void XMLReader::StackItem::cast( IDefinitionManager& definitionManager )
+void XMLReader::StackItem::cast(IDefinitionManager& definitionManager)
 {
 	object = ObjectHandle();
 	collection = nullptr;
 
-	if( auto v = value.value< ObjectHandle* >() )
+	if (auto v = value.value<ObjectHandle*>())
 	{
 		object = *v;
 	}
-	else if( auto v = value.value< Collection* >() )
+	else if (auto v = value.value<Collection*>())
 	{
 		collection = v;
 	}
 	else
 	{
-		if( auto definition = definitionManager.getDefinition( value.type()->typeId().getName() ) )
+		if (auto definition = definitionManager.getDefinition(value.type()->typeId().getName()))
 		{
-			object = ObjectHandle( &value, definition );
+			object = ObjectHandle(&value, definition);
 		}
 	}
 }
 
-
-XMLReader::XMLReader( TextStream& stream, IDefinitionManager& definitionManager, const XMLSerializer::Format& format ):
-	base( stream ),
-	definitionManager_( definitionManager ),
-	format_( format ),
-	stack_(),
-	pushed_( false ),
-	done_( false ),
-	ignore_( 0 )
+XMLReader::XMLReader(TextStream& stream, IDefinitionManager& definitionManager, const XMLSerializer::Format& format)
+    : base(stream), definitionManager_(definitionManager), format_(format), stack_(), pushed_(false), done_(false),
+      ignore_(0)
 {
 }
 
-
-bool XMLReader::read( Variant& value )
+bool XMLReader::read(Variant& value)
 {
-	stack_.emplace_back( std::move( value ) );
+	stack_.emplace_back(std::move(value));
 	pushed_ = true;
 	done_ = false;
 
-	if( !parse() && !done_ )
+	if (!parse() && !done_)
 	{
 		return false;
 	}
 
-	value = std::move( stack_.back().value );
+	value = std::move(stack_.back().value);
 	stack_.pop_back();
 	return true;
 }
 
-
-void XMLReader::elementStart( const char* elementName, const char* const* attributes )
+void XMLReader::elementStart(const char* elementName, const char* const* attributes)
 {
-	if( ignore_ )
+	if (ignore_)
 	{
 		ignore_ += 1;
 		return;
@@ -96,32 +78,32 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 	const char* keyType = nullptr;
 	const char* key = nullptr;
 
-	for( auto attribute = attributes; *attribute; attribute += 2 )
+	for (auto attribute = attributes; *attribute; attribute += 2)
 	{
 		const char* attributeName = attribute[0];
 		const char* attributeValue = attribute[1];
 
-		if( attributeName == format_.typeAttribute )
+		if (attributeName == format_.typeAttribute)
 		{
 			type = attributeValue;
 		}
-		else if( attributeName == format_.objectIdAttribute)
+		else if (attributeName == format_.objectIdAttribute)
 		{
 			objectId = attributeValue;
 		}
-		else if( attributeName == format_.objectReferenceAttribute)
+		else if (attributeName == format_.objectReferenceAttribute)
 		{
 			objectReference = attributeValue;
 		}
-		else if( attributeName == format_.propertyNameAttribute)
+		else if (attributeName == format_.propertyNameAttribute)
 		{
 			propertyName = attributeValue;
 		}
-		else if( attributeName == format_.keyTypeAttribute )
+		else if (attributeName == format_.keyTypeAttribute)
 		{
 			keyType = attributeValue;
 		}
-		else if( attributeName == format_.keyAttribute )
+		else if (attributeName == format_.keyAttribute)
 		{
 			key = attributeValue;
 		}
@@ -132,9 +114,9 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 	}
 
 	// prepare stack top item
-	assert( !stack_.empty() );
+	assert(!stack_.empty());
 
-	if( pushed_ )
+	if (pushed_)
 	{
 		// asusme that value for the current element is already on the stack
 		pushed_ = false;
@@ -145,38 +127,38 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 		current.hasChildren = true;
 		current.characterData.clear();
 
-		if( current.object.storage() )
+		if (current.object.storage())
 		{
 			// find and push property
-			const IClassDefinition* classDefinition = current.object.getDefinition( definitionManager_ );
-			if( !classDefinition )
+			const IClassDefinition* classDefinition = current.object.getDefinition(definitionManager_);
+			if (!classDefinition)
 			{
 				// type is not reflected
 				abortParsing();
 				return;
 			}
-			assert( propertyName != nullptr );
-			IBasePropertyPtr property = classDefinition->findProperty( propertyName );
-			if( !property )
+			assert(propertyName != nullptr);
+			IBasePropertyPtr property = classDefinition->findProperty(propertyName);
+			if (!property)
 			{
 				// ignore unknown properties
 				ignore_ = 1;
 				return;
 			}
 
-			if( property->isMethod() )
+			if (property->isMethod())
 			{
 				// ignore method properties
 				ignore_ = 1;
 				return;
 			}
 
-			stack_.emplace_back( property->get( current.object, definitionManager_ ) );
+			stack_.emplace_back(property->get(current.object, definitionManager_));
 			stack_.back().property = property;
 		}
-		else if( current.collection && current.collection->isValid() )
+		else if (current.collection && current.collection->isValid())
 		{
-			if( elementName != format_.collectionItemElement )
+			if (elementName != format_.collectionItemElement)
 			{
 				// ignore non-item properties
 				ignore_ = 1;
@@ -184,21 +166,21 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 			}
 
 			Variant k;
-			if( key )
+			if (key)
 			{
 				k = key;
 
-				if( keyType )
+				if (keyType)
 				{
-					const MetaType* keyMetaType = MetaType::find( keyType );
-					if( !keyMetaType )
+					const MetaType* keyMetaType = MetaType::find(keyType);
+					if (!keyMetaType)
 					{
 						// key type not found
 						abortParsing();
 						return;
 					}
 
-					if( !k.setType( keyMetaType ) )
+					if (!k.setType(keyMetaType))
 					{
 						// key type conversion failed
 						abortParsing();
@@ -207,7 +189,7 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 				}
 
 				intmax_t keyIndex = 0;
-				if( k.tryCast( keyIndex) )
+				if (k.tryCast(keyIndex))
 				{
 					current.assumedKey = keyIndex;
 				}
@@ -218,13 +200,13 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 			}
 
 			current.assumedKey += 1;
-			auto findIt = current.collection->find( k );
+			auto findIt = current.collection->find(k);
 			if (findIt == current.collection->end())
 			{
-				findIt = current.collection->insert( k );
+				findIt = current.collection->insert(k);
 			}
 
-			stack_.emplace_back( findIt.value() );
+			stack_.emplace_back(findIt.value());
 			stack_.back().pos = findIt;
 		}
 		else
@@ -247,24 +229,24 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 		current.needResolve = true;
 	}
 	// check type
-	if( type )
+	if (type)
 	{
 		bool isEmpty = current.value.isVoid();
-		if( !isEmpty )
+		if (!isEmpty)
 		{
-			if( auto object = current.value.value< ObjectHandle* >() )
+			if (auto object = current.value.value<ObjectHandle*>())
 			{
-				if( !object->isValid() )
+				if (!object->isValid())
 				{
 					isEmpty = true;
 				}
 			}
 		}
 
-		if( isEmpty )
+		if (isEmpty)
 		{
 			// set type
-			if( IClassDefinition* classDefinition = definitionManager_.getDefinition( type ) )
+			if (IClassDefinition* classDefinition = definitionManager_.getDefinition(type))
 			{
 				if (objectId == nullptr)
 				{
@@ -273,12 +255,12 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 				else
 				{
 					auto objectManager = definitionManager_.getObjectManager();
-					current.value = objectManager->createObject( RefObjectId(objectId), type );
+					current.value = objectManager->createObject(RefObjectId(objectId), type);
 				}
 			}
-			else if( const MetaType* metaType = MetaType::find( type ) )
+			else if (const MetaType* metaType = MetaType::find(type))
 			{
-				current.value = Variant( metaType );
+				current.value = Variant(metaType);
 			}
 			else
 			{
@@ -286,22 +268,22 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 				abortParsing();
 				return;
 			}
-			current.cast( definitionManager_ );
+			current.cast(definitionManager_);
 		}
 		else
 		{
 			// deduce actual underlying type
-			current.cast( definitionManager_ );
+			current.cast(definitionManager_);
 			const char* actualType = current.value.type()->name();
-			if( current.object.storage() )
+			if (current.object.storage())
 			{
-				if( const IClassDefinition* definition = current.object.getDefinition( definitionManager_ ) )
+				if (const IClassDefinition* definition = current.object.getDefinition(definitionManager_))
 				{
 					actualType = definition->getName();
 				}
 			}
 
-			if( strcmp( actualType, type ) != 0 )
+			if (strcmp(actualType, type) != 0)
 			{
 				// types do not match
 				abortParsing();
@@ -311,33 +293,32 @@ void XMLReader::elementStart( const char* elementName, const char* const* attrib
 	}
 	else
 	{
-		current.cast( definitionManager_ );
+		current.cast(definitionManager_);
 	}
 }
 
-
-void XMLReader::elementEnd( const char* elementName )
+void XMLReader::elementEnd(const char* elementName)
 {
-	if( ignore_ )
+	if (ignore_)
 	{
 		ignore_ -= 1;
 		return;
 	}
 
-	assert( !stack_.empty() );
+	assert(!stack_.empty());
 
 	// parse character data
 	auto& current = stack_.back();
-	if( !current.characterData.empty() )
+	if (!current.characterData.empty())
 	{
-		if( !current.value.value< Collection* >() )
+		if (!current.value.value<Collection*>())
 		{
-			FixedMemoryStream dataStream( current.characterData.c_str(), current.characterData.size() );
-			TextStream stream( dataStream );
+			FixedMemoryStream dataStream(current.characterData.c_str(), current.characterData.size());
+			TextStream stream(dataStream);
 			stream >> current.value;
 			stream.skipWhiteSpace();
 
-			if( stream.fail() || !stream.eof() )
+			if (stream.fail() || !stream.eof())
 			{
 				// failed to deserialize primitive value
 				abortParsing();
@@ -346,7 +327,7 @@ void XMLReader::elementEnd( const char* elementName )
 		}
 	}
 
-	if( stack_.size() <= 1 )
+	if (stack_.size() <= 1)
 	{
 		// this seems to be a root value: we're done
 		done_ = true;
@@ -355,59 +336,58 @@ void XMLReader::elementEnd( const char* elementName )
 	}
 
 	// move current element to its parent
-	auto& parent = *std::prev( stack_.end(), 2 );
-	if( parent.object.storage() )
+	auto& parent = *std::prev(stack_.end(), 2);
+	if (parent.object.storage())
 	{
-		assert( current.property );
+		assert(current.property);
 		if (current.needResolve)
 		{
 			auto objectManager = definitionManager_.getObjectManager();
-			objectManager->addObjectLinks( current.objectId, current.property, parent.object );
+			objectManager->addObjectLinks(current.objectId, current.property, parent.object);
 		}
 		else
 		{
-			current.property->set( parent.object, std::move( current.value ), definitionManager_ );
+			current.property->set(parent.object, std::move(current.value), definitionManager_);
 		}
-		
+
 		stack_.pop_back();
 	}
-	else if( parent.value.value< Collection* >() )
+	else if (parent.value.value<Collection*>())
 	{
-		current.pos.setValue( current.value );
+		current.pos.setValue(current.value);
 		stack_.pop_back();
 	}
 	else
 	{
-		assert( false ); // we shouldn't ever get here
+		assert(false); // we shouldn't ever get here
 	}
 }
 
-
-void XMLReader::characterData( const char* data, size_t length )
+void XMLReader::characterData(const char* data, size_t length)
 {
-	if( ignore_ )
+	if (ignore_)
 	{
 		return;
 	}
 
-	assert( !stack_.empty() );
+	assert(!stack_.empty());
 
 	auto& current = stack_.back();
 
-	if( current.object.storage() )
+	if (current.object.storage())
 	{
-		if( !current.hasChildren )
+		if (!current.hasChildren)
 		{
-			current.characterData.append( data, data + length );
+			current.characterData.append(data, data + length);
 		}
 	}
-	else if( current.value.value< Collection* >() )
+	else if (current.value.value<Collection*>())
 	{
 		// ignore character data in collection
 	}
 	else
 	{
-		current.characterData.append( data, data + length );
+		current.characterData.append(data, data + length);
 	}
 }
 } // end namespace wgt

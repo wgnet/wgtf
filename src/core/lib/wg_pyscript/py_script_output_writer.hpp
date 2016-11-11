@@ -9,8 +9,6 @@ namespace wgt
 {
 namespace PyScript
 {
-
-
 /**
  *	This class is used to manage hooking of Python's stdio output.
  *
@@ -21,14 +19,13 @@ namespace PyScript
  *	Note: ReferenceCount is only for internal use, no code except
  *	PyOutputStream should be taking references to this class.
  */
-//class ScriptOutputWriter
+// class ScriptOutputWriter
 //{
-//public:
+// public:
 //	ScriptOutputWriter();
 //};
 
 PyMODINIT_FUNC PyInit_ScriptOutputWriter();
-
 
 } // namespace PyScript
 } // end namespace wgt

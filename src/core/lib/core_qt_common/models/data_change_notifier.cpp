@@ -5,23 +5,18 @@
 #include "core_reflection/object_handle.hpp"
 #include "core_variant/variant.hpp"
 
-
 namespace wgt
 {
-DataChangeNotifier::DataChangeNotifier()
-	: QObject()
-	, source_( nullptr )
+DataChangeNotifier::DataChangeNotifier() : QObject(), source_(nullptr)
 {
 }
-
 
 DataChangeNotifier::~DataChangeNotifier()
 {
-	source( nullptr );
+	source(nullptr);
 }
 
-
-void DataChangeNotifier::source( SourceType* source )
+void DataChangeNotifier::source(SourceType* source)
 {
 	connections_.clear();
 	source_ = source;
@@ -29,29 +24,26 @@ void DataChangeNotifier::source( SourceType* source )
 
 	if (source_ != nullptr)
 	{
-		connections_ += source_->signalPreDataChanged.connect( std::bind( &DataChangeNotifier::onPreDataChanged, this ) );
-		connections_ += source_->signalPostDataChanged.connect( std::bind( &DataChangeNotifier::onPostDataChanged, this ) );
-		connections_ += source_->signalDestructing.connect( std::bind( &DataChangeNotifier::onDestructing, this ) );
+		connections_ += source_->signalPreDataChanged.connect(std::bind(&DataChangeNotifier::onPreDataChanged, this));
+		connections_ += source_->signalPostDataChanged.connect(std::bind(&DataChangeNotifier::onPostDataChanged, this));
+		connections_ += source_->signalDestructing.connect(std::bind(&DataChangeNotifier::onDestructing, this));
 	}
 }
-
 
 const DataChangeNotifier::SourceType* DataChangeNotifier::source() const
 {
 	return source_;
 }
 
-
 QVariant DataChangeNotifier::getSource() const
 {
 	Variant variant = source_;
-	return QtHelpers::toQVariant(variant, const_cast<DataChangeNotifier*>(this) );
+	return QtHelpers::toQVariant(variant, const_cast<DataChangeNotifier*>(this));
 }
 
-
-bool DataChangeNotifier::setSource( const QVariant& source )
+bool DataChangeNotifier::setSource(const QVariant& source)
 {
-	Variant variant = QtHelpers::toVariant( source );
+	Variant variant = QtHelpers::toVariant(source);
 	if (variant.typeIs<SourceType>())
 	{
 		auto valueChangeNotifier = const_cast<SourceType*>(variant.cast<const SourceType*>());
@@ -64,36 +56,34 @@ bool DataChangeNotifier::setSource( const QVariant& source )
 	return false;
 }
 
-
 QVariant DataChangeNotifier::getData() const
 {
-	assert( source_ != nullptr );
-	return QtHelpers::toQVariant( source_->variantValue(), nullptr );
+	if (source_ == nullptr)
+		return QVariant();
+	return QtHelpers::toQVariant(source_->variantValue(), nullptr);
 }
 
-
-bool DataChangeNotifier::setData( const QVariant& value )
+bool DataChangeNotifier::setData(const QVariant& value)
 {
-	assert( source_ != nullptr );
-	return source_->variantValue( QtHelpers::toVariant( value ) );
+	if (source_ == nullptr)
+		return false;
+	return source_->variantValue(QtHelpers::toVariant(value));
 }
-
 
 void DataChangeNotifier::onPreDataChanged()
 {
-	assert( source_ != nullptr );
+	assert(source_ != nullptr);
 	emit dataAboutToBeChanged();
 }
 
-
 void DataChangeNotifier::onPostDataChanged()
 {
-	assert( source_ != nullptr );
+	assert(source_ != nullptr);
 	emit dataChanged();
 }
 
 void DataChangeNotifier::onDestructing()
 {
-	source( nullptr );
+	source(nullptr);
 }
 } // end namespace wgt

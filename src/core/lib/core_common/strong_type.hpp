@@ -1,7 +1,6 @@
 #ifndef STRONG_TYPE_HPP_INCLUDED
 #define STRONG_TYPE_HPP_INCLUDED
 
-
 /**
 Value wrapper used to inhibit implicit conversions.
 
@@ -12,12 +11,11 @@ more implicit conversion are allowed.
 One of examples of using this wrapper is to declare function, that accepts some
 exact type, but not any other type, even one that could be implicitly converted.
 */
-template< typename T >
+template <typename T>
 class StrongType
 {
 public:
-	StrongType( T v ):
-		v_( v )
+	StrongType(T v) : v_(v)
 	{
 	}
 
@@ -33,8 +31,6 @@ public:
 
 private:
 	T v_;
-
 };
-
 
 #endif

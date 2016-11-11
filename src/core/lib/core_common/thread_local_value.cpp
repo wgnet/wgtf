@@ -12,9 +12,9 @@ const int kMaxThreadLocalBases = 2048;
 
 namespace
 {
-	unsigned int g_numThreadLocalBases = 0;
-	typedef ThreadLocalBase* ThreadLocalBasePtr;
-	ThreadLocalBasePtr g_threadLocalBases[kMaxThreadLocalBases];
+unsigned int g_numThreadLocalBases = 0;
+typedef ThreadLocalBase* ThreadLocalBasePtr;
+ThreadLocalBasePtr g_threadLocalBases[kMaxThreadLocalBases];
 }
 
 typedef std::vector<ThreadLocalBase*> ThreadLocalVector;
@@ -33,16 +33,14 @@ void ThreadLocalBase::InitializeThreadLocalStorage()
 {
 	const ThreadLocalBasePtr* begin = g_threadLocalBases;
 	const ThreadLocalBasePtr* end = g_threadLocalBases + g_numThreadLocalBases;
-	for (auto tlb = begin; tlb != end; ++tlb)
-		(*tlb)->Initialize();
+	for (auto tlb = begin; tlb != end; ++tlb) (*tlb)->Initialize();
 }
 
 void ThreadLocalBase::ShutdownThreadLocalStorage()
 {
 	const ThreadLocalBasePtr* begin = g_threadLocalBases;
 	const ThreadLocalBasePtr* end = g_threadLocalBases + g_numThreadLocalBases;
-	for (auto tlb = begin; tlb != end; ++tlb)
-		(*tlb)->Shutdown();
+	for (auto tlb = begin; tlb != end; ++tlb) (*tlb)->Shutdown();
 }
 
 ThreadLocalBase::~ThreadLocalBase()
@@ -53,7 +51,7 @@ ThreadLocalBase::~ThreadLocalBase()
 	if (newEnd != end)
 	{
 		--g_numThreadLocalBases;
-		assert(newEnd == end-1);
+		assert(newEnd == end - 1);
 	}
 }
 

@@ -6,33 +6,35 @@
 
 namespace wgt
 {
-class TestClassF
-	: public Implements< AutoPopulate >
+class TestClassF : public Implements<AutoPopulate>
 {
 public:
-	TestClassF( IComponentContext & contextManager )
-		: testClassA_( contextManager )
-		, testClassB_( contextManager )
+	TestClassF(IComponentContext& contextManager) : testClassA_(contextManager), testClassB_(contextManager)
 	{
 	}
-	virtual ~TestClassF() {}
-
-	InterfaceA * getInterfaceA() { return testClassA_.get(); }
-	std::vector< InterfaceB * > getInterfaceBs()
+	virtual ~TestClassF()
 	{
-		std::vector< InterfaceB * > returnValue;
-		testClassB_.get( returnValue );
+	}
+
+	InterfaceA* getInterfaceA()
+	{
+		return testClassA_.get();
+	}
+	std::vector<InterfaceB*> getInterfaceBs()
+	{
+		std::vector<InterfaceB*> returnValue;
+		testClassB_.get(returnValue);
 		return returnValue;
 	}
 
 private:
-	//Auto populated references
-	DIRef< InterfaceA > testClassA_;
-	DIRef< InterfaceB > testClassB_;
+	// Auto populated references
+	DIRef<InterfaceA> testClassA_;
+	DIRef<InterfaceB> testClassB_;
 };
 
 /**
-* A plugin which tests retrieving multiple interfaces of the same type (differing by minor version) 
+* A plugin which tests retrieving multiple interfaces of the same type (differing by minor version)
 * from a single interface of a different type by outputting test data to the debug window.
 *
 * @ingroup plugins
@@ -42,20 +44,21 @@ private:
 *       - CommandSystemPlugin
 *       - MainTestPlugin
 */
-class TestPlugin4
-	: public PluginMain
+class TestPlugin4 : public PluginMain
 {
 public:
 	//==========================================================================
-	TestPlugin4( IComponentContext & contextManager ) {}
+	TestPlugin4(IComponentContext& contextManager)
+	{
+	}
 
 	//==========================================================================
-	bool PostLoad( IComponentContext & contextManager )
+	bool PostLoad(IComponentContext& contextManager)
 	{
-		contextManager.registerInterface( new TestClassF( contextManager ) );
+		contextManager.registerInterface(new TestClassF(contextManager));
 		return true;
 	}
 };
 
-PLG_CALLBACK_FUNC( TestPlugin4 )
+PLG_CALLBACK_FUNC(TestPlugin4)
 } // end namespace wgt

@@ -6,22 +6,17 @@
 
 namespace wgt
 {
-
-TestTableItem::TestTableItem( const char* value )
-	: value_( value )
+TestTableItem::TestTableItem(const char* value) : value_(value)
 {
 }
-
 
 TestTableItem::~TestTableItem()
 {
 }
 
-
-Variant TestTableItem::getData( ItemRole::Id roleId ) const
+Variant TestTableItem::getData(ItemRole::Id roleId) const
 {
-	if (roleId == ItemRole::displayId ||
-		roleId == ItemRole::valueId)
+	if (roleId == ItemRole::displayId || roleId == ItemRole::valueId)
 	{
 		return value_;
 	}
@@ -29,18 +24,16 @@ Variant TestTableItem::getData( ItemRole::Id roleId ) const
 	return Variant();
 }
 
-
-bool TestTableItem::setData( ItemRole::Id roleId, const Variant & data ) /* override */
+bool TestTableItem::setData(ItemRole::Id roleId, const Variant& data) /* override */
 {
-	if (roleId == ItemRole::displayId ||
-		roleId == ItemRole::valueId)
+	if (roleId == ItemRole::displayId || roleId == ItemRole::valueId)
 	{
 		std::string value;
-		if (data.tryCast( value ))
+		if (data.tryCast(value))
 		{
-			preDataChanged_( roleId, data );
+			preDataChanged_(roleId, data);
 			value_ = value;
-			postDataChanged_( roleId, data );
+			postDataChanged_(roleId, data);
 			return true;
 		}
 	}
@@ -48,17 +41,14 @@ bool TestTableItem::setData( ItemRole::Id roleId, const Variant & data ) /* over
 	return false;
 }
 
-
-Connection TestTableItem::connectPreDataChanged( DataCallback callback ) /* override */
+Connection TestTableItem::connectPreDataChanged(DataCallback callback) /* override */
 {
-	return preDataChanged_.connect( callback );
+	return preDataChanged_.connect(callback);
 }
 
-
-Connection TestTableItem::connectPostDataChanged( DataCallback callback ) /* override */
+Connection TestTableItem::connectPostDataChanged(DataCallback callback) /* override */
 {
-	return postDataChanged_.connect( callback );
+	return postDataChanged_.connect(callback);
 }
-
 
 } // end namespace wgt

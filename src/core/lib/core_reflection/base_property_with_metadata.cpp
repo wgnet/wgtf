@@ -2,23 +2,22 @@
 
 namespace wgt
 {
-BasePropertyWithMetaData::BasePropertyWithMetaData( const IBasePropertyPtr & property, MetaHandle metaData )
-	: property_( property )
-	, metaData_( metaData )
+BasePropertyWithMetaData::BasePropertyWithMetaData(const IBasePropertyPtr& property, MetaHandle metaData)
+    : property_(property), metaData_(metaData)
 {
-	assert( property_ != nullptr );
+	assert(property_ != nullptr);
 }
 
 BasePropertyWithMetaData::~BasePropertyWithMetaData()
 {
 }
 
-const TypeId & BasePropertyWithMetaData::getType() const
+const TypeId& BasePropertyWithMetaData::getType() const
 {
 	return property_->getType();
 }
 
-const char * BasePropertyWithMetaData::getName() const
+const char* BasePropertyWithMetaData::getName() const
 {
 	return property_->getName();
 }
@@ -30,8 +29,8 @@ uint64_t BasePropertyWithMetaData::getNameHash() const
 
 MetaHandle BasePropertyWithMetaData::getMetaData() const
 {
-	//TODO NGT-1582
-	//return property_->getMetaData() + metaData_;
+	// TODO NGT-1582
+	// return property_->getMetaData() + metaData_;
 	return metaData_;
 }
 
@@ -50,24 +49,21 @@ bool BasePropertyWithMetaData::isValue() const
 	return property_->isValue();
 }
 
-bool BasePropertyWithMetaData::set( const ObjectHandle & handle,
-				 const Variant & value,
-				 const IDefinitionManager & definitionManager ) const
+bool BasePropertyWithMetaData::set(const ObjectHandle& handle, const Variant& value,
+                                   const IDefinitionManager& definitionManager) const
 {
-	return property_->set( handle, value, definitionManager );
+	return property_->set(handle, value, definitionManager);
 }
 
-Variant BasePropertyWithMetaData::get( const ObjectHandle & handle,
-					const IDefinitionManager & definitionManager ) const
+Variant BasePropertyWithMetaData::get(const ObjectHandle& handle, const IDefinitionManager& definitionManager) const
 {
-	return property_->get( handle, definitionManager );
+	return property_->get(handle, definitionManager);
 }
 
-Variant BasePropertyWithMetaData::invoke( const ObjectHandle & object,
-					   const IDefinitionManager & definitionManager,
-					   const ReflectedMethodParameters & parameters )
+Variant BasePropertyWithMetaData::invoke(const ObjectHandle& object, const IDefinitionManager& definitionManager,
+                                         const ReflectedMethodParameters& parameters)
 {
-	return property_->invoke( object, definitionManager, parameters );
+	return property_->invoke(object, definitionManager, parameters);
 }
 
 size_t BasePropertyWithMetaData::parameterCount() const

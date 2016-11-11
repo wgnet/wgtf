@@ -10,10 +10,8 @@ namespace RemoveRowsCommandArgument_Detail
 /**
  *	Get state from rows/columns and save it into a struct.
  */
-void extractRows(const AbstractItemModel& model,
-                 const AbstractItemModel::ItemIndex& startIndex,
-                 RemoveRowsCommandArgument::Type type,
-                 int count,
+void extractRows(const AbstractItemModel& model, const AbstractItemModel::ItemIndex& startIndex,
+                 RemoveRowsCommandArgument::Type type, int count,
                  RemoveRowsCommandArgument::ExtractedRowsStorage& o_data)
 {
 	std::vector<ItemRole::Id> roleIds;
@@ -51,9 +49,7 @@ void extractRows(const AbstractItemModel& model,
 			for (const auto& roleId : roleIds)
 			{
 				RemoveRowsCommandArgument::ExtractedRows extractedRows;
-				extractedRows.data_ = pItem->getData(index.row_,
-				                                     index.column_,
-				                                     roleId);
+				extractedRows.data_ = pItem->getData(index.row_, index.column_, roleId);
 
 				if (!extractedRows.data_.isVoid())
 				{
@@ -66,26 +62,19 @@ void extractRows(const AbstractItemModel& model,
 						const int innerRow = 0;
 						const int innerColumn = 0;
 						const AbstractItem* pInnerParent = nullptr;
-						const AbstractItemModel::ItemIndex innerStartIndex(
-						innerRow,
-						innerColumn,
-						pInnerParent);
+						const AbstractItemModel::ItemIndex innerStartIndex(innerRow, innerColumn, pInnerParent);
 						const int innerCount = pInnerModel->rowCount(pInnerParent);
 
 						// Need to create a CollectionHolder, otherwise
 						// extractedRows.data_ = innerData;
 						// is unsafe, because it takes a reference
 						// which will be deleted when innerData goes out of scope
-						auto collectionHolder = std::make_shared<CollectionHolder<
-						RemoveRowsCommandArgument::ExtractedRowsStorage>>();
+						auto collectionHolder =
+						std::make_shared<CollectionHolder<RemoveRowsCommandArgument::ExtractedRowsStorage>>();
 						auto& innerData = collectionHolder->storage();
 						innerData.reserve(innerCount);
 
-						extractRows((*pInnerModel),
-						            innerStartIndex,
-						            type,
-						            innerCount,
-						            innerData);
+						extractRows((*pInnerModel), innerStartIndex, type, innerCount, innerData);
 
 						extractedRows.data_ = Collection(collectionHolder);
 					}
@@ -120,11 +109,7 @@ void extractRows(const AbstractItemModel& model,
 } // end namespace RemoveRowsCommandArgument_Detail
 
 RemoveRowsCommandArgument::RemoveRowsCommandArgument()
-    : pModel_(nullptr)
-    , startPos_(-1)
-    , type_(Type::ROW)
-    , count_(-1)
-    , pParent_(nullptr)
+    : pModel_(nullptr), startPos_(-1), type_(Type::ROW), count_(-1), pParent_(nullptr)
 {
 }
 
@@ -153,15 +138,9 @@ void RemoveRowsCommandArgument::saveRows()
 {
 	assert(pModel_ != nullptr);
 
-	const AbstractItemModel::ItemIndex startIndex(
-	type_ == Type::ROW ? startPos_ : 0,
-	type_ == Type::COLUMN ? startPos_ : 0,
-	pParent_);
-	RemoveRowsCommandArgument_Detail::extractRows((*pModel_),
-	                                              startIndex,
-	                                              type_,
-	                                              count_,
-	                                              itemData_);
+	const AbstractItemModel::ItemIndex startIndex(type_ == Type::ROW ? startPos_ : 0,
+	                                              type_ == Type::COLUMN ? startPos_ : 0, pParent_);
+	RemoveRowsCommandArgument_Detail::extractRows((*pModel_), startIndex, type_, count_, itemData_);
 }
 
 } // end namespace wgt

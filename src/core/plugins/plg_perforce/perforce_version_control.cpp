@@ -11,7 +11,7 @@
 #include "perforce_depot_view.hpp"
 
 #pragma warning(push)
-#pragma warning(disable:4267 4244)
+#pragma warning(disable : 4267 4244)
 #include "p4/clientApi.h"
 #pragma warning(pop)
 
@@ -19,8 +19,7 @@ namespace wgt
 {
 struct PerforceVersionControl::PerforceVersionControlImplementation
 {
-	PerforceVersionControlImplementation( PerforceVersionControl& self )
-		: self(self)
+	PerforceVersionControlImplementation(PerforceVersionControl& self) : self(self)
 	{
 	}
 
@@ -32,20 +31,19 @@ struct PerforceVersionControl::PerforceVersionControlImplementation
 	std::string password;
 };
 
-
-PerforceVersionControl::PerforceVersionControl()
-	: impl_(new PerforceVersionControlImplementation(*this))
+PerforceVersionControl::PerforceVersionControl() : impl_(new PerforceVersionControlImplementation(*this))
 {
 }
 
-IResultPtr PerforceVersionControl::initialize(const char* depot, const char* port, const char* user, const char* client, const char * password)
+IResultPtr PerforceVersionControl::initialize(const char* depot, const char* port, const char* user, const char* client,
+                                              const char* password)
 {
 	impl_->depot = depot;
 	impl_->port = port;
 	impl_->user = user;
 	impl_->client = client;
 	impl_->password = password;
-	return IResultPtr( new PerforceResult("", "") );
+	return IResultPtr(new PerforceResult("", ""));
 }
 
 std::unique_ptr<IDepotView> PerforceVersionControl::createDepotView(const char* depotPath, const char* clientPath)
@@ -58,8 +56,8 @@ std::unique_ptr<IDepotView> PerforceVersionControl::createDepotView(const char* 
 	clientApi->SetPassword(impl_->password.c_str());
 
 	clientApi->SetProtocol("api", "76"); // 2014.1 compatible server
-	clientApi->SetProtocol("tag", "");			// Enabled Tagged output
-	clientApi->SetProtocol("specstring", "");	// Parse Forms
+	clientApi->SetProtocol("tag", ""); // Enabled Tagged output
+	clientApi->SetProtocol("specstring", ""); // Parse Forms
 
 	Error e;
 	clientApi->Init(&e);

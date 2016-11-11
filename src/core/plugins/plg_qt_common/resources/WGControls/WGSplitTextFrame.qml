@@ -10,7 +10,7 @@ import WGControls.Styles 1.0
 Example:
 \code{.js}
 WGSplitTextFrame {
-    decimalSeparator: true
+    characterSeparator: true
     height: 24
     Layout.preferredWidth: 130
     label: "IP Address:"
@@ -49,10 +49,15 @@ WGTextBoxFrame {
     /*! This property contains the list of textboxes to be displayed in the frame */
     property list<QtObject> boxList
 
-    /*! This property toggles use of a decimal '.' instead of a '|' between fields
+    /*! This property toggles use of a character instead of a line between fields
         The default value is \c false
     */
-    property bool decimalSeparator: false
+    property bool characterSeparator: false
+
+    /*! This text character used for the characterSeparator. Recommended a single character only.
+        The default value is \c "."
+    */
+    property string separatorCharacter: "."
 
     /*! \internal */
     property int __totalBoxes : boxList.length
@@ -104,7 +109,7 @@ WGTextBoxFrame {
                 width: {
                     if(evenBoxes)
                     {
-                        mainFrame.width / boxList.length
+                        Math.round(mainFrame.width / Math.max(boxList.length, 1))
                     }
                     else
                     {
@@ -141,8 +146,8 @@ WGTextBoxFrame {
                     anchors.horizontalCenter: parent.left
                     height: mainFrame.height - defaultSpacing.doubleBorderSize
                     y: 3
-                    text: "."
-                    visible: index != 0 && decimalSeparator ? true : false
+                    text: separatorCharacter
+                    visible: index != 0 && characterSeparator ? true : false
                 }
 
                 WGSeparator {
@@ -153,11 +158,14 @@ WGTextBoxFrame {
                     vertical: true
 
                     //first separator is invisible
-                    visible: index != 0 && !decimalSeparator ? true : false
+                    visible: index != 0 && !characterSeparator ? true : false
                 }
             }
         }
     }
+
+    /*! Deprecated */
+    property alias decimalSeparator: mainFrame.characterSeparator
 
     /*! Deprecated */
     property alias totalBoxes: mainFrame.__totalBoxes

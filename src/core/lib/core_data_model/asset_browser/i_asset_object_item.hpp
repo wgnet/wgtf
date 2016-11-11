@@ -10,7 +10,7 @@ class IAssetPresentationProvider;
 /**
  IAssetObjectItemOld
  Represents an IItem used by the Asset Browser tree and list models. Contains special functionality for retrieving
- properties of an asset for display. May be overwritten by developers to provide custom functionality for 
+ properties of an asset for display. May be overwritten by developers to provide custom functionality for
  retrieving thumbnails, status icons, and additional data on assets unique to one's studio.
  */
 class IAssetObjectItem : public IItem

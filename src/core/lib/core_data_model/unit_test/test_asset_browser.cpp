@@ -13,8 +13,7 @@ namespace wgt
 class MockAssetObjectItem : public IAssetObjectItem
 {
 public:
-	MockAssetObjectItem(const std::string& name)
-	    : assetName_(name)
+	MockAssetObjectItem(const std::string& name) : assetName_(name)
 	{
 	}
 
@@ -133,8 +132,7 @@ TEST(asset_browser_presentation_provider)
 	MockAssetObjectItem statusIcon("item");
 	CHECK(provider.getStatusIconData(&statusIcon) != nullptr);
 
-	auto testThumbnail = [&](const std::string& extension, bool isNull)
-	{
+	auto testThumbnail = [&](const std::string& extension, bool isNull) {
 		MockAssetObjectItem item("item" + extension);
 		auto thumbnail = provider.getThumbnail(&item);
 		CHECK(isNull ? thumbnail == nullptr : thumbnail != nullptr);

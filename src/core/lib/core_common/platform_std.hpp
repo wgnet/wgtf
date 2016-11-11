@@ -1,7 +1,7 @@
 #ifndef __PLATFORM_STD_HPP__
 #define __PLATFORM_STD_HPP__
 
-#if defined( _WIN32 )
+#if defined(_WIN32)
 #define NOEXCEPT
 #endif
 

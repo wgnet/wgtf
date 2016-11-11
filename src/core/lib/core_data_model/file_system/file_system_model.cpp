@@ -8,62 +8,97 @@
 
 namespace wgt
 {
+ITEMROLE(isDirectory)
+ITEMROLE(fullPath)
+
 namespace
 {
-	class FileItem;
-	typedef std::vector< std::unique_ptr< FileItem > > FileItems;
+class FileItem;
+typedef std::vector<std::unique_ptr<FileItem>> FileItems;
 
-	class FileItem : public AbstractTreeItem
-	{
-	public:
-		FileItem( const IFileInfoPtr& fileInfo, const FileItem * parent )
-			: fileInfo_( fileInfo )
-			, parent_( parent )
-		{
-
-		}
-
-		Variant getData( int column, ItemRole::Id roleId ) const override
-		{
-			if (roleId == ItemRole::displayId)
-			{
-				return fileInfo_->name();
-			}
-
-			if (roleId == IndexPathRole::roleId_)
-			{
-				return fileInfo_->fullPath();
-			}
-
-			return Variant();
-		}
-
-		bool setData( int column, ItemRole::Id roleId, const Variant & data ) override
-		{
-			throw std::logic_error("The method or operation is not implemented.");
-		}
-
-		const IFileInfoPtr fileInfo_;
-		const FileItem * parent_;
-		const FileItems children_;
-	};
-}
-
-struct FileSystemModel::Impl 
+class FileItem : public AbstractTreeItem
 {
-	Impl( IFileSystem & fileSystem, const char * rootDirectory )
-		: fileSystem_( fileSystem )
-		, rootDirectory_( rootDirectory )
+public:
+	FileItem(const IFileInfoPtr& fileInfo, const FileItem* parent) : fileInfo_(fileInfo), parent_(parent)
 	{
 	}
 
-	IFileSystem & fileSystem_;
+	Variant getData(int column, ItemRole::Id roleId) const override
+	{
+		if (roleId == ItemRole::displayId)
+		{
+			return fileInfo_->name();
+		}
+
+		if (roleId == IndexPathRole::roleId_)
+		{
+			return fileInfo_->fullPath();
+		}
+
+		if (roleId == ItemRole::isDirectoryId)
+		{
+			return fileInfo_->isDirectory();
+		}
+
+		if (roleId == ItemRole::fullPathId)
+		{
+			return fileInfo_->fullPath();
+		}
+
+		return Variant();
+	}
+
+	bool setData(int column, ItemRole::Id roleId, const Variant& data) override
+	{
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	const IFileInfoPtr fileInfo_;
+	const FileItem* parent_;
+	std::unique_ptr<FileItems> children_;
+};
+}
+
+struct FileSystemModel::Impl
+{
+	Impl(IFileSystem& fileSystem, const char* rootDirectory) : fileSystem_(fileSystem), rootDirectory_(rootDirectory)
+	{
+	}
+
+	const FileItems& getItems(const FileItem* parentItem)
+	{
+		auto& items =
+		const_cast<std::unique_ptr<FileItems>&>(parentItem == nullptr ? rootItems_ : parentItem->children_);
+		if (items != nullptr)
+		{
+			return *items;
+		}
+
+		items.reset(new FileItems());
+		if (parentItem == nullptr || parentItem->fileInfo_->isDirectory())
+		{
+			const auto directory = parentItem == nullptr ? rootDirectory_ : parentItem->fileInfo_->fullPath();
+			fileSystem_.enumerate(directory.c_str(), [&](IFileInfoPtr&& fileInfo) {
+				// Skip dots and hidden files
+				if (fileInfo->isDots() || fileInfo->isHidden())
+				{
+					return true;
+				}
+
+				items->emplace_back(new FileItem(std::move(fileInfo), parentItem));
+				return true;
+			});
+		}
+		return *items;
+	}
+
+	IFileSystem& fileSystem_;
 	std::string rootDirectory_;
-	FileItems rootItems_;
+	mutable std::unique_ptr<FileItems> rootItems_;
 };
 
-FileSystemModel::FileSystemModel( IFileSystem & fileSystem, const char * rootDirectory )
-	: impl_( new Impl( fileSystem, rootDirectory ) )
+FileSystemModel::FileSystemModel(IFileSystem& fileSystem, const char* rootDirectory)
+    : impl_(new Impl(fileSystem, rootDirectory))
 {
 }
 
@@ -71,113 +106,52 @@ FileSystemModel::~FileSystemModel()
 {
 }
 
-AbstractItem * FileSystemModel::item( const ItemIndex & index ) const
+AbstractItem* FileSystemModel::item(const ItemIndex& index) const
 {
-	auto parentItem = static_cast< const FileItem * >( index.parent_ );
-
-	// See if we have cached this item already
-	auto & fileItems = parentItem != nullptr ? parentItem->children_ : impl_->rootItems_;
-	if (index.row_ < static_cast< int >( fileItems.size() ) )
+	auto parentItem = static_cast<const FileItem*>(index.parent_);
+	auto& items = impl_->getItems(parentItem);
+	if (static_cast<int>(items.size()) <= index.row_)
 	{
-		auto fileItem = fileItems[index.row_].get();
-		if (fileItem != nullptr)
-		{
-			return fileItem;
-		}
+		return nullptr;
 	}
-
-	// Item not cached, must enumerate
-	const auto directory = parentItem != nullptr ?
-		parentItem->fileInfo_->fullPath() :
-		impl_->rootDirectory_.c_str();
-	int i = 0;
-	impl_->fileSystem_.enumerate( directory, [&]( IFileInfoPtr&& fileInfo )
-	{
-		// Skip dots and hidden files
-		if (fileInfo->isDots() || fileInfo->isHidden())
-		{
-			return true;
-		}
-
-		if (i == static_cast< int >( fileItems.size() ))
-		{
-			std::unique_ptr< FileItem > fileItem( new FileItem( std::move( fileInfo ), parentItem ) );
-			const_cast< FileItems & >( fileItems ).emplace_back( std::move( fileItem ) );
-			if (i == index.row_)
-			{
-				return false;
-			}
-		}
-		++i;
-		return true;
-	} );
-	return fileItems.back().get();
+	return items[index.row_].get();
 }
 
-AbstractTreeModel::ItemIndex FileSystemModel::index( const AbstractItem * item ) const
+AbstractTreeModel::ItemIndex FileSystemModel::index(const AbstractItem* item) const
 {
-	assert( item != nullptr );
-	auto fileItem = static_cast< const FileItem * >( item );
+	assert(item != nullptr);
+	auto fileItem = static_cast<const FileItem*>(item);
 	auto parentItem = fileItem->parent_;
+	auto& items = impl_->getItems(parentItem);
 
-	// See if we have cached this item already
-	auto & fileItems = parentItem != nullptr ? parentItem->children_ : impl_->rootItems_;
-	auto findIt = std::find_if( fileItems.begin(), fileItems.end(), [&]( const std::unique_ptr< FileItem > & value )
+	auto findIt = std::find_if(items.begin(), items.end(),
+	                           [&](const std::unique_ptr<FileItem>& value) { return value.get() == fileItem; });
+
+	if (findIt != items.end())
 	{
-		return value.get() == fileItem;
-	} );
-	if (findIt != fileItems.end())
-	{
-		return ItemIndex( static_cast< int >( std::distance( fileItems.begin(), findIt ) ), parentItem );
+		return ItemIndex(static_cast<int>(std::distance(items.begin(), findIt)), parentItem);
 	}
 
-	// Item not cached, must enumerate
-	const auto directory = parentItem != nullptr ?
-		parentItem->fileInfo_->fullPath() :
-		impl_->rootDirectory_.c_str();
-	int i = 0;
-	impl_->fileSystem_.enumerate( directory, [&]( IFileInfoPtr && fileInfo )
-	{
-		// Skip dots and hidden files
-		if (fileInfo->isDots() || fileInfo->isHidden())
-		{
-			return true;
-		}
-
-		if (strcmp( fileItem->fileInfo_->name(), fileInfo->name() ) == 0)
-		{
-			return false;
-		}
-		++i;
-		return true;
-	} );
-	return ItemIndex( i, parentItem );
+	return ItemIndex();
 }
 
-int FileSystemModel::rowCount( const AbstractItem * item ) const
+int FileSystemModel::rowCount(const AbstractItem* item) const
 {
-	auto fileItem = static_cast< const FileItem * >( item );
-
-	const auto directory = fileItem != nullptr ?
-		fileItem->fileInfo_->fullPath() :
-		impl_->rootDirectory_.c_str();
-	int count = 0;
-	impl_->fileSystem_.enumerate( directory, [&]( IFileInfoPtr && fileInfo )
-	{
-		// Skip dots and hidden files
-		if (fileInfo->isDots() || fileInfo->isHidden())
-		{
-			return true;
-		}
-
-		++count;
-		return true;
-	} );
-	return count;
+	auto fileItem = static_cast<const FileItem*>(item);
+	auto& items = impl_->getItems(fileItem);
+	return static_cast<int>(items.size());
 }
 
 int FileSystemModel::columnCount() const
 {
 	return 1;
+}
+
+std::vector<std::string> FileSystemModel::roles() const
+{
+	auto roleNames = AbstractTreeModel::roles();
+	roleNames.push_back(ItemRole::isDirectoryName);
+	roleNames.push_back(ItemRole::fullPathName);
+	return roleNames;
 }
 } // end namespace wgt

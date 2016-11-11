@@ -6,8 +6,7 @@
 
 namespace wgt
 {
-QtWindowAdapter::QtWindowAdapter( IComponentContext & context, QIODevice & source )
-	: QtWindow( context, source )
+QtWindowAdapter::QtWindowAdapter(IComponentContext& context, QIODevice& source) : QtWindow(context, source)
 {
 }
 
@@ -21,17 +20,17 @@ void QtWindowAdapter::close()
 
 	for (auto listener : listeners_)
 	{
-		listener->windowClosed( this );
+		listener->windowClosed(this);
 	}
 }
 
-void QtWindowAdapter::show( bool wait /* = false */ )
+void QtWindowAdapter::show(bool wait /* = false */)
 {
-	QtWindow::show( wait );
+	QtWindow::show(wait);
 
 	for (auto listener : listeners_)
 	{
-		listener->windowShown( this );
+		listener->windowShown(this);
 	}
 }
 
@@ -41,31 +40,29 @@ void QtWindowAdapter::hide()
 
 	for (auto listener : listeners_)
 	{
-		listener->windowHidden( this );
+		listener->windowHidden(this);
 	}
 }
 
-
-void * QtWindowAdapter::nativeWindowId() const
+void* QtWindowAdapter::nativeWindowId() const
 {
-	return reinterpret_cast< void * >( window()->winId() );
+	return reinterpret_cast<void*>(window()->winId());
 }
 
 void QtWindowAdapter::makeFramelessWindow()
 {
-	window()->setWindowFlags( Qt::Widget | Qt::FramelessWindowHint );
+	window()->setWindowFlags(Qt::Widget | Qt::FramelessWindowHint);
 }
 
-
-void QtWindowAdapter::addListener( IWindowListener * listener )
+void QtWindowAdapter::addListener(IWindowListener* listener)
 {
-	listeners_.push_back( listener );
+	listeners_.push_back(listener);
 }
 
-void QtWindowAdapter::removeListener( IWindowListener * listener )
+void QtWindowAdapter::removeListener(IWindowListener* listener)
 {
-	auto && listenerIt = std::find( listeners_.begin(), listeners_.end(), listener );
-	assert( listenerIt != listeners_.end() );
-	listeners_.erase( listenerIt );
+	auto&& listenerIt = std::find(listeners_.begin(), listeners_.end(), listener);
+	assert(listenerIt != listeners_.end());
+	listeners_.erase(listenerIt);
 }
 } // end namespace wgt

@@ -17,11 +17,7 @@ namespace wgt
 class NGTDockWidget : public QDockWidget, public IViewEventListener
 {
 public:
-	NGTDockWidget(IView* view)
-	    : QDockWidget(view->title())
-	    , view_(view)
-	    , active_(false)
-	    , visible_(false)
+	NGTDockWidget(IView* view) : QDockWidget(view->title()), view_(view), active_(false), visible_(false)
 	{
 		view->registerListener(this);
 	}
@@ -101,19 +97,17 @@ private:
 	bool visible_;
 };
 
-QtDockRegion::QtDockRegion( IComponentContext & context, QtWindow & qtWindow, QDockWidget & qDockWidget )
-	: Depends( context )
-	, qtWindow_( qtWindow )
-	, qDockWidget_( qDockWidget )
-	, hidden_( false )
+QtDockRegion::QtDockRegion(IComponentContext& context, QtWindow& qtWindow, QDockWidget& qDockWidget)
+    : Depends(context), qtWindow_(qtWindow), qDockWidget_(qDockWidget), hidden_(false)
 {
 	auto qMainWindow = qtWindow_.window();
-	assert( qMainWindow != nullptr );
+	assert(qMainWindow != nullptr);
 
 	// Walk our parent hierarchy and make sure we are tabified with the topmost dock widget.
 	// Dock widgets as children of anything but the main window are not supported.
-	// We support this in the Qt designer so that we can override the properties of a tab or collection of tabs within a dock region
-	QWidget * qWidget = &qDockWidget_;
+	// We support this in the Qt designer so that we can override the properties of a tab or collection of tabs within a
+	// dock region
+	QWidget* qWidget = &qDockWidget_;
 	while (qWidget != nullptr)
 	{
 		qWidget = qWidget->parentWidget();
@@ -121,122 +115,116 @@ QtDockRegion::QtDockRegion( IComponentContext & context, QtWindow & qtWindow, QD
 		{
 			break;
 		}
-		auto qDockWidget = qobject_cast< QDockWidget * >( qWidget );
+		auto qDockWidget = qobject_cast<QDockWidget*>(qWidget);
 		if (qDockWidget != nullptr)
 		{
-			qMainWindow->tabifyDockWidget( qDockWidget, &qDockWidget_ );
+			qMainWindow->tabifyDockWidget(qDockWidget, &qDockWidget_);
 		}
 	}
-	qDockWidget_.setVisible( false );
+	qDockWidget_.setVisible(false);
 
-	auto layoutTagsProperty = qDockWidget_.property( "layoutTags" );
+	auto layoutTagsProperty = qDockWidget_.property("layoutTags");
 	if (layoutTagsProperty.isValid())
 	{
 		auto tags = layoutTagsProperty.toStringList();
 		for (auto it = tags.cbegin(); it != tags.cend(); ++it)
 		{
-			tags_.tags_.push_back( std::string( it->toUtf8() ) );
+			tags_.tags_.push_back(std::string(it->toUtf8()));
 		}
 	}
 
-	auto hiddenProperty = qDockWidget_.property( "hidden" );
+	auto hiddenProperty = qDockWidget_.property("hidden");
 	if (hiddenProperty.isValid())
 	{
 		hidden_ = hiddenProperty.toBool();
 	}
 
-	QObject::connect( &qtWindow_, &QtWindow::windowReady, 
-		[&](){
-			if (needToRestorePreference_.empty())
+	QObject::connect(&qtWindow_, &QtWindow::windowReady, [&]() {
+		if (needToRestorePreference_.empty())
+		{
+			return;
+		}
+		auto qtFramework = get<IQtFramework>();
+		assert(qtFramework != nullptr);
+		auto qMainWindow = qtWindow_.window();
+		for (auto& it : needToRestorePreference_)
+		{
+			auto qtDockWidget = it.first;
+			assert(qtDockWidget != nullptr);
+			auto pView = it.second;
+			assert(pView != nullptr);
+			bool isOk = qMainWindow->restoreDockWidget(qtDockWidget);
+			if (!isOk)
+			{
+				setDefaultPreferenceForDockWidget(qtDockWidget);
+			}
+			auto pQWidget = qtFramework->toQWidget(*pView);
+			assert(pQWidget != nullptr);
+			qtDockWidget->setWidget(pQWidget);
+			QmlView* qmlView = dynamic_cast<QmlView*>(pView);
+			if (qmlView == nullptr)
 			{
 				return;
 			}
-			auto qtFramework = get<IQtFramework>();
-			assert( qtFramework != nullptr );
-			auto qMainWindow = qtWindow_.window();
-			for( auto& it : needToRestorePreference_)
+			auto ngtDockWidget = dynamic_cast<NGTDockWidget*>(qtDockWidget);
+			if (ngtDockWidget == nullptr)
 			{
-                auto qtDockWidget = it.first;
-				assert( qtDockWidget != nullptr );
-                auto pView = it.second;
-				assert( pView != nullptr );
-				bool isOk = qMainWindow->restoreDockWidget( qtDockWidget );
-				if (!isOk)
-				{
-					setDefaultPreferenceForDockWidget( qtDockWidget );
-				}
-               	auto pQWidget = qtFramework->toQWidget( *pView );
-				assert( pQWidget != nullptr );
-				qtDockWidget->setWidget( pQWidget );
-				QmlView* qmlView = dynamic_cast<QmlView*>( pView );
-				if(qmlView == nullptr)
-				{
-					return;
-				}
-				auto ngtDockWidget = dynamic_cast<NGTDockWidget*>( qtDockWidget );
-				if(ngtDockWidget == nullptr)
-				{
-					return;
-				}
-				if(ngtDockWidget->isVisible() && ngtDockWidget->getVisibility())
-				{
-					qmlView->setNeedsToLoad( true );
-				}
+				return;
 			}
-			needToRestorePreference_.clear();
-		});
+			if (ngtDockWidget->isVisible() && ngtDockWidget->getVisibility())
+			{
+				qmlView->setNeedsToLoad(true);
+			}
+		}
+		needToRestorePreference_.clear();
+	});
 }
 
-const LayoutTags & QtDockRegion::tags() const
+const LayoutTags& QtDockRegion::tags() const
 {
 	return tags_;
 }
 
-
-
 void QtDockRegion::restoreDockWidgets()
 {
 	auto qtFramework = get<IQtFramework>();
-	assert( qtFramework != nullptr );
-    auto qMainWindow = qtWindow_.window();
-    assert( qMainWindow != nullptr );
-    for( auto& it : dockWidgetMap_)
-    {
-        auto view = it.first;
-        assert(view != nullptr);
-        auto qDockWidget = it.second.first.get();
-        assert(qDockWidget != nullptr);
-        if (qtWindow_.isReady())
-        {
-            bool isOk = qMainWindow->restoreDockWidget( qDockWidget );
-        }
-        else
-        {
-            needToRestorePreference_.push_back( std::make_pair(qDockWidget, view) );
-        }
-    }
-}
-
-void QtDockRegion::setDefaultPreferenceForDockWidget( QDockWidget * qDockWidget )
-{
+	assert(qtFramework != nullptr);
 	auto qMainWindow = qtWindow_.window();
-	assert( qMainWindow != nullptr );
-	if(hidden_)
+	assert(qMainWindow != nullptr);
+	for (auto& it : dockWidgetMap_)
 	{
-		qDockWidget->setVisible( false );
+		auto view = it.first;
+		assert(view != nullptr);
+		auto qDockWidget = it.second.first.get();
+		assert(qDockWidget != nullptr);
+		if (qtWindow_.isReady())
+		{
+			qMainWindow->restoreDockWidget(qDockWidget);
+		}
+		else
+		{
+			needToRestorePreference_.push_back(std::make_pair(qDockWidget, view));
+		}
 	}
-	qMainWindow->tabifyDockWidget( &qDockWidget_, qDockWidget );
-	qDockWidget->setFloating( qDockWidget_.isFloating() );
-	qDockWidget->setFeatures( qDockWidget_.features() );
-	qDockWidget->setAllowedAreas( qDockWidget_.allowedAreas() );
 }
 
-void QtDockRegion::addView( IView & view )
+void QtDockRegion::setDefaultPreferenceForDockWidget(QDockWidget* qDockWidget)
 {
 	auto qMainWindow = qtWindow_.window();
-	assert( qMainWindow != nullptr );
+	assert(qMainWindow != nullptr);
+	qDockWidget->setVisible(!hidden_);
+	qMainWindow->tabifyDockWidget(&qDockWidget_, qDockWidget);
+	qDockWidget->setFloating(qDockWidget_.isFloating());
+	qDockWidget->setFeatures(qDockWidget_.features());
+	qDockWidget->setAllowedAreas(qDockWidget_.allowedAreas());
+}
 
-	auto findIt = dockWidgetMap_.find( &view );
+void QtDockRegion::addView(IView& view)
+{
+	auto qMainWindow = qtWindow_.window();
+	assert(qMainWindow != nullptr);
+
+	auto findIt = dockWidgetMap_.find(&view);
 	if (findIt != dockWidgetMap_.end())
 	{
 		// already added into the dockWidget
@@ -244,8 +232,8 @@ void QtDockRegion::addView( IView & view )
 	}
 	// IView will not control qWidget's life-cycle after this call.
 	auto qtFramework = get<IQtFramework>();
-	assert( qtFramework != nullptr );
-	auto qWidget = qtFramework->toQWidget( view );
+	assert(qtFramework != nullptr);
+	auto qWidget = qtFramework->toQWidget(view);
 	if (qWidget == nullptr)
 	{
 		return;
@@ -253,75 +241,70 @@ void QtDockRegion::addView( IView & view )
 	auto centralWidget = qMainWindow->centralWidget();
 	if (centralWidget != nullptr)
 	{
-		centralWidget->layout()->addWidget( qWidget );
+		centralWidget->layout()->addWidget(qWidget);
 	}
-	qWidget->setSizePolicy( qDockWidget_.sizePolicy() );
-	qWidget->setMinimumSize( qDockWidget_.minimumSize() );
-	qWidget->setMaximumSize( qDockWidget_.maximumSize() );
-	qWidget->setSizeIncrement( qDockWidget_.sizeIncrement() );
-	qWidget->setBaseSize( qDockWidget_.baseSize() );
-	qWidget->resize( qWidget->baseSize() );
+	qWidget->setSizePolicy(qDockWidget_.sizePolicy());
+	qWidget->setMinimumSize(qDockWidget_.minimumSize());
+	qWidget->setMaximumSize(qDockWidget_.maximumSize());
+	qWidget->setSizeIncrement(qDockWidget_.sizeIncrement());
+	qWidget->setBaseSize(qDockWidget_.baseSize());
+	qWidget->resize(qWidget->baseSize());
 
-	auto qDockWidget = new NGTDockWidget( &view );
-	qDockWidget->setObjectName( view.id() );
+	auto qDockWidget = new NGTDockWidget(&view);
+	qDockWidget->setObjectName(view.id());
 	IView* pView = &view;
-	QmlView* qmlView = dynamic_cast<QmlView*>( pView );
 	QtWindow* pWindow = &qtWindow_;
-	QObject::connect( qDockWidget, &QDockWidget::visibilityChanged,
-		[qDockWidget, pWindow]( bool visible ) {
-			qDockWidget->visibilityChanged( visible ); 
-			if(visible)
+	QObject::connect(qDockWidget, &QDockWidget::visibilityChanged, [qDockWidget, pWindow](bool visible) {
+		qDockWidget->visibilityChanged(visible);
+		if (visible)
+		{
+			if (pWindow->isLoadingPreferences())
 			{
-				if (pWindow->isLoadingPreferences())
-				{
-					return;
-				}
-				QCoreApplication::postEvent( qDockWidget, new QEvent( QEvent::FocusIn ) );
+				return;
 			}
+			QCoreApplication::postEvent(qDockWidget, new QEvent(QEvent::FocusIn));
+		}
 
-	} );
+	});
 
 	if (qtWindow_.isReady())
 	{
-		bool isOk = qMainWindow->restoreDockWidget( qDockWidget );
+		bool isOk = qMainWindow->restoreDockWidget(qDockWidget);
 		if (!isOk)
 		{
-			setDefaultPreferenceForDockWidget( qDockWidget );
+			setDefaultPreferenceForDockWidget(qDockWidget);
 		}
-		QmlView* qmlView = dynamic_cast<QmlView*>( pView );
-		if(qmlView != nullptr)
+		QmlView* qmlView = dynamic_cast<QmlView*>(pView);
+		if (qmlView != nullptr)
 		{
-			if(qDockWidget->isVisible() && qDockWidget->getVisibility())
+			if (qDockWidget->isVisible() && qDockWidget->getVisibility())
 			{
-				qmlView->setNeedsToLoad( true );
+				qmlView->setNeedsToLoad(true);
 			}
 		}
 	}
 	else
 	{
-		needToRestorePreference_.push_back( std::make_pair(qDockWidget, pView) );
+		needToRestorePreference_.push_back(std::make_pair(qDockWidget, pView));
 	}
 	qDockWidget->setWidget(qWidget);
 
-	std::string actionId( "View." );
+	std::string actionId("View.");
 	actionId += view.title();
 
-	auto action = qtFramework->createAction(actionId.c_str(), view.title(), "View",
-	                                        [pView, qDockWidget](IAction*)
-	                                        {
-		                                        qDockWidget->show();
-		                                        qDockWidget->raise();
-		                                        pView->focusInEvent();
-		                                    });
+	auto action = qtFramework->createAction(actionId.c_str(), view.title(), "View", [pView, qDockWidget](IAction*) {
+		qDockWidget->show();
+		qDockWidget->raise();
+		pView->focusInEvent();
+	});
 	auto application = get<IUIApplication>();
-	assert( application != nullptr );
-	application->addAction( *action );
+	assert(application != nullptr);
+	application->addAction(*action);
 
-	dockWidgetMap_[ &view ] = std::make_pair( std::unique_ptr< QDockWidget >( qDockWidget ), std::move( action ) );
-
+	dockWidgetMap_[&view] = std::make_pair(std::unique_ptr<QDockWidget>(qDockWidget), std::move(action));
 }
 
-void QtDockRegion::removeView( IView & view )
+void QtDockRegion::removeView(IView& view)
 {
 	auto qMainWindow = qtWindow_.window();
 	if (qMainWindow == nullptr)
@@ -329,29 +312,29 @@ void QtDockRegion::removeView( IView & view )
 		return;
 	}
 
-	auto findIt = dockWidgetMap_.find( &view );
+	auto findIt = dockWidgetMap_.find(&view);
 	if (findIt == dockWidgetMap_.end())
 	{
 		return;
 	}
-	
-	//TODO: save dockWidget state
-	auto dockWidget = std::move( findIt->second.first );
-	auto action = std::move( findIt->second.second );
-	dockWidgetMap_.erase( findIt );
+
+	// TODO: save dockWidget state
+	auto dockWidget = std::move(findIt->second.first);
+	auto action = std::move(findIt->second.second);
+	dockWidgetMap_.erase(findIt);
 
 	auto application = get<IUIApplication>();
-	assert( application != nullptr );
-	application->removeAction( *action );
+	assert(application != nullptr);
+	application->removeAction(*action);
 	action = nullptr;
 
-	assert( dockWidget != nullptr );
-	dockWidget->setWidget( nullptr );
-	qMainWindow->removeDockWidget( dockWidget.get() );
+	assert(dockWidget != nullptr);
+	dockWidget->setWidget(nullptr);
+	qMainWindow->removeDockWidget(dockWidget.get());
 	// call this function to let IView control the qWidget's life-cycle again.
 	auto qtFramework = get<IQtFramework>();
-	assert( qtFramework != nullptr );
-	qtFramework->retainQWidget( view );
+	assert(qtFramework != nullptr);
+	qtFramework->retainQWidget(view);
 	dockWidget = nullptr;
 }
 } // end namespace wgt

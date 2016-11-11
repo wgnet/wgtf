@@ -13,19 +13,16 @@
 
 namespace wgt
 {
-class HelloPanelList
-    : Depends< IUIFramework, IUIApplication, IDefinitionManager, IViewCreator >
+class HelloPanelList : Depends<IUIFramework, IUIApplication, IDefinitionManager, IViewCreator>
 {
 public:
+	HelloPanelList(IComponentContext& context);
 
-    HelloPanelList( IComponentContext & context );
- 
-    bool addPanel();
-    void removePanel();
+	bool addPanel();
+	void removePanel();
 
 private:
-
-    wg_future<std::unique_ptr< IView >> helloView_;
+	wg_future<std::unique_ptr<IView>> helloView_;
 };
 } // end namespace wgt
 

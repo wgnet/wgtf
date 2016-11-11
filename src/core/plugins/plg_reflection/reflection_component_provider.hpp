@@ -10,17 +10,15 @@ namespace wgt
 class ReflectionComponentProvider : public IComponentProvider
 {
 public:
-	ReflectionComponentProvider( IDefinitionManager & defManager )
-		: defManager_( defManager )
+	ReflectionComponentProvider(IDefinitionManager& defManager) : defManager_(defManager)
 	{
 	}
 
-	const char * componentId( const TypeId & typeId,
-		std::function< bool ( const ItemRole::Id& ) > & predicate ) const
+	const char* componentId(const TypeId& typeId, std::function<bool(const ItemRole::Id&)>& predicate) const
 	{
 		if (typeId.isPointer())
 		{
-			auto typeDef = defManager_.getDefinition( typeId.removePointer().getName() );
+			auto typeDef = defManager_.getDefinition(typeId.removePointer().getName());
 			if (typeDef != nullptr)
 			{
 				return "polystruct";
@@ -31,7 +29,7 @@ public:
 	}
 
 public:
-	IDefinitionManager & defManager_;
+	IDefinitionManager& defManager_;
 };
 } // end namespace wgt
-#endif//REFLECTION_COMPONENT_PROVIDER_HPP
+#endif // REFLECTION_COMPONENT_PROVIDER_HPP

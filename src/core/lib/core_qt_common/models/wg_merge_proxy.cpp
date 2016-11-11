@@ -2,8 +2,7 @@
 
 namespace wgt
 {
-WGMergeProxy::WGMergeProxy()
-    : orientation_(Qt::Horizontal)
+WGMergeProxy::WGMergeProxy() : orientation_(Qt::Horizontal)
 {
 	roleNames_ = QAbstractItemModel::roleNames();
 	for (auto role : roleNames_.keys())
@@ -101,10 +100,8 @@ void WGMergeProxy::addModel(QAbstractItemModel* model, int index, const QString&
 	for (auto i = 0; i < count; ++i)
 	{
 		auto entry = model->data(Qt::Horizontal ? model->index(i, index) : model->index(index, i), role);
-		auto it = std::find_if(entries_.begin(), entries_.end(), [&entry](QPair<QVariant, int>& item)
-		                       {
-			                       return item.first == entry;
-			                   });
+		auto it = std::find_if(entries_.begin(), entries_.end(),
+		                       [&entry](QPair<QVariant, int>& item) { return item.first == entry; });
 		auto entryIndex = std::distance(entries_.begin(), it);
 		mapping->entries_.insert(entryIndex, i);
 		if (it == entries_.end())
@@ -122,7 +119,8 @@ void WGMergeProxy::addModel(QAbstractItemModel* model, int index, const QString&
 					++pos;
 				}
 			}
-			orientation_ == Qt::Horizontal ? beginInsertRows(QModelIndex(), pos, pos) : beginInsertColumns(QModelIndex(), pos, pos);
+			orientation_ == Qt::Horizontal ? beginInsertRows(QModelIndex(), pos, pos) :
+			                                 beginInsertColumns(QModelIndex(), pos, pos);
 			++it->second;
 			orientation_ == Qt::Horizontal ? endInsertRows() : endInsertColumns();
 		}
@@ -132,10 +130,12 @@ void WGMergeProxy::addModel(QAbstractItemModel* model, int index, const QString&
 		}
 	}
 
-	mapping->connections_ += QObject::connect(model, &QAbstractItemModel::dataChanged, this, &WGMergeProxy::onDataChanged);
+	mapping->connections_ +=
+	QObject::connect(model, &QAbstractItemModel::dataChanged, this, &WGMergeProxy::onDataChanged);
 
 	auto pos = orientation_ == Qt::Horizontal ? columnCount() : rowCount();
-	orientation_ == Qt::Horizontal ? beginInsertColumns(QModelIndex(), pos, pos + model->columnCount() - 1) : beginInsertRows(QModelIndex(), pos, pos + model->rowCount() - 1);
+	orientation_ == Qt::Horizontal ? beginInsertColumns(QModelIndex(), pos, pos + model->columnCount() - 1) :
+	                                 beginInsertRows(QModelIndex(), pos, pos + model->rowCount() - 1);
 	mappings_.emplace_back(mapping);
 	orientation_ == Qt::Horizontal ? endInsertColumns() : endInsertRows();
 }
@@ -162,7 +162,8 @@ void WGMergeProxy::removeModel(QAbstractItemModel* model)
 		return;
 	}
 
-	orientation_ == Qt::Horizontal ? beginRemoveColumns(QModelIndex(), pos, pos + model->columnCount() - 1) : beginRemoveRows(QModelIndex(), pos, pos + model->rowCount() - 1);
+	orientation_ == Qt::Horizontal ? beginRemoveColumns(QModelIndex(), pos, pos + model->columnCount() - 1) :
+	                                 beginRemoveRows(QModelIndex(), pos, pos + model->rowCount() - 1);
 	auto mapping = (*it).release();
 	mappings_.erase(it);
 	orientation_ == Qt::Horizontal ? endRemoveColumns() : endRemoveRows();
@@ -181,7 +182,8 @@ void WGMergeProxy::removeModel(QAbstractItemModel* model)
 					++pos;
 				}
 			}
-			orientation_ == Qt::Horizontal ? beginRemoveRows(QModelIndex(), pos, pos) : beginRemoveColumns(QModelIndex(), pos, pos);
+			orientation_ == Qt::Horizontal ? beginRemoveRows(QModelIndex(), pos, pos) :
+			                                 beginRemoveColumns(QModelIndex(), pos, pos);
 			--entryIt->second;
 			orientation_ == Qt::Horizontal ? endRemoveRows() : endRemoveColumns();
 		}
@@ -508,17 +510,42 @@ QVariant WGMergeProxy::headerData(int section, Qt::Orientation orientation, int 
 		return QVariant();
 	}
 
-	if (role != Qt::DisplayRole)
+	if (role == Qt::DisplayRole)
 	{
-		return QVariant();
+		if (section < 0 || section >= entries_.count())
+		{
+			return QVariant();
+		}
+
+		return entries_.at(section).first;
 	}
 
-	if (section < 0 || section >= entries_.count())
+	for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
 	{
-		return QVariant();
+		auto mapping = it->get();
+
+		auto entryIt = mapping->entries_.find(section);
+		if (entryIt == mapping->entries_.end())
+		{
+			continue;
+		}
+		auto sourceSection = entryIt.value();
+
+		auto roleIt = mapping->roles_.find(role);
+		if (roleIt == mapping->roles_.end())
+		{
+			continue;
+		}
+		auto sourceRole = roleIt.value();
+
+		auto data = mapping->model_->headerData(sourceSection, orientation, sourceRole);
+		if (data.isValid())
+		{
+			return data;
+		}
 	}
 
-	return entries_.at(section).first;
+	return QVariant();
 }
 
 QHash<int, QByteArray> WGMergeProxy::roleNames() const

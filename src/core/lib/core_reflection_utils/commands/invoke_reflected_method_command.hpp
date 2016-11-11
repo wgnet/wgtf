@@ -15,8 +15,8 @@ class ReflectedMethodCommandParameters
 	DECLARE_REFLECTED
 public:
 	ReflectedMethodCommandParameters();
-	ReflectedMethodCommandParameters( const ReflectedMethodCommandParameters& rhs );
-	ReflectedMethodCommandParameters& operator=( const ReflectedMethodCommandParameters& rhs );
+	ReflectedMethodCommandParameters(const ReflectedMethodCommandParameters& rhs);
+	ReflectedMethodCommandParameters& operator=(const ReflectedMethodCommandParameters& rhs);
 	virtual ~ReflectedMethodCommandParameters();
 
 	const RefObjectId& getId() const;
@@ -24,9 +24,9 @@ public:
 	const ReflectedMethodParameters& getParameters() const;
 	ReflectedMethodParameters& getParametersRef() const;
 
-	void setId( const RefObjectId& id );
-	void setPath( const char* path );
-	void setParameters( const ReflectedMethodParameters& parameters );
+	void setId(const RefObjectId& id);
+	void setPath(const char* path);
+	void setParameters(const ReflectedMethodParameters& parameters);
 
 	static const char* idName();
 	static const char* pathName();
@@ -37,21 +37,19 @@ private:
 	std::unique_ptr<Implementation> impl_;
 };
 
-
-class InvokeReflectedMethodCommand
-	: public Command
+class InvokeReflectedMethodCommand : public Command
 {
 public:
 	InvokeReflectedMethodCommand(IDefinitionManager& definitionManager);
-	InvokeReflectedMethodCommand( const InvokeReflectedMethodCommand& rhs );
-	InvokeReflectedMethodCommand& operator=( const InvokeReflectedMethodCommand& rhs );
+	InvokeReflectedMethodCommand(const InvokeReflectedMethodCommand& rhs);
+	InvokeReflectedMethodCommand& operator=(const InvokeReflectedMethodCommand& rhs);
 	virtual ~InvokeReflectedMethodCommand();
 
 	const char* getId() const override;
-	bool validateArguments(const ObjectHandle& arguments ) const override;
-	ObjectHandle execute( const ObjectHandle& arguments ) const override;
+	bool validateArguments(const ObjectHandle& arguments) const override;
+	ObjectHandle execute(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
-	bool canUndo( const ObjectHandle& arguments ) const override;
+	bool canUndo(const ObjectHandle& arguments) const override;
 	virtual ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
 
 private:
@@ -59,4 +57,4 @@ private:
 	std::unique_ptr<Implementation> impl_;
 };
 } // end namespace wgt
-#endif //INVOKE_REFLECTED_METHOD_COMMAND_HPP
+#endif // INVOKE_REFLECTED_METHOD_COMMAND_HPP

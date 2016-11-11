@@ -12,24 +12,24 @@ Details: Search for NGT Reflection System on the Wargaming Confluence
 
 namespace wgt
 {
-typedef ObjectHandleT< MetaBase > MetaHandle;
+typedef ObjectHandleT<MetaBase> MetaHandle;
 
 namespace MetaParamTypes
 {
-	enum MetaParamType
-	{
-		kUndefined,
-		kBoolean,
-		kInteger,
-		kFloat,
-		kString,
-		kEnum,
-		kHandle,
-		kHandleList,
-		kTable,
-		kFunction,
-		kImportName,
-	};
+enum MetaParamType
+{
+	kUndefined,
+	kBoolean,
+	kInteger,
+	kFloat,
+	kString,
+	kEnum,
+	kHandle,
+	kHandleList,
+	kTable,
+	kFunction,
+	kImportName,
+};
 }
 
 class REFLECTION_DLL MetaBase
@@ -41,15 +41,22 @@ public:
 	virtual ~MetaBase();
 
 private:
-	MetaHandle next() const { return nextMetaData_; }
-	void setNext( const MetaHandle & next ) const { nextMetaData_ = next; }
+	MetaHandle next() const
+	{
+		return nextMetaData_;
+	}
+	void setNext(const MetaHandle& next) const
+	{
+		nextMetaData_ = next;
+	}
 
 	mutable MetaHandle nextMetaData_;
 
-	friend REFLECTION_DLL const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & right );
-	friend REFLECTION_DLL MetaHandle findFirstMetaData( const TypeId & typeId, const MetaHandle & metaData, const IDefinitionManager & definitionManager );
+	friend REFLECTION_DLL const MetaHandle& operator+(const MetaHandle& left, const MetaHandle& right);
+	friend REFLECTION_DLL MetaHandle findFirstMetaData(const TypeId& typeId, const MetaHandle& metaData,
+	                                                   const IDefinitionManager& definitionManager);
 };
 
-REFLECTION_DLL const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & right );
+REFLECTION_DLL const MetaHandle& operator+(const MetaHandle& left, const MetaHandle& right);
 } // end namespace wgt
 #endif

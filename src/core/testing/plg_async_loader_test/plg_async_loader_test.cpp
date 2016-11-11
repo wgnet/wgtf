@@ -11,254 +11,160 @@
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
 #include "core_reflection/type_class_definition.hpp"
 
-#include "test_model.mpp"
+#include "test_model.hpp"
 #include <vector>
 #include "core_reflection/i_definition_manager.hpp"
 
+WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
 /**
-* This plugin tests the asynchronous QML loader which shows a 
+* This plugin tests the asynchronous QML loader which shows a
 * busy indicator when loading component in an async mode
 *
 * @ingroup plugins
-* @image html plg_async_loader_test.png 
+* @image html plg_async_loader_test.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class AsyncLoaderTestPlugin
-	: public PluginMain
-	, public Depends< IViewCreator, IDefinitionManager, IUIApplication, IUIFramework >
+class AsyncLoaderTestPlugin : public PluginMain,
+                              public Depends<IViewCreator, IDefinitionManager, IUIApplication, IUIFramework>
 {
 private:
 	std::vector<IInterface*> types_;
-	std::vector< wg_future<std::unique_ptr< IView >> > views_;
-	std::unique_ptr< IAction > openViews_;
-	std::unique_ptr< IAction > closeViews_;
-	ObjectHandleT<ListData> listViewData1_;
-	ObjectHandleT<ListData> listViewData2_;
-	ObjectHandleT<ListData> listViewData3_;
+	std::vector<wg_future<std::unique_ptr<IView>>> views_;
+	std::unique_ptr<IAction> openViews_;
+	std::unique_ptr<IAction> closeViews_;
 	ListDataModel listViewModel1_;
 	ListDataModel listViewModel2_;
 	ListDataModel listViewModel3_;
 
 public:
 	//==========================================================================
-	AsyncLoaderTestPlugin(IComponentContext & contextManager )
-		: Depends( contextManager )
+	AsyncLoaderTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
 	{
-
 	}
 
 	//==========================================================================
-	virtual bool PostLoad( IComponentContext & contextManager ) override
+	virtual bool PostLoad(IComponentContext& contextManager) override
 	{
 		return true;
 	}
 
 	//==========================================================================
-	virtual void Initialise( IComponentContext & contextManager ) override
+	virtual void Initialise(IComponentContext& contextManager) override
 	{
 		auto defManager = get<IDefinitionManager>();
 		auto& definitionManager = *defManager;
-		REGISTER_DEFINITION( ListData );
 
+		listViewModel1_.init(15);
+		listViewModel2_.init(30);
+		listViewModel3_.init(7);
 
-		listViewData1_ = defManager->create<ListData>();
-		listViewData1_->init( *defManager, 15 );
-		listViewData2_ = defManager->create<ListData>();
-		listViewData2_->init( *defManager, 30 );
-		listViewData3_ = defManager->create<ListData>();
-		listViewData3_->init( *defManager, 7 );
+		auto uiApplication = get<IUIApplication>();
+		auto uiFramework = get<IUIFramework>();
+		assert((uiFramework != nullptr) && (uiApplication != nullptr));
+		uiFramework->loadActionData(":/plg_async_loader_test/actions.xml", IUIFramework::ResourceType::File);
+		auto viewCreator = get<IViewCreator>();
+		assert(viewCreator != nullptr);
 
-		listViewModel1_.init( 15 );
-		listViewModel2_.init( 30 );
-		listViewModel3_.init( 7 );
-
-
-
-		auto uiApplication = get< IUIApplication >();
-		auto uiFramework = get< IUIFramework >();
-		assert( (uiFramework != nullptr) && (uiApplication != nullptr) );
-		uiFramework->loadActionData( 
-			":/plg_async_loader_test/actions.xml", IUIFramework::ResourceType::File );
-		auto viewCreator = get< IViewCreator >();
-		assert( viewCreator != nullptr );
-
-		openViews_ = uiFramework->createAction( "OpenViews", 
-			[this, viewCreator ]( IAction * )
-		{
-			assert( views_.empty() );
+		openViews_ = uiFramework->createAction(
+		"OpenViews",
+		[this, viewCreator](IAction*) {
+			assert(views_.empty());
 			std::string id = "plg_async_loader_test/list_tab_panel_2.0.qml" + std::to_string(1);
-			auto view = viewCreator->createView(
-			"plg_async_loader_test/list_tab_panel_2.0.qml",
-			static_cast<AbstractListModel*>(&listViewModel1_), id.c_str());
-			if(view.valid())
+			auto view = viewCreator->createView("plg_async_loader_test/list_tab_panel_2.0.qml",
+			                                    static_cast<AbstractListModel*>(&listViewModel1_), id.c_str());
+			if (view.valid())
 			{
-				views_.push_back( std::move(view) );
+				views_.push_back(std::move(view));
 			}
 
 			id = "plg_async_loader_test/list_tab_panel_2.0.qml" + std::to_string(2);
-			view = viewCreator->createView(
-			"plg_async_loader_test/list_tab_panel_2.0.qml",
-			static_cast<AbstractListModel*>(&listViewModel2_), id.c_str());
-			if(view.valid())
+			view = viewCreator->createView("plg_async_loader_test/list_tab_panel_2.0.qml",
+			                               static_cast<AbstractListModel*>(&listViewModel2_), id.c_str());
+			if (view.valid())
 			{
-				views_.push_back( std::move(view) );
+				views_.push_back(std::move(view));
 			}
 
 			id = "plg_async_loader_test/list_tab_panel_2.0.qml" + std::to_string(3);
-			view = viewCreator->createView(
-			"plg_async_loader_test/list_tab_panel_2.0.qml",
-			static_cast<AbstractListModel*>(&listViewModel3_), id.c_str());
-			if(view.valid())
+			view = viewCreator->createView("plg_async_loader_test/list_tab_panel_2.0.qml",
+			                               static_cast<AbstractListModel*>(&listViewModel3_), id.c_str());
+			if (view.valid())
 			{
-				views_.push_back( std::move(view) );
+				views_.push_back(std::move(view));
 			}
 
-
-			id = "plg_async_loader_test/list_tab_panel_1.0.qml" + std::to_string(1);
-			view  = viewCreator->createView(
-				"plg_async_loader_test/list_tab_panel_1.0.qml", listViewData1_, id.c_str() );
-			if(view.valid())
-			{
-				views_.push_back( std::move(view) );
-			}
-
-			id = "plg_async_loader_test/list_tab_panel_1.0.qml" + std::to_string(2);
-			view  = viewCreator->createView(
-				"plg_async_loader_test/list_tab_panel_1.0.qml", listViewData2_, id.c_str() );
-			if(view.valid())
-			{
-				views_.push_back( std::move(view) );
-			}
-
-			id = "plg_async_loader_test/list_tab_panel_1.0.qml" + std::to_string(3);
-			view  = viewCreator->createView(
-				"plg_async_loader_test/list_tab_panel_1.0.qml", listViewData3_, id.c_str() );
-			if(view.valid())
-			{
-				views_.push_back( std::move(view) );
-			}
-
-
-			
 			id = "plg_async_loader_test/list_dock_panel_2.0.qml" + std::to_string(1);
-			view = viewCreator->createView(
-			"plg_async_loader_test/list_dock_panel_2.0.qml",
-			static_cast<AbstractListModel*>(&listViewModel1_), id.c_str());
-			if(view.valid())
+			view = viewCreator->createView("plg_async_loader_test/list_dock_panel_2.0.qml",
+			                               static_cast<AbstractListModel*>(&listViewModel1_), id.c_str());
+			if (view.valid())
 			{
-				views_.push_back( std::move(view) );
+				views_.push_back(std::move(view));
 			}
 
 			id = "plg_async_loader_test/list_dock_panel_2.0.qml" + std::to_string(2);
-			view = viewCreator->createView(
-			"plg_async_loader_test/list_dock_panel_2.0.qml",
-			static_cast<AbstractListModel*>(&listViewModel2_), id.c_str());
-			if(view.valid())
+			view = viewCreator->createView("plg_async_loader_test/list_dock_panel_2.0.qml",
+			                               static_cast<AbstractListModel*>(&listViewModel2_), id.c_str());
+			if (view.valid())
 			{
-				views_.push_back( std::move(view) );
+				views_.push_back(std::move(view));
 			}
 
 			id = "plg_async_loader_test/list_dock_panel_2.0.qml" + std::to_string(3);
-			view = viewCreator->createView(
-			"plg_async_loader_test/list_dock_panel_2.0.qml",
-			static_cast<AbstractListModel*>(&listViewModel3_), id.c_str());
-			if(view.valid())
+			view = viewCreator->createView("plg_async_loader_test/list_dock_panel_2.0.qml",
+			                               static_cast<AbstractListModel*>(&listViewModel3_), id.c_str());
+			if (view.valid())
 			{
-				views_.push_back( std::move(view) );
+				views_.push_back(std::move(view));
 			}
+		},
+		[this](const IAction*) { return views_.empty(); });
+		closeViews_ =
+		uiFramework->createAction("CloseViews", [this, uiApplication](IAction*) { closeViews(uiApplication); },
+		                          [this](const IAction*) { return !views_.empty(); });
 
-
-			id = "plg_async_loader_test/list_dock_panel_1.0.qml" + std::to_string(1);
-			view  = viewCreator->createView(
-				"plg_async_loader_test/list_dock_panel_1.0.qml", listViewData1_, id.c_str() );
-			if(view.valid())
-			{
-				views_.push_back( std::move(view) );
-			}
-
-			id = "plg_async_loader_test/list_dock_panel_1.0.qml" + std::to_string(2);
-			view  = viewCreator->createView(
-				"plg_async_loader_test/list_dock_panel_1.0.qml", listViewData2_, id.c_str() );
-			if(view.valid())
-			{
-				views_.push_back( std::move(view) );
-			}
-
-			id = "plg_async_loader_test/list_dock_panel_1.0.qml" + std::to_string(3);
-			view  = viewCreator->createView(
-				"plg_async_loader_test/list_dock_panel_1.0.qml", listViewData3_, id.c_str() );
-			if(view.valid())
-			{
-				views_.push_back( std::move(view) );
-			}
-
-
-
-		}, [this](const IAction*)
-		{
-			return views_.empty();
-		});
-		closeViews_ = uiFramework->createAction( "CloseViews", 
-			[this, uiApplication]( IAction * )
-		{
-			closeViews( uiApplication );
-		}, [this] (const IAction*)
-		{
-			return !views_.empty();
-		});
-		
-		uiApplication->addAction( *openViews_ );
-		uiApplication->addAction( *closeViews_ );
-
+		uiApplication->addAction(*openViews_);
+		uiApplication->addAction(*closeViews_);
 	}
 
-
 	//==========================================================================
-	virtual bool Finalise( IComponentContext & contextManager ) override
+	virtual bool Finalise(IComponentContext& contextManager) override
 	{
-		auto uiApplication = contextManager.queryInterface< IUIApplication >();
-		assert( uiApplication != nullptr );
+		auto uiApplication = contextManager.queryInterface<IUIApplication>();
+		assert(uiApplication != nullptr);
 		uiApplication->removeAction(*openViews_);
 		uiApplication->removeAction(*closeViews_);
-		closeViews( uiApplication );
+		closeViews(uiApplication);
 		openViews_ = nullptr;
 		closeViews_ = nullptr;
-		listViewData1_ = nullptr;
-		listViewData2_ = nullptr;
-		listViewData3_ = nullptr;
 		return true;
 	}
 	//==========================================================================
-	virtual void Unload( IComponentContext & contextManager ) override
+	virtual void Unload(IComponentContext& contextManager) override
 	{
-		for (auto type: types_)
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
-
 
 	void closeViews(IUIApplication* uiApplication)
 	{
-		for(auto& it : views_)
+		for (auto& it : views_)
 		{
-			 if(it.valid())
-			 {
-				 auto view = it.get();
-				 uiApplication->removeView( *view );
-				 view = nullptr;
-			 }
+			if (it.valid())
+			{
+				auto view = it.get();
+				uiApplication->removeView(*view);
+				view = nullptr;
+			}
 		}
 		views_.clear();
 	}
-
-
 };
 
-
-PLG_CALLBACK_FUNC( AsyncLoaderTestPlugin )
+PLG_CALLBACK_FUNC(AsyncLoaderTestPlugin)
 } // end namespace wgt

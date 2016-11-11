@@ -5,7 +5,7 @@
 
 namespace wgt
 {
-class HeaderFooterTextExtension: public IModelExtensionOld
+class HeaderFooterTextExtension : public IModelExtensionOld
 {
 public:
 	HeaderFooterTextExtension();

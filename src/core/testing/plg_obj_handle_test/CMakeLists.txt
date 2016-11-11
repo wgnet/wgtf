@@ -21,11 +21,8 @@ BW_ADD_TOOL_PLUGIN( plg_obj_handle_test SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_obj_handle_test PRIVATE
 	core_generic_plugin
-	core_qt_common
 	core_reflection
-	core_ui_framework
 	core_data_model
-	core_command_system
 )
 
 BW_PROJECT_CATEGORY( plg_obj_handle_test "Plugins" )

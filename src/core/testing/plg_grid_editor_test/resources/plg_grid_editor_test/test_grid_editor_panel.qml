@@ -85,12 +85,15 @@ WGPanel {
 
         signal updateRows()
 
+        // fired if a control in (row) expands (rowExpanding) or contracts (!rowExpanding)
+        signal rowExpanded(var row, var rowExpanding)
+
         // Todo: Delete when model works properly /\
 
         columnDelegate: Item {
             id: columnDelegate
             width: parent.width
-            height: defaultSpacing.minimumRowHeight
+            height: Math.max(childrenRect.height, defaultSpacing.minimumRowHeight)
 
             property bool isDirty: itemData.dirty
 
@@ -120,11 +123,10 @@ WGPanel {
                     rowIsDirty = gridView.dirtyRows.indexOf(itemData.modelIndex.row) != -1
                 }
             }
-            // Todo: Delete when model works properly /\
 
             Item {
                 width: parent.width
-                height: defaultSpacing.minimumRowHeight
+                height: controlLoader.height + defaultSpacing.doubleBorderSize
 
                 /*  Annoying that a lot of this is here and not in the style. This is partly because
                     of temporary debug code, however it's Frustrating that the style is only BEHIND
@@ -133,6 +135,7 @@ WGPanel {
                 Rectangle {
                     id: dirtyBar
                     anchors.fill: parent
+                    anchors.margins: defaultSpacing.standardBorderSize
                     visible: columnDelegate.rowIsDirty || columnDelegate.excelRowIsDirty
                     color: "#3300FF00"
 
@@ -168,7 +171,6 @@ WGPanel {
                 Rectangle {
                     id: cellDirtyBorder
                     anchors.fill: parent
-                    height: defaultSpacing.standardMargin
                     visible: itemData != null && (columnDelegate.isDirty || columnDelegate.excelIsDirty)
                     color: "transparent"
                     border.color: "#3300BF41"
@@ -198,27 +200,56 @@ WGPanel {
                             name: "DIRTY_EXCEL_NOT_CHECKED_OUT"
                             when: columnDelegate.isDirty && !columnDelegate.rowIsCheckedOut && columnDelegate.excelIsDirty
                             PropertyChanges { target: cellDirtyBorder; border.color: "#889800FF"}
-                }
+                        }
                     ]
-            }
+                }
 
                 Rectangle {
                     id: hoverArea
                     anchors.fill: parent
                     color: palette.highlightShade
                     visible: cellSelectionArea.ctrlPressed
-            }
-
-            Loader {
-                id: controlLoader
-                anchors.fill: parent
-                anchors.margins: defaultSpacing.standardBorderSize
-                sourceComponent: itemData.component
-
-                onLoaded: {
-                    columnDelegate.implicitWidth = Qt.binding( function() {return item.implicitWidth + controlLoader.x} );
                 }
-            }
+
+                // Todo: Delete when model works properly /\
+                Loader {
+                    id: controlLoader
+                    width: parent.width - defaultSpacing.doubleBorderSize
+                    x: defaultSpacing.standardBorderSize
+                    y: defaultSpacing.standardBorderSize
+                    sourceComponent: itemData.component
+
+                    onLoaded: {
+                        columnDelegate.implicitWidth = Qt.binding( function() {return item.implicitWidth + controlLoader.x} );
+                    }
+
+                    // if rowExpanded, compare row and expand if possible.
+                    Connections {
+                        target: gridView
+                        onRowExpanded: {
+                            if(controlLoader.item != null)
+                            {
+                                if (typeof controlLoader.item.expanded !== 'undefined')
+                                {
+                                    if (row == itemData.modelIndex.row)
+                                    {
+                                        controlLoader.item.expand(rowExpanding, false)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // send rowExpanded if item expands/contracts
+                    Connections {
+                        target: controlLoader.item
+                        ignoreUnknownSignals: true
+                        onComponentExpanding: {
+                            gridView.rowExpanded(itemData.modelIndex.row, expanding)
+                        }
+                    }
+                }
+
 
                 MouseArea {
                     id: cellSelectionArea
@@ -239,6 +270,7 @@ WGPanel {
                         if(!controlLoader.activeFocus || modifierDown)
                         {
                             gridView.view.select(mouse, itemData.modelIndex)
+                            controlLoader.forceActiveFocus()
                         }
 
                         // TODO: If the cell has focus and is no longer selected focus the next cell in the selection
@@ -268,7 +300,7 @@ WGPanel {
                         ctrlPressed = false
                     }
                 }
-        }
+            }
         }
 
         headerDelegate: Text {

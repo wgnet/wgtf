@@ -22,35 +22,28 @@ struct TestStructure
 {
 	TestStructure();
 
-	void init( const IDefinitionManager & defManager );
+	void init(const IDefinitionManager& defManager);
 
 	DEFINE_TEST_DATA_TYPES()
 };
 
-struct TestInheritedStruct
-	: public TestStructure
+struct TestInheritedStruct : public TestStructure
 {
 	TestInheritedStruct();
 
-	void init( const IDefinitionManager & defManager );
+	void init(const IDefinitionManager& defManager);
 
 	DEFINE_INHERITS_TEST_DATA_TYPES()
 
-	bool operator==( const TestInheritedStruct & that ) const
+	bool operator==(const TestInheritedStruct& that) const
 	{
-		return 
-			Derivedboolean_ == that.Derivedboolean_ &&
-			DerivedsignedInt_ == that.DerivedsignedInt_ &&
-			DerivedunsignedInt_ == that.DerivedunsignedInt_ &&
-			DerivedsignedInt64_ == that.DerivedsignedInt64_ &&
-			DerivedunsignedInt64_ == that.DerivedunsignedInt64_ &&
-			Derivedfloat_ == that.Derivedfloat_ &&
-			Deriveddouble_ == that.Deriveddouble_ &&
-			Derivedraw_string_ == that.Derivedraw_string_ &&
-			Derivedstring_ == that.Derivedstring_ &&
-			Derivedraw_wstring_ == that.Derivedraw_wstring_ &&
-			Derivedwstring_ == that.Derivedwstring_;
+		return Derivedboolean_ == that.Derivedboolean_ && DerivedsignedInt_ == that.DerivedsignedInt_ &&
+		DerivedunsignedInt_ == that.DerivedunsignedInt_ && DerivedsignedInt64_ == that.DerivedsignedInt64_ &&
+		DerivedunsignedInt64_ == that.DerivedunsignedInt64_ && Derivedfloat_ == that.Derivedfloat_ &&
+		Deriveddouble_ == that.Deriveddouble_ && Derivedraw_string_ == that.Derivedraw_string_ &&
+		Derivedstring_ == that.Derivedstring_ && Derivedraw_wstring_ == that.Derivedraw_wstring_ &&
+		Derivedwstring_ == that.Derivedwstring_;
 	}
 };
 } // end namespace wgt
-#endif //TEST_STRUCTURE
+#endif // TEST_STRUCTURE

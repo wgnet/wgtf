@@ -13,15 +13,12 @@
 
 namespace wgt
 {
-ReflectionSerializer::ReflectionSerializer( ISerializationManager & serializationManager , 
-										    IObjectManager & objManager,
-											IDefinitionManager & defManager )
-	: serializationManager_( serializationManager )
-	, objManager_( objManager )
-	, defManager_( defManager )
-	, curDataStream_( nullptr )
+ReflectionSerializer::ReflectionSerializer(ISerializationManager& serializationManager, IObjectManager& objManager,
+                                           IDefinitionManager& defManager)
+    : serializationManager_(serializationManager), objManager_(objManager), defManager_(defManager),
+      curDataStream_(nullptr)
 {
-	typeList.push_back( TypeId::getType<ObjectHandle>() );
+	typeList.push_back(TypeId::getType<ObjectHandle>());
 }
 
 ReflectionSerializer::~ReflectionSerializer()
@@ -35,149 +32,145 @@ std::vector<TypeId> ReflectionSerializer::getSupportedType()
 	return typeList;
 }
 
-bool ReflectionSerializer::write( IDataStream * dataStream, const Variant & variant )
+bool ReflectionSerializer::write(IDataStream* dataStream, const Variant& variant)
 {
-	TypeId type( variant.type()->name() );
+	TypeId type(variant.type()->name());
 	curDataStream_ = dataStream;
-	if(!curDataStream_)
+	if (!curDataStream_)
 	{
 		return false;
 	}
 
-	if(variant.canCast<ObjectHandle>())
+	if (variant.canCast<ObjectHandle>())
 	{
 		ObjectHandle provider;
-		bool isOk = variant.tryCast( provider );
-		assert( isOk );
-		if(provider.isValid())
+		bool isOk = variant.tryCast(provider);
+		assert(isOk);
+		if (provider.isValid())
 		{
-			provider = reflectedRoot( provider, defManager_ );
-			const auto classDef = provider.getDefinition( defManager_ );
+			provider = reflectedRoot(provider, defManager_);
+			const auto classDef = provider.getDefinition(defManager_);
 			if (classDef == nullptr)
 			{
 				curDataStream_->write("");
 				return true;
 			}
-			curDataStream_->write( classDef->getName() );
+			curDataStream_->write(classDef->getName());
 			std::string stringId = "";
 			RefObjectId id;
-			isOk = provider.getId( id );
+			isOk = provider.getId(id);
 			if (isOk)
 			{
 				stringId = id.toString();
 			}
-			curDataStream_->write( stringId );
-			writeProperties( provider );
+			curDataStream_->write(stringId);
+			writeProperties(provider);
 			return true;
 		}
 		else
 		{
 			// write empty string for classdefinition name to handle nullptr
-			curDataStream_->write( "" );
+			curDataStream_->write("");
 			return true;
 		}
 	}
 	else
 	{
-		assert( false );
+		assert(false);
 	}
 	return false;
 }
 
-void ReflectionSerializer::writeProperties( const ObjectHandle & provider )
+void ReflectionSerializer::writeProperties(const ObjectHandle& provider)
 {
-	const auto classDef = provider.getDefinition( defManager_ );
-	assert( classDef );
+	const auto classDef = provider.getDefinition(defManager_);
+	assert(classDef);
 	const PropertyIteratorRange& props = classDef->allProperties();
-	std::vector< PropertyAccessor > pas;
-	for (PropertyIterator pi = props.begin(), end = props.end(); 
-		pi != end; ++pi)
+	std::vector<PropertyAccessor> pas;
+	for (PropertyIterator pi = props.begin(), end = props.end(); pi != end; ++pi)
 	{
 		if (pi->isMethod())
 		{
 			continue;
 		}
-		PropertyAccessor pa = classDef->bindProperty( 
-			pi->getName(), provider );
-		assert( pa.isValid() );
-		auto metaData = findFirstMetaData<MetaNoSerializationObj>( pa, defManager_ );
-		if(metaData != nullptr)
+		PropertyAccessor pa = classDef->bindProperty(pi->getName(), provider);
+		assert(pa.isValid());
+		auto metaData = findFirstMetaData<MetaNoSerializationObj>(pa, defManager_);
+		if (metaData != nullptr)
 		{
 			continue;
 		}
-		pas.push_back( pa );
+		pas.push_back(pa);
 	}
 	size_t count = pas.size();
-	curDataStream_->write( count );
-	for(auto & pa : pas)
+	curDataStream_->write(count);
+	for (auto& pa : pas)
 	{
-		writeProperty( pa );
+		writeProperty(pa);
 	}
 }
 
-void ReflectionSerializer::writeProperty( const PropertyAccessor & property )
+void ReflectionSerializer::writeProperty(const PropertyAccessor& property)
 {
-	assert( property.isValid() );
-	const auto & propPath = property.getFullPath();
-	curDataStream_->write( propPath );
+	assert(property.isValid());
+	const auto& propPath = property.getFullPath();
+	curDataStream_->write(propPath);
 
 	Variant value = property.getValue();
-	curDataStream_->write( value.type()->name() );
-	if(!value.isVoid())
+	curDataStream_->write(value.type()->name());
+	if (!value.isVoid())
 	{
-		writePropertyValue( value );
+		writePropertyValue(value);
 	}
-	
 }
 
-void ReflectionSerializer::writeCollection( const Collection & collection )
+void ReflectionSerializer::writeCollection(const Collection& collection)
 {
 	size_t count = collection.size();
-	curDataStream_->write( count );
-	for (auto it = collection.begin(), end = collection.end();
-		it != end; ++it )
+	curDataStream_->write(count);
+	for (auto it = collection.begin(), end = collection.end(); it != end; ++it)
 	{
 		unsigned int index;
-		it.key().tryCast( index );
+		it.key().tryCast(index);
 		//! TODO! how to write the key if we don't know its type?
-		
+
 		std::string strIndex = std::to_string(index);
-		curDataStream_->write( strIndex );
+		curDataStream_->write(strIndex);
 
 		Collection subCollection;
 		auto value = it.value();
-		curDataStream_->write( value.type()->name() );
-		writePropertyValue( value );
+		curDataStream_->write(value.type()->name());
+		writePropertyValue(value);
 	}
 }
 
-void ReflectionSerializer::writePropertyValue( const Variant & value )
+void ReflectionSerializer::writePropertyValue(const Variant& value)
 {
-	if( value.typeIs< Collection >() )
+	if (value.typeIs<Collection>())
 	{
 		Collection collection;
-		bool isCollection = value.tryCast( collection );
-		assert( isCollection );
-		writeCollection( collection );
+		bool isCollection = value.tryCast(collection);
+		assert(isCollection);
+		writeCollection(collection);
 	}
 	else
 	{
-		bool hasId = value.typeIs< ObjectHandle >();
-		if(hasId)
+		bool hasId = value.typeIs<ObjectHandle>();
+		if (hasId)
 		{
 			ObjectHandle provider;
-			bool isOk = value.tryCast( provider );
-			assert( isOk );
-			if(provider.isValid())
+			bool isOk = value.tryCast(provider);
+			assert(isOk);
+			if (provider.isValid())
 			{
 				RefObjectId id;
-				hasId = provider.getId( id );
-				if(hasId)
+				hasId = provider.getId(id);
+				if (hasId)
 				{
-					curDataStream_->write( id.toString() );
+					curDataStream_->write(id.toString());
 				}
 				else
-				{	
+				{
 					hasId = false;
 				}
 			}
@@ -186,178 +179,175 @@ void ReflectionSerializer::writePropertyValue( const Variant & value )
 				hasId = false;
 			}
 		}
-		if (!hasId )
+		if (!hasId)
 		{
-			curDataStream_->write( "" );
-			serializationManager_.serialize( *curDataStream_, value );
+			curDataStream_->write("");
+			serializationManager_.serialize(*curDataStream_, value);
 		}
 	}
 }
 
-bool ReflectionSerializer::read( IDataStream * dataStream, Variant & variant )
+bool ReflectionSerializer::read(IDataStream* dataStream, Variant& variant)
 {
 	curDataStream_ = dataStream;
-	if(!curDataStream_)
+	if (!curDataStream_)
 	{
 		return false;
 	}
-	
+
 	ObjectHandle provider;
-	if(!variant.tryCast( provider ))
+	if (!variant.tryCast(provider))
 	{
-		assert( false );
+		assert(false);
 		return false;
 	}
 	std::string classDefName;
-	curDataStream_->read( classDefName );
-	if(!classDefName.empty())
+	curDataStream_->read(classDefName);
+	if (!classDefName.empty())
 	{
 		std::string id;
-		curDataStream_->read( id );
-		if(id.empty())
+		curDataStream_->read(id);
+		if (id.empty())
 		{
-			if(provider.isValid())
+			if (provider.isValid())
 			{
-				readProperties( provider );
+				readProperties(provider);
 			}
 			else
 			{
-				auto polyStruct = objManager_.create( classDefName.c_str() );
-				readProperties( polyStruct );
+				auto polyStruct = objManager_.create(classDefName.c_str());
+				readProperties(polyStruct);
 				variant = polyStruct;
 			}
 		}
 		else
 		{
-			auto object = 
-				objManager_.createObject( RefObjectId( id.c_str() ), classDefName.c_str() );
-			readProperties( object );
+			auto object = objManager_.createObject(RefObjectId(id.c_str()), classDefName.c_str());
+			readProperties(object);
 			variant = object;
 		}
 	}
 	return true;
 }
 
-void ReflectionSerializer::readProperties( const ObjectHandle & provider )
+void ReflectionSerializer::readProperties(const ObjectHandle& provider)
 {
-	assert( provider.isValid() );
+	assert(provider.isValid());
 	size_t count = 0;
-	curDataStream_->read( count );
-	for(size_t i = 0; i < count; i++)
+	curDataStream_->read(count);
+	for (size_t i = 0; i < count; i++)
 	{
-		readProperty( provider );
+		readProperty(provider);
 	}
 }
 
-void ReflectionSerializer::readProperty( const ObjectHandle & provider )
+void ReflectionSerializer::readProperty(const ObjectHandle& provider)
 {
-	assert( provider.isValid() );
+	assert(provider.isValid());
 	std::string propName;
-	curDataStream_->read( propName );
-	
-	PropertyAccessor prop = provider.getDefinition( defManager_ )->bindProperty(
-		propName.c_str(), provider );
-	assert( prop.isValid() );
+	curDataStream_->read(propName);
+
+	PropertyAccessor prop = provider.getDefinition(defManager_)->bindProperty(propName.c_str(), provider);
+	assert(prop.isValid());
 
 	std::string valueType;
-	curDataStream_->read( valueType );
-	const MetaType * metaType = MetaType::find( valueType.c_str() );
-	if(metaType == nullptr)
+	curDataStream_->read(valueType);
+	const MetaType* metaType = MetaType::find(valueType.c_str());
+	if (metaType == nullptr)
 	{
-		assert( false );
+		assert(false);
 		return;
 	}
-	readPropertyValue( valueType.c_str(), prop );
+	readPropertyValue(valueType.c_str(), prop);
 }
 
-void ReflectionSerializer::readCollection( const PropertyAccessor & prop )
+void ReflectionSerializer::readCollection(const PropertyAccessor& prop)
 {
-	assert( prop.isValid() );
+	assert(prop.isValid());
 	ObjectHandle baseProvider = prop.getRootObject();
 	size_t count = 0;
-	curDataStream_->read( count );
+	curDataStream_->read(count);
 
 	Collection collection;
-	bool isCollection = prop.getValue().tryCast( collection );
-	assert( isCollection );
+	bool isCollection = prop.getValue().tryCast(collection);
+	assert(isCollection);
 	if (!collection.empty())
 	{
 		collection.erase(collection.begin(), collection.end());
 	}
-	
+
 	std::string strIndex;
 	std::string propName;
 	std::string valueType;
 	for (size_t i = 0; i < count; i++)
 	{
 		strIndex.clear();
-		curDataStream_->read( strIndex );
-		int index = atoi( strIndex.c_str() );
-		auto it = collection.insert( index );
-		
+		curDataStream_->read(strIndex);
+		int index = atoi(strIndex.c_str());
+		auto it = collection.insert(index);
+
 		propName = prop.getFullPath();
 		propName += '[';
 		propName += strIndex;
 		propName += ']';
 
-		//TODO: Allow iteration to next element in collection.
-		PropertyAccessor pa = baseProvider.getDefinition( defManager_ )->bindProperty( 
-			propName.c_str(), baseProvider);
-		assert( pa.isValid() );
+		// TODO: Allow iteration to next element in collection.
+		PropertyAccessor pa = baseProvider.getDefinition(defManager_)->bindProperty(propName.c_str(), baseProvider);
+		assert(pa.isValid());
 		valueType.clear();
-		curDataStream_->read( valueType );
-		const MetaType * metaType = MetaType::find( valueType.c_str() );
-		if(metaType == nullptr)
+		curDataStream_->read(valueType);
+		const MetaType* metaType = MetaType::find(valueType.c_str());
+		if (metaType == nullptr)
 		{
-			assert( false );
+			assert(false);
 			return;
 		}
-		readPropertyValue( valueType.c_str(), pa );
+		readPropertyValue(valueType.c_str(), pa);
 	}
 }
 
-void ReflectionSerializer::readPropertyValue( const char * valueType, PropertyAccessor & pa )
+void ReflectionSerializer::readPropertyValue(const char* valueType, PropertyAccessor& pa)
 {
-	const MetaType * metaType = MetaType::find( valueType );
-	if(metaType == nullptr)
+	const MetaType* metaType = MetaType::find(valueType);
+	if (metaType == nullptr)
 	{
-		assert( false );
+		assert(false);
 		return;
 	}
 	Variant value = pa.getValue();
-	
-	if (value.typeIs< Collection >())
+
+	if (value.typeIs<Collection>())
 	{
-		readCollection( pa );
+		readCollection(pa);
 		return;
 	}
 	std::string id;
-	curDataStream_->read( id );
-	if (ReflectionUtilities::isStruct( pa ))
+	curDataStream_->read(id);
+	if (ReflectionUtilities::isStruct(pa))
 	{
-		read( curDataStream_, value );
+		read(curDataStream_, value);
 	}
 	else
 	{
 		if (!id.empty())
 		{
-			auto obj = objManager_.getObject( id );
-			if(obj == nullptr)
+			auto obj = objManager_.getObject(id);
+			if (obj == nullptr)
 			{
-				objManager_.addObjectLinks( id, pa.getProperty(), pa.getRootObject() );
+				objManager_.addObjectLinks(id, pa.getProperty(), pa.getRootObject());
 			}
 			else
 			{
-				pa.setValueWithoutNotification( obj );
+				pa.setValueWithoutNotification(obj);
 			}
 		}
 		else
 		{
-			Variant variant( metaType );
-			if(!variant.isVoid())
+			Variant variant(metaType);
+			if (!variant.isVoid())
 			{
-				serializationManager_.deserialize( *curDataStream_, variant );
-				pa.setValueWithoutNotification( variant );
+				serializationManager_.deserialize(*curDataStream_, variant);
+				pa.setValueWithoutNotification(variant);
 			}
 		}
 	}

@@ -10,43 +10,45 @@ void WGTransposeProxy::setSourceModel(QAbstractItemModel* sourceModel)
 	QAbstractProxyModel::setSourceModel(sourceModel);
 	if (sourceModel != nullptr)
 	{
-		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::modelAboutToBeReset, [this]() { beginResetModel(); });
+		connections_ +=
+		QObject::connect(sourceModel, &QAbstractItemModel::modelAboutToBeReset, [this]() { beginResetModel(); });
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::modelReset, [this]() { endResetModel(); });
-		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::dataChanged,
-		                                 [this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
-		                                 {
-			                                 auto proxyTopLeft = topLeft.isValid() ? index(topLeft.column(), topLeft.row()) : QModelIndex();
-			                                 auto proxyBottomRight = bottomRight.isValid() ? index(bottomRight.column(), bottomRight.row()) : QModelIndex();
-			                                 dataChanged(proxyTopLeft, proxyBottomRight, roles);
-			                             });
+		connections_ += QObject::connect(
+		sourceModel, &QAbstractItemModel::dataChanged,
+		[this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+			auto proxyTopLeft = topLeft.isValid() ? index(topLeft.column(), topLeft.row()) : QModelIndex();
+			auto proxyBottomRight =
+			bottomRight.isValid() ? index(bottomRight.column(), bottomRight.row()) : QModelIndex();
+			dataChanged(proxyTopLeft, proxyBottomRight, roles);
+		});
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeInserted,
-		                                 [this](const QModelIndex& parent, int first, int last)
-		                                 {
+		                                 [this](const QModelIndex& parent, int first, int last) {
 			                                 assert(!parent.isValid());
 			                                 beginInsertColumns(QModelIndex(), first, last);
 			                             });
-		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsInserted, [this]() { endInsertColumns(); });
+		connections_ +=
+		QObject::connect(sourceModel, &QAbstractItemModel::rowsInserted, [this]() { endInsertColumns(); });
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeRemoved,
-		                                 [this](const QModelIndex& parent, int first, int last)
-		                                 {
+		                                 [this](const QModelIndex& parent, int first, int last) {
 			                                 assert(!parent.isValid());
 			                                 beginRemoveColumns(QModelIndex(), first, last);
 			                             });
-		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsRemoved, [this]() { endRemoveColumns(); });
+		connections_ +=
+		QObject::connect(sourceModel, &QAbstractItemModel::rowsRemoved, [this]() { endRemoveColumns(); });
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeInserted,
-		                                 [this](const QModelIndex& parent, int first, int last)
-		                                 {
+		                                 [this](const QModelIndex& parent, int first, int last) {
 			                                 assert(!parent.isValid());
 			                                 beginInsertRows(QModelIndex(), first, last);
 			                             });
-		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsInserted, [this]() { endInsertRows(); });
+		connections_ +=
+		QObject::connect(sourceModel, &QAbstractItemModel::columnsInserted, [this]() { endInsertRows(); });
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeRemoved,
-		                                 [this](const QModelIndex& parent, int first, int last)
-		                                 {
+		                                 [this](const QModelIndex& parent, int first, int last) {
 			                                 assert(!parent.isValid());
 			                                 beginRemoveRows(QModelIndex(), first, last);
 			                             });
-		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsRemoved, [this]() { endRemoveRows(); });
+		connections_ +=
+		QObject::connect(sourceModel, &QAbstractItemModel::columnsRemoved, [this]() { endRemoveRows(); });
 	}
 	endResetModel();
 }
@@ -90,7 +92,7 @@ int WGTransposeProxy::rowCount(const QModelIndex& parent) const
 		return 0;
 	}
 
-	return source->columnCount();
+	return source->columnCount(mapToSource(parent));
 }
 
 int WGTransposeProxy::columnCount(const QModelIndex& parent) const
@@ -101,7 +103,7 @@ int WGTransposeProxy::columnCount(const QModelIndex& parent) const
 		return 0;
 	}
 
-	return source->rowCount();
+	return source->rowCount(mapToSource(parent));
 }
 
 bool WGTransposeProxy::hasChildren(const QModelIndex& parent) const

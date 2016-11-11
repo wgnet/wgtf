@@ -8,30 +8,27 @@ namespace wgt
 {
 class IComponentContext;
 
-
 /**
  *	Type of command for setting data on an AbstractItemModel.
  *	Currently data cannot be serialized to history.
  */
-class SetModelDataCommand
-	: public Command
+class SetModelDataCommand : public Command
 {
 public:
-	SetModelDataCommand( IComponentContext & context );
+	SetModelDataCommand(IComponentContext& context);
 
 	virtual bool customUndo() const override;
-	virtual bool canUndo( const ObjectHandle & arguments ) const override;
-	virtual bool undo( const ObjectHandle & arguments ) const override;
-	virtual bool redo( const ObjectHandle & arguments ) const override;
-	virtual ObjectHandle getCommandDescription(
-		const ObjectHandle & arguments ) const override;
-	virtual const char * getId() const override;
-	virtual ObjectHandle execute( const ObjectHandle & arguments ) const override;
-	virtual bool validateArguments( const ObjectHandle & arguments) const override;
+	virtual bool canUndo(const ObjectHandle& arguments) const override;
+	virtual bool undo(const ObjectHandle& arguments) const override;
+	virtual bool redo(const ObjectHandle& arguments) const override;
+	virtual ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
+	virtual const char* getId() const override;
+	virtual ObjectHandle execute(const ObjectHandle& arguments) const override;
+	virtual bool validateArguments(const ObjectHandle& arguments) const override;
 	virtual CommandThreadAffinity threadAffinity() const override;
 
 private:
-	DIRef< IDefinitionManager > definitionManager_;
+	DIRef<IDefinitionManager> definitionManager_;
 };
 
 } // end namespace wgt

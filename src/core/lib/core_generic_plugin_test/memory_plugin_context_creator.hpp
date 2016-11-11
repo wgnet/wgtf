@@ -6,12 +6,11 @@
 
 namespace wgt
 {
-class MemoryPluginContextCreator
-	: public Implements< IComponentContextCreator >
+class MemoryPluginContextCreator : public Implements<IComponentContextCreator>
 {
 public:
-	IInterface * createContext( const wchar_t * contextId );
-	const char * getType() const;
+	IInterface* createContext(const wchar_t* contextId);
+	const char* getType() const;
 };
 } // end namespace wgt
-#endif //MEMORY_PLUGIN_CONTEXT_CREATOR_HPP
+#endif // MEMORY_PLUGIN_CONTEXT_CREATOR_HPP

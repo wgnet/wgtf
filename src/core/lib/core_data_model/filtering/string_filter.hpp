@@ -15,12 +15,12 @@ class StringFilter : public IItemFilter
 public:
 	StringFilter();
 	virtual ~StringFilter();
-	
-	virtual bool checkFilter( const IItem * item ) override;
 
-	virtual void setRole( ItemRole::Id roleId ) override;
+	virtual bool checkFilter(const IItem* item) override;
 
-	void setFilterText( const char * filterText );
+	virtual void setRole(ItemRole::Id roleId) override;
+
+	void setFilterText(const char* filterText);
 	const char* getFilterText();
 
 private:

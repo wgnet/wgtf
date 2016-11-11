@@ -32,7 +32,7 @@ public:
 protected:
 	typedef std::vector<std::unique_ptr<IAction>> Actions;
 
-	IMenuHandler(IComponentContext & contextManager);
+	IMenuHandler(IComponentContext& contextManager);
 
 	virtual void registerActions(IUIFramework& uiFramework, Actions& actions) = 0;
 
@@ -41,22 +41,22 @@ protected:
 
 private:
 	// When VS2012 support is retired change this code to use a variadic template
-	template<class TMenuHandler, class TArg>
+	template <class TMenuHandler, class TArg>
 	friend MenuHandlerPtr CreateMenuHandler(TArg&&);
-	template<class TMenuHandler, class TArg1, class TArg2>
+	template <class TMenuHandler, class TArg1, class TArg2>
 	friend MenuHandlerPtr CreateMenuHandler(TArg1&&, TArg2&&);
-	template<class TMenuHandler, class TArg1, class TArg2, class TArg3>
+	template <class TMenuHandler, class TArg1, class TArg2, class TArg3>
 	friend MenuHandlerPtr CreateMenuHandler(TArg1&&, TArg2&&, TArg3&&);
-	template<class TMenuHandler, class TArg1, class TArg2, class TArg3, class TArg4>
+	template <class TMenuHandler, class TArg1, class TArg2, class TArg3, class TArg4>
 	friend MenuHandlerPtr CreateMenuHandler(TArg1&&, TArg2&&, TArg3&&, TArg4&&);
 
 	void registerActions();
 
-	IComponentContext&	contextManager_;
-	Actions				actions_;
+	IComponentContext& contextManager_;
+	Actions actions_;
 };
 
-template<class TMenuHandler, class TArg>
+template <class TMenuHandler, class TArg>
 MenuHandlerPtr CreateMenuHandler(TArg&& arg)
 {
 	MenuHandlerPtr menuHandler(new TMenuHandler(std::forward<TArg>(arg)));
@@ -64,38 +64,28 @@ MenuHandlerPtr CreateMenuHandler(TArg&& arg)
 	return std::move(menuHandler);
 }
 
-template<class TMenuHandler, class TArg1, class TArg2>
+template <class TMenuHandler, class TArg1, class TArg2>
 MenuHandlerPtr CreateMenuHandler(TArg1&& arg1, TArg2&& arg2)
 {
-	MenuHandlerPtr menuHandler(new TMenuHandler(
-		std::forward<TArg1>(arg1),
-		std::forward<TArg2>(arg2)
-		));
+	MenuHandlerPtr menuHandler(new TMenuHandler(std::forward<TArg1>(arg1), std::forward<TArg2>(arg2)));
 	menuHandler->registerActions();
 	return std::move(menuHandler);
 }
 
-template<class TMenuHandler, class TArg1, class TArg2, class TArg3>
+template <class TMenuHandler, class TArg1, class TArg2, class TArg3>
 MenuHandlerPtr CreateMenuHandler(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3)
 {
-	MenuHandlerPtr menuHandler(new TMenuHandler(
-		std::forward<TArg1>(arg1),
-		std::forward<TArg2>(arg2),
-		std::forward<TArg3>(arg3)
-		));
+	MenuHandlerPtr menuHandler(
+	new TMenuHandler(std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3)));
 	menuHandler->registerActions();
 	return std::move(menuHandler);
 }
 
-template<class TMenuHandler, class TArg1, class TArg2, class TArg3, class TArg4>
+template <class TMenuHandler, class TArg1, class TArg2, class TArg3, class TArg4>
 MenuHandlerPtr CreateMenuHandler(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3, TArg4&& arg4)
 {
-	MenuHandlerPtr menuHandler(new TMenuHandler(
-		std::forward<TArg1>(arg1),
-		std::forward<TArg2>(arg2),
-		std::forward<TArg3>(arg3),
-		std::forward<TArg4>(arg4)
-		));
+	MenuHandlerPtr menuHandler(new TMenuHandler(std::forward<TArg1>(arg1), std::forward<TArg2>(arg2),
+	                                            std::forward<TArg3>(arg3), std::forward<TArg4>(arg4)));
 	menuHandler->registerActions();
 	return std::move(menuHandler);
 }

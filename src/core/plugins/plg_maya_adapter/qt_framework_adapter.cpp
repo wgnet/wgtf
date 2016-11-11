@@ -3,8 +3,7 @@
 
 namespace wgt
 {
-QtFrameworkAdapter::QtFrameworkAdapter( IComponentContext & contextManager )
-	:QtFramework(contextManager)
+QtFrameworkAdapter::QtFrameworkAdapter(IComponentContext& contextManager) : QtFramework(contextManager)
 {
 }
 
@@ -12,8 +11,8 @@ QtFrameworkAdapter::~QtFrameworkAdapter()
 {
 }
 
-QtWindow * QtFrameworkAdapter::createQtWindow( QIODevice & source )
+QtWindow* QtFrameworkAdapter::createQtWindow(QIODevice& source)
 {
-	return new QtWindowAdapter( *this, source );
+	return new QtWindowAdapter(*this, source);
 }
 } // end namespace wgt

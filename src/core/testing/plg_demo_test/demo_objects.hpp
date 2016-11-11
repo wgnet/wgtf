@@ -26,39 +26,39 @@ class DemoObjects : public IEnvEventListener
 public:
 	DemoObjects();
 	~DemoObjects();
-	bool init( IComponentContext & contextManager );
+	bool init(IComponentContext& contextManager);
 	bool fini();
 
 	const ITreeModel* getTreeModel() const;
-	const IListModel * getListModel() const;
-	void updateRootObject( int index );
+	const IListModel* getListModel() const;
+	void updateRootObject(int index);
 	const int rootObjectIndex() const;
-	void setTexture( int index, std::string currfilePath, std::string newFilePath );
-	void undoSetTexture( const ObjectHandle& params, Variant result );
-	void redoSetTexture( const ObjectHandle& params, Variant result );
+	void setTexture(int index, std::string currfilePath, std::string newFilePath);
+	void undoSetTexture(const ObjectHandle& params, Variant result);
+	void redoSetTexture(const ObjectHandle& params, Variant result);
 
 	/**
 	* @return the path of the current texture attached to the object
 	* @note will return an empty string if the object does not support textures
 	*/
-	std::string getObjectTexture( int index );
+	std::string getObjectTexture(int index);
 
-	const IValueChangeNotifier * currentIndexSource() const;
-	const IValueChangeNotifier * currentListSource() const;
+	const IValueChangeNotifier* currentIndexSource() const;
+	const IValueChangeNotifier* currentListSource() const;
 
-	ObjectHandle createObject( Vector3 pos );
-	void undoCreateObject( const ObjectHandle& params, Variant result );
-	void redoCreateObject( const ObjectHandle& params, Variant result );
+	ObjectHandle createObject(Vector3 pos);
+	void undoCreateObject(const ObjectHandle& params, Variant result);
+	void redoCreateObject(const ObjectHandle& params, Variant result);
 
 	// IEnvEventListener
-	virtual void onAddEnv( IEnvState* state ) override;
-	virtual void onRemoveEnv( IEnvState* state ) override;
-	virtual void onSelectEnv( IEnvState* state ) override;
+	virtual void onAddEnv(IEnvState* state) override;
+	virtual void onRemoveEnv(IEnvState* state) override;
+	virtual void onSelectEnv(IEnvState* state) override;
 
-	bool loadDemoData( const char* name, DemoObjectsEnvCom* objects );
+	bool loadDemoData(const char* name, DemoObjectsEnvCom* objects);
 
 private:
-	void populateDemoObject( GenericObjectPtr & genericObject, const tinyxml2::XMLNode& objectNode );
+	void populateDemoObject(GenericObjectPtr& genericObject, const tinyxml2::XMLNode& objectNode);
 
 	IDefinitionManager* pDefManager_;
 	IReflectionController* controller_;
@@ -66,11 +66,11 @@ private:
 	IFileSystem* fileSystem_;
 
 	ObjectSelectionHelper helper_;
-	std::unique_ptr< ValueChangeNotifier< IListModel* > > pEnvChangeHelper_;
+	std::unique_ptr<ValueChangeNotifier<IListModel*>> pEnvChangeHelper_;
 	ObjectHandle nullSelection_;
 
 	DemoObjectsEnvCom* objects_;
 	mutable std::shared_ptr<ITreeModel> treeModel_;
 };
 } // end namespace wgt
-#endif //DEMO_OBJECTS_HPP
+#endif // DEMO_OBJECTS_HPP

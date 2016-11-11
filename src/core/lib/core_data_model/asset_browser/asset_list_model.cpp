@@ -115,8 +115,8 @@ AssetListModel::Iterator AssetListModel::erase(const AssetListModel::Iterator& p
 	return it;
 }
 
-AssetListModel::Iterator AssetListModel::erase(
-const AssetListModel::Iterator& first, const AssetListModel::Iterator& last)
+AssetListModel::Iterator AssetListModel::erase(const AssetListModel::Iterator& first,
+                                               const AssetListModel::Iterator& last)
 {
 	auto index = std::distance(items_.cbegin(), first.iterator());
 	auto count = std::distance(first.iterator(), last.iterator());

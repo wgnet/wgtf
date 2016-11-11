@@ -11,12 +11,10 @@
 #include <cstdint>
 #include <sstream>
 
-
 namespace wgt
 {
 namespace PyScript
 {
-
 class ScriptDict;
 class ScriptIter;
 class ScriptList;
@@ -29,7 +27,7 @@ namespace Script
 {
 inline void printError()
 {
-	PyErr_PrintEx( 0 );
+	PyErr_PrintEx(0);
 }
 
 inline void clearError()
@@ -56,17 +54,19 @@ public:
 	 *	is available
 	 *	@param ptr		The pointer to check
 	 */
-	inline void checkPtrNoException( const void * ptr ) const {}
+	inline void checkPtrNoException(const void* ptr) const
+	{
+	}
 
 	/**
 	 *	This method handles checking if a pointer is null
 	 *	@param ptr		The pointer to check
 	 */
-	inline void checkPtrError( const void * ptr ) const
+	inline void checkPtrError(const void* ptr) const
 	{
 		if (ptr == NULL)
 		{
-			static_cast<const HANDLER *>( this )->handleError();
+			static_cast<const HANDLER*>(this)->handleError();
 		}
 	}
 
@@ -74,14 +74,13 @@ public:
 	 *	This method handles checking if a result is -1
 	 *	@param result	The result to check
 	 */
-	inline void checkMinusOne( int result ) const
+	inline void checkMinusOne(int result) const
 	{
 		if (result == -1)
 		{
-			static_cast<const HANDLER *>( this )->handleError();
+			static_cast<const HANDLER*>(this)->handleError();
 		}
 	}
-
 
 	/**
 	 *	This method handles checking if an exception has been marked as occured
@@ -90,7 +89,7 @@ public:
 	{
 		if (Script::hasError())
 		{
-			static_cast<const HANDLER *>( this )->handleError();
+			static_cast<const HANDLER*>(this)->handleError();
 		}
 	}
 };
@@ -112,7 +111,7 @@ public:
 };
 
 /**
- *	The ScriptErrorPrint class will print and clear errors which occur when 
+ *	The ScriptErrorPrint class will print and clear errors which occur when
  *	executing script object methods.
  */
 class ScriptErrorPrint : public ScriptErrorBase<ScriptErrorPrint>
@@ -122,10 +121,9 @@ public:
 	 *	ScriptErrorPrint constructor
 	 *	@param prefix		A prefix to display when an error occurs
 	 */
-	ScriptErrorPrint( const char * prefix = NULL ) : errorPrefix_( prefix )
+	ScriptErrorPrint(const char* prefix = NULL) : errorPrefix_(prefix)
 	{
 	}
-
 
 	/**
 	 *	This method handles what happens when an error occurs
@@ -134,7 +132,7 @@ public:
 	{
 		if (errorPrefix_)
 		{
-			NGT_ERROR_MSG( "%s\n", errorPrefix_ );
+			NGT_ERROR_MSG("%s\n", errorPrefix_);
 		}
 
 		Script::printError();
@@ -142,7 +140,7 @@ public:
 	}
 
 private:
-	const char * errorPrefix_;
+	const char* errorPrefix_;
 };
 
 /**
@@ -154,29 +152,38 @@ public:
 	/**
 	 *	This method handles what happens when an error occurs
 	 */
-	inline void handleError() const {}
+	inline void handleError() const
+	{
+	}
 	/**
 	 *	This method handles checking if a pointer is null, but no exception
 	 *	is available
 	 *	@param ptr		The pointer to check
 	 */
-	inline void checkPtrNoException( const void * ptr ) const {}
+	inline void checkPtrNoException(const void* ptr) const
+	{
+	}
 	/**
 	 *	This method handles checking if a pointer is null
 	 *	@param ptr		The pointer to check
 	 */
-	inline void checkPtrError( const void * ptr ) const {}
+	inline void checkPtrError(const void* ptr) const
+	{
+	}
 	/**
 	 *	This method handles checking if a result is -1
 	 *	@param result	The result to check
 	 */
-	inline void checkMinusOne( int result ) const {}
+	inline void checkMinusOne(int result) const
+	{
+	}
 	/**
 	 *	This method handles checking if an exception has been marked as occured
 	 */
-	inline void checkErrorOccured() const {}
+	inline void checkErrorOccured() const
+	{
+	}
 };
-
 
 /**
  *	This class is the base class for all other ScriptObjects, it provides
@@ -200,22 +207,19 @@ public:
 	 *
 	 *	@param pObject		The Python object to construct the ScriptObject from
 	 *	@param alreadyIncremented	For this value you should use the relevent
-	 *		ScriptObject::FROM_NEW_REFERENCE or 
+	 *		ScriptObject::FROM_NEW_REFERENCE or
 	 *		ScriptObject::FROM_BORROWED_REFERENCE based on pObject
 	 */
-	ScriptObject( PyObject * pObject, bool alreadyIncremented ) :
-		PyObjectPtr( pObject, alreadyIncremented )
+	ScriptObject(PyObject* pObject, bool alreadyIncremented) : PyObjectPtr(pObject, alreadyIncremented)
 	{
 	}
-
 
 	/**
 	 *	ScriptObject Constructor
 	 *
 	 *	@param A PyObjectPtr to construct a script object from
 	 */
-	explicit ScriptObject( const PyObjectPtr & pObject ) :
-		PyObjectPtr( pObject )
+	explicit ScriptObject(const PyObjectPtr& pObject) : PyObjectPtr(pObject)
 	{
 	}
 
@@ -224,49 +228,43 @@ public:
 	 *
 	 *	@param other The PyObjectPtr to set the ScriptObject to
 	 */
-	ScriptObject & operator=( const PyObjectPtr & other )
+	ScriptObject& operator=(const PyObjectPtr& other)
 	{
-		this->PyObjectPtr::operator=( other );
+		this->PyObjectPtr::operator=(other);
 
 		return *this;
 	}
 
-
 	/**
-	 *	This method checks if the ScriptObject has an attribute. It is 
-	 *	recommended to use getAttribute if you plan on retreiving the 
+	 *	This method checks if the ScriptObject has an attribute. It is
+	 *	recommended to use getAttribute if you plan on retreiving the
 	 *	attribute if it exists.
 	 *
 	 *	@param key		The attribute key name
 	 *	@return			True if the attribute exists, false otherwise
 	 */
-	bool hasAttribute( const char * key ) const
+	bool hasAttribute(const char* key) const
 	{
-		return PyObject_HasAttrString( this->get(), const_cast< char * > ( key ) ) == 1;
+		return PyObject_HasAttrString(this->get(), const_cast<char*>(key)) == 1;
 	}
-
 
 	/**
 	 *	This method gets an attribute from a ScriptObject
 	 *
 	 *	@param key			The key to lookup within the ScriptObject
-	 *	@param errorHandler The type of error handling to use if this method 
+	 *	@param errorHandler The type of error handling to use if this method
 	 *		fails
 	 *	@return				The ScriptObject for the specified key
 	 */
 	template <class ERROR_HANDLER>
-	ScriptObject getAttribute( const char * key, 
-		const ERROR_HANDLER & errorHandler ) const
+	ScriptObject getAttribute(const char* key, const ERROR_HANDLER& errorHandler) const
 	{
-		PyObject * result = PyObject_GetAttrString( this->get(), 
-			const_cast< char * >( key ) );
+		PyObject* result = PyObject_GetAttrString(this->get(), const_cast<char*>(key));
 
-		errorHandler.checkPtrError( result );
+		errorHandler.checkPtrError(result);
 
-		return ScriptObject( result,
-				ScriptObject::FROM_NEW_REFERENCE );
+		return ScriptObject(result, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method gets an attribute from a ScriptObject, and assigns it to
@@ -281,17 +279,15 @@ public:
 	 *		exist or value could not be converted into rResult.
 	 */
 	template <class ERROR_HANDLER, class RESULT_TYPE>
-	bool getAttribute( const char * key, RESULT_TYPE & rResult,
-		const ERROR_HANDLER & errorHandler ) const
+	bool getAttribute(const char* key, RESULT_TYPE& rResult, const ERROR_HANDLER& errorHandler) const
 	{
-		ScriptObject attr = this->getAttribute( key, errorHandler );
+		ScriptObject attr = this->getAttribute(key, errorHandler);
 		if (!attr)
 		{
 			return false;
 		}
-		return attr.convertTo( rResult, key, errorHandler );
+		return attr.convertTo(rResult, key, errorHandler);
 	}
-
 
 	/**
 	 *	This method sets an attribute on the ScriptObject
@@ -303,14 +299,12 @@ public:
 	 *	@return				True on success, false otherwise
 	 */
 	template <class ERROR_HANDLER>
-	bool setAttribute( const char * key, const ScriptObject & value,
-			const ERROR_HANDLER & errorHandler ) const
+	bool setAttribute(const char* key, const ScriptObject& value, const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyObject_SetAttrString( this->get(), key, value.get() );
-		errorHandler.checkMinusOne( result );
+		int result = PyObject_SetAttrString(this->get(), key, value.get());
+		errorHandler.checkMinusOne(result);
 		return result != -1;
 	}
-
 
 	/**
 	 *	This method sets an attribute on the ScriptObject
@@ -322,14 +316,12 @@ public:
 	 *	@return				True on success, false otherwise
 	 */
 	template <class ERROR_HANDLER>
-	bool setAttribute( const char * key, PyObject * value,
-		const ERROR_HANDLER & errorHandler ) const
+	bool setAttribute(const char* key, PyObject* value, const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyObject_SetAttrString( this->get(), key, value );
-		errorHandler.checkMinusOne( result );
+		int result = PyObject_SetAttrString(this->get(), key, value);
+		errorHandler.checkMinusOne(result);
 		return result != -1;
 	}
-
 
 	/**
 	 *	This method sets an attribute on the ScriptObject
@@ -341,15 +333,12 @@ public:
 	 *	@return				True on success, false otherwise
 	 */
 	template <class ERROR_HANDLER>
-	bool setAttribute( const char * key, PyTypeObject & value,
-		const ERROR_HANDLER & errorHandler ) const
+	bool setAttribute(const char* key, PyTypeObject& value, const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyObject_SetAttrString( this->get(),
-				key, (PyObject*)&value );
-		errorHandler.checkMinusOne( result );
+		int result = PyObject_SetAttrString(this->get(), key, (PyObject*)&value);
+		errorHandler.checkMinusOne(result);
 		return result != -1;
 	}
-
 
 	/**
 	 *	This method sets an attribute on the ScriptObject
@@ -361,19 +350,17 @@ public:
 	 *	@return				True on success, false otherwise
 	 */
 	template <class ERROR_HANDLER, class RESULT_TYPE>
-	bool setAttribute( const char * key, const RESULT_TYPE & value,
-		const ERROR_HANDLER & errorHandler ) const
+	bool setAttribute(const char* key, const RESULT_TYPE& value, const ERROR_HANDLER& errorHandler) const
 	{
-		ScriptObject valueObj = ScriptObject::createFrom( value );
+		ScriptObject valueObj = ScriptObject::createFrom(value);
 
 		if (!valueObj)
 		{
 			return false;
 		}
 
-		return this->setAttribute( key, valueObj, errorHandler );
+		return this->setAttribute(key, valueObj, errorHandler);
 	}
-
 
 	/**
 	 *	This method removes an attribute on the ScriptObject
@@ -384,42 +371,36 @@ public:
 	 *	@return				True on success, false otherwise
 	 */
 	template <class ERROR_HANDLER>
-	bool delAttribute( const char * key,
-			const ERROR_HANDLER & errorHandler ) const
+	bool delAttribute(const char* key, const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyObject_DelAttrString( this->get(), key );
-		errorHandler.checkMinusOne( result );
+		int result = PyObject_DelAttrString(this->get(), key);
+		errorHandler.checkMinusOne(result);
 		return result != -1;
 	}
 
+	template <class ERROR_HANDLER>
+	ScriptObject callMethod(const char* methodName, const ERROR_HANDLER& errorHandler,
+	                        bool allowNullMethod = false) const;
 
 	template <class ERROR_HANDLER>
-	ScriptObject callMethod( const char * methodName,
-			const ERROR_HANDLER & errorHandler,
-			bool allowNullMethod = false ) const;
+	ScriptObject callMethod(const char* methodName, const ScriptArgs& args, const ERROR_HANDLER& errorHandler,
+	                        bool allowNullMethod = false) const;
 
 	template <class ERROR_HANDLER>
-	ScriptObject callMethod( const char * methodName, 
-			const ScriptArgs & args,
-			const ERROR_HANDLER & errorHandler,
-			bool allowNullMethod = false ) const;
+	ScriptObject callFunction(const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	ScriptObject callFunction( const ERROR_HANDLER & errorHandler ) const;
+	ScriptObject callFunction(const ScriptArgs& args, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	ScriptObject callFunction( const ScriptArgs & args,
-		const ERROR_HANDLER & errorHandler ) const;
+	ScriptObject callFunction(const ScriptArgs& args, const ScriptDict& kwargs,
+	                          const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	ScriptObject callFunction( const ScriptArgs & args, 
-		const ScriptDict & kwargs, const ERROR_HANDLER & errorHandler ) const;
+	inline ScriptIter getIter(const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	inline ScriptIter getIter( const ERROR_HANDLER & errorHandler ) const;
-
-	template <class ERROR_HANDLER>
-	inline ScriptObject getDir( const ERROR_HANDLER & errorHandler ) const;
+	inline ScriptObject getDir(const ERROR_HANDLER& errorHandler) const;
 
 	/**
 	 *	This method gets a None ScriptObject
@@ -428,14 +409,12 @@ public:
 	 */
 	static ScriptObject none()
 	{
-		return ScriptObject( Py_None, ScriptObject::FROM_BORROWED_REFERENCE );
+		return ScriptObject(Py_None, ScriptObject::FROM_BORROWED_REFERENCE);
 	}
 
-
 	template <class ERROR_HANDLER>
-	inline ScriptString str( const ERROR_HANDLER & errorHandler ) const;
+	inline ScriptString str(const ERROR_HANDLER& errorHandler) const;
 	inline ScriptLong id() const;
-
 
 	/**
 	 *	This method checks if this ScriptObject is none
@@ -447,7 +426,6 @@ public:
 		return this->get() == Py_None;
 	}
 
-
 	/**
 	 *	This method checks if the ScriptObject is true
 	 *
@@ -456,38 +434,35 @@ public:
 	 *	@return		True if this object is true, false otherwise
 	 */
 	template <class ERROR_HANDLER>
-	bool isTrue( const ERROR_HANDLER & errorHandler ) const
+	bool isTrue(const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyObject_IsTrue( this->get() );
-		errorHandler.checkMinusOne( result );
+		int result = PyObject_IsTrue(this->get());
+		errorHandler.checkMinusOne(result);
 		return result == 1;
 	}
-
 
 	/**
 	 *	This method gets a new PyObject* reference to this object
 	 *	@return A new reference to the ScriptObject
 	 */
-	PyObject * newRef() const
+	PyObject* newRef() const
 	{
 		if (object_)
 		{
-			incrementReferenceCount( *object_ );
+			incrementReferenceCount(*object_);
 		}
 
 		return this->get();
 	}
 
-
 	/**
 	 *	This method gets the type name of this object
 	 *	@return The name of this objects type
 	 */
-	const char * typeNameOfObject() const
+	const char* typeNameOfObject() const
 	{
 		return object_->ob_type->tp_name;
 	}
-
 
 	/**
 	 *	This method checks if this object is callable
@@ -495,24 +470,22 @@ public:
 	 */
 	bool isCallable() const
 	{
-		return PyCallable_Check( this->get() ) == 1;
+		return PyCallable_Check(this->get()) == 1;
 	}
-
 
 	/**
 	 * This method checks if this object is a member of the given type
 	 *	@param type		The type object to check this object is a subclass of
 	 *	@param errorHandler The type of error handling to use if this method
 	 *		fails
-	 *	@return			True if this object is a subtype of type, 
+	 *	@return			True if this object is a subtype of type,
 	 *		false otherwise
 	 */
 	template <class ERROR_HANDLER>
-	bool isSubClass( const PyTypeObject & type, 
-		const ERROR_HANDLER & errorHandler ) const
+	bool isSubClass(const PyTypeObject& type, const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyObject_IsSubclass( this->get(), (PyObject *)&type );
-		errorHandler.checkMinusOne( result );
+		int result = PyObject_IsSubclass(this->get(), (PyObject*)&type);
+		errorHandler.checkMinusOne(result);
 		return result == 1;
 	}
 
@@ -523,134 +496,120 @@ public:
 	 *	@return The compare result
 	 */
 	template <class ERROR_HANDLER>
-	int compareTo( ScriptObject other,
-		const ERROR_HANDLER & errorHandler ) const
+	int compareTo(ScriptObject other, const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyObject_Compare( this->get(), other.get() );
+		int result = PyObject_Compare(this->get(), other.get());
 		errorHandler.checkErrorOccured();
 		return result;
 	}
 
-
 	template <class TYPE>
-	static ScriptObject createFrom( TYPE val );
+	static ScriptObject createFrom(TYPE val);
 
 	template <class ERROR_HANDLER, class TYPE>
-	bool convertTo( TYPE & rVal, const char * varName, 
-			const ERROR_HANDLER & errorHandler ) const;
+	bool convertTo(TYPE& rVal, const char* varName, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER, class TYPE>
-	bool convertTo( TYPE & rVal, const ERROR_HANDLER & errorHandler ) const;
+	bool convertTo(TYPE& rVal, const ERROR_HANDLER& errorHandler) const;
 };
 
-
-inline bool operator==( const ScriptObject & obj1, const ScriptObject & obj2 )
+inline bool operator==(const ScriptObject& obj1, const ScriptObject& obj2)
 {
 	return obj1.get() == obj2.get();
 }
 
-inline bool operator!=( const ScriptObject & obj1, const ScriptObject & obj2 )
+inline bool operator!=(const ScriptObject& obj1, const ScriptObject& obj2)
 {
 	return obj1.get() != obj2.get();
 }
 
-inline bool operator<( const ScriptObject & obj1, const ScriptObject & obj2 )
+inline bool operator<(const ScriptObject& obj1, const ScriptObject& obj2)
 {
 	return obj1.get() < obj2.get();
 }
 
-inline bool operator>( const ScriptObject & obj1, const ScriptObject & obj2 )
+inline bool operator>(const ScriptObject& obj1, const ScriptObject& obj2)
 {
 	return obj1.get() > obj2.get();
 }
 
-
-#define BASE_SCRIPT_OBJECT_IMP_WITHOUT_CREATE( OBJECT_TYPE, TYPE, BASE_TYPE ) \
-	TYPE() : BASE_TYPE()													\
-	{																		\
-	}																		\
-																			\
-	TYPE( OBJECT_TYPE * pObject, bool alreadyIncremented ) :				\
-		BASE_TYPE( pObject, alreadyIncremented )							\
-	{																		\
-	}																		\
-																			\
-	explicit TYPE( const ScriptObject & object ) : BASE_TYPE( object )		\
-	{																		\
-		assert( !object.exists() || TYPE::check( object ) );				\
-	}																		\
-																			\
-	explicit TYPE( const PyObjectPtr & object ) : BASE_TYPE( object )		\
-	{																		\
-		assert( !object.exists() || TYPE::check( *this ) );				\
-	}																		\
-																			\
-	TYPE( const TYPE & object ) :											\
-		BASE_TYPE( (const ScriptObject &)object )							\
-	{																		\
-	}																		\
-																			\
-	TYPE & operator=( const TYPE & other )									\
-	{																		\
-		this->ScriptObject::operator=( other );								\
-																			\
-		return *this;														\
-	}																		\
-																			\
-	TYPE & operator=( const ScriptObject & other )							\
-	{																		\
-		this->ScriptObject::operator=( other );								\
-																			\
-		return *this;														\
-	}																		\
-																			\
-
-#define BASE_SCRIPT_OBJECT_IMP( OBJECT_TYPE, TYPE, BASE_TYPE )				\
-	BASE_SCRIPT_OBJECT_IMP_WITHOUT_CREATE( OBJECT_TYPE, TYPE, BASE_TYPE )	\
-	static TYPE create( const ScriptObject & other )						\
-	{																		\
-		if (other && TYPE::check( other ))									\
-		{																	\
-			return TYPE( other );											\
-		}																	\
-		return TYPE();														\
+#define BASE_SCRIPT_OBJECT_IMP_WITHOUT_CREATE(OBJECT_TYPE, TYPE, BASE_TYPE)                      \
+	TYPE() : BASE_TYPE()                                                                         \
+	{                                                                                            \
+	}                                                                                            \
+                                                                                                 \
+	TYPE(OBJECT_TYPE* pObject, bool alreadyIncremented) : BASE_TYPE(pObject, alreadyIncremented) \
+	{                                                                                            \
+	}                                                                                            \
+                                                                                                 \
+	explicit TYPE(const ScriptObject& object) : BASE_TYPE(object)                                \
+	{                                                                                            \
+		assert(!object.exists() || TYPE::check(object));                                         \
+	}                                                                                            \
+                                                                                                 \
+	explicit TYPE(const PyObjectPtr& object) : BASE_TYPE(object)                                 \
+	{                                                                                            \
+		assert(!object.exists() || TYPE::check(*this));                                          \
+	}                                                                                            \
+                                                                                                 \
+	TYPE(const TYPE& object) : BASE_TYPE((const ScriptObject&)object)                            \
+	{                                                                                            \
+	}                                                                                            \
+                                                                                                 \
+	TYPE& operator=(const TYPE& other)                                                           \
+	{                                                                                            \
+		this->ScriptObject::operator=(other);                                                    \
+                                                                                                 \
+		return *this;                                                                            \
+	}                                                                                            \
+                                                                                                 \
+	TYPE& operator=(const ScriptObject& other)                                                   \
+	{                                                                                            \
+		this->ScriptObject::operator=(other);                                                    \
+                                                                                                 \
+		return *this;                                                                            \
 	}
 
+#define BASE_SCRIPT_OBJECT_IMP(OBJECT_TYPE, TYPE, BASE_TYPE)            \
+	BASE_SCRIPT_OBJECT_IMP_WITHOUT_CREATE(OBJECT_TYPE, TYPE, BASE_TYPE) \
+	static TYPE create(const ScriptObject& other)                       \
+	{                                                                   \
+		if (other && TYPE::check(other))                                \
+		{                                                               \
+			return TYPE(other);                                         \
+		}                                                               \
+		return TYPE();                                                  \
+	}
 
-#define STANDARD_SCRIPT_OBJECT_IMP( TYPE, BASE_TYPE )						\
-			BASE_SCRIPT_OBJECT_IMP( PyObject, TYPE, BASE_TYPE )
+#define STANDARD_SCRIPT_OBJECT_IMP(TYPE, BASE_TYPE) BASE_SCRIPT_OBJECT_IMP(PyObject, TYPE, BASE_TYPE)
 
-#define NO_CREATE_SCRIPT_OBJECT_IMP( TYPE, BASE_TYPE )						\
-			BASE_SCRIPT_OBJECT_IMP_WITHOUT_CREATE( PyObject, TYPE, BASE_TYPE )
+#define NO_CREATE_SCRIPT_OBJECT_IMP(TYPE, BASE_TYPE) BASE_SCRIPT_OBJECT_IMP_WITHOUT_CREATE(PyObject, TYPE, BASE_TYPE)
 
-#define SCRIPT_CONVERTER( CLASS )											\
-	inline int setData( PyObject * pObj, CLASS & rScriptObject,				\
-		const char * varName = "" )											\
-	{																		\
-		ScriptObject sc =													\
-			ScriptObject( pObj, ScriptObject::FROM_BORROWED_REFERENCE );	\
-																			\
-		if (!sc.exists() || !CLASS::check( sc ))							\
-		{																	\
-			PyErr_Format( PyExc_TypeError,									\
-					"%s must be set to a "#CLASS" object.", varName );		\
-			return -1;														\
-		}																	\
-																			\
-		rScriptObject = CLASS( sc );										\
-		return 0;															\
-	}																		\
-																			\
-	inline PyObject * getData( const CLASS & data )							\
-	{																		\
-		PyObject * ret = data ? data.get() : Py_None;						\
-		Py_INCREF( ret );													\
-		return ret;															\
+#define SCRIPT_CONVERTER(CLASS)                                                               \
+	inline int setData(PyObject* pObj, CLASS& rScriptObject, const char* varName = "")        \
+	{                                                                                         \
+		ScriptObject sc = ScriptObject(pObj, ScriptObject::FROM_BORROWED_REFERENCE);          \
+                                                                                              \
+		if (!sc.exists() || !CLASS::check(sc))                                                \
+		{                                                                                     \
+			PyErr_Format(PyExc_TypeError, "%s must be set to a " #CLASS " object.", varName); \
+			return -1;                                                                        \
+		}                                                                                     \
+                                                                                              \
+		rScriptObject = CLASS(sc);                                                            \
+		return 0;                                                                             \
+	}                                                                                         \
+                                                                                              \
+	inline PyObject* getData(const CLASS& data)                                               \
+	{                                                                                         \
+		PyObject* ret = data ? data.get() : Py_None;                                          \
+		Py_INCREF(ret);                                                                       \
+		return ret;                                                                           \
 	}
 
 /**
  *	This class should be used as an alternative to SmartPointer<> for objects
- *	which inherit from PyObjectPlus. This provides them with the same 
+ *	which inherit from PyObjectPlus. This provides them with the same
  *	functionality as ScriptObject and also the same functionality as a normal
  *	SmartPointer to the object
  */
@@ -658,44 +617,43 @@ template <typename CLASS>
 class ScriptObjectPtr : public ScriptObject
 {
 public:
-	BASE_SCRIPT_OBJECT_IMP( CLASS, ScriptObjectPtr, ScriptObject );
+	BASE_SCRIPT_OBJECT_IMP(CLASS, ScriptObjectPtr, ScriptObject);
 
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return CLASS::Check( object );
+		return CLASS::Check(object);
 	}
 
-	const CLASS * get() const
+	const CLASS* get() const
 	{
-		return static_cast<const CLASS*>( this->ScriptObject::get() );
+		return static_cast<const CLASS*>(this->ScriptObject::get());
 	}
 
-	CLASS * get()
+	CLASS* get()
 	{
-		return static_cast<CLASS*>( this->ScriptObject::get() );
+		return static_cast<CLASS*>(this->ScriptObject::get());
 	}
 
-	const CLASS & operator*() const
+	const CLASS& operator*() const
 	{
-		return static_cast< const CLASS & >( this->ScriptObject::operator*() );
+		return static_cast<const CLASS&>(this->ScriptObject::operator*());
 	}
 
-	CLASS & operator*()
+	CLASS& operator*()
 	{
-		return static_cast< CLASS & >( this->ScriptObject::operator*() );
+		return static_cast<CLASS&>(this->ScriptObject::operator*());
 	}
 
-	const CLASS * operator->() const
+	const CLASS* operator->() const
 	{
-		return static_cast<const CLASS*>( this->ScriptObject::operator->() );
+		return static_cast<const CLASS*>(this->ScriptObject::operator->());
 	}
 
-	CLASS * operator->()
+	CLASS* operator->()
 	{
-		return static_cast<CLASS*>( this->ScriptObject::operator->() );
+		return static_cast<CLASS*>(this->ScriptObject::operator->());
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptArgs
@@ -707,56 +665,47 @@ public:
 class ScriptArgs : public ScriptObject
 {
 public:
-	NO_CREATE_SCRIPT_OBJECT_IMP( ScriptArgs, ScriptObject );
+	NO_CREATE_SCRIPT_OBJECT_IMP(ScriptArgs, ScriptObject);
 
 	/**
 	 *	This method checks if the given object is a ScriptArgs object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptArgs object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyTuple_Check( object.get() );
+		return PyTuple_Check(object.get());
 	}
 
 	static ScriptArgs none();
 
-	template < typename T1 >
-	static ScriptArgs create( const T1 & arg1 );
+	template <typename T1>
+	static ScriptArgs create(const T1& arg1);
 
-	template < typename T1, typename T2 >
-	static ScriptArgs create( const T1 & arg1, const T2 & arg2 );
+	template <typename T1, typename T2>
+	static ScriptArgs create(const T1& arg1, const T2& arg2);
 
-	template < typename T1, typename T2, typename T3 >
-	static ScriptArgs create( const T1 & arg1, const T2 & arg2, 
-		const T3 & arg3 );
+	template <typename T1, typename T2, typename T3>
+	static ScriptArgs create(const T1& arg1, const T2& arg2, const T3& arg3);
 
-	template < typename T1, typename T2, typename T3, typename T4 >
-	static ScriptArgs create( const T1 & arg1, const T2 & arg2, 
-		const T3 & arg3, const T4 & arg4 );
+	template <typename T1, typename T2, typename T3, typename T4>
+	static ScriptArgs create(const T1& arg1, const T2& arg2, const T3& arg3, const T4& arg4);
 
-	template < typename T1, typename T2, typename T3, typename T4, typename T5 >
-	static ScriptArgs create( const T1 & arg1, const T2 & arg2, 
-		const T3 & arg3, const T4 & arg4, const T5 & arg5 );
+	template <typename T1, typename T2, typename T3, typename T4, typename T5>
+	static ScriptArgs create(const T1& arg1, const T2& arg2, const T3& arg3, const T4& arg4, const T5& arg5);
 
-	template < typename T1, typename T2, typename T3, typename T4, typename T5,
-		typename T6 >
-	static ScriptArgs create( const T1 & arg1, const T2 & arg2, 
-		const T3 & arg3, const T4 & arg4, const T5 & arg5, const T6 & arg6 );
+	template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+	static ScriptArgs create(const T1& arg1, const T2& arg2, const T3& arg3, const T4& arg4, const T5& arg5,
+	                         const T6& arg6);
 
-	template < typename T1, typename T2, typename T3, typename T4, typename T5,
-		typename T6, typename T7 >
-	static ScriptArgs create( const T1 & arg1, const T2 & arg2, 
-		const T3 & arg3, const T4 & arg4, const T5 & arg5, const T6 & arg6,
-		const T7 & arg7 );
+	template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+	static ScriptArgs create(const T1& arg1, const T2& arg2, const T3& arg3, const T4& arg4, const T5& arg5,
+	                         const T6& arg6, const T7& arg7);
 
-	template < typename T1, typename T2, typename T3, typename T4, typename T5,
-		typename T6, typename T7, typename T8 >
-	static ScriptArgs create( const T1 & arg1, const T2 & arg2, 
-		const T3 & arg3, const T4 & arg4, const T5 & arg5, const T6 & arg6,
-		const T7 & arg7, const T8 & arg8 );
+	template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+	static ScriptArgs create(const T1& arg1, const T2& arg2, const T3& arg3, const T4& arg4, const T5& arg5,
+	                         const T6& arg6, const T7& arg7, const T8& arg8);
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptModule
@@ -767,47 +716,40 @@ public:
 class ScriptModule : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptModule, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptModule, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptModule object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptModule object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyModule_Check( object.get() );
+		return PyModule_Check(object.get());
 	}
 
-	static bool moduleExists( const char * name );
+	static bool moduleExists(const char* name);
 
 	template <class ERROR_HANDLER>
-	static ScriptModule import( const char * name,
-		const ERROR_HANDLER & errorHandler );
+	static ScriptModule import(const char* name, const ERROR_HANDLER& errorHandler);
 
 	template <class ERROR_HANDLER>
-	static ScriptModule getOrCreate( const char * name,
-		const ERROR_HANDLER & errorHandler );
+	static ScriptModule getOrCreate(const char* name, const ERROR_HANDLER& errorHandler);
 
 	template <class ERROR_HANDLER>
-	static ScriptModule reload( ScriptModule module,
-		const ERROR_HANDLER & errorHandler );
+	static ScriptModule reload(ScriptModule module, const ERROR_HANDLER& errorHandler);
 
 	template <class ERROR_HANDLER>
-	bool addObject( const char * name, const ScriptObject & value,
-		const ERROR_HANDLER & errorHandler ) const;
+	bool addObject(const char* name, const ScriptObject& value, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	bool addObject( const char * name, PyTypeObject * value,
-		const ERROR_HANDLER & errorHandler ) const;
+	bool addObject(const char* name, PyTypeObject* value, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	bool addIntConstant( const char * name, long value,
-		const ERROR_HANDLER & errorHandler ) const;
+	bool addIntConstant(const char* name, long value, const ERROR_HANDLER& errorHandler) const;
 
 	ScriptDict getDict() const;
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptType
@@ -818,19 +760,18 @@ public:
 class ScriptType : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptType, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptType, ScriptObject)
 
 	/**
 	 *	ScriptType Constructor
 	 *
 	 *	@param pType		The Python type to construct the ScriptType from
 	 *	@param alreadyIncremented	For this value you should use the relevent
-	 *		ScriptObject::FROM_NEW_REFERENCE or 
+	 *		ScriptObject::FROM_NEW_REFERENCE or
 	 *		ScriptObject::FROM_BORROWED_REFERENCE based on pType
 	 */
-	ScriptType( PyTypeObject * pType, bool alreadyIncremented ) :
-		ScriptObject( reinterpret_cast< PyObject * >( pType ), 
-					  alreadyIncremented )
+	ScriptType(PyTypeObject* pType, bool alreadyIncremented)
+	    : ScriptObject(reinterpret_cast<PyObject*>(pType), alreadyIncremented)
 	{
 	}
 
@@ -839,17 +780,16 @@ public:
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptType object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyType_Check( object.get() );
+		return PyType_Check(object.get());
 	}
-
 
 	/**
 	 *	This method gets the name of the type
 	 *	@return The name of the type
 	 */
-	const char * name() const
+	const char* name() const
 	{
 		return ((PyTypeObject*)this->get())->tp_name;
 	}
@@ -859,7 +799,7 @@ public:
 	 *	@param type The type object to check against
 	 *	@returns True if type is the type of this object
 	 */
-	bool isObjectOfType( const PyObject * pObject ) const
+	bool isObjectOfType(const PyObject* pObject) const
 	{
 		return pObject->ob_type == ((PyTypeObject*)this->get());
 	}
@@ -869,18 +809,17 @@ public:
 	 *	@param type The type object to check against
 	 *	@returns True if type is the type of this object
 	 */
-	bool isObjectOfType( const ScriptObject & object ) const
+	bool isObjectOfType(const ScriptObject& object) const
 	{
-		return this->isObjectOfType( object.get() );
+		return this->isObjectOfType(object.get());
 	}
 
 	/**
 	 *	This method gets the type of the given ScriptObject
 	 */
-	static ScriptType getType( const ScriptObject & object )
+	static ScriptType getType(const ScriptObject& object)
 	{
-		return ScriptType( (PyObject*)(object.get()->ob_type),
-			ScriptType::FROM_BORROWED_REFERENCE );
+		return ScriptType((PyObject*)(object.get()->ob_type), ScriptType::FROM_BORROWED_REFERENCE);
 	}
 
 	/**
@@ -897,21 +836,19 @@ public:
 	 *	@returns A new object of this type
 	 */
 	template <class ERROR_HANDLER>
-	PyObject * genericAlloc( const ERROR_HANDLER & errorHandler ) const
+	PyObject* genericAlloc(const ERROR_HANDLER& errorHandler) const
 	{
 		// TODO: Need a nicer way of doing this
-		PyObject * pObject = PyType_GenericAlloc( 
-			(PyTypeObject*)this->get(), 0 );
-		errorHandler.checkPtrError( pObject );
+		PyObject* pObject = PyType_GenericAlloc((PyTypeObject*)this->get(), 0);
+		errorHandler.checkPtrError(pObject);
 		return pObject;
 	}
 
 	void modified()
 	{
-		PyType_Modified( reinterpret_cast< PyTypeObject * >( this->get() ) );
+		PyType_Modified(reinterpret_cast<PyTypeObject*>(this->get()));
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptDict
@@ -923,7 +860,7 @@ public:
 class ScriptDict : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptDict, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptDict, ScriptObject)
 
 	typedef Py_ssize_t size_type;
 
@@ -932,66 +869,56 @@ public:
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptDict object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyDict_Check( object.get() );
+		return PyDict_Check(object.get());
 	}
 
-	static ScriptDict create( size_type capacity = 0 );
+	static ScriptDict create(size_type capacity = 0);
 
-	bool next( size_type & pos, 
-		ScriptObject & key,
-		ScriptObject & value )
+	bool next(size_type& pos, ScriptObject& key, ScriptObject& value)
 	{
-		PyObject * pKey = NULL;
-		PyObject * pValue = NULL;
+		PyObject* pKey = NULL;
+		PyObject* pValue = NULL;
 
-		int result = PyDict_Next( this->get(), &pos, &pKey, &pValue );
+		int result = PyDict_Next(this->get(), &pos, &pKey, &pValue);
 
 		if (result != 0)
 		{
-			key = ScriptObject( pKey, ScriptObject::FROM_BORROWED_REFERENCE );
-			value = ScriptObject( pValue,
-				ScriptObject::FROM_BORROWED_REFERENCE );
+			key = ScriptObject(pKey, ScriptObject::FROM_BORROWED_REFERENCE);
+			value = ScriptObject(pValue, ScriptObject::FROM_BORROWED_REFERENCE);
 		}
 		return result != 0;
 	}
 
 	template <class ERROR_HANDLER>
-	bool setItem( const char * key, const ScriptObject & value,
-		const ERROR_HANDLER & errorHandler ) const;
-		
-	template <class ERROR_HANDLER>
-	bool setItem( const ScriptObject & key, const ScriptObject & value,
-		const ERROR_HANDLER & errorHandler ) const;
+	bool setItem(const char* key, const ScriptObject& value, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	ScriptObject getItem( const char * key, 
-		const ERROR_HANDLER & errorHandler ) const;
-		
-	template <class ERROR_HANDLER>
-	ScriptObject getItem( const ScriptObject & key, 
-		const ERROR_HANDLER & errorHandler ) const;
+	bool setItem(const ScriptObject& key, const ScriptObject& value, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	ScriptList keys( const ERROR_HANDLER & errorHandler ) const;
+	ScriptObject getItem(const char* key, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	bool delItem( const char * key, const ERROR_HANDLER & errorHandler );
+	ScriptObject getItem(const ScriptObject& key, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	bool delItem( const ScriptObject & key,
-		const ERROR_HANDLER & errorHandler );
+	ScriptList keys(const ERROR_HANDLER& errorHandler) const;
+
+	template <class ERROR_HANDLER>
+	bool delItem(const char* key, const ERROR_HANDLER& errorHandler);
+
+	template <class ERROR_HANDLER>
+	bool delItem(const ScriptObject& key, const ERROR_HANDLER& errorHandler);
 
 	size_type size() const;
 
 	template <class ERROR_HANDLER>
-	bool update( const ScriptDict & other, 
-		const ERROR_HANDLER & errorHandler ) const;
+	bool update(const ScriptDict& other, const ERROR_HANDLER& errorHandler) const;
 
 	void clear() const;
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptSequence
@@ -1002,7 +929,7 @@ public:
 class ScriptSequence : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptSequence, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptSequence, ScriptObject)
 
 	typedef Py_ssize_t size_type;
 
@@ -1011,33 +938,25 @@ public:
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptSequence object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PySequence_Check( object.get() ) != 0;
+		return PySequence_Check(object.get()) != 0;
 	}
 
+	template <class ERROR_HANDLER>
+	ScriptObject getItem(Py_ssize_t pos, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	ScriptObject getItem( Py_ssize_t pos, 
-		const ERROR_HANDLER & errorHandler ) const;
-
-	template <class ERROR_HANDLER>
-	bool setItem( Py_ssize_t pos, const ScriptObject & item,
-		const ERROR_HANDLER & errorHandler ) const;
+	bool setItem(Py_ssize_t pos, const ScriptObject& item, const ERROR_HANDLER& errorHandler) const;
 
 	size_type size() const;
 
 	template <class ERROR_HANDLER>
-	ScriptSequence getSlice( Py_ssize_t begin, Py_ssize_t end,
-		const ERROR_HANDLER & errorHandler ) const;
+	ScriptSequence getSlice(Py_ssize_t begin, Py_ssize_t end, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	bool setSlice( Py_ssize_t begin,
-		Py_ssize_t end,
-		const ScriptSequence & itemList,
-		const ERROR_HANDLER & errorHandler );
+	bool setSlice(Py_ssize_t begin, Py_ssize_t end, const ScriptSequence& itemList, const ERROR_HANDLER& errorHandler);
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptTuple
@@ -1048,7 +967,7 @@ public:
 class ScriptTuple : public ScriptSequence
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptTuple, ScriptSequence )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptTuple, ScriptSequence)
 
 	typedef Py_ssize_t size_type;
 
@@ -1057,24 +976,22 @@ public:
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptTuple object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyTuple_Check( object.get() );
+		return PyTuple_Check(object.get());
 	}
 
-	static ScriptTuple create( size_type len );
+	static ScriptTuple create(size_type len);
 
-	ScriptObject getItem( size_type pos ) const;
+	ScriptObject getItem(size_type pos) const;
 
-	bool setItem( size_type pos, const ScriptObject & item ) const;
+	bool setItem(size_type pos, const ScriptObject& item) const;
 
 	size_type size() const;
 
 	template <class ERROR_HANDLER>
-	ScriptTuple getSlice( Py_ssize_t begin, Py_ssize_t end,
-		const ERROR_HANDLER & errorHandler ) const;
+	ScriptTuple getSlice(Py_ssize_t begin, Py_ssize_t end, const ERROR_HANDLER& errorHandler) const;
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptList
@@ -1087,40 +1004,35 @@ class ScriptList : public ScriptSequence
 public:
 	typedef Py_ssize_t size_type;
 
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptList, ScriptSequence )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptList, ScriptSequence)
 
 	/**
 	 *	This method checks if the given object is a ScriptList object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptList object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyList_Check( object.get() );
+		return PyList_Check(object.get());
 	}
 
-	static ScriptList create( Py_ssize_t len = 0 );
+	static ScriptList create(Py_ssize_t len = 0);
 
-	bool append( const ScriptObject & object ) const;
-	bool insert( size_type pos, const ScriptObject & object ) const;
+	bool append(const ScriptObject& object) const;
+	bool insert(size_type pos, const ScriptObject& object) const;
 
-	ScriptObject getItem( size_type pos ) const;
+	ScriptObject getItem(size_type pos) const;
 
-	bool setItem( size_type pos, ScriptObject item ) const;
+	bool setItem(size_type pos, ScriptObject item) const;
 
 	size_type size() const;
 
 	template <class ERROR_HANDLER>
-	ScriptList getSlice( Py_ssize_t begin, Py_ssize_t end,
-		const ERROR_HANDLER & errorHandler ) const;
+	ScriptList getSlice(Py_ssize_t begin, Py_ssize_t end, const ERROR_HANDLER& errorHandler) const;
 
 	template <class ERROR_HANDLER>
-	bool setSlice( Py_ssize_t begin,
-		Py_ssize_t end,
-		const ScriptList & itemList,
-		const ERROR_HANDLER & errorHandler );
+	bool setSlice(Py_ssize_t begin, Py_ssize_t end, const ScriptList& itemList, const ERROR_HANDLER& errorHandler);
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptBool
@@ -1132,19 +1044,18 @@ public:
 class ScriptBool : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptBool, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptBool, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptBool object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptBool object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyBool_Check( object.get() );
+		return PyBool_Check(object.get());
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptInt
@@ -1156,16 +1067,16 @@ public:
 class ScriptInt : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptInt, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptInt, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptInt object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptInt object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyInt_Check( object.get() );
+		return PyInt_Check(object.get());
 	}
 
 	/**
@@ -1179,10 +1090,9 @@ public:
 	 *	@return				A new ScriptInt representing str
 	 */
 	template <class ERROR_HANDLER>
-	static ScriptInt createFromString( const char * str,
-		const ERROR_HANDLER & errorHandler )
+	static ScriptInt createFromString(const char* str, const ERROR_HANDLER& errorHandler)
 	{
-		return createFromString( str, 0, errorHandler );
+		return createFromString(str, 0, errorHandler);
 	}
 
 	/**
@@ -1193,35 +1103,31 @@ public:
 	 *	@return				A new ScriptInt representing str
 	 */
 	template <class ERROR_HANDLER>
-	static ScriptInt createFromString( const char * str, int base,
-		const ERROR_HANDLER & errorHandler )
+	static ScriptInt createFromString(const char* str, int base, const ERROR_HANDLER& errorHandler)
 	{
-		PyObject * pInt = PyInt_FromString( 
-				const_cast<char*>(str), NULL, base );
+		PyObject* pInt = PyInt_FromString(const_cast<char*>(str), NULL, base);
 		// Note: If overflow warnings supression may affect this
-		errorHandler.checkPtrError( pInt );
-		return ScriptInt( pInt, ScriptObject::FROM_NEW_REFERENCE );
+		errorHandler.checkPtrError(pInt);
+		return ScriptInt(pInt, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method creates a new ScriptInt from a long
 	 *	@param value	The value to create the ScriptInt from
 	 *	@return			A new ScriptInt with the value of value
 	 */
-	static ScriptInt create( long value )
+	static ScriptInt create(long value)
 	{
 		// Note from python manual:
-		// The current implementation keeps an array of integer objects for all 
+		// The current implementation keeps an array of integer objects for all
 		// integers between -5 and 256, when you create an int in that range you
-		// actually just get back a reference to the existing object. So it 
-		// should be possible to change the value of 1. I suspect the behaviour 
+		// actually just get back a reference to the existing object. So it
+		// should be possible to change the value of 1. I suspect the behaviour
 		// of Python in this case is undefined. :-)
-		PyObject * pInt = PyInt_FromLong( value );
-		assert( pInt );
-		return ScriptInt( pInt, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pInt = PyInt_FromLong(value);
+		assert(pInt);
+		return ScriptInt(pInt, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method gets the long value from the ScriptInt
@@ -1229,10 +1135,9 @@ public:
 	 */
 	long asLong() const
 	{
-		return PyInt_AS_LONG( this->get() );
+		return PyInt_AS_LONG(this->get());
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptLong
@@ -1243,18 +1148,17 @@ public:
 class ScriptLong : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptLong, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptLong, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptLong object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptLong object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyLong_Check( object.get() );
+		return PyLong_Check(object.get());
 	}
-
 
 	/**
 	 *	This method creates a ScriptLong from a string, automatically attempting
@@ -1267,12 +1171,10 @@ public:
 	 *	@return				A new ScriptLong representing str
 	 */
 	template <class ERROR_HANDLER>
-	static ScriptLong createFromString( const char * str,
-		const ERROR_HANDLER & errorHandler )
+	static ScriptLong createFromString(const char* str, const ERROR_HANDLER& errorHandler)
 	{
-		return createFromString( str, 0, errorHandler );
+		return createFromString(str, 0, errorHandler);
 	}
-
 
 	/**
 	 *	This method creates a ScriptLong from a string, with a specified base
@@ -1282,13 +1184,11 @@ public:
 	 *	@return				A new ScriptLong representing str
 	 */
 	template <class ERROR_HANDLER>
-	static ScriptLong createFromString( const char * str, int base,
-		const ERROR_HANDLER & errorHandler )
+	static ScriptLong createFromString(const char* str, int base, const ERROR_HANDLER& errorHandler)
 	{
-		PyObject * pLong = PyLong_FromString( 
-			const_cast<char*>(str), NULL, base );
-		errorHandler.checkPtrError( pLong );
-		return ScriptLong( pLong, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pLong = PyLong_FromString(const_cast<char*>(str), NULL, base);
+		errorHandler.checkPtrError(pLong);
+		return ScriptLong(pLong, ScriptObject::FROM_NEW_REFERENCE);
 	}
 
 	/**
@@ -1296,11 +1196,11 @@ public:
 	 *	@param value	The value to create the ScriptLong from
 	 *	@return			A new ScriptLong with the value of value
 	 */
-	static ScriptLong create( long value )
+	static ScriptLong create(long value)
 	{
-		PyObject * pLong = PyLong_FromLong( value );
-		assert( pLong );
-		return ScriptLong( pLong, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pLong = PyLong_FromLong(value);
+		assert(pLong);
+		return ScriptLong(pLong, ScriptObject::FROM_NEW_REFERENCE);
 	}
 
 	/**
@@ -1308,11 +1208,11 @@ public:
 	 *	@param value	The value to create the ScriptLong from
 	 *	@return			A new ScriptLong with the value of value
 	 */
-	static ScriptLong create( unsigned int value )
+	static ScriptLong create(unsigned int value)
 	{
-		PyObject * pLong = PyLong_FromUnsignedLong( value );
-		assert( pLong );
-		return ScriptLong( pLong, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pLong = PyLong_FromUnsignedLong(value);
+		assert(pLong);
+		return ScriptLong(pLong, ScriptObject::FROM_NEW_REFERENCE);
 	}
 
 	/**
@@ -1320,11 +1220,11 @@ public:
 	 *	@param value	The value to create the ScriptLong from
 	 *	@return			A new ScriptLong with the value of value
 	 */
-	static ScriptLong create( int64_t value )
+	static ScriptLong create(int64_t value)
 	{
-		PyObject * pLong = PyLong_FromLongLong( value );
-		assert( pLong );
-		return ScriptLong( pLong, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pLong = PyLong_FromLongLong(value);
+		assert(pLong);
+		return ScriptLong(pLong, ScriptObject::FROM_NEW_REFERENCE);
 	}
 
 	/**
@@ -1332,11 +1232,11 @@ public:
 	 *	@param value	The value to create the ScriptLong from
 	 *	@return			A new ScriptLong with the value of value
 	 */
-	static ScriptLong create( uint64_t value )
+	static ScriptLong create(uint64_t value)
 	{
-		PyObject * pLong = PyLong_FromUnsignedLongLong( value );
-		assert( pLong );
-		return ScriptLong( pLong, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pLong = PyLong_FromUnsignedLongLong(value);
+		assert(pLong);
+		return ScriptLong(pLong, ScriptObject::FROM_NEW_REFERENCE);
 	}
 
 	/**
@@ -1344,29 +1244,27 @@ public:
 	 *	@return A long representation of the ScriptLong
 	 *		or -1 on overflow error.
 	 */
-	template < class ERROR_HANDLER >
-	long asLong( const ERROR_HANDLER & errorHandler ) const
+	template <class ERROR_HANDLER>
+	long asLong(const ERROR_HANDLER& errorHandler) const
 	{
-		const long result = PyLong_AsLong( this->get() );
+		const long result = PyLong_AsLong(this->get());
 		errorHandler.checkErrorOccured();
 		return result;
 	}
-
 
 	/**
 	 *	This method gets the unsigned long long value from the ScriptLong.
 	 *	@return A long representation of the ScriptLong
 	 *		or -1 on overflow error.
 	 */
-	template < class ERROR_HANDLER >
-	unsigned PY_LONG_LONG asUnsignedLongLong( const ERROR_HANDLER & errorHandler ) const
+	template <class ERROR_HANDLER>
+	unsigned PY_LONG_LONG asUnsignedLongLong(const ERROR_HANDLER& errorHandler) const
 	{
-		const unsigned PY_LONG_LONG result = PyLong_AsUnsignedLongLong( this->get() );
+		const unsigned PY_LONG_LONG result = PyLong_AsUnsignedLongLong(this->get());
 		errorHandler.checkErrorOccured();
 		return result;
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptFloat
@@ -1377,31 +1275,30 @@ public:
 class ScriptFloat : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptFloat, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptFloat, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptFloat object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptFloat object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyFloat_Check( object.get() );
+		return PyFloat_Check(object.get());
 	}
 
-	static ScriptFloat create( double value )
+	static ScriptFloat create(double value)
 	{
-		PyObject * pFloat = PyFloat_FromDouble( value );
-		assert( pFloat );
-		return ScriptFloat( pFloat, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pFloat = PyFloat_FromDouble(value);
+		assert(pFloat);
+		return ScriptFloat(pFloat, ScriptObject::FROM_NEW_REFERENCE);
 	}
 
 	double asDouble()
 	{
-		return PyFloat_AS_DOUBLE( this->get() );
+		return PyFloat_AS_DOUBLE(this->get());
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptString
@@ -1412,31 +1309,29 @@ public:
 class ScriptString : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptString, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptString, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptString object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptString object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyString_Check( object.get() );
+		return PyString_Check(object.get());
 	}
-
 
 	/**
 	 *	This method creates a ScriptString from a null terminated char pointer
 	 *	@param str		The null terminated string
 	 *	@return			A ScriptString representing str
 	 */
-	static ScriptString create( const char * str )
+	static ScriptString create(const char* str)
 	{
-		PyObject * pStr = PyString_FromString( const_cast< char * >( str ) );
-		assert( pStr );
-		return ScriptString( pStr, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pStr = PyString_FromString(const_cast<char*>(str));
+		assert(pStr);
+		return ScriptString(pStr, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method creates a new ScriptString from a char pointer, and size
@@ -1444,71 +1339,63 @@ public:
 	 *	@param size		The size of str in bytes
 	 *	@return			A ScriptString representing str
 	 */
-	static ScriptString create( const char * str, int size )
+	static ScriptString create(const char* str, int size)
 	{
-		PyObject * pStr = PyString_FromStringAndSize( 
-				const_cast< char * >( str ), size );
-		assert( pStr );
-		return ScriptString( pStr, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pStr = PyString_FromStringAndSize(const_cast<char*>(str), size);
+		assert(pStr);
+		return ScriptString(pStr, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method creates a new ScriptString from a std::string
 	 *	@param str		The string to create the ScriptString from
 	 *	@return			A Script string representing str
 	 */
-	template<typename Traits, typename Alloc>
-	static ScriptString create( const std::basic_string<char, Traits, Alloc> & str )
+	template <typename Traits, typename Alloc>
+	static ScriptString create(const std::basic_string<char, Traits, Alloc>& str)
 	{
-		PyObject * pStr = PyString_FromStringAndSize( str.c_str(), str.size() );
-		assert( pStr );
-		return ScriptString( pStr, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pStr = PyString_FromStringAndSize(str.c_str(), str.size());
+		assert(pStr);
+		return ScriptString(pStr, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This gets a std::string from the ScriptString
 	 *	@param str		The place to store the std::string
 	 */
-	template<typename Traits, typename Alloc>
-	void getString( std::basic_string<char, Traits, Alloc> & str ) const
+	template <typename Traits, typename Alloc>
+	void getString(std::basic_string<char, Traits, Alloc>& str) const
 	{
-		str.assign( PyString_AS_STRING( this->get() ),
-			PyString_GET_SIZE( this->get() ) );
+		str.assign(PyString_AS_STRING(this->get()), PyString_GET_SIZE(this->get()));
 	}
-
 
 	/**
 	 *	This method gets the pointer to the string
 	 *	@return		A char pointer to the string
 	 */
-	const char * c_str() const
+	const char* c_str() const
 	{
-		return PyString_AS_STRING( this->get() );
+		return PyString_AS_STRING(this->get());
 	}
 };
 
-inline std::ostream & operator<<( std::ostream & o, const ScriptString & obj )
+inline std::ostream& operator<<(std::ostream& o, const ScriptString& obj)
 {
 	std::string objStr;
-	obj.getString( objStr );
+	obj.getString(objStr);
 	return o << objStr;
 }
 
-inline std::ostream & operator<<( std::ostream & o, const ScriptObject & obj )
+inline std::ostream& operator<<(std::ostream& o, const ScriptObject& obj)
 {
-	return o << obj.str( ScriptErrorClear() );
+	return o << obj.str(ScriptErrorClear());
 }
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptBlob
 // -----------------------------------------------------------------------------
 
 typedef ScriptString ScriptBlob;
-
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptUnicode
@@ -1519,19 +1406,18 @@ typedef ScriptString ScriptBlob;
 class ScriptUnicode : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptUnicode, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptUnicode, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptUnicode object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptUnicode object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyUnicode_Check( object.get() );
+		return PyUnicode_Check(object.get());
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptMapping
@@ -1542,10 +1428,9 @@ public:
 class ScriptMapping : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptMapping, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptMapping, ScriptObject)
 
-	ScriptMapping ( const ScriptDict & dict ) :
-		ScriptObject( dict )
+	ScriptMapping(const ScriptDict& dict) : ScriptObject(dict)
 	{
 	}
 	/**
@@ -1553,9 +1438,9 @@ public:
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptMapping object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyMapping_Check( object.get() ) == 1;
+		return PyMapping_Check(object.get()) == 1;
 	}
 
 	/**
@@ -1564,72 +1449,68 @@ public:
 	 *		fails
 	 *	@return	true if the mapping object has the key key and false otherwise
 	 */
-	bool hasKey( const char * key ) const
+	bool hasKey(const char* key) const
 	{
-		return PyMapping_HasKeyString( this->get(), const_cast<char *>(key) ) == 1;
+		return PyMapping_HasKeyString(this->get(), const_cast<char*>(key)) == 1;
 	}
 
 	/**
 	 *	This method gets the keys from the mapping
-	 *	@param errorHandler The type of error handling to use if this method 
+	 *	@param errorHandler The type of error handling to use if this method
 	 *		fails
 	 *	@return				The keys list from the mapping object
 	 */
 	template <class ERROR_HANDLER>
-	ScriptList keys( const ERROR_HANDLER & errorHandler ) const
+	ScriptList keys(const ERROR_HANDLER& errorHandler) const
 	{
-		PyObject * pKeys = PyMapping_Keys( this->get() );
-		errorHandler.checkPtrError( pKeys );
-		return ScriptList( pKeys, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pKeys = PyMapping_Keys(this->get());
+		errorHandler.checkPtrError(pKeys);
+		return ScriptList(pKeys, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method gets the values from the mapping
-	 *	@param errorHandler The type of error handling to use if this method 
+	 *	@param errorHandler The type of error handling to use if this method
 	 *		fails
 	 *	@return				The values list from the mapping object
 	 */
 	template <class ERROR_HANDLER>
-	ScriptList values( const ERROR_HANDLER & errorHandler ) const
+	ScriptList values(const ERROR_HANDLER& errorHandler) const
 	{
-		PyObject * pValues = PyMapping_Values( this->get() );
-		errorHandler.checkPtrError( pValues );
-		return ScriptList( pValues, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pValues = PyMapping_Values(this->get());
+		errorHandler.checkPtrError(pValues);
+		return ScriptList(pValues, ScriptObject::FROM_NEW_REFERENCE);
 	}
-	
+
 	/**
 	 *	This method gets list of the key-value pairs from the mapping
-	 *	@param errorHandler The type of error handling to use if this method 
+	 *	@param errorHandler The type of error handling to use if this method
 	 *		fails
 	 *	@return		The list of the key-value pairs from the mapping object
 	 */
 	template <class ERROR_HANDLER>
-	ScriptList items( const ERROR_HANDLER & errorHandler ) const
+	ScriptList items(const ERROR_HANDLER& errorHandler) const
 	{
-		PyObject * pItems = PyMapping_Items( this->get() );
-		errorHandler.checkPtrError( pItems );
-		return ScriptList( pItems, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pItems = PyMapping_Items(this->get());
+		errorHandler.checkPtrError(pItems);
+		return ScriptList(pItems, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method gets an item from a mapping
 	 *	@param key			The key of the item to retrieve
-	 *	@param errorHandler The type of error handling to use if this method 
+	 *	@param errorHandler The type of error handling to use if this method
 	 *		fails
 	 *	@return				The value of key
 	 */
 	template <class ERROR_HANDLER>
-	ScriptObject getItem( const char * key,
-		const ERROR_HANDLER & errorHandler ) const
+	ScriptObject getItem(const char* key, const ERROR_HANDLER& errorHandler) const
 	{
-		PyObject * pItem = PyMapping_GetItemString( this->get(), 
-			const_cast<char *>(key) );
-		errorHandler.checkPtrError( pItem );
-		return ScriptObject( pItem, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pItem = PyMapping_GetItemString(this->get(), const_cast<char*>(key));
+		errorHandler.checkPtrError(pItem);
+		return ScriptObject(pItem, ScriptObject::FROM_NEW_REFERENCE);
 	}
-	
+
 	/**
 	*	This method sets an item within the mapping
 	*	@param key		The key to set the item of
@@ -1639,16 +1520,13 @@ public:
 	*	@return			True if the value was successfully set, false otherwise
 	*/
 	template <class ERROR_HANDLER>
-	bool setItem( const char * key, 
-		const ScriptObject & value, const ERROR_HANDLER & errorHandler ) const
+	bool setItem(const char* key, const ScriptObject& value, const ERROR_HANDLER& errorHandler) const
 	{
-		int result = PyMapping_SetItemString( this->get(),
-				const_cast< char * >( key ), value.get() );
-		errorHandler.checkMinusOne( result );
+		int result = PyMapping_SetItemString(this->get(), const_cast<char*>(key), value.get());
+		errorHandler.checkMinusOne(result);
 		return result == 0;
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptClass
@@ -1659,16 +1537,16 @@ public:
 class ScriptClass : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptClass, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptClass, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptClass object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptClass object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyClass_Check( object.get() );
+		return PyClass_Check(object.get());
 	}
 
 	/**
@@ -1676,20 +1554,18 @@ public:
 	 *	@param bases		The base classes for the class
 	 *	@param dict			The dict for the class
 	 *	@param name			The name of the class
-	 *	@param errorHandler The type of error handling to use if this method 
+	 *	@param errorHandler The type of error handling to use if this method
 	 *		fails
 	 *	@return				A new class
 	 */
 	template <class ERROR_HANDLER>
-	static ScriptClass create( ScriptTuple bases, ScriptDict dict,
-		ScriptString name, const ERROR_HANDLER & errorHandler )
+	static ScriptClass create(ScriptTuple bases, ScriptDict dict, ScriptString name, const ERROR_HANDLER& errorHandler)
 	{
 		// Unable to find docs for if new or borrowed, looks to be new
-		PyObject * pClass = PyClass_New( bases.get(), dict.get(), name.get() );
-		errorHandler.checkPtrError( pClass );
-		return ScriptClass( pClass, ScriptObject::FROM_NEW_REFERENCE );
+		PyObject* pClass = PyClass_New(bases.get(), dict.get(), name.get());
+		errorHandler.checkPtrError(pClass);
+		return ScriptClass(pClass, ScriptObject::FROM_NEW_REFERENCE);
 	}
-
 
 	/**
 	 *	This method gets the dict from a type.
@@ -1698,11 +1574,10 @@ public:
 	 */
 	ScriptDict getDict() const
 	{
-		return ScriptDict( reinterpret_cast< PyClassObject * >( this->get() )->cl_dict,
-			ScriptObject::FROM_BORROWED_REFERENCE );
+		return ScriptDict(reinterpret_cast<PyClassObject*>(this->get())->cl_dict,
+		                  ScriptObject::FROM_BORROWED_REFERENCE);
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptInstance
@@ -1713,19 +1588,18 @@ public:
 class ScriptInstance : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptInstance, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptInstance, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptInstance object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptInstance object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyInstance_Check( object.get() );
+		return PyInstance_Check(object.get());
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptIter
@@ -1736,18 +1610,17 @@ public:
 class ScriptIter : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptIter, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptIter, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptIter object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptIter object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyIter_Check( object.get() );
+		return PyIter_Check(object.get());
 	}
-
 
 	/**
 	 *	This method gets the next item from the iterator
@@ -1755,11 +1628,9 @@ public:
 	 */
 	ScriptObject next() const
 	{
-		return ScriptObject( PyIter_Next( this->get() ),
-			ScriptObject::FROM_NEW_REFERENCE );
+		return ScriptObject(PyIter_Next(this->get()), ScriptObject::FROM_NEW_REFERENCE);
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptWeakRef
@@ -1770,40 +1641,37 @@ public:
 class ScriptWeakRef : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptWeakRef, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptWeakRef, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptWeakRef object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptWeakref object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyWeakref_Check( object.get() );
+		return PyWeakref_Check(object.get());
 	}
-
 
 	/**
 	 *	This method checks if the given object is a weakref reference object
 	 *	@param object The object to check
 	 *	@return True if object is a weakref reference object, false otherwise
 	 */
-	static bool checkRef( const ScriptObject & object )
+	static bool checkRef(const ScriptObject& object)
 	{
-		return PyWeakref_CheckRef( object.get() );
+		return PyWeakref_CheckRef(object.get());
 	}
-
 
 	/**
 	 *	This method checks if the given object is a weakref proxy object
 	 *	@param object The object to check
 	 *	@return True if object is a weakref proxy object, false otherwise
 	 */
-	static bool checkProxy( const ScriptObject & object )
+	static bool checkProxy(const ScriptObject& object)
 	{
-		return PyWeakref_CheckProxy( object.get() );
+		return PyWeakref_CheckProxy(object.get());
 	}
-
 
 	/**
 	 *	This method gets gets the referent object of a proxy object
@@ -1813,12 +1681,10 @@ public:
 	ScriptObject getRefent() const
 	{
 		// Note: This item return Py_None if the referent no longer exists
-		PyObject * pRefedObject = PyWeakref_GET_OBJECT( this->get() );
-		return ScriptObject( pRefedObject, 
-			ScriptObject::FROM_BORROWED_REFERENCE );
+		PyObject* pRefedObject = PyWeakref_GET_OBJECT(this->get());
+		return ScriptObject(pRefedObject, ScriptObject::FROM_BORROWED_REFERENCE);
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptCode
@@ -1829,18 +1695,17 @@ public:
 class ScriptCode : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptCode, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptCode, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptCode object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptCode object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyCode_Check( object.get() );
+		return PyCode_Check(object.get());
 	}
-
 
 	/**
 	 *	Get the number of arguments required by this code object.
@@ -1849,11 +1714,10 @@ public:
 	 */
 	int argCount()
 	{
-		auto pCode = reinterpret_cast< PyCodeObject * >( this->get() );
+		auto pCode = reinterpret_cast<PyCodeObject*>(this->get());
 		return pCode->co_argcount;
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptFunction
@@ -1864,18 +1728,17 @@ public:
 class ScriptFunction : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptFunction, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptFunction, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptFunction object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptFunction object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyFunction_Check( object.get() );
+		return PyFunction_Check(object.get());
 	}
-
 
 	/**
 	 *	Get the code object inside this function.
@@ -1884,12 +1747,10 @@ public:
 	 */
 	ScriptCode code()
 	{
-		assert( this->exists() );
-		return ScriptCode( PyFunction_GET_CODE( this->get() ),
-			PyScript::ScriptObject::FROM_BORROWED_REFERENCE );
+		assert(this->exists());
+		return ScriptCode(PyFunction_GET_CODE(this->get()), PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptMethod
@@ -1901,16 +1762,16 @@ public:
 class ScriptMethod : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptMethod, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptMethod, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptMethod object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptMethod object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
-		return PyMethod_Check( object.get() );
+		return PyMethod_Check(object.get());
 	}
 
 	/**
@@ -1920,12 +1781,10 @@ public:
 	 */
 	ScriptFunction function()
 	{
-		assert( this->exists() );
-		return ScriptFunction( PyMethod_GET_FUNCTION( this->get() ),
-			PyScript::ScriptObject::FROM_BORROWED_REFERENCE );
+		assert(this->exists());
+		return ScriptFunction(PyMethod_GET_FUNCTION(this->get()), PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
 	}
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: ScriptDescrWrapper
@@ -1936,14 +1795,14 @@ public:
 class ScriptDescrWrapper : public ScriptObject
 {
 public:
-	STANDARD_SCRIPT_OBJECT_IMP( ScriptDescrWrapper, ScriptObject )
+	STANDARD_SCRIPT_OBJECT_IMP(ScriptDescrWrapper, ScriptObject)
 
 	/**
 	 *	This method checks if the given object is a ScriptDescrWrapper object
 	 *	@param object The object to check
 	 *	@return True if object is a ScriptDescrWrapper object, false otherwise
 	 */
-	static bool check( const ScriptObject & object )
+	static bool check(const ScriptObject& object)
 	{
 		return (object.get()->ob_type == &PyWrapperDescr_Type);
 	}
@@ -1952,53 +1811,50 @@ public:
 	 *	This method creates a new ScriptDescrWrapper from a type,
 	 *	wrapper definition and wrapped function.
 	 */
-	static ScriptDescrWrapper create( const ScriptType & type,
-		wrapperbase & base,
-		void * pFunctionToBeWrapped )
+	static ScriptDescrWrapper create(const ScriptType& type, wrapperbase& base, void* pFunctionToBeWrapped)
 	{
-		auto pyWrapper = PyDescr_NewWrapper(
-			reinterpret_cast< PyTypeObject * >( type.get() ),
-			&base,
-			pFunctionToBeWrapped );
-		return ScriptDescrWrapper( pyWrapper, FROM_NEW_REFERENCE );
+		auto pyWrapper = PyDescr_NewWrapper(reinterpret_cast<PyTypeObject*>(type.get()), &base, pFunctionToBeWrapped);
+		return ScriptDescrWrapper(pyWrapper, FROM_NEW_REFERENCE);
 	}
 
 	ScriptString name() const
 	{
-		const PyWrapperDescrObject * pWrapperDescr =
-			reinterpret_cast< PyWrapperDescrObject * >( this->get() );
-		assert( pWrapperDescr->d_base != nullptr );
-		return ScriptString( pWrapperDescr->d_base->name_strobj,
-			FROM_BORROWED_REFERENCE );
+		const PyWrapperDescrObject* pWrapperDescr = reinterpret_cast<PyWrapperDescrObject*>(this->get());
+		assert(pWrapperDescr->d_base != nullptr);
+		return ScriptString(pWrapperDescr->d_base->name_strobj, FROM_BORROWED_REFERENCE);
 	}
 };
-
 
 /**
  *	This script error handler fetches the exception type, value and traceback
  *	object, and clears the error state. They can be retrieved via accessors on
  *	the object.
  */
-class ScriptErrorFetch: public ScriptErrorBase<ScriptErrorFetch>
+class ScriptErrorFetch : public ScriptErrorBase<ScriptErrorFetch>
 {
 public:
-
 	/**
 	 *	Constructor.
 	 */
-	ScriptErrorFetch() :
-		exceptionType_( NULL ),
-		exceptionValue_( NULL ),
-		exceptionTraceback_( NULL )
-	{}
+	ScriptErrorFetch() : exceptionType_(NULL), exceptionValue_(NULL), exceptionTraceback_(NULL)
+	{
+	}
 
 	/** This method returns the fetched exception type. */
-	ScriptObject type() const		{ return exceptionType_; }
+	ScriptObject type() const
+	{
+		return exceptionType_;
+	}
 	/** This method returns the fetched exception value. */
-	ScriptObject value() const		{ return exceptionValue_; }
+	ScriptObject value() const
+	{
+		return exceptionValue_;
+	}
 	/** This method returns the fetched exception traceback. */
-	ScriptObject traceback() const	{ return exceptionTraceback_; }
-
+	ScriptObject traceback() const
+	{
+		return exceptionTraceback_;
+	}
 
 	/**
 	 *	This method restores and prints the fetched exception. The error
@@ -2006,39 +1862,30 @@ public:
 	 */
 	inline void restoreAndPrint()
 	{
-		assert( !PyErr_Occurred() );
-		assert( PyType_Check( exceptionType_.get() ) );
-		assert( !exceptionTraceback_.exists() || 
-			PyTraceBack_Check( exceptionTraceback_.get() ) );
+		assert(!PyErr_Occurred());
+		assert(PyType_Check(exceptionType_.get()));
+		assert(!exceptionTraceback_.exists() || PyTraceBack_Check(exceptionTraceback_.get()));
 
-		PyErr_Restore( exceptionType_.newRef(), 
-			exceptionValue_.newRef(),
-			exceptionTraceback_.newRef() );
+		PyErr_Restore(exceptionType_.newRef(), exceptionValue_.newRef(), exceptionTraceback_.newRef());
 		Script::printError();
 	}
-
 
 	/**
 	 *	This method handles what happens when an error occurs
 	 */
 	inline void handleError() const
 	{
-		PyObject * pyType = NULL;
-		PyObject * pyValue = NULL;
-		PyObject * pyTraceback = NULL;
-		PyErr_Fetch( &pyType, &pyValue, &pyTraceback );
+		PyObject* pyType = NULL;
+		PyObject* pyValue = NULL;
+		PyObject* pyTraceback = NULL;
+		PyErr_Fetch(&pyType, &pyValue, &pyTraceback);
 
-		exceptionType_ = ScriptObject( pyType, 
-			ScriptObject::FROM_NEW_REFERENCE );
-		exceptionValue_ = ScriptObject( pyValue, 
-			ScriptObject::FROM_NEW_REFERENCE );
-		exceptionTraceback_ = ScriptObject( pyTraceback, 
-			ScriptObject::FROM_NEW_REFERENCE );
+		exceptionType_ = ScriptObject(pyType, ScriptObject::FROM_NEW_REFERENCE);
+		exceptionValue_ = ScriptObject(pyValue, ScriptObject::FROM_NEW_REFERENCE);
+		exceptionTraceback_ = ScriptObject(pyTraceback, ScriptObject::FROM_NEW_REFERENCE);
 	}
 
-
 private:
-
 	// TODO: These need to be mutable because error handlers are assumed to be
 	// const.
 	mutable ScriptObject exceptionType_;
@@ -2046,37 +1893,34 @@ private:
 	mutable ScriptObject exceptionTraceback_;
 };
 
-
 // -----------------------------------------------------------------------------
 // Section: Script
 // -----------------------------------------------------------------------------
 
 namespace Script
 {
-SCRIPT_CONVERTER( ScriptSequence )
-SCRIPT_CONVERTER( ScriptDict )
-SCRIPT_CONVERTER( ScriptTuple )
-SCRIPT_CONVERTER( ScriptList )
-SCRIPT_CONVERTER( ScriptInt )
-SCRIPT_CONVERTER( ScriptFloat )
-SCRIPT_CONVERTER( ScriptLong )
-SCRIPT_CONVERTER( ScriptString )
-//SCRIPT_CONVERTER( ScriptBlob )
-SCRIPT_CONVERTER( ScriptMapping )
-SCRIPT_CONVERTER( ScriptClass )
-SCRIPT_CONVERTER( ScriptModule )
-SCRIPT_CONVERTER( ScriptType )
-SCRIPT_CONVERTER( ScriptIter )
-SCRIPT_CONVERTER( ScriptWeakRef )
+SCRIPT_CONVERTER(ScriptSequence)
+SCRIPT_CONVERTER(ScriptDict)
+SCRIPT_CONVERTER(ScriptTuple)
+SCRIPT_CONVERTER(ScriptList)
+SCRIPT_CONVERTER(ScriptInt)
+SCRIPT_CONVERTER(ScriptFloat)
+SCRIPT_CONVERTER(ScriptLong)
+SCRIPT_CONVERTER(ScriptString)
+// SCRIPT_CONVERTER( ScriptBlob )
+SCRIPT_CONVERTER(ScriptMapping)
+SCRIPT_CONVERTER(ScriptClass)
+SCRIPT_CONVERTER(ScriptModule)
+SCRIPT_CONVERTER(ScriptType)
+SCRIPT_CONVERTER(ScriptIter)
+SCRIPT_CONVERTER(ScriptWeakRef)
 
-inline int setData( PyObject * pObj, ScriptObject & rScriptObject,
-	const char * varName = "" )
+inline int setData(PyObject* pObj, ScriptObject& rScriptObject, const char* varName = "")
 {
 	rScriptObject = pObj;
 
 	return 0;
 }
-
 }
 
 #include "py_script_object.ipp"
@@ -2087,7 +1931,6 @@ inline int setData( PyObject * pObj, ScriptObject & rScriptObject,
 #include "py_script_tuple.ipp"
 #include "py_script_type.ipp"
 #include "py_script_list.ipp"
-
 
 } // namespace PyScript
 } // end namespace wgt

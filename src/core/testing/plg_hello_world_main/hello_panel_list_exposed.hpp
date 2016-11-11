@@ -13,36 +13,29 @@ namespace wgt
 {
 class HelloPanelListExposed
 {
-    DECLARE_REFLECTED
+	DECLARE_REFLECTED
 
 public:
+	HelloPanelListExposed() : sampleCollection_(sampleList_)
+	{
+		// Fill the container with random strings
+		const int itemCount = 100;
+		sampleList_.resize(itemCount);
+		std::generate(sampleList_.begin(), sampleList_.end(), []() { return RefObjectId::generate().toString(); });
+	}
 
-    HelloPanelListExposed()
-        : sampleCollection_( sampleList_ )
-    {
-        // Fill the container with random strings
-        const int itemCount = 100;
-        sampleList_.resize( itemCount );
-        std::generate( sampleList_.begin(), sampleList_.end(), []()
-        {
-            return RefObjectId::generate().toString();
-        });
-    }
-
-    std::string getCollectionItem(int index)
-    {
-        if(index >= 0 && index < static_cast<int>( sampleList_.size() ))
-        {
-            return sampleList_[index];
-        }
-        return "-";
-    }
+	std::string getCollectionItem(int index)
+	{
+		if (index >= 0 && index < static_cast<int>(sampleList_.size()))
+		{
+			return sampleList_[index];
+		}
+		return "-";
+	}
 
 private:
-
-    Collection sampleCollection_;
-    std::vector<std::string> sampleList_;
-
+	Collection sampleCollection_;
+	std::vector<std::string> sampleList_;
 };
 } // end namespace wgt
 

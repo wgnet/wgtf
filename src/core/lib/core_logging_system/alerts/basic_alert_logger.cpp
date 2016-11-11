@@ -8,8 +8,7 @@
 
 namespace wgt
 {
-BasicAlertLogger::BasicAlertLogger( AlertManager & alertManager )
-	: alertManager_( alertManager )
+BasicAlertLogger::BasicAlertLogger(AlertManager& alertManager) : alertManager_(alertManager)
 {
 }
 
@@ -17,11 +16,11 @@ BasicAlertLogger::~BasicAlertLogger()
 {
 }
 
-void BasicAlertLogger::out( LogMessage* message )
+void BasicAlertLogger::out(LogMessage* message)
 {
 	if (message->getLevel() == LOG_ALERT)
 	{
-		alertManager_.add( message->c_str() );
+		alertManager_.add(message->c_str());
 	}
 }
 } // end namespace wgt

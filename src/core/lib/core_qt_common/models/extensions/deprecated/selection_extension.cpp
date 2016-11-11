@@ -10,37 +10,32 @@ namespace wgt
 {
 struct SelectionExtension::Implementation
 {
-	Implementation( SelectionExtension& self );
+	Implementation(SelectionExtension& self);
 
-	QModelIndex findNextIndex(
-		const QAbstractItemModel* model, const QModelIndex& index, bool skipChildren = false ) const;
-	std::vector<QModelIndex> findRange(
-		const QAbstractItemModel* model, const QModelIndex& from, const QModelIndex& to ) const;
+	QModelIndex findNextIndex(const QAbstractItemModel* model, const QModelIndex& index,
+	                          bool skipChildren = false) const;
+	std::vector<QModelIndex> findRange(const QAbstractItemModel* model, const QModelIndex& from,
+	                                   const QModelIndex& to) const;
 
-	void select( const QModelIndex& index );
-	void selectRange( const QModelIndex& index );
-	void deselect( const QModelIndex& index );
-	bool selected( const QModelIndex& index );
+	void select(const QModelIndex& index);
+	void selectRange(const QModelIndex& index);
+	void deselect(const QModelIndex& index);
+	bool selected(const QModelIndex& index);
 
-	void fireDataChangedEvent( const QModelIndex& index );
-	QModelIndex firstColumnIndex( const QModelIndex& index );
+	void fireDataChangedEvent(const QModelIndex& index);
+	QModelIndex firstColumnIndex(const QModelIndex& index);
 	QVector<int>& selectionRoles();
 	int expandedRole() const;
 
 	QModelIndex lastSelectedIndex() const;
 	bool clearPreviousSelection();
 
-	void onRowsAboutToBeRemoved(
-		const QModelIndex& parent, int first, int last );
-	void onRowsRemoved(
-		const QModelIndex & parent, int first, int last );
-	
-	void onLayoutAboutToBeChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint );
-	void onLayoutChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint );
+	void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+	void onRowsRemoved(const QModelIndex& parent, int first, int last);
+
+	void onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+	                              QAbstractItemModel::LayoutChangeHint hint);
+	void onLayoutChanged(const QList<QPersistentModelIndex>& parents, QAbstractItemModel::LayoutChangeHint hint);
 
 	void resetSelectedItem();
 
@@ -57,19 +52,13 @@ struct SelectionExtension::Implementation
 	QModelIndex currentIndex_;
 };
 
-
-SelectionExtension::Implementation::Implementation( SelectionExtension& self )
-	: self_( self )
-	, selectedItem_( 0 )
-	, allowMultiSelect_( false )
-	, selectRange_( false )
-	, clearOnNextSelect_( false )
+SelectionExtension::Implementation::Implementation(SelectionExtension& self)
+    : self_(self), selectedItem_(0), allowMultiSelect_(false), selectRange_(false), clearOnNextSelect_(false)
 {
 }
 
-
-QModelIndex SelectionExtension::Implementation::findNextIndex(
-	const QAbstractItemModel* model, const QModelIndex& index, bool skipChildren ) const
+QModelIndex SelectionExtension::Implementation::findNextIndex(const QAbstractItemModel* model, const QModelIndex& index,
+                                                              bool skipChildren) const
 {
 	if (index.isValid())
 	{
@@ -77,11 +66,11 @@ QModelIndex SelectionExtension::Implementation::findNextIndex(
 
 		if (!skipChildren)
 		{
-			bool expanded = model->data( index, expandedRole() ).toBool();
+			bool expanded = model->data(index, expandedRole()).toBool();
 
 			if (expanded)
 			{
-				next = index.child( 0, 0 );
+				next = index.child(0, 0);
 
 				if (next.isValid())
 				{
@@ -93,32 +82,32 @@ QModelIndex SelectionExtension::Implementation::findNextIndex(
 		next = index.parent();
 		int nextRow = index.row() + 1;
 
-		if (nextRow < model->rowCount( next ))
+		if (nextRow < model->rowCount(next))
 		{
-			return index.sibling( nextRow, 0 );
+			return index.sibling(nextRow, 0);
 		}
 		else if (next.isValid())
 		{
-			return findNextIndex( model, next, true );
+			return findNextIndex(model, next, true);
 		}
 	}
 
 	return QModelIndex();
 }
 
-
-std::vector<QModelIndex> SelectionExtension::Implementation::findRange(
-	const QAbstractItemModel* model, const QModelIndex& from, const QModelIndex& to ) const
+std::vector<QModelIndex> SelectionExtension::Implementation::findRange(const QAbstractItemModel* model,
+                                                                       const QModelIndex& from,
+                                                                       const QModelIndex& to) const
 {
-	QModelIndex position = model->index( 0, 0, QModelIndex() );
+	QModelIndex position = model->index(0, 0, QModelIndex());
 	std::vector<QModelIndex> indices;
 	bool inRange = false;
 
-	for (; position.isValid(); position = findNextIndex( model, position ))
+	for (; position.isValid(); position = findNextIndex(model, position))
 	{
 		if (position == from || position == to)
 		{
-			indices.push_back( position );
+			indices.push_back(position);
 
 			if (inRange || from == to)
 			{
@@ -130,7 +119,7 @@ std::vector<QModelIndex> SelectionExtension::Implementation::findRange(
 		}
 		else if (inRange)
 		{
-			indices.push_back( position );
+			indices.push_back(position);
 		}
 	}
 
@@ -141,7 +130,6 @@ std::vector<QModelIndex> SelectionExtension::Implementation::findRange(
 
 	return indices;
 }
-
 
 /**
  *	Update the selection data on every item in the row.
@@ -161,18 +149,17 @@ std::vector<QModelIndex> SelectionExtension::Implementation::findRange(
  *	|Item(1,0)|Item(1,1)|Item(1,2)|Item(1,3)|
  *	+---------+---------+---------+---------+
  */
-void SelectionExtension::Implementation::select(
-	const QModelIndex& index )
+void SelectionExtension::Implementation::select(const QModelIndex& index)
 {
 	if (selectRange_)
 	{
-		selectRange( index );
+		selectRange(index);
 		return;
 	}
 
 	// Always use column 0
-	const auto adjustedIndex = firstColumnIndex( index );
-	auto inserted = selection_.insert( adjustedIndex ).second;
+	const auto adjustedIndex = firstColumnIndex(index);
+	auto inserted = selection_.insert(adjustedIndex).second;
 
 	if (inserted)
 	{
@@ -183,16 +170,16 @@ void SelectionExtension::Implementation::select(
 				// TODO: NGT-1004
 				// find a better way to handle removing selected
 				// items which were removed from selection set
-				selection_.erase( lastClickedIndex_ );
+				selection_.erase(lastClickedIndex_);
 				if (lastClickedIndex_.isValid())
 				{
-					fireDataChangedEvent( lastClickedIndex_ );
+					fireDataChangedEvent(lastClickedIndex_);
 				}
 			}
 
 			if (adjustedIndex.isValid())
 			{
-				fireDataChangedEvent( adjustedIndex );
+				fireDataChangedEvent(adjustedIndex);
 			}
 		}
 	}
@@ -212,13 +199,12 @@ void SelectionExtension::Implementation::select(
 	}
 }
 
-
-void SelectionExtension::Implementation::selectRange( const QModelIndex& index )
+void SelectionExtension::Implementation::selectRange(const QModelIndex& index)
 {
-	assert( index.isValid() );
+	assert(index.isValid());
 
 	// Always use column 0
-	QModelIndex toIndex = firstColumnIndex( index );
+	QModelIndex toIndex = firstColumnIndex(index);
 	QModelIndex fromIndex = lastClickedIndex_;
 	bool fromIndexSelected = lastSelectedIndex().isValid();
 	selectRange_ = false;
@@ -232,27 +218,27 @@ void SelectionExtension::Implementation::selectRange( const QModelIndex& index )
 	if (!selectionRoles().empty())
 	{
 		const QAbstractItemModel* model = index.model();
-		std::vector<QModelIndex> range = findRange( model, fromIndex, toIndex );
+		std::vector<QModelIndex> range = findRange(model, fromIndex, toIndex);
 
 		if (fromIndexSelected)
 		{
-			selection_.erase( fromIndex );
+			selection_.erase(fromIndex);
 		}
 
 		decltype(selection_) oldSelection;
-		oldSelection.swap( selection_ );
+		oldSelection.swap(selection_);
 
-		for (auto& rangeIndex: range)
+		for (auto& rangeIndex : range)
 		{
-			selection_.insert( rangeIndex );
+			selection_.insert(rangeIndex);
 
-			if (oldSelection.erase( rangeIndex ) == 0 && (rangeIndex != fromIndex || !fromIndexSelected))
+			if (oldSelection.erase(rangeIndex) == 0 && (rangeIndex != fromIndex || !fromIndexSelected))
 			{
-				fireDataChangedEvent( rangeIndex );
+				fireDataChangedEvent(rangeIndex);
 			}
 		}
 
-		for (auto& oldIndex: oldSelection)
+		for (auto& oldIndex : oldSelection)
 		{
 			if (oldIndex.isValid())
 			{
@@ -264,33 +250,31 @@ void SelectionExtension::Implementation::selectRange( const QModelIndex& index )
 	emit self_.selectionChanged();
 }
 
-
-void SelectionExtension::Implementation::deselect( const QModelIndex& index )
+void SelectionExtension::Implementation::deselect(const QModelIndex& index)
 {
-	assert( index.isValid() );
+	assert(index.isValid());
 
 	// Always use column 0
-	const auto adjustedIndex = firstColumnIndex( index );
-	auto removedIndices = selection_.erase( adjustedIndex );
+	const auto adjustedIndex = firstColumnIndex(index);
+	auto removedIndices = selection_.erase(adjustedIndex);
 	selectRange_ = false;
 
 	if (removedIndices > 0)
 	{
 		if (!selectionRoles().empty())
 		{
-			fireDataChangedEvent( adjustedIndex );
+			fireDataChangedEvent(adjustedIndex);
 		}
 
 		emit self_.selectionChanged();
 	}
 }
 
-
 /**
  *	Selection extension can only select whole rows.
  *	Do not compare columns, because that would select only one part of a row.
  */
-bool SelectionExtension::Implementation::selected( const QModelIndex& index )
+bool SelectionExtension::Implementation::selected(const QModelIndex& index)
 {
 	if (!index.isValid())
 	{
@@ -298,32 +282,27 @@ bool SelectionExtension::Implementation::selected( const QModelIndex& index )
 	}
 
 	// Always use column 0
-	const auto adjustedIndex = firstColumnIndex( index );
-	return selection_.find( adjustedIndex ) != selection_.end();
+	const auto adjustedIndex = firstColumnIndex(index);
+	return selection_.find(adjustedIndex) != selection_.end();
 }
 
-
-void SelectionExtension::Implementation::fireDataChangedEvent(
-	const QModelIndex& index )
+void SelectionExtension::Implementation::fireDataChangedEvent(const QModelIndex& index)
 {
 	auto model = index.model();
-	assert( model != nullptr );
+	assert(model != nullptr);
 
-	const auto columnCount = model->columnCount( index );
-	assert( columnCount > 0 );
+	const auto columnCount = model->columnCount(index);
+	assert(columnCount > 0);
 	const auto lastColumn = columnCount - 1;
 
 	const auto topLeft = index;
-	const auto bottomRight =
-		model->sibling( index.row(), lastColumn, index );
-	assert( bottomRight.isValid() );
+	const auto bottomRight = model->sibling(index.row(), lastColumn, index);
+	assert(bottomRight.isValid());
 
-	emit const_cast< QAbstractItemModel * >( model )->dataChanged( topLeft, bottomRight, selectionRoles() );
+	emit const_cast<QAbstractItemModel*>(model)->dataChanged(topLeft, bottomRight, selectionRoles());
 }
 
-
-QModelIndex SelectionExtension::Implementation::firstColumnIndex(
-	const QModelIndex& index )
+QModelIndex SelectionExtension::Implementation::firstColumnIndex(const QModelIndex& index)
 {
 	if (!index.isValid())
 	{
@@ -331,12 +310,10 @@ QModelIndex SelectionExtension::Implementation::firstColumnIndex(
 	}
 
 	auto model = index.model();
-	assert( model != nullptr );
+	assert(model != nullptr);
 
-	return index.row() == 0 ? index :
-		model->sibling( index.row(), 0, index );
+	return index.row() == 0 ? index : model->sibling(index.row(), 0, index);
 }
-
 
 QVector<int>& SelectionExtension::Implementation::selectionRoles()
 {
@@ -344,32 +321,30 @@ QVector<int>& SelectionExtension::Implementation::selectionRoles()
 	{
 		int role;
 
-		if (self_.encodeRole( SelectedRole::roleId_, role ))
+		if (self_.encodeRole(SelectedRole::roleId_, role))
 		{
-			selectionRoles_.append( role );
+			selectionRoles_.append(role);
 		}
 	}
 
 	return selectionRoles_;
 }
 
-
 int SelectionExtension::Implementation::expandedRole() const
 {
 	static int expandedRole = -1;
-	
+
 	if (expandedRole < 0)
 	{
-		self_.encodeRole( ExpandedRole::roleId_, expandedRole );
+		self_.encodeRole(ExpandedRole::roleId_, expandedRole);
 	}
 
 	return expandedRole;
 }
 
-
 QModelIndex SelectionExtension::Implementation::lastSelectedIndex() const
 {
-	if (selection_.find( lastClickedIndex_ ) != selection_.cend())
+	if (selection_.find(lastClickedIndex_) != selection_.cend())
 	{
 		return lastClickedIndex_;
 	}
@@ -377,21 +352,20 @@ QModelIndex SelectionExtension::Implementation::lastSelectedIndex() const
 	return QModelIndex();
 }
 
-
 bool SelectionExtension::Implementation::clearPreviousSelection()
 {
 	QModelIndex lastIndex = lastSelectedIndex();
 	decltype(selection_) oldSelection;
-	oldSelection.swap( selection_ );
+	oldSelection.swap(selection_);
 	bool clearedAny = false;
 
 	if (!selectionRoles().empty())
 	{
-		for (auto& index: oldSelection)
+		for (auto& index : oldSelection)
 		{
 			if (index != lastIndex && index.isValid())
 			{
-				fireDataChangedEvent( index );
+				fireDataChangedEvent(index);
 				clearedAny = true;
 			}
 		}
@@ -399,15 +373,14 @@ bool SelectionExtension::Implementation::clearPreviousSelection()
 
 	if (lastIndex.isValid())
 	{
-		selection_.insert( lastIndex );
+		selection_.insert(lastIndex);
 	}
 
 	clearOnNextSelect_ = false;
 	return clearedAny;
 }
 
-void SelectionExtension::Implementation::onRowsAboutToBeRemoved(
-	const QModelIndex& parent, int first, int last )
+void SelectionExtension::Implementation::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
 	auto model = currentIndex_.model();
 	if (model == nullptr)
@@ -419,29 +392,28 @@ void SelectionExtension::Implementation::onRowsAboutToBeRemoved(
 	int count = last + 1;
 	for (int i = first; i < count; i++)
 	{
-		QModelIndex index = firstColumnIndex( model->index( i, 0, parent ) );
+		QModelIndex index = firstColumnIndex(model->index(i, 0, parent));
 		assert(index.isValid());
-		if (selected( index ))
+		if (selected(index))
 		{
-			auto inserted = pendingRemovingSelection_.insert( index ).second;
-			assert( inserted );
+			auto inserted = pendingRemovingSelection_.insert(index).second;
+			assert(inserted);
 		}
 	}
 }
 
-void SelectionExtension::Implementation::onRowsRemoved( 
-	const QModelIndex & parent, int first, int last )
+void SelectionExtension::Implementation::onRowsRemoved(const QModelIndex& parent, int first, int last)
 {
 	bool bRemoved = false;
-	for (auto pendingIndex: pendingRemovingSelection_)
+	for (auto pendingIndex : pendingRemovingSelection_)
 	{
 		if (!selectionRoles().empty())
 		{
-			if(lastClickedIndex_ == pendingIndex)
+			if (lastClickedIndex_ == pendingIndex)
 			{
 				this->resetSelectedItem();
 			}
-			selection_.erase( pendingIndex );
+			selection_.erase(pendingIndex);
 			bRemoved = true;
 		}
 	}
@@ -450,45 +422,42 @@ void SelectionExtension::Implementation::onRowsRemoved(
 	{
 		emit self_.selectionChanged();
 	}
-	
 }
 
-void SelectionExtension::Implementation::onLayoutAboutToBeChanged(
-	const QList< QPersistentModelIndex > & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void SelectionExtension::Implementation::onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+                                                                  QAbstractItemModel::LayoutChangeHint hint)
 {
 	pendingRemovingSelection_.clear();
-	for(auto selItem : selection_)
+	for (auto selItem : selection_)
 	{
 		auto parent = selItem.parent();
 		bool bInserted = false;
-		while(parent.isValid() && !bInserted)
+		while (parent.isValid() && !bInserted)
 		{
 			auto childItem = parent.internalPointer();
 			parent = parent.parent();
 			for (auto it = parents.cbegin(); it != parents.cend(); ++it)
 			{
-				auto item = static_cast< QModelIndex >( *it ).internalPointer();
-				if(childItem == item)
+				auto item = static_cast<QModelIndex>(*it).internalPointer();
+				if (childItem == item)
 				{
-					bInserted = pendingRemovingSelection_.insert( selItem ).second;
-					assert( bInserted );
+					bInserted = pendingRemovingSelection_.insert(selItem).second;
+					assert(bInserted);
 				}
 			}
 		}
 	}
 }
 
-void SelectionExtension::Implementation::onLayoutChanged(
-	const QList< QPersistentModelIndex > & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void SelectionExtension::Implementation::onLayoutChanged(const QList<QPersistentModelIndex>& parents,
+                                                         QAbstractItemModel::LayoutChangeHint hint)
 {
 	bool bRemoved = false;
-	for (auto pendingIndex: pendingRemovingSelection_)
+	for (auto pendingIndex : pendingRemovingSelection_)
 	{
 		if (!selectionRoles().empty())
 		{
-			selection_.erase( pendingIndex );
+			selection_.erase(pendingIndex);
 			bRemoved = true;
 		}
 	}
@@ -498,7 +467,6 @@ void SelectionExtension::Implementation::onLayoutChanged(
 		emit self_.selectionChanged();
 	}
 }
-
 
 void SelectionExtension::Implementation::resetSelectedItem()
 {
@@ -506,49 +474,42 @@ void SelectionExtension::Implementation::resetSelectedItem()
 	selectedItem_ = 0;
 }
 
-
-SelectionExtension::SelectionExtension()
-	: impl_( new Implementation( *this ) )
+SelectionExtension::SelectionExtension() : impl_(new Implementation(*this))
 {
 }
-
 
 SelectionExtension::~SelectionExtension()
 {
 }
 
-
-QHash< int, QByteArray > SelectionExtension::roleNames() const
+QHash<int, QByteArray> SelectionExtension::roleNames() const
 {
-	QHash< int, QByteArray > roleNames;
-	this->registerRole( SelectedRole::roleName_, roleNames );
-	this->registerRole( ExpandedRole::roleName_, roleNames );
+	QHash<int, QByteArray> roleNames;
+	this->registerRole(SelectedRole::roleName_, roleNames);
+	this->registerRole(ExpandedRole::roleName_, roleNames);
 	return roleNames;
 }
 
-
-QVariant SelectionExtension::data( const QModelIndex &index, int role ) const
+QVariant SelectionExtension::data(const QModelIndex& index, int role) const
 {
 	ItemRole::Id roleId;
-	if (!this->decodeRole( role, roleId ))
+	if (!this->decodeRole(role, roleId))
 	{
-		return QVariant( QVariant::Invalid );
+		return QVariant(QVariant::Invalid);
 	}
 
 	if (roleId != SelectedRole::roleId_)
 	{
-		return QVariant( QVariant::Invalid );
+		return QVariant(QVariant::Invalid);
 	}
 
-	return impl_->selected( index );
+	return impl_->selected(index);
 }
 
-
-bool SelectionExtension::setData( 
-	const QModelIndex &index, const QVariant &value, int role )
+bool SelectionExtension::setData(const QModelIndex& index, const QVariant& value, int role)
 {
 	ItemRole::Id roleId;
-	if (!this->decodeRole( role, roleId ))
+	if (!this->decodeRole(role, roleId))
 	{
 		return false;
 	}
@@ -560,99 +521,87 @@ bool SelectionExtension::setData(
 
 	if (value.toBool())
 	{
-		impl_->select( index );
+		impl_->select(index);
 	}
 	else
 	{
-		impl_->deselect( index );
+		impl_->deselect(index);
 	}
 
 	return true;
 }
 
-void SelectionExtension::onRowsAboutToBeRemoved(
-	const QModelIndex& parent, int first, int last )
+void SelectionExtension::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-	impl_->onRowsAboutToBeRemoved( parent, first, last );
+	impl_->onRowsAboutToBeRemoved(parent, first, last);
 }
 
-void SelectionExtension::onRowsRemoved( 
-	const QModelIndex & parent, int first, int last )
+void SelectionExtension::onRowsRemoved(const QModelIndex& parent, int first, int last)
 {
-	impl_->onRowsRemoved( parent, first, last );
+	impl_->onRowsRemoved(parent, first, last);
 }
 
-void SelectionExtension::onDataAboutToBeChanged( const QModelIndex& index,
-	int role,
-	const QVariant& value )
+void SelectionExtension::onDataAboutToBeChanged(const QModelIndex& index, int role, const QVariant& value)
 {
 	// Does nothing
 }
 
-
-void SelectionExtension::onDataChanged( const QModelIndex& index,
-	int role,
-	const QVariant& value )
+void SelectionExtension::onDataChanged(const QModelIndex& index, int role, const QVariant& value)
 {
 	// Does nothing
 }
 
-void SelectionExtension::onLayoutAboutToBeChanged(
-	const QList< QPersistentModelIndex > & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void SelectionExtension::onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+                                                  QAbstractItemModel::LayoutChangeHint hint)
 {
-	impl_->onLayoutAboutToBeChanged( parents, hint );	
+	impl_->onLayoutAboutToBeChanged(parents, hint);
 }
 
-void SelectionExtension::onLayoutChanged(
-	const QList< QPersistentModelIndex > & parents, 
-	QAbstractItemModel::LayoutChangeHint hint )
+void SelectionExtension::onLayoutChanged(const QList<QPersistentModelIndex>& parents,
+                                         QAbstractItemModel::LayoutChangeHint hint)
 {
-	impl_->onLayoutChanged( parents, hint );
+	impl_->onLayoutChanged(parents, hint);
 }
-
 
 void SelectionExtension::clearOnNextSelect()
 {
 	impl_->clearOnNextSelect_ = true;
 }
 
-
 void SelectionExtension::prepareRangeSelect()
 {
 	impl_->selectRange_ = true;
 }
 
-
 QVariant SelectionExtension::getSelectedIndex() const
 {
-	return QVariant::fromValue( impl_->lastSelectedIndex() );
+	return QVariant::fromValue(impl_->lastSelectedIndex());
 }
 
 QVariant SelectionExtension::getSelectedItem() const
 {
-	return QVariant::fromValue( impl_->selectedItem_ );
+	return QVariant::fromValue(impl_->selectedItem_);
 }
 
 QList<QVariant> SelectionExtension::getSelection() const
 {
 	QList<QVariant> selection;
 
-	for (auto& index: impl_->selection_)
+	for (auto& index : impl_->selection_)
 	{
-		selection.append( QModelIndex( index ) );
+		selection.append(QModelIndex(index));
 	}
 
 	return selection;
 }
 
-bool SelectionExtension::indexInSelection( const QVariant& index )
+bool SelectionExtension::indexInSelection(const QVariant& index)
 {
 	QModelIndex idx = index.toModelIndex();
 
-	for (auto& index: impl_->selection_)
+	for (auto& index : impl_->selection_)
 	{
-		QModelIndex current( index );
+		QModelIndex current(index);
 		if (current == idx)
 		{
 			return true;
@@ -662,20 +611,18 @@ bool SelectionExtension::indexInSelection( const QVariant& index )
 	return false;
 }
 
-void SelectionExtension::setSelectedIndex( const QVariant& index )
+void SelectionExtension::setSelectedIndex(const QVariant& index)
 {
 	QModelIndex idx = index.toModelIndex();
-	impl_->select( idx );
+	impl_->select(idx);
 }
-
 
 bool SelectionExtension::getMultiSelect() const
 {
 	return impl_->allowMultiSelect_;
 }
 
-
-void SelectionExtension::setMultiSelect( bool value )
+void SelectionExtension::setMultiSelect(bool value)
 {
 	impl_->allowMultiSelect_ = value;
 	emit multiSelectChanged();
@@ -689,7 +636,6 @@ void SelectionExtension::setMultiSelect( bool value )
 	}
 }
 
-
 /// Move to previous index
 bool SelectionExtension::moveUp()
 {
@@ -698,32 +644,9 @@ bool SelectionExtension::moveUp()
 	if (0 <= prevRow)
 	{
 		// Update Selected role before update the current index
-		selectCurrentIndex( false );
-		impl_->currentIndex_ = impl_->currentIndex_.sibling( prevRow, 0 );
-		selectCurrentIndex( true );
-		emit currentIndexChanged();
-		return true;
-	} 
-
-	return false;
-}
-
-
-/// Move to next index
-bool SelectionExtension::moveDown()
-{
-	auto model = impl_->currentIndex_.model();
-	assert( model != nullptr );
-
-	QModelIndex parent = impl_->currentIndex_.parent();
-
-	int nextRow = impl_->currentIndex_.row() + 1;
-	if (nextRow < model->rowCount( parent ))
-	{
-		// Update Selected role before update the current index
-		selectCurrentIndex( false );
-		impl_->currentIndex_ = impl_->currentIndex_.sibling( nextRow, 0 );
-		selectCurrentIndex( true );
+		selectCurrentIndex(false);
+		impl_->currentIndex_ = impl_->currentIndex_.sibling(prevRow, 0);
+		selectCurrentIndex(true);
 		emit currentIndexChanged();
 		return true;
 	}
@@ -731,14 +654,34 @@ bool SelectionExtension::moveDown()
 	return false;
 }
 
+/// Move to next index
+bool SelectionExtension::moveDown()
+{
+	auto model = impl_->currentIndex_.model();
+	assert(model != nullptr);
+
+	QModelIndex parent = impl_->currentIndex_.parent();
+
+	int nextRow = impl_->currentIndex_.row() + 1;
+	if (nextRow < model->rowCount(parent))
+	{
+		// Update Selected role before update the current index
+		selectCurrentIndex(false);
+		impl_->currentIndex_ = impl_->currentIndex_.sibling(nextRow, 0);
+		selectCurrentIndex(true);
+		emit currentIndexChanged();
+		return true;
+	}
+
+	return false;
+}
 
 QVariant SelectionExtension::getCurrentIndex() const
 {
-	return QVariant::fromValue( impl_->currentIndex_ );
+	return QVariant::fromValue(impl_->currentIndex_);
 }
 
-
-void SelectionExtension::setCurrentIndex( const QVariant& index )
+void SelectionExtension::setCurrentIndex(const QVariant& index)
 {
 	QModelIndex idx = index.toModelIndex();
 	impl_->currentIndex_ = idx;
@@ -746,12 +689,11 @@ void SelectionExtension::setCurrentIndex( const QVariant& index )
 	emit currentIndexChanged();
 }
 
-
 /// Helper function, turn on/off the current index's Selected role
-void SelectionExtension::selectCurrentIndex( bool select )
+void SelectionExtension::selectCurrentIndex(bool select)
 {
 	int selectedRole = -1;
-	this->encodeRole( SelectedRole::roleId_, selectedRole );
-	setData( impl_->currentIndex_, QVariant( select ), selectedRole );
+	this->encodeRole(SelectedRole::roleId_, selectedRole);
+	setData(impl_->currentIndex_, QVariant(select), selectedRole);
 }
 } // end namespace wgt

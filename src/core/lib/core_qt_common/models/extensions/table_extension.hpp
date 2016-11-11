@@ -16,18 +16,24 @@ public:
 	virtual ~TableExtension();
 
 	/**
-	 *	Expand the current item if it is expandable or move to the next index.
+	 *	Move to the next index.
 	 *	@param index to be moved.
-	 *	@return new position or the original index if the item was expanded or on error.
+	 *	@param pModel to be used if index is invalid.
+	 *	@return new position or
+	 *		the first index in the model if nothing was selected or
+	 *		the original index on error.
 	 */
-	Q_INVOKABLE QModelIndex getForwardIndex( const QModelIndex & index ) const;
+	Q_INVOKABLE QModelIndex getForwardIndex(const QModelIndex& index, QAbstractItemModel* pModel) const;
 
 	/**
-	 *	Collapse the current item if it is collapsable or move to the previous index.
+	 *	Move to the previous index.
 	 *	@param index to be moved.
-	 *	@return new position or the original index if the item was expanded or on error.
+	 *	@param pModel to be used if index is invalid.
+	 *	@return new position or
+	 *		the first index in the model if nothing was selected or
+	 *		the original index on error.
 	 */
-	Q_INVOKABLE QModelIndex getBackwardIndex( const QModelIndex & index ) const;
+	Q_INVOKABLE QModelIndex getBackwardIndex(const QModelIndex& index, QAbstractItemModel* pModel) const;
 };
 } // end namespace wgt
 #endif // TABLE_EXTENSION_HPP

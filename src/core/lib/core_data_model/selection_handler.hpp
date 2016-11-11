@@ -7,22 +7,20 @@
 // Eventually, we need to remove this class
 namespace wgt
 {
-class SelectionHandler
-	: public ISelectionHandler
+class SelectionHandler : public ISelectionHandler
 {
 public:
-    SelectionHandler();
-    ~SelectionHandler();
+	SelectionHandler();
+	~SelectionHandler();
 
-	
-	void setSelectedRows( const std::vector< int > & selectionCollection ) override;
-	const std::vector< int > & getSelectedRows() const override;
-	void setSelectedItems( const std::vector< IItem* > & selectionCollection ) override;
-	const std::vector< IItem* > & getSelectedItems() const override;
+	void setSelectedRows(const std::vector<int>& selectionCollection) override;
+	const std::vector<int>& getSelectedRows() const override;
+	void setSelectedItems(const std::vector<IItem*>& selectionCollection) override;
+	const std::vector<IItem*>& getSelectedItems() const override;
 
 private:
-	std::vector< int > selectedRows_;
-	std::vector< IItem* > selectedItems_;
+	std::vector<int> selectedRows_;
+	std::vector<IItem*> selectedItems_;
 };
 } // end namespace wgt
-#endif //HISTORY_SELECTION_HANDLER_HPP
+#endif // HISTORY_SELECTION_HANDLER_HPP

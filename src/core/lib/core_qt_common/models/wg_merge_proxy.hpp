@@ -57,4 +57,4 @@ private:
 };
 }
 
-#endif //WG_MERGE_PROXY_HPP
+#endif // WG_MERGE_PROXY_HPP

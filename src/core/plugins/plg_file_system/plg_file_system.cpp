@@ -18,35 +18,33 @@ namespace wgt
 * @ingroup plugins
 * @ingroup coreplugins
 */
-class FileSystemPlugin
-	: public PluginMain
+class FileSystemPlugin : public PluginMain
 {
 public:
-	FileSystemPlugin( IComponentContext & contextManager )
+	FileSystemPlugin(IComponentContext& contextManager)
 	{
-
 	}
 
-	bool PostLoad( IComponentContext & contextManager ) override
+	bool PostLoad(IComponentContext& contextManager) override
 	{
-		types_.push_back( contextManager.registerInterface( &fileSystem_, false ) );
+		types_.push_back(contextManager.registerInterface(&fileSystem_, false));
 		return true;
 	}
 
-	void Initialise(IComponentContext & contextManager) override
+	void Initialise(IComponentContext& contextManager) override
 	{
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
 		return true;
 	}
 
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for (auto type: types_)
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
 
@@ -55,5 +53,5 @@ private:
 	std::vector<IInterface*> types_;
 };
 
-PLG_CALLBACK_FUNC( FileSystemPlugin )
+PLG_CALLBACK_FUNC(FileSystemPlugin)
 } // end namespace wgt

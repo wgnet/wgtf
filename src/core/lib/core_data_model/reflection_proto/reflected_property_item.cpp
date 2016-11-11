@@ -9,6 +9,7 @@
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "../reflection/class_definition_model.hpp"
 #include "wg_types/binary_block.hpp"
+#include "../file_system/file_system_model.hpp"
 
 namespace wgt
 {
@@ -20,14 +21,14 @@ ITEMROLE(elementKeyType)
 ITEMROLE(readOnly)
 ITEMROLE(enabled)
 ITEMROLE(multipleValues)
+ITEMROLE(assetModel)
+ITEMROLE(name)
 
 namespace
 {
 struct MaxMinValuePair
 {
-	MaxMinValuePair(const Variant& min, const Variant& max)
-	    : minValue_(min)
-	    , maxValue_(max)
+	MaxMinValuePair(const Variant& min, const Variant& max) : minValue_(min), maxValue_(max)
 	{
 	}
 
@@ -54,74 +55,62 @@ MaxMinValuePair getValuePair(const TypeId& tid)
 
 	if (int8Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<int8_t>::lowest(),
-		                       std::numeric_limits<int8_t>::max());
+		return MaxMinValuePair(std::numeric_limits<int8_t>::lowest(), std::numeric_limits<int8_t>::max());
 	}
 
 	if (int16Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<int16_t>::lowest(),
-		                       std::numeric_limits<int16_t>::max());
+		return MaxMinValuePair(std::numeric_limits<int16_t>::lowest(), std::numeric_limits<int16_t>::max());
 	}
 
 	if (int32Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<int32_t>::lowest(),
-		                       std::numeric_limits<int32_t>::max());
+		return MaxMinValuePair(std::numeric_limits<int32_t>::lowest(), std::numeric_limits<int32_t>::max());
 	}
 
 	if (int64Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<int64_t>::lowest(),
-		                       std::numeric_limits<int64_t>::max());
+		return MaxMinValuePair(std::numeric_limits<int64_t>::lowest(), std::numeric_limits<int64_t>::max());
 	}
 
 	if (uint8Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<uint8_t>::min(),
-		                       std::numeric_limits<uint8_t>::max());
+		return MaxMinValuePair(std::numeric_limits<uint8_t>::min(), std::numeric_limits<uint8_t>::max());
 	}
 
 	if (uint16Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<uint16_t>::min(),
-		                       std::numeric_limits<uint16_t>::max());
+		return MaxMinValuePair(std::numeric_limits<uint16_t>::min(), std::numeric_limits<uint16_t>::max());
 	}
 
 	if (uint32Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<uint8_t>::min(),
-		                       std::numeric_limits<uint32_t>::max());
+		return MaxMinValuePair(std::numeric_limits<uint8_t>::min(), std::numeric_limits<uint32_t>::max());
 	}
 
 	if (uint64Type == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<uint16_t>::min(),
-		                       std::numeric_limits<uint64_t>::max());
+		return MaxMinValuePair(std::numeric_limits<uint16_t>::min(), std::numeric_limits<uint64_t>::max());
 	}
 
 	if (longType == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<long>::lowest(),
-		                       std::numeric_limits<long>::max());
+		return MaxMinValuePair(std::numeric_limits<long>::lowest(), std::numeric_limits<long>::max());
 	}
 
 	if (ulongType == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<unsigned long>::min(),
-		                       std::numeric_limits<unsigned long>::max());
+		return MaxMinValuePair(std::numeric_limits<unsigned long>::min(), std::numeric_limits<unsigned long>::max());
 	}
 
 	if (floatType == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<float>::lowest(),
-		                       std::numeric_limits<float>::max());
+		return MaxMinValuePair(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max());
 	}
 
 	if (doubleType == tid)
 	{
-		return MaxMinValuePair(std::numeric_limits<double>::lowest(),
-		                       std::numeric_limits<double>::max());
+		return MaxMinValuePair(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
 	}
 
 	return MaxMinValuePair(Variant(), Variant());
@@ -139,10 +128,9 @@ Variant getMinValue(const TypeId& typeId)
 }
 namespace proto
 {
-ReflectedPropertyItem::ReflectedPropertyItem(const ReflectedTreeModel& model, const ObjectHandle& object, const std::string& path)
-    : model_(model)
-    , object_(object)
-    , path_(path)
+ReflectedPropertyItem::ReflectedPropertyItem(const ReflectedTreeModel& model, const ObjectHandle& object,
+                                             const std::string& path, const std::string& fullpath)
+    : model_(model), object_(object), path_(path), fullPath_(fullpath)
 {
 }
 
@@ -160,6 +148,11 @@ const std::string& ReflectedPropertyItem::getPath() const
 	return path_;
 }
 
+const std::string& ReflectedPropertyItem::getFullPath() const
+{
+	return fullPath_;
+}
+
 void ReflectedPropertyItem::setPath(const std::string& path)
 {
 	path_ = path;
@@ -173,8 +166,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		return Variant();
 	}
 
-	auto propertyAccessor = object_.getDefinition(*pDefinitionManager)->bindProperty(
-	path_.c_str(), object_);
+	auto propertyAccessor = object_.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), object_);
 
 	if (roleId == ItemRole::displayId)
 	{
@@ -184,15 +176,16 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		{
 			auto displayName = findFirstMetaData<MetaDisplayNameObj>(propertyAccessor, *pDefinitionManager);
 			if (displayName != nullptr)
-				return displayName->getDisplayName();
+			{
+				return displayName->getDisplayName(propertyAccessor.getObject());
+			}
 			return path_.c_str();
 		}
 		default:
 			return "Reflected Property";
 		}
 	}
-	else if (roleId == ItemRole::valueId ||
-	         roleId == ValueRole::roleId_)
+	else if (roleId == ItemRole::valueId || roleId == ValueRole::roleId_)
 	{
 		if (!propertyAccessor.canGetValue())
 		{
@@ -205,13 +198,11 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		}
 		return value;
 	}
-	else if (roleId == ItemRole::valueTypeId ||
-	         roleId == ValueTypeRole::roleId_)
+	else if (roleId == ItemRole::valueTypeId || roleId == ValueTypeRole::roleId_)
 	{
 		return propertyAccessor.getType().getName();
 	}
-	else if (roleId == ItemRole::keyId ||
-	         roleId == KeyRole::roleId_)
+	else if (roleId == ItemRole::keyId || roleId == KeyRole::roleId_)
 	{
 		auto index = model_.index(this);
 		auto parent = index.parent_;
@@ -244,8 +235,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 
 		return it.key();
 	}
-	else if (roleId == ItemRole::keyTypeId ||
-	         roleId == KeyTypeRole::roleId_)
+	else if (roleId == ItemRole::keyTypeId || roleId == KeyTypeRole::roleId_)
 	{
 		auto index = model_.index(this);
 		auto parent = index.parent_;
@@ -306,6 +296,19 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	{
 		return Variant();
 	}
+	else if (roleId == ItemRole::assetModelId)
+	{
+		auto assetManager = model_.getAssetManager();
+		if (assetManager == nullptr)
+		{
+			return Variant();
+		}
+		return ObjectHandle(assetManager->assetModel());
+	}
+	else if (roleId == ItemRole::nameId)
+	{
+		return propertyAccessor.getName();
+	}
 
 	if (roleId == ObjectRole::roleId_)
 	{
@@ -335,14 +338,22 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	{
 		return findFirstMetaData<MetaActionObj>(propertyAccessor, *pDefinitionManager) != nullptr;
 	}
+	else if (roleId == DescriptionRole::roleId_)
+	{
+		auto descObj = findFirstMetaData<MetaDescriptionObj>(propertyAccessor, *pDefinitionManager);
+		if (descObj != nullptr)
+		{
+			return descObj->getDescription();
+		}
+		return nullptr;
+	}
 	else if (roleId == IsUrlRole::roleId_)
 	{
 		return findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager) != nullptr;
 	}
 	else if (roleId == ThumbnailRole::roleId_)
 	{
-		if (findFirstMetaData<MetaThumbnailObj>(propertyAccessor,
-		                                        *pDefinitionManager) == nullptr)
+		if (findFirstMetaData<MetaThumbnailObj>(propertyAccessor, *pDefinitionManager) == nullptr)
 		{
 			return Variant();
 		}
@@ -362,24 +373,21 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	{
 		TypeId typeId = propertyAccessor.getType();
 		Variant variant = getMinValue(typeId);
-		auto minMaxObj =
-		findFirstMetaData<MetaMinMaxObj>(propertyAccessor, *pDefinitionManager);
+		auto minMaxObj = findFirstMetaData<MetaMinMaxObj>(propertyAccessor, *pDefinitionManager);
 		if (minMaxObj != nullptr)
 		{
 			const float& value = minMaxObj->getMin();
 			float minValue = .0f;
 			bool isOk = variant.tryCast(minValue);
-			assert(isOk);
-			if (!isOk)
+			if (isOk)
 			{
-				return variant;
-			}
-			float diff = minValue - value;
-			float epsilon = std::numeric_limits<float>::epsilon();
-			if (diff > epsilon)
-			{
-				NGT_ERROR_MSG("Property %s: MetaMinMaxObj min value exceeded limits.\n", path_.c_str());
-				return variant;
+				float diff = minValue - value;
+				float epsilon = std::numeric_limits<float>::epsilon();
+				if (diff > epsilon)
+				{
+					NGT_ERROR_MSG("Property %s: MetaMinMaxObj min value exceeded limits.\n", path_.c_str());
+					return variant;
+				}
 			}
 			return value;
 		}
@@ -392,24 +400,21 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	{
 		TypeId typeId = propertyAccessor.getType();
 		Variant variant = getMaxValue(typeId);
-		auto minMaxObj =
-		findFirstMetaData<MetaMinMaxObj>(propertyAccessor, *pDefinitionManager);
+		auto minMaxObj = findFirstMetaData<MetaMinMaxObj>(propertyAccessor, *pDefinitionManager);
 		if (minMaxObj != nullptr)
 		{
 			const float& value = minMaxObj->getMax();
 			float maxValue = .0f;
 			bool isOk = variant.tryCast(maxValue);
-			assert(isOk);
-			if (!isOk)
+			if (isOk)
 			{
-				return variant;
-			}
-			float diff = value - maxValue;
-			float epsilon = std::numeric_limits<float>::epsilon();
-			if (diff > epsilon)
-			{
-				NGT_ERROR_MSG("Property %s: MetaMinMaxObj max value exceeded limits.\n", path_.c_str());
-				return variant;
+				float diff = value - maxValue;
+				float epsilon = std::numeric_limits<float>::epsilon();
+				if (diff > epsilon)
+				{
+					NGT_ERROR_MSG("Property %s: MetaMinMaxObj max value exceeded limits.\n", path_.c_str());
+					return variant;
+				}
 			}
 			return value;
 		}
@@ -453,8 +458,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 			{
 				return Variant();
 			}
-			auto enumModel = std::unique_ptr<IListModel>(
-			new ReflectedEnumModel(propertyAccessor, enumObj));
+			auto enumModel = std::unique_ptr<IListModel>(new ReflectedEnumModel(propertyAccessor, enumObj));
 			return std::move(enumModel);
 		}
 	}
@@ -469,8 +473,8 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		ObjectHandle provider;
 		variant.tryCast(provider);
 		provider = reflectedRoot(provider, *pDefinitionManager);
-		auto definition = const_cast<IClassDefinition*>(
-		provider.isValid() ? provider.getDefinition(*pDefinitionManager) : nullptr);
+		auto definition =
+		const_cast<IClassDefinition*>(provider.isValid() ? provider.getDefinition(*pDefinitionManager) : nullptr);
 		return ObjectHandle(definition);
 	}
 	else if (roleId == DefinitionModelRole::roleId_)
@@ -481,8 +485,8 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 			auto definition = pDefinitionManager->getDefinition(typeId.removePointer().getName());
 			if (definition != nullptr)
 			{
-				auto definitionModel = std::unique_ptr<IListModel>(
-				new ClassDefinitionModel(definition, *pDefinitionManager));
+				auto definitionModel =
+				std::unique_ptr<IListModel>(new ClassDefinitionModel(definition, *pDefinitionManager));
 				return std::move(definitionModel);
 			}
 		}
@@ -490,8 +494,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == UrlIsAssetBrowserRole::roleId_)
 	{
 		bool isAssetBrowserDlg = false;
-		auto urlObj =
-		findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
+		auto urlObj = findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
 		if (urlObj != nullptr)
 		{
 			isAssetBrowserDlg = urlObj->isAssetBrowserDialog();
@@ -501,8 +504,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == UrlDialogTitleRole::roleId_)
 	{
 		const char* title = "";
-		auto urlObj =
-		findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
+		auto urlObj = findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
 		if (urlObj != nullptr)
 		{
 			title = urlObj->getDialogTitle();
@@ -512,8 +514,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == UrlDialogDefaultFolderRole::roleId_)
 	{
 		const char* folder = "";
-		auto urlObj =
-		findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
+		auto urlObj = findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
 		if (urlObj != nullptr)
 		{
 			folder = urlObj->getDialogDefaultFolder();
@@ -523,8 +524,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == UrlDialogNameFiltersRole::roleId_)
 	{
 		const char* nameFilters = "";
-		auto urlObj =
-		findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
+		auto urlObj = findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
 		if (urlObj != nullptr)
 		{
 			nameFilters = urlObj->getDialogNameFilters();
@@ -534,34 +534,17 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == UrlDialogSelectedNameFilterRole::roleId_)
 	{
 		const char* selectedFilter = "";
-		auto urlObj =
-		findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
+		auto urlObj = findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
 		if (urlObj != nullptr)
 		{
 			selectedFilter = urlObj->getDialogSelectedNameFilter();
 		}
 		return selectedFilter;
 	}
-	else if (roleId == UrlDialogModalityRole::roleId_)
-	{
-		int modality = 1;
-		auto urlObj =
-		findFirstMetaData<MetaUrlObj>(propertyAccessor, *pDefinitionManager);
-		if (urlObj != nullptr)
-		{
-			const int& value = urlObj->getDialogModality();
-			if (value >= 0 && value <= 2)
-			{
-				modality = value;
-			}
-		}
-		return modality;
-	}
 	else if (roleId == ItemRole::readOnlyId)
 	{
 		TypeId typeId = propertyAccessor.getType();
-		auto readonly =
-		findFirstMetaData<MetaReadOnlyObj>(propertyAccessor, *pDefinitionManager);
+		auto readonly = findFirstMetaData<MetaReadOnlyObj>(propertyAccessor, *pDefinitionManager);
 		if (readonly)
 		{
 			return true;
@@ -594,8 +577,7 @@ bool ReflectedPropertyItem::setData(int column, ItemRole::Id roleId, const Varia
 	}
 
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*pDefinitionManager)->bindProperty(
-	path_.c_str(), obj);
+	auto propertyAccessor = obj.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), obj);
 
 	if (roleId == ValueRole::roleId_)
 	{
@@ -615,8 +597,7 @@ bool ReflectedPropertyItem::setData(int column, ItemRole::Id roleId, const Varia
 			return false;
 		}
 
-		auto baseDefinition = pDefinitionManager->getDefinition(
-		typeId.removePointer().getName());
+		auto baseDefinition = pDefinitionManager->getDefinition(typeId.removePointer().getName());
 		if (baseDefinition == nullptr)
 		{
 			return false;

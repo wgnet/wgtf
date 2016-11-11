@@ -7,22 +7,19 @@
 
 namespace wgt
 {
-TEST_F( TestReflectionFixture, testBinding )
+TEST_F(TestReflectionFixture, testBinding)
 {
-	TestStructure & testStructure = getTestStructure();
+	TestStructure& testStructure = getTestStructure();
 
-	ObjectHandle provider(
-		&testStructure,
-		getDefinitionManager().getDefinition< TestStructure >() );
+	ObjectHandle provider(&testStructure, getDefinitionManager().getDefinition<TestStructure>());
 
-	auto definition = provider.getDefinition( getDefinitionManager() );
-	CHECK( definition );
+	auto definition = provider.getDefinition(getDefinitionManager());
+	CHECK(definition);
 	auto itRange = definition->allProperties();
-	for( auto it = itRange.begin(); it != itRange.end(); ++it )
+	for (auto it = itRange.begin(); it != itRange.end(); ++it)
 	{
 		auto property = *it;
-		definition->bindProperty( property->getName(), provider );
+		definition->bindProperty(property->getName(), provider);
 	}
-
 }
 } // end namespace wgt

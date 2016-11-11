@@ -11,8 +11,8 @@ TEST(file_sytem)
 {
 	FileSystem fileSystem;
 
-	char const * filePath = "TestFile.txt";
-	char const * testData = "Uni, arch toressful, Could insits bervit of a pren, Abutio, yethis tassion, \
+	char const* filePath = "TestFile.txt";
+	char const* testData = "Uni, arch toressful, Could insits bervit of a pren, Abutio, yethis tassion, \
 													to to les wity winet uponeus, licitly of be act it, Hiss, is himent the God's \
 													joyalti-datche imusin a forine), ways knoth ne caught not rience, wer reat meorin \
 													Here of ses of con ch conses our mandif Pal to expeat usives takescie infata he of \
@@ -34,7 +34,7 @@ TEST(file_sytem)
 
 	IFileSystem::IStreamPtr stream = fileSystem.readFile(filePath, std::ios::in);
 	CHECK(stream->size() == testDataLength);
-	char * readedData = (char *)malloc(stream->size());
+	char* readedData = (char*)malloc(stream->size());
 	size_t readedSize = stream->readRaw(readedData, stream->size());
 	CHECK(readedSize == stream->size());
 	stream = nullptr;
@@ -44,7 +44,7 @@ TEST(file_sytem)
 	CHECK(fileSystem.getFileType(filePath) == IFileSystem::FileType::File);
 	CHECK(fileSystem.getFileType("dummy") == IFileSystem::FileType::NotFound);
 
-	char const * movedFilePath = "MovedTestFile.txt";
+	char const* movedFilePath = "MovedTestFile.txt";
 	CHECK(fileSystem.move(filePath, movedFilePath));
 	CHECK(fileSystem.exists(filePath) == false);
 	CHECK(fileSystem.exists(movedFilePath) == true);
@@ -62,35 +62,35 @@ TEST(file_sytem)
 
 	int counter = 0;
 	fileSystem.enumerate(wdir, [&](IFileInfoPtr&& info) {
-			CHECK(fileSystem.exists(info->fullPath()));
-			CHECK(fileSystem.getFileInfo(info->fullPath())->size() == info->size());
-			++counter;
-			return true;
-		});
-		
+		CHECK(fileSystem.exists(info->fullPath()));
+		CHECK(fileSystem.getFileInfo(info->fullPath())->size() == info->size());
+		++counter;
+		return true;
+	});
+
 	CHECK(counter != 0);
 
 	CHECK(fileSystem.remove(filePath));
-    
-    char userDirectoryPath[MAX_PATH];
-    CHECK( GetUserDirectoryPath( userDirectoryPath ) );
-    CHECK( fileSystem.exists( userDirectoryPath ) );
 
-    std::string userToolsPath = userDirectoryPath;
-    userToolsPath += FilePath::kNativeDirectorySeparator;
-    userToolsPath += "wgtools_testing";
+	char userDirectoryPath[MAX_PATH];
+	CHECK(GetUserDirectoryPath(userDirectoryPath));
+	CHECK(fileSystem.exists(userDirectoryPath));
 
-    if( fileSystem.exists( userToolsPath.c_str() ) )
-    {
-        rmdir( userToolsPath.c_str() );
-    }
+	std::string userToolsPath = userDirectoryPath;
+	userToolsPath += FilePath::kNativeDirectorySeparator;
+	userToolsPath += "wgtools_testing";
 
-    CHECK( !fileSystem.exists( userToolsPath.c_str() ) );
-    CHECK( CreateDirectoryPath( userToolsPath.c_str() ) );
-    CHECK( fileSystem.exists( userToolsPath.c_str() ) );
-    CHECK( CreateDirectoryPath( userToolsPath.c_str() ) ); // Ensure multiple calls return true
-    CHECK( rmdir( userToolsPath.c_str() ) == 0 );
-    CHECK( !fileSystem.exists( userToolsPath.c_str() ) );    
+	if (fileSystem.exists(userToolsPath.c_str()))
+	{
+		rmdir(userToolsPath.c_str());
+	}
+
+	CHECK(!fileSystem.exists(userToolsPath.c_str()));
+	CHECK(CreateDirectoryPath(userToolsPath.c_str()));
+	CHECK(fileSystem.exists(userToolsPath.c_str()));
+	CHECK(CreateDirectoryPath(userToolsPath.c_str())); // Ensure multiple calls return true
+	CHECK(rmdir(userToolsPath.c_str()) == 0);
+	CHECK(!fileSystem.exists(userToolsPath.c_str()));
 
 	free(readedData);
 }

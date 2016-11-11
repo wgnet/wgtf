@@ -29,7 +29,8 @@ HANDLE FindFirstFileExAHelper(const char* path, WIN32_FIND_DATAA& findData)
 			GetFullPathNameA(findPath.c_str(), MAX_PATH, fullPath, NULL);
 			findPath = fullPath;
 		}
-		// Cannot end in trailing backslash https://msdn.microsoft.com/en-us/library/windows/desktop/aa364419(v=vs.85).aspx
+		// Cannot end in trailing backslash
+		// https://msdn.microsoft.com/en-us/library/windows/desktop/aa364419(v=vs.85).aspx
 		if (*--findPath.end() == FilePath::kAltDirectorySeparator)
 			findPath.erase(--findPath.end());
 		handle = FindFirstFileExA(findPath.c_str(), FindExInfoBasic, &findData, FindExSearchNameMatch, NULL, 0);
@@ -76,20 +77,19 @@ void FileSystem::enumerate(const char* dir, EnumerateCallback callback) const
 	std::string directory(filter);
 	directory.erase(--directory.end());
 	// Using the ANSI version of FindFirstFileEx, the name is limited to MAX_PATH characters.
-	// To extend this limit to approximately 32,000 wide characters, use the Unicode version of the function and prepend "\\?\" to the path.
+	// To extend this limit to approximately 32,000 wide characters, use the Unicode version of the function and prepend
+	// "\\?\" to the path.
 	auto handle = FindFirstFileExA(filter.c_str(), FindExInfoBasic, &findData, FindExSearchNameMatch, NULL, 0);
 	if (handle != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
-			auto  info = std::make_shared<FileInfo>(
-				uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
-				uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
-				uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
-				uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime,
-				directory + findData.cFileName,
-				static_cast<FileAttribute>(findData.dwFileAttributes)
-			);
+			auto info = std::make_shared<FileInfo>(
+			uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
+			uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
+			uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
+			uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime,
+			directory + findData.cFileName, static_cast<FileAttribute>(findData.dwFileAttributes));
 			if (!callback(std::move(info)))
 				break;
 		} while (FindNextFileA(handle, &findData));
@@ -131,14 +131,12 @@ IFileInfoPtr FileSystem::getFileInfo(const char* path) const
 		uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
 		uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
 		uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
-		uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime,
-		fullPath,
-		static_cast<FileAttribute>(findData.dwFileAttributes)
-		);
+		uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime, fullPath,
+		static_cast<FileAttribute>(findData.dwFileAttributes));
 		FindClose(handle);
 		return info;
 	}
-	return std::make_shared<FileInfo>( 0, 0, 0, 0, std::string(), None );
+	return std::make_shared<FileInfo>(0, 0, 0, 0, std::string(), None);
 }
 bool FileSystem::move(const char* path, const char* new_path)
 {

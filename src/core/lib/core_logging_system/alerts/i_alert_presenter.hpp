@@ -8,9 +8,10 @@ namespace wgt
 class IAlertPresenter
 {
 public:
-
-	virtual ~IAlertPresenter() {}
-	virtual void show( const char* text ) = 0;
+	virtual ~IAlertPresenter()
+	{
+	}
+	virtual void show(const char* text) = 0;
 };
 } // end namespace wgt
 #endif // I_ALERT_PRESENTER_HPP

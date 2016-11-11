@@ -26,22 +26,21 @@ public:
 	 */
 	MoveItemDataCommandArgument();
 
-	void setModel( AbstractItemModel & model );
-	void setStartPos( int startPos );
-	void setDirection( Direction dir );
-	void setEndPos( int endPos );
-	void setCount( int count );
-	void setStartParent( const AbstractItem * startParent );
-	void setEndParent( const AbstractItem * endParent );
+	void setModel(AbstractItemModel& model);
+	void setStartPos(int startPos);
+	void setDirection(Direction dir);
+	void setEndPos(int endPos);
+	void setCount(int count);
+	void setStartParent(const AbstractItem* startParent);
+	void setEndParent(const AbstractItem* endParent);
 
 	Direction direction_;
-	AbstractItemModel * pModel_;
-	const AbstractItem * startParent_;
+	AbstractItemModel* pModel_;
+	const AbstractItem* startParent_;
 	int startPos_;
-	const AbstractItem * endParent_;
+	const AbstractItem* endParent_;
 	int endPos_;
 	int count_;
 };
-
 
 } // end namespace wgt

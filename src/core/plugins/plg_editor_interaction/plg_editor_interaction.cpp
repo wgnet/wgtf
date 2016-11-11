@@ -30,43 +30,38 @@ namespace wgt
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class EditorInteractionPlugin
-	: public PluginMain
+class EditorInteractionPlugin : public PluginMain
 {
 private:
 	std::vector<std::unique_ptr<Command>> commands_;
-	IInterface * pItemModelController_;
+	IInterface* pItemModelController_;
 
 public:
 	//==========================================================================
-	EditorInteractionPlugin( IComponentContext & contextManager )
-		: pItemModelController_( nullptr )
+	EditorInteractionPlugin(IComponentContext& contextManager) : pItemModelController_(nullptr)
 	{
-		
 	}
 
 	//==========================================================================
-	bool PostLoad( IComponentContext & contextManager ) override
+	bool PostLoad(IComponentContext& contextManager) override
 	{
-		pItemModelController_ = contextManager.registerInterface(
-			new ItemModelController( contextManager ) );
+		pItemModelController_ = contextManager.registerInterface(new ItemModelController(contextManager));
 		return true;
 	}
 
-
 	//==========================================================================
-	void Initialise( IComponentContext & contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
-		auto defManager = contextManager.queryInterface< IDefinitionManager >();
+		auto defManager = contextManager.queryInterface<IDefinitionManager>();
 		if (defManager == nullptr)
 		{
 			return;
 		}
-		IDefinitionManager & definitionManager = *defManager;
-		Reflection_Utils::initReflectedTypes( definitionManager );
-		ItemModelCommands::registerTypes( definitionManager );
+		IDefinitionManager& definitionManager = *defManager;
+		Reflection_Utils::initReflectedTypes(definitionManager);
+		ItemModelCommands::registerTypes(definitionManager);
 
-		auto commandSystemProvider = contextManager.queryInterface< ICommandManager >();
+		auto commandSystemProvider = contextManager.queryInterface<ICommandManager>();
 		if (!commandSystemProvider)
 		{
 			NGT_ERROR_MSG("Could not register data model commands\n");
@@ -110,11 +105,10 @@ public:
 		commandSystemProvider->registerCommand(commands_.back().get());
 	}
 
-
 	//==========================================================================
-	bool Finalise(IComponentContext & contextManager) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
-		auto commandSystemProvider = contextManager.queryInterface< ICommandManager >();
+		auto commandSystemProvider = contextManager.queryInterface<ICommandManager>();
 		if (!commandSystemProvider)
 		{
 			return false;
@@ -129,12 +123,12 @@ public:
 	}
 
 	//==========================================================================
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		contextManager.deregisterInterface( pItemModelController_ );
+		contextManager.deregisterInterface(pItemModelController_);
 		pItemModelController_ = nullptr;
 	}
 };
 
-PLG_CALLBACK_FUNC( EditorInteractionPlugin )
+PLG_CALLBACK_FUNC(EditorInteractionPlugin)
 } // end namespace wgt

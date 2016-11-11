@@ -14,10 +14,7 @@ namespace wgt
 class IComponentContext;
 class IQtFramework;
 
-class QmlDialog
-: public QObject
-  ,
-  public Implements<IDialog>
+class QmlDialog : public QObject, public Implements<IDialog>
 {
 public:
 	QmlDialog(IComponentContext& context, QQmlEngine& engine, IQtFramework& framework);
@@ -36,8 +33,8 @@ public:
 	void setParent(QObject* parent);
 
 public slots:
-	void error( QQuickWindow::SceneGraphError error, const QString& message );
-	void reload( const QString& url );
+	void error(QQuickWindow::SceneGraphError error, const QString& message);
+	void reload(const QString& url);
 
 protected:
 	ObjectHandle model() const;

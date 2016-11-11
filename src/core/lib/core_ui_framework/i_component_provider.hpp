@@ -8,14 +8,15 @@
 
 namespace wgt
 {
-
 class IComponentProvider
 {
 public:
-	virtual ~IComponentProvider() {}
+	virtual ~IComponentProvider()
+	{
+	}
 
-	virtual const char * componentId( const TypeId & typeId,
-		std::function< bool ( const ItemRole::Id& ) > & predicate ) const = 0;
+	virtual const char* componentId(const TypeId& typeId,
+	                                std::function<bool(const ItemRole::Id&)>& predicate) const = 0;
 };
 } // end namespace wgt
-#endif//I_COMPONENT_PROVIDER_HPP
+#endif // I_COMPONENT_PROVIDER_HPP

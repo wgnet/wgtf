@@ -13,20 +13,17 @@
 
 namespace wgt
 {
-class QmlPreferencesPanel
-		: Depends< IUIFramework, IUIApplication, IViewCreator >
+class QmlPreferencesPanel : Depends<IUIFramework, IUIApplication, IViewCreator>
 {
-
 public:
-	QmlPreferencesPanel( IComponentContext & context );
+	QmlPreferencesPanel(IComponentContext& context);
 
 	bool addPanel();
 	void removePanel();
 
 private:
-	wg_future<std::unique_ptr< IView >> qmlPreferencesView_;
+	wg_future<std::unique_ptr<IView>> qmlPreferencesView_;
 };
 
 #endif // _QML_PREFERENCES_PANEL_HPP
-
 }

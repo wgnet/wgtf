@@ -6,29 +6,29 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( MacroEditObject, MetaNoSerialization() )
-	EXPOSE( "Commands", controllers_, MetaNone() )
+BEGIN_EXPOSE(MacroEditObject, MetaNoSerialization())
+EXPOSE("Commands", controllers_, MetaNone())
 END_EXPOSE()
 
-BEGIN_EXPOSE( ReflectedPropertyCommandArgumentController, MetaNoSerialization() )
-	EXPOSE( "Property", getPropertyPath, MetaReadOnly() )
-	EXPOSE( "Value", getValue, setValue, MetaNone() )
-	EXPOSE( "Object", getObject, setObject, MetaEnumFunc( generateObjList ) )
+BEGIN_EXPOSE(ReflectedPropertyCommandArgumentController, MetaNoSerialization())
+EXPOSE("Property", getPropertyPath, MetaReadOnly())
+EXPOSE("Value", getValue, setValue, MetaNone())
+EXPOSE("Object", getObject, setObject, MetaEnumFunc(generateObjList))
 END_EXPOSE()
 
-BEGIN_EXPOSE( MethodParam, MetaNoSerialization() )
-	EXPOSE( "Value", getValue, setValue, MetaNone() )
+BEGIN_EXPOSE(MethodParam, MetaNoSerialization())
+EXPOSE("Value", getValue, setValue, MetaNone())
 END_EXPOSE()
 
-BEGIN_EXPOSE( ReflectedMethodCommandParametersController, MetaNoSerialization() )
-	EXPOSE( "Method", getMethodPath, MetaReadOnly() )
-	EXPOSE( "Object", getObject, setObject, MetaEnumFunc( generateObjList ) )
-	EXPOSE( "Parameters", methodParams_, MetaNone() )
+BEGIN_EXPOSE(ReflectedMethodCommandParametersController, MetaNoSerialization())
+EXPOSE("Method", getMethodPath, MetaReadOnly())
+EXPOSE("Object", getObject, setObject, MetaEnumFunc(generateObjList))
+EXPOSE("Parameters", methodParams_, MetaNone())
 END_EXPOSE()
 
-BEGIN_EXPOSE( MacroObject, MetaNoSerialization() )
-	EXPOSE( "DisplayName", macroName_, MetaNoSerialization() )
-	EXPOSE( "RunMacro", executeMacro, MetaNoSerialization() )
-	EXPOSE( "TreeSource", getTreeModel, MetaNone() )
+BEGIN_EXPOSE(MacroObject, MetaNoSerialization())
+EXPOSE("DisplayName", macroName_, MetaNoSerialization())
+EXPOSE("RunMacro", executeMacro, MetaNoSerialization())
+EXPOSE("TreeSource", getTreeModel, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

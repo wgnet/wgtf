@@ -8,33 +8,30 @@ namespace wgt
 class HashedStringRef
 {
 public:
-	HashedStringRef( const char * str );
+	HashedStringRef(const char* str);
 
-	//Getters
+	// Getters
 	size_t hash() const;
 
-	//Operators
-	bool operator == ( const HashedStringRef & other ) const;
+	// Operators
+	bool operator==(const HashedStringRef& other) const;
 
 private:
-	size_t			hash_;
-	const char *	pStart_;
-	size_t			length_;
+	size_t hash_;
+	const char* pStart_;
+	size_t length_;
 };
 } // end namespace wgt
 
 namespace std
 {
-
-	template<>
-	struct hash< wgt::HashedStringRef >
-		: public unary_function< const wgt::HashedStringRef, size_t >
+template <>
+struct hash<wgt::HashedStringRef> : public unary_function<const wgt::HashedStringRef, size_t>
+{
+	size_t operator()(const wgt::HashedStringRef& s) const
 	{
-		size_t operator()(const wgt::HashedStringRef & s) const
-		{
-			return s.hash();
-		}
-	};
-
+		return s.hash();
+	}
+};
 }
 #endif // HASHED_STRING_REF_HPP

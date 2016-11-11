@@ -8,31 +8,31 @@
 
 namespace wgt
 {
-class TestTreeModel: public AbstractTreeModel
+class TestTreeModel : public AbstractTreeModel
 {
 public:
 	TestTreeModel();
-	TestTreeModel( const TestTreeModel& rhs );
+	TestTreeModel(const TestTreeModel& rhs);
 	virtual ~TestTreeModel();
 
-	TestTreeModel& operator=( const TestTreeModel& rhs );
+	TestTreeModel& operator=(const TestTreeModel& rhs);
 
-	virtual AbstractItem * item( const ItemIndex & index ) const override;
-	virtual ItemIndex index( const AbstractItem * item ) const override;
-	virtual Variant getData( int row, int column, ItemRole::Id roleId ) const override;
-	virtual bool setData( int row, int column, ItemRole::Id roleId, const Variant & data ) override;
+	virtual AbstractItem* item(const ItemIndex& index) const override;
+	virtual ItemIndex index(const AbstractItem* item) const override;
+	virtual Variant getData(int row, int column, ItemRole::Id roleId) const override;
+	virtual bool setData(int row, int column, ItemRole::Id roleId, const Variant& data) override;
 
-	virtual int rowCount( const AbstractItem * item ) const override;
+	virtual int rowCount(const AbstractItem* item) const override;
 	virtual int columnCount() const override;
 
-	virtual bool moveRows( const AbstractItem * sourceParent, int sourceRow, int count,
-		const AbstractItem * destinationParent, int destinationChild ) override;
-	virtual std::vector< std::string > roles() const override;
+	virtual bool moveRows(const AbstractItem* sourceParent, int sourceRow, int count,
+	                      const AbstractItem* destinationParent, int destinationChild) override;
+	virtual std::vector<std::string> roles() const override;
 
-	virtual Connection connectPreRowsMoved( TestTreeModel::MoveCallback callback ) override;
-	virtual Connection connectPostRowsMoved( TestTreeModel::MoveCallback callback ) override;
-	virtual Connection connectPreItemDataChanged( TestTreeModel::DataCallback callback ) override;
-	virtual Connection connectPostItemDataChanged( TestTreeModel::DataCallback callback ) override;
+	virtual Connection connectPreRowsMoved(TestTreeModel::MoveCallback callback) override;
+	virtual Connection connectPostRowsMoved(TestTreeModel::MoveCallback callback) override;
+	virtual Connection connectPreItemDataChanged(TestTreeModel::DataCallback callback) override;
+	virtual Connection connectPostItemDataChanged(TestTreeModel::DataCallback callback) override;
 
 private:
 	struct Implementation;

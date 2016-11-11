@@ -12,18 +12,26 @@ class ReflectedGroupItem;
 class PropertyTreeModel : public ReflectedTreeModel
 {
 public:
-	PropertyTreeModel(IComponentContext& context, const ObjectHandle& object);
+	PropertyTreeModel(IComponentContext& context, const ObjectHandle& object = nullptr);
 	virtual ~PropertyTreeModel();
 
 protected:
 	virtual std::unique_ptr<Children> getChildren(const AbstractItem* item) override;
-	virtual void removeChildren(const AbstractItem* item, std::unique_ptr<Children>& children) override;
+	virtual void clearChildren(const AbstractItem* item) override;
 
 	typedef std::vector<std::unique_ptr<ReflectedGroupItem>> Groups;
-	const Groups& enumerateGroups(const ReflectedPropertyItem* item);
+	const Groups& getGroups(const ReflectedPropertyItem* item);
 	void clearGroups(const ReflectedPropertyItem* item);
 
 	void collectProperties(const ReflectedPropertyItem* item, std::vector<const ReflectedPropertyItem*>& o_Properties);
+
+	enum FilterResult
+	{
+		INCLUDE,
+		INCLUDE_CHILDREN,
+		IGNORE
+	};
+	virtual FilterResult filterProperty(const ReflectedPropertyItem* item) const;
 
 private:
 	std::map<const ReflectedPropertyItem*, Groups*> groups_;
@@ -31,4 +39,4 @@ private:
 }
 }
 
-#endif //PROTO_PROPERTY_TREE_MODEL_HPP
+#endif // PROTO_PROPERTY_TREE_MODEL_HPP

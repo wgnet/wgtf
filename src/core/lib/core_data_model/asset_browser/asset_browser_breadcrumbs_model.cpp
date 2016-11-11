@@ -22,12 +22,9 @@ struct AssetBrowserBreadcrumbsModel::Implementation
 	BaseBreadcrumbItem* getSubItem(const BaseBreadcrumbItem* parent, unsigned int index);
 };
 
-AssetBrowserBreadcrumbsModel::Implementation::Implementation(
-AssetBrowserBreadcrumbsModel& self,
-IDefinitionManager& definitionManager)
-    : self_(self)
-    , definitionManager_(definitionManager)
-    , path_("")
+AssetBrowserBreadcrumbsModel::Implementation::Implementation(AssetBrowserBreadcrumbsModel& self,
+                                                             IDefinitionManager& definitionManager)
+    : self_(self), definitionManager_(definitionManager), path_("")
 {
 }
 
@@ -51,8 +48,7 @@ void AssetBrowserBreadcrumbsModel::Implementation::addBreadcrumb(const IAssetObj
 	breadcrumbs_.push_back(breadcrumb);
 }
 
-void AssetBrowserBreadcrumbsModel::Implementation::addSubItem(BaseBreadcrumbItem& parent,
-                                                              const IAssetObjectItem* asset)
+void AssetBrowserBreadcrumbsModel::Implementation::addSubItem(BaseBreadcrumbItem& parent, const IAssetObjectItem* asset)
 {
 	auto subBreadcrumb = definitionManager_.create<BaseBreadcrumbItem>();
 	subBreadcrumb->initialise(*asset);
@@ -80,8 +76,7 @@ BaseBreadcrumbItem* AssetBrowserBreadcrumbsModel::Implementation::getSubItem(con
 //------------------------------------------------------------------------------
 
 AssetBrowserBreadcrumbsModel::AssetBrowserBreadcrumbsModel(IDefinitionManager& definitionManager)
-    : IBreadcrumbsModel()
-    , impl_(new Implementation(*this, definitionManager))
+    : IBreadcrumbsModel(), impl_(new Implementation(*this, definitionManager))
 {
 }
 
@@ -110,8 +105,7 @@ Variant AssetBrowserBreadcrumbsModel::getItemAtIndex(unsigned int index, int chi
 			if (variant.tryCast(provider))
 			{
 				auto breadcrumb = provider.getBase<BaseBreadcrumbItem>();
-				if (breadcrumb != nullptr &&
-				    childIndex < static_cast<int>(breadcrumb->getSubItems()->size()))
+				if (breadcrumb != nullptr && childIndex < static_cast<int>(breadcrumb->getSubItems()->size()))
 				{
 					if (childIndex == -1)
 					{

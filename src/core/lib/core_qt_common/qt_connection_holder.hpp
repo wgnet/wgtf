@@ -9,15 +9,15 @@ class QtConnectionHolder
 {
 public:
 	QtConnectionHolder();
-	QtConnectionHolder( QMetaObject::Connection& connection );
+	QtConnectionHolder(QMetaObject::Connection& connection);
 	~QtConnectionHolder();
 
 	void reset();
 
-	QtConnectionHolder& operator+=( const QMetaObject::Connection& connection );
+	QtConnectionHolder& operator+=(const QMetaObject::Connection& connection);
 
 private:
-	std::vector< QMetaObject::Connection > connections_;
+	std::vector<QMetaObject::Connection> connections_;
 };
 } // end namespace wgt
-#endif//QT_CONNECTION_HOLDER_HPP
+#endif // QT_CONNECTION_HOLDER_HPP

@@ -8,8 +8,7 @@
 
 namespace wgt
 {
-ComponentExtensionOld::ComponentExtensionOld()
-	: qtFramework_( Context::queryInterface< IQtFramework >() )
+ComponentExtensionOld::ComponentExtensionOld() : qtFramework_(Context::queryInterface<IQtFramework>())
 {
 }
 
@@ -17,23 +16,23 @@ ComponentExtensionOld::~ComponentExtensionOld()
 {
 }
 
-QHash< int, QByteArray > ComponentExtensionOld::roleNames() const
+QHash<int, QByteArray> ComponentExtensionOld::roleNames() const
 {
-	QHash< int, QByteArray > roleNames;
-	registerRole( ComponentRole::roleName_, roleNames );
+	QHash<int, QByteArray> roleNames;
+	registerRole(ComponentRole::roleName_, roleNames);
 	return roleNames;
 }
 
-QVariant ComponentExtensionOld::data( const QModelIndex &index, int role ) const
+QVariant ComponentExtensionOld::data(const QModelIndex& index, int role) const
 {
 	ItemRole::Id roleId;
-	if (!decodeRole( role, roleId ))
+	if (!decodeRole(role, roleId))
 	{
-		return QVariant( QVariant::Invalid );
+		return QVariant(QVariant::Invalid);
 	}
 
-	assert( index.isValid() );
-	auto item = reinterpret_cast< IItem * >( index.internalPointer() );
+	assert(index.isValid());
+	auto item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr)
 	{
 		return false;
@@ -42,34 +41,34 @@ QVariant ComponentExtensionOld::data( const QModelIndex &index, int role ) const
 
 	if (roleId == ComponentRole::roleId_)
 	{
-		auto data = item->getData( column, ValueTypeRole::roleId_ );
+		auto data = item->getData(column, ValueTypeRole::roleId_);
 
 		std::string typeName;
-		data.tryCast( typeName );
+		data.tryCast(typeName);
 		if (typeName.empty())
 		{
-			return QVariant( QVariant::Invalid );
+			return QVariant(QVariant::Invalid);
 		}
 
-		auto typeId = TypeId( typeName.c_str() );
-		std::function< bool ( const ItemRole::Id& ) > predicate = [&] ( const ItemRole::Id& role ) {
-			return item->getData( column, role ) == true;
+		auto typeId = TypeId(typeName.c_str());
+		std::function<bool(const ItemRole::Id&)> predicate = [&](const ItemRole::Id& role) {
+			return item->getData(column, role) == true;
 		};
 		auto component = qtFramework_->findComponent(typeId, predicate, "1.0");
 		if (component != nullptr)
 		{
-			auto qmlComponent = qtFramework_->toQmlComponent( *component );
+			auto qmlComponent = qtFramework_->toQmlComponent(*component);
 			if (qmlComponent != nullptr)
 			{
-				return QVariant::fromValue< QObject * >( qmlComponent );
+				return QVariant::fromValue<QObject*>(qmlComponent);
 			}
 		}
 	}
 
-	return QVariant( QVariant::Invalid );
+	return QVariant(QVariant::Invalid);
 }
 
-bool ComponentExtensionOld::setData( const QModelIndex &index, const QVariant &value, int role )
+bool ComponentExtensionOld::setData(const QModelIndex& index, const QVariant& value, int role)
 {
 	return false;
 }

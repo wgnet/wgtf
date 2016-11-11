@@ -21,9 +21,7 @@ EXPOSE_METHOD("callBasicDialog", callBasicDialog, MetaDirectInvoke())
 EXPOSE_METHOD("callReflectedDialog", callReflectedDialog, MetaDirectInvoke())
 END_EXPOSE()
 
-DialogTestModel::DialogTestModel()
-    : context_(nullptr)
-    , definition_(nullptr)
+DialogTestModel::DialogTestModel() : context_(nullptr), definition_(nullptr)
 {
 }
 
@@ -53,8 +51,7 @@ void DialogTestModel::callBasicDialog(bool modal)
 	auto uiFramework = context_->queryInterface<IUIFramework>();
 	assert(uiFramework != nullptr);
 
-	IDialog::ClosedCallback callback = [this](IDialog& dialog)
-	{
+	IDialog::ClosedCallback callback = [this](IDialog& dialog) {
 		assert(definition_ != nullptr);
 		PropertyAccessor accessor = definition_->bindProperty("basicDialogResult", this);
 		accessor.setValue(dialog.result());

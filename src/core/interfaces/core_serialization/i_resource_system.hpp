@@ -20,7 +20,9 @@ class IResourceSystem
 public:
 	typedef std::unique_ptr<BinaryBlock> BinaryBlockPtr;
 
-	virtual ~IResourceSystem(){}
+	virtual ~IResourceSystem()
+	{
+	}
 	virtual bool exists(const char* resource) const = 0;
 	virtual BinaryBlockPtr readBinaryContent(const char* resource) const = 0;
 };

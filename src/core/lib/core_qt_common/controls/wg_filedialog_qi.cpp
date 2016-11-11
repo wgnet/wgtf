@@ -9,9 +9,7 @@
 namespace wgt
 {
 //==============================================================================
-WGFileDialogQI::WGFileDialogQI( QObject * parent )
-	: QObject( parent )
-	, fileDialog_( NULL )
+WGFileDialogQI::WGFileDialogQI(QObject* parent) : QObject(parent), fileDialog_(NULL)
 {
 }
 
@@ -30,11 +28,11 @@ void WGFileDialogQI::componentOnComplete()
 }
 
 //==============================================================================
-void WGFileDialogQI::setTitle( QString title )
+void WGFileDialogQI::setTitle(QString title)
 {
 	// Set the file dialog's title to be used later when the createFileDialog
 	// function is invoked
-	if ( title_ == title )
+	if (title_ == title)
 	{
 		return;
 	}
@@ -42,11 +40,11 @@ void WGFileDialogQI::setTitle( QString title )
 }
 
 //==============================================================================
-void WGFileDialogQI::setFilter( QString filter )
+void WGFileDialogQI::setFilter(QString filter)
 {
 	// Set the file dialog's filter to be used later when the createFileDialog
 	// function is invoked
-	if ( filter_ == filter )
+	if (filter_ == filter)
 	{
 		return;
 	}
@@ -54,11 +52,11 @@ void WGFileDialogQI::setFilter( QString filter )
 }
 
 //==============================================================================
-void WGFileDialogQI::setFileModeFlag( int fileModeFlag )
+void WGFileDialogQI::setFileModeFlag(int fileModeFlag)
 {
 	// Set the file dialog's file mode flag to be used later when the createFileDialog
 	// function is invoked
-	if ( fileModeFlag_ == static_cast< QFileDialog::FileMode >( fileModeFlag  ) )
+	if (fileModeFlag_ == static_cast<QFileDialog::FileMode>(fileModeFlag))
 	{
 		return;
 	}
@@ -66,11 +64,11 @@ void WGFileDialogQI::setFileModeFlag( int fileModeFlag )
 }
 
 //==============================================================================
-void WGFileDialogQI::setMode( int mode )
+void WGFileDialogQI::setMode(int mode)
 {
 	// Set the file dialog's accept mode to be used later when the createFileDialog
 	// function is invoked
-	if ( mode_ == static_cast< QFileDialog::AcceptMode >( mode  ) )
+	if (mode_ == static_cast<QFileDialog::AcceptMode>(mode))
 	{
 		return;
 	}
@@ -82,7 +80,7 @@ bool WGFileDialogQI::showDialog()
 {
 	// Show the file dialog and let qml know if there is any file name selected
 	bool success = fileDialog_->exec();
-	if ( success )
+	if (success)
 	{
 		// Cache the file name selection
 		fileNames_ = fileDialog_->selectedFiles();
@@ -104,14 +102,14 @@ QStringList WGFileDialogQI::getFileNames()
 void WGFileDialogQI::createFileDialog()
 {
 	// Make sure we don't create the QFileDialog instance multiple times
-	assert( NULL == fileDialog_ );
+	assert(NULL == fileDialog_);
 
 	// Create a new QFileDialog and set it up using properties from qml
 	fileDialog_ = new QFileDialog();
 
-	fileDialog_->setWindowTitle( title_ );
-	fileDialog_->setNameFilter( filter_ );
-	fileDialog_->setAcceptMode( static_cast< QFileDialog::AcceptMode >( mode_ ) );
-	fileDialog_->setFileMode( static_cast< QFileDialog::FileMode >( fileModeFlag_ ) );
+	fileDialog_->setWindowTitle(title_);
+	fileDialog_->setNameFilter(filter_);
+	fileDialog_->setAcceptMode(static_cast<QFileDialog::AcceptMode>(mode_));
+	fileDialog_->setFileMode(static_cast<QFileDialog::FileMode>(fileModeFlag_));
 }
 } // end namespace wgt

@@ -7,8 +7,7 @@
 namespace wgt
 {
 template <typename T, bool Small>
-ThreadLocalValueImpl<T, Small>::ThreadLocalValueImpl() :
-m_tlsId(ThreadLocalBase::AllocTlsId())
+ThreadLocalValueImpl<T, Small>::ThreadLocalValueImpl() : m_tlsId(ThreadLocalBase::AllocTlsId())
 {
 	ThreadLocalValueImpl<T, Small>::Initialize();
 }
@@ -46,15 +45,13 @@ void ThreadLocalValueImpl<T, Small>::Shutdown()
 }
 
 template <typename T>
-ThreadLocalValueImpl<T, true>::ThreadLocalValueImpl() :
-m_tlsId(ThreadLocalBase::AllocTlsId())
+ThreadLocalValueImpl<T, true>::ThreadLocalValueImpl() : m_tlsId(ThreadLocalBase::AllocTlsId())
 {
 	ThreadLocalValueImpl<T, true>::Initialize();
 }
 
 template <typename T>
-ThreadLocalValueImpl<T, true>::ThreadLocalValueImpl(T t) :
-m_tlsId(ThreadLocalBase::AllocTlsId())
+ThreadLocalValueImpl<T, true>::ThreadLocalValueImpl(T t) : m_tlsId(ThreadLocalBase::AllocTlsId())
 {
 	ThreadLocalValueImpl<T, true>::Initialize();
 	SetValue(t);

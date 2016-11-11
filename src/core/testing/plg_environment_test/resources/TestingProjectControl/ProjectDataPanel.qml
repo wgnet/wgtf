@@ -3,6 +3,7 @@ import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
 import WGControls 1.0
+import WGControls.Views 1.0
 import WGCopyableFunctions 1.0
 
 WGPanel {

@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _CUSTOM_PANEL_HPP
 #define _CUSTOM_PANEL_HPP
- 
+
 #include "core_ui_framework/i_view.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
@@ -13,19 +13,17 @@
 
 namespace wgt
 {
-class CustomPanel
-	: Depends< IUIApplication, IViewCreator >
+class CustomPanel : Depends<IUIApplication, IViewCreator>
 {
 public:
-	CustomPanel( IComponentContext & context );
+	CustomPanel(IComponentContext& context);
 
 	bool addPanel();
 	void removePanel();
 
 private:
-	wg_future<std::unique_ptr< IView >> customView_;
+	wg_future<std::unique_ptr<IView>> customView_;
 };
- 
- 
+
 } // end namespace wgt
 #endif // _CUSTOM_PANEL_HPP

@@ -1,26 +1,26 @@
 #ifndef NGT_WINDOWS_HPP_INCLUDED
 #define NGT_WINDOWS_HPP_INCLUDED
 
-#if defined( _WIN32 )
-	//#define WIN32_LEAN_AND_MEAN
-	#if !defined(NOMINMAX)
-		#define NOMINMAX
-	#endif
-	#include <objbase.h>
-
-#pragma warning (push)
-#pragma warning (disable : 4091 )
-#include <DbgHelp.h>
-#pragma warning (pop)
-
-#if ( _MSC_VER < 1900 )
-	#if !defined(HAVE_SNPRINTF) && !defined(snprintf)
-	# define HAVE_SNPRINTF
-	# define snprintf _snprintf
-	# define vsnprintf _vsnprintf
-	#endif
+#if defined(_WIN32)
+//#define WIN32_LEAN_AND_MEAN
+#if !defined(NOMINMAX)
+#define NOMINMAX
 #endif
-	typedef unsigned __int64 __uint64;
+#include <objbase.h>
+
+#pragma warning(push)
+#pragma warning(disable : 4091)
+#include <DbgHelp.h>
+#pragma warning(pop)
+
+#if (_MSC_VER < 1900)
+#if !defined(HAVE_SNPRINTF) && !defined(snprintf)
+#define HAVE_SNPRINTF
+#define snprintf _snprintf
+#define vsnprintf _vsnprintf
+#endif
+#endif
+typedef unsigned __int64 __uint64;
 #endif
 
 #include "platform_dbg.hpp"
@@ -82,17 +82,18 @@ typedef long LONG;
 typedef unsigned int UINT;
 typedef ULONG* PULONG;
 typedef DWORD SIZE_T;
-typedef void *LPVOID;
-typedef const void *LPCVOID;
+typedef void* LPVOID;
+typedef const void* LPCVOID;
 typedef LONG HRESULT;
 
 #define FAILED(hr) (((HRESULT)(hr)) < 0)
 
-typedef struct _GUID {
-  DWORD Data1;
-  WORD  Data2;
-  WORD  Data3;
-  BYTE  Data4[8];
+typedef struct _GUID
+{
+	DWORD Data1;
+	WORD Data2;
+	WORD Data3;
+	BYTE Data4[8];
 } GUID;
 
 typedef struct _SYMBOL_INFO
@@ -116,169 +117,92 @@ struct WIN32_FIND_DATA
 	const wchar_t* cFileName;
 };
 
-typedef struct _MEMORY_BASIC_INFORMATION {
-  PVOID  BaseAddress;
-  PVOID  AllocationBase;
-  DWORD  AllocationProtect;
-  DWORD RegionSize;
-  DWORD  State;
-  DWORD  Protect;
-  DWORD  Type;
+typedef struct _MEMORY_BASIC_INFORMATION
+{
+	PVOID BaseAddress;
+	PVOID AllocationBase;
+	DWORD AllocationProtect;
+	DWORD RegionSize;
+	DWORD State;
+	DWORD Protect;
+	DWORD Type;
 } MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
 
-typedef struct _SECURITY_ATTRIBUTES {
-  DWORD  nLength;
-  LPVOID lpSecurityDescriptor;
-  BOOL   bInheritHandle;
+typedef struct _SECURITY_ATTRIBUTES
+{
+	DWORD nLength;
+	LPVOID lpSecurityDescriptor;
+	BOOL bInheritHandle;
 } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
 
-void ZeroMemory(
-  PVOID  Destination,
-  DWORD Length
-);
+void ZeroMemory(PVOID Destination, DWORD Length);
 
-int mbstowcs_s(
-   size_t *pReturnValue,
-   wchar_t *wcstr,
-   size_t sizeInWords,
-   const char *mbstr,
-   size_t count
-);
+int mbstowcs_s(size_t* pReturnValue, wchar_t* wcstr, size_t sizeInWords, const char* mbstr, size_t count);
 
-int strncpy_s(char *restrict dest, DWORD destsz,
-                  const char *restrict src, DWORD count);
+int strncpy_s(char* restrict dest, DWORD destsz, const char* restrict src, DWORD count);
 
-int sprintf_s(
-   char *buffer,
-   size_t sizeOfBuffer,
-   const char *format,
-   ...
-);
+int sprintf_s(char* buffer, size_t sizeOfBuffer, const char* format, ...);
 
 void SetDllDirectoryA(const char* d);
 
 HANDLE WINAPI GetCurrentProcess(void);
 
-HMODULE WINAPI GetModuleHandleW(
-  _In_opt_ const wchar_t* lpModuleName
-);
+HMODULE WINAPI GetModuleHandleW(_In_opt_ const wchar_t* lpModuleName);
 
-SIZE_T WINAPI VirtualQuery(
-  _In_opt_ LPCVOID                   lpAddress,
-  _Out_    PMEMORY_BASIC_INFORMATION lpBuffer,
-  _In_     SIZE_T                    dwLength
-);
+SIZE_T WINAPI VirtualQuery(_In_opt_ LPCVOID lpAddress, _Out_ PMEMORY_BASIC_INFORMATION lpBuffer, _In_ SIZE_T dwLength);
 
-HANDLE WINAPI FindFirstFileW(
-  _In_  const wchar_t*    lpFileName,
-  _Out_ WIN32_FIND_DATA* lpFindFileData
-);
+HANDLE WINAPI FindFirstFileW(_In_ const wchar_t* lpFileName, _Out_ WIN32_FIND_DATA* lpFindFileData);
 
-HANDLE WINAPI FindNextFile(
-  HANDLE    lpFileName,
-  _Out_ WIN32_FIND_DATA* lpFindFileData
-);
+HANDLE WINAPI FindNextFile(HANDLE lpFileName, _Out_ WIN32_FIND_DATA* lpFindFileData);
 
 DWORD GetLastError();
 
-DWORD WINAPI FormatMessageA(
-  _In_     DWORD   dwFlags,
-  _In_opt_ const void* lpSource,
-  _In_     DWORD   dwMessageId,
-  _In_     DWORD   dwLanguageId,
-  _Out_    LPTSTR  lpBuffer,
-  _In_     DWORD   nSize,
-  _In_opt_ va_list *Arguments
-);
+DWORD WINAPI FormatMessageA(_In_ DWORD dwFlags, _In_opt_ const void* lpSource, _In_ DWORD dwMessageId,
+                            _In_ DWORD dwLanguageId, _Out_ LPTSTR lpBuffer, _In_ DWORD nSize,
+                            _In_opt_ va_list* Arguments);
 
-BOOL WINAPI OpenClipboard(
-  _In_opt_ HWND hWndNewOwner
-);
+BOOL WINAPI OpenClipboard(_In_opt_ HWND hWndNewOwner);
 
 BOOL WINAPI EmptyClipboard(void);
 
-HGLOBAL WINAPI GlobalAlloc(
-  _In_ UINT   uFlags,
-  _In_ SIZE_T dwBytes
-);
+HGLOBAL WINAPI GlobalAlloc(_In_ UINT uFlags, _In_ SIZE_T dwBytes);
 
 BOOL WINAPI CloseClipboard(void);
 
-LPVOID WINAPI GlobalLock(
-  _In_ HGLOBAL hMem
-);
+LPVOID WINAPI GlobalLock(_In_ HGLOBAL hMem);
 
-BOOL WINAPI GlobalUnlock(
-  _In_ HGLOBAL hMem
-);
+BOOL WINAPI GlobalUnlock(_In_ HGLOBAL hMem);
 
-HANDLE WINAPI SetClipboardData(
-  _In_     UINT   uFormat,
-  _In_opt_ HANDLE hMem
-);
+HANDLE WINAPI SetClipboardData(_In_ UINT uFormat, _In_opt_ HANDLE hMem);
 
-HGLOBAL WINAPI GlobalFree(
-  _In_ HGLOBAL hMem
-);
+HGLOBAL WINAPI GlobalFree(_In_ HGLOBAL hMem);
 
-HANDLE WINAPI GetClipboardData(
-  _In_ UINT uFormat
-);
+HANDLE WINAPI GetClipboardData(_In_ UINT uFormat);
 
-SIZE_T WINAPI GlobalSize(
-  _In_ HGLOBAL hMem
-);
+SIZE_T WINAPI GlobalSize(_In_ HGLOBAL hMem);
 
-BOOL WINAPI IsClipboardFormatAvailable(
-  _In_ UINT format
-);
+BOOL WINAPI IsClipboardFormatAvailable(_In_ UINT format);
 
-HRESULT CoCreateGuid(
-  _Out_ GUID *pguid
-);
+HRESULT CoCreateGuid(_Out_ GUID* pguid);
 
-DWORD WINAPI GetCurrentDirectory(
-  _In_  DWORD  nBufferLength,
-  _Out_ wchar_t* lpBuffer
-);
+DWORD WINAPI GetCurrentDirectory(_In_ DWORD nBufferLength, _Out_ wchar_t* lpBuffer);
 
-BOOL WINAPI SetCurrentDirectory(
-  _In_ const wchar_t* lpPathName
-);
+BOOL WINAPI SetCurrentDirectory(_In_ const wchar_t* lpPathName);
 
 LPWSTR WINAPI GetCommandLineW(void);
 
-LPWSTR* CommandLineToArgvW(
-  _In_  LPCWSTR lpCmdLine,
-  _Out_ int     *pNumArgs
-);
+LPWSTR* CommandLineToArgvW(_In_ LPCWSTR lpCmdLine, _Out_ int* pNumArgs);
 
-DWORD WINAPI GetEnvironmentVariableA(
-  _In_opt_  LPCTSTR lpName,
-  _Out_opt_ LPTSTR  lpBuffer,
-  _In_      DWORD   nSize
-);
+DWORD WINAPI GetEnvironmentVariableA(_In_opt_ LPCTSTR lpName, _Out_opt_ LPTSTR lpBuffer, _In_ DWORD nSize);
 
-BOOL WINAPI SetEnvironmentVariableA(
-  _In_     LPCTSTR lpName,
-  _In_opt_ LPCTSTR lpValue
-);
+BOOL WINAPI SetEnvironmentVariableA(_In_ LPCTSTR lpName, _In_opt_ LPCTSTR lpValue);
 
-HANDLE WINAPI CreateEvent(
-  _In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes,
-  _In_     BOOL                  bManualReset,
-  _In_     BOOL                  bInitialState,
-  _In_opt_ LPCTSTR               lpName
-);
+HANDLE WINAPI CreateEvent(_In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes, _In_ BOOL bManualReset,
+                          _In_ BOOL bInitialState, _In_opt_ LPCTSTR lpName);
 
-DWORD WINAPI WaitForSingleObject(
-  _In_ HANDLE hHandle,
-  _In_ DWORD  dwMilliseconds
-);
+DWORD WINAPI WaitForSingleObject(_In_ HANDLE hHandle, _In_ DWORD dwMilliseconds);
 
-VOID WINAPI Sleep(
-	_In_ DWORD dwMilliseconds
-);
+VOID WINAPI Sleep(_In_ DWORD dwMilliseconds);
 
 bool MoveFileA(const char* path, const char* new_path);
 

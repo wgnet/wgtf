@@ -8,39 +8,38 @@
 
 namespace wgt
 {
-QtToolBar::QtToolBar( QToolBar & qToolBar, const char * windowId )
-	: QtMenu( qToolBar, windowId )
-	, qToolBar_( qToolBar )
+QtToolBar::QtToolBar(QToolBar& qToolBar, const char* windowId) : QtMenu(qToolBar, windowId), qToolBar_(qToolBar)
 {
-	qToolBar_.setVisible( false );
+	qToolBar_.setVisible(false);
 }
 
-void QtToolBar::addAction( IAction & action, const char * path )
+void QtToolBar::addAction(IAction& action, const char* path)
 {
 	auto qAction = getQAction(action);
-	if(qAction == nullptr)
+	if (qAction == nullptr)
 	{
-		qAction = createQAction( action );
+		qAction = createQAction(action);
 	}
 	assert(qAction != nullptr);
 
 	// TODO: deal with nested tool bars
-	qToolBar_.addAction( qAction );
+	qToolBar_.addAction(qAction);
 
-	qToolBar_.setVisible( true );
+	qToolBar_.setVisible(true);
 }
 
-void QtToolBar::removeAction( IAction & action )
+void QtToolBar::removeAction(IAction& action)
 {
-	auto qAction = getQAction( action );
+	auto qAction = getQAction(action);
 	if (qAction == nullptr)
 	{
-		NGT_ERROR_MSG("Target action '%s' '%s' does not exist\n", action.text(), StringUtils::join(action.paths(), ';').c_str());
+		NGT_ERROR_MSG("Target action '%s' '%s' does not exist\n", action.text(),
+		              StringUtils::join(action.paths(), ';').c_str());
 		return;
 	}
 
-	qToolBar_.removeAction( qAction );
-	
-	destroyQAction( action );
+	qToolBar_.removeAction(qAction);
+
+	destroyQAction(action);
 }
 } // end namespace wgt

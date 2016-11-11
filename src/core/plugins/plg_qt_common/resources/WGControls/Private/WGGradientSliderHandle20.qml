@@ -86,7 +86,7 @@ WGSliderHandle {
                 border.color: Qt.darker(Qt.rgba(colorSquare.color.r, colorSquare.color.g, colorSquare.color.b, 1), shadeMultiplier)
 
                 Component.onCompleted: {
-                    parentSlider.handleVerticalOffset = 4
+                    parentSlider.handleVerticalOffset = Math.round(defaultSpacing.minimumRowHeight / 6)
                 }
             }
         }

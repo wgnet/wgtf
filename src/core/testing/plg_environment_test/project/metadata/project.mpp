@@ -4,30 +4,27 @@
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 
-
 namespace wgt
 {
-BEGIN_EXPOSE( ProjectManager, MetaNone() )
-    EXPOSE_METHOD( "isProjectNameOk", isProjectNameOk )
-    EXPOSE_METHOD( "setNewProjectName", setNewProjectName )
-    EXPOSE_METHOD( "setOpenProjectFile", setOpenProjectFile )
-    EXPOSE_METHOD( "createProject", createProject )
+BEGIN_EXPOSE(ProjectManager, MetaNone())
+EXPOSE_METHOD("isProjectNameOk", isProjectNameOk)
+EXPOSE_METHOD("setNewProjectName", setNewProjectName)
+EXPOSE_METHOD("setOpenProjectFile", setOpenProjectFile)
+EXPOSE_METHOD("createProject", createProject)
 END_EXPOSE()
 
-BEGIN_EXPOSE( ProjectData, MetaNone() )
-	EXPOSE( "CheckBox", getCheckBoxState, setCheckBoxState, MetaNone() )
-	EXPOSE( "TextField", getTextField, setTextField, MetaNone() )
-	EXPOSE( "Slide", getSlideData, setSlideData,
-		MetaMinMax( static_cast< float >( ProjectData::getSlideMinData() ),
-			static_cast< float >( ProjectData::getSlideMaxData() ) ) + 
-			MetaSlider() )
-	EXPOSE( "Number", getNumber, setNumber, MetaNone() )
-	EXPOSE( "ComboBox", getSelected, setSelected,
-		MetaEnum( L"Select0=0|"\
-			L"Select1|Select2" ) )
-	EXPOSE( "Vector3", getVector3, setVector3, MetaNone() )
-	EXPOSE( "Vector4", getVector4, setVector4, MetaNone() )
-	EXPOSE( "Color3", getColor3, setColor3, MetaColor() )
-	EXPOSE( "Color4", getColor4, setColor4, MetaColor() )
+BEGIN_EXPOSE(ProjectData, MetaNone())
+EXPOSE("CheckBox", getCheckBoxState, setCheckBoxState, MetaNone())
+EXPOSE("TextField", getTextField, setTextField, MetaNone())
+EXPOSE("Slide", getSlideData, setSlideData, MetaMinMax(static_cast<float>(ProjectData::getSlideMinData()),
+                                                       static_cast<float>(ProjectData::getSlideMaxData())) +
+       MetaSlider())
+EXPOSE("Number", getNumber, setNumber, MetaNone())
+EXPOSE("ComboBox", getSelected, setSelected, MetaEnum(L"Select0=0|"
+                                                      L"Select1|Select2"))
+EXPOSE("Vector3", getVector3, setVector3, MetaNone())
+EXPOSE("Vector4", getVector4, setVector4, MetaNone())
+EXPOSE("Color3", getColor3, setColor3, MetaColor())
+EXPOSE("Color4", getColor4, setColor4, MetaColor())
 END_EXPOSE()
 } // end namespace wgt

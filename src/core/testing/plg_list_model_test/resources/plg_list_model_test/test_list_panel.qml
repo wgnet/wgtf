@@ -35,7 +35,7 @@ WGPanel {
     property bool sortAsc: true
     property int topControlsHeight: defaultSpacing.minimumRowHeight
 
-    title: "ListModel Test 2.0"
+    title: "ListModel Test"
     layoutHints: { 'test': 0.1 }
     color: palette.mainWindowColor
 
@@ -154,8 +154,7 @@ WGPanel {
                     id: textBoxFooter
                     textColor: palette.textColor
                     text: valid ? headerData.footerText : ""
-                    anchors.left: parent.left
-                    anchors.right: parent.right
+                    width: parent.width
                     height: 24
 
                     property bool valid: headerData !== null &&
@@ -175,8 +174,6 @@ WGPanel {
 
                 Item {
                     width: parent.width
-                    anchors.left: parent.left
-                    anchors.right: parent.right
                     implicitWidth: Math.max(textItem.implicitWidth, 200)
                     implicitHeight: 24
 

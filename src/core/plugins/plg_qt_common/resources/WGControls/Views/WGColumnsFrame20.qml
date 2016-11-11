@@ -54,18 +54,23 @@ Row {
         internal.jostleColumnWidths();
     }
 
-    Component.onCompleted: {
-        internal.loaded = true;
-        internal.jostleColumnWidths();
-    }
 
     Repeater {
         id: handles
         model: columnCount
 
+        onItemAdded: {
+            // reset column widths and recalculate them. Reset is required
+            // because existing columns may have been allocated the majority 
+            // of the available space. The new column might be allocated a 
+            // smaller width than it would otherwise have been.
+            internal.jostleColumnWidths(true);
+        }
+
         Item {
             width: handle.x + handle.width
             height: columnsFrame.height
+
             
             Rectangle {
                 id: handle
@@ -183,7 +188,6 @@ Row {
     QtObject {
         id: internal
         property bool showDebugLog: false
-        property bool loaded: false
         property var implicitWidths: []
         property var priorityReserves: []
         property var previousWidths: []
@@ -214,25 +218,33 @@ Row {
                     anchors.horizontalCenter: parent.horizontalCenter
                     horizontalAlignment: Text.AlightHCenter
                     color: colour
-                    text: value
+                    text: typeof value === "undefined" ? "loading" : value
                 }
             }
         }
 
         /** Let columns fight for space in the available width, based on priority and ideal widths.*/
-        function jostleColumnWidths() {
-            if (!clamp || !internal.loaded || columnCount < 1 || handles.count === 0) {
+        function jostleColumnWidths(resetWidths) {
+            if (!clamp || columnCount < 1 || handles.count === 0) {
                 return;
             }
 
-            previousWidths = columnWidths.slice();
-            var currentWidths = columnWidths.slice();
+            if (resetWidths) {
+                internal.implicitWidths = [];
+                internal.previousWidths = [];
+                internal.priorityReserves = [];
+                internal.lastAdjustments = [];
+            }
+
+            var currentWidths = resetWidths ? [] : columnWidths.slice();
             var previousImplicitWidths = internal.implicitWidths.slice();
             var currentImplicitWidths = implicitColumnWidths.slice();
 
             for (var i = 0; i < currentWidths.length; ++i) {
                 currentWidths[i] = isNaN(currentWidths[i]) ? 0 : currentWidths[i];
             }
+
+            previousWidths = currentWidths.slice();
 
             for (var i = 0; i < previousImplicitWidths.length; ++i) {
                 previousImplicitWidths[i] = isNaN(previousImplicitWidths[i]) ? 0 : previousImplicitWidths[i];
@@ -383,11 +395,18 @@ Row {
                 var priorityColumns = [];
 
                 for (var i = 0; i < columnCount; ++i) {
-                    var columnDelta = factor * currentWidths[i];
+                    var columnDelta;
+                    
+                    if (currentWidth === 0) {
+                        columnDelta = newWidth / columnCount;
+                    }
+                    else {
+                        columnDelta = factor * currentWidths[i];
+                    }
 
                     if (columnDelta < 0) {
                         columnDelta = Math.ceil(columnDelta);
-                        columnDelta = Math.max(columnDelta, 0 - columnWidths[i]);
+                        columnDelta = Math.max(columnDelta, 0 - currentWidths[i]);
                     }
                     else {
                         columnDelta = Math.floor(columnDelta);
@@ -430,8 +449,10 @@ Row {
 
             // change the columns frame handles.
             for (var i = 0; i < columnCount; ++i) {
-                var handle = handles.itemAt(i).children[0];
-                handle.x = currentWidths[i];
+                if (handles.itemAt(i) !== null) {
+                    var handle = handles.itemAt(i).children[0];
+                    handle.x = currentWidths[i];
+                }
             }
 
             var adjustments = [];
@@ -461,10 +482,18 @@ Row {
             adjustments[index + 1] = -delta;
             lastAdjustments = adjustments.slice();
 
-            var handle = handles.itemAt(index).children[0];
-            handle.x = currentWidths[index];
-            handle = handles.itemAt(index + 1).children[0];
-            handle.x = currentWidths[index + 1];
+            var leftHandleItem = handles.itemAt(index)
+            var rightHandleItem = handles.itemAt(index + 1)
+
+            if (leftHandleItem !== null) {
+                var handle = leftHandleItem.children[0];
+                handle.x = currentWidths[index];
+            }
+
+            if (rightHandleItem !== null) {
+                handle = rightHandleItem.children[0];
+                handle.x = currentWidths[index + 1];
+            }
 
             columnWidths = currentWidths.slice();
         }

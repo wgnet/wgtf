@@ -28,21 +28,11 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 
 SimpleApiForXml::Impl::Impl(SimpleApiForXml* sax, TextStream& stream)
-    :
-    parser_(XML_ParserCreate("UTF-8"))
-    ,
-    stream_(stream)
-    ,
-    aborted_(false)
-    ,
-    bytesRead_(0)
+    : parser_(XML_ParserCreate("UTF-8")), stream_(stream), aborted_(false), bytesRead_(0)
 {
 	struct Callbacks
 	{
-		static void XMLCALL StartElementHandler(
-		void* userData,
-		const XML_Char* name,
-		const XML_Char** atts)
+		static void XMLCALL StartElementHandler(void* userData, const XML_Char* name, const XML_Char** atts)
 		{
 			if (!castUserData(userData)->aborted())
 			{
@@ -50,9 +40,7 @@ SimpleApiForXml::Impl::Impl(SimpleApiForXml* sax, TextStream& stream)
 			}
 		}
 
-		static void XMLCALL EndElementHandler(
-		void* userData,
-		const XML_Char* name)
+		static void XMLCALL EndElementHandler(void* userData, const XML_Char* name)
 		{
 			if (!castUserData(userData)->aborted())
 			{
@@ -60,10 +48,7 @@ SimpleApiForXml::Impl::Impl(SimpleApiForXml* sax, TextStream& stream)
 			}
 		}
 
-		static void XMLCALL CharacterDataHandler(
-		void* userData,
-		const XML_Char* s,
-		int len)
+		static void XMLCALL CharacterDataHandler(void* userData, const XML_Char* s, int len)
 		{
 			if (!castUserData(userData)->aborted())
 			{
@@ -79,14 +64,9 @@ SimpleApiForXml::Impl::Impl(SimpleApiForXml* sax, TextStream& stream)
 
 	XML_SetUserData(parser_, sax);
 
-	XML_SetElementHandler(
-	parser_,
-	&Callbacks::StartElementHandler,
-	&Callbacks::EndElementHandler);
+	XML_SetElementHandler(parser_, &Callbacks::StartElementHandler, &Callbacks::EndElementHandler);
 
-	XML_SetCharacterDataHandler(
-	parser_,
-	&Callbacks::CharacterDataHandler);
+	XML_SetCharacterDataHandler(parser_, &Callbacks::CharacterDataHandler);
 }
 
 SimpleApiForXml::Impl::~Impl()
@@ -121,10 +101,7 @@ bool SimpleApiForXml::Impl::parse()
 
 		bytesRead_ += bytes_read;
 
-		auto r = XML_ParseBuffer(
-		parser_,
-		static_cast<int>(bytes_read),
-		bytes_read == 0);
+		auto r = XML_ParseBuffer(parser_, static_cast<int>(bytes_read), bytes_read == 0);
 
 		if (r != XML_STATUS_OK)
 		{
@@ -140,10 +117,7 @@ bool SimpleApiForXml::Impl::parse()
 	}
 
 	// rewind stream
-	std::streamoff off =
-	XML_GetCurrentByteIndex(parser_) +
-	XML_GetCurrentByteCount(parser_) -
-	bytesRead_;
+	std::streamoff off = XML_GetCurrentByteIndex(parser_) + XML_GetCurrentByteCount(parser_) - bytesRead_;
 	if (off != 0)
 	{
 		stream_.seek(off, std::ios_base::cur);
@@ -164,9 +138,7 @@ void SimpleApiForXml::Impl::abortParsing()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-SimpleApiForXml::SimpleApiForXml(TextStream& stream)
-    :
-    impl_(new Impl(this, stream))
+SimpleApiForXml::SimpleApiForXml(TextStream& stream) : impl_(new Impl(this, stream))
 {
 }
 

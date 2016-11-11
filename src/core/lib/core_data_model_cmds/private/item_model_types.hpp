@@ -2,13 +2,11 @@
 
 namespace wgt
 {
-
 class IDefinitionManager;
 
 namespace ItemModelCommands
 {
-	void registerTypes( IDefinitionManager & definitionManager );
+void registerTypes(IDefinitionManager& definitionManager);
 }
 
 } // end namespace wgt
-

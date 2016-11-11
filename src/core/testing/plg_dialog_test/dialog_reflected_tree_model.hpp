@@ -27,8 +27,7 @@ public:
 	DialogReflectedTreeModel();
 	~DialogReflectedTreeModel();
 
-	void initialise(IComponentContext* context,
-	                const IClassDefinition* definition);
+	void initialise(IComponentContext* context, const IClassDefinition* definition);
 
 	template <typename T>
 	void setObject(ObjectHandleT<T> data, bool modifyDirectly)
@@ -48,11 +47,8 @@ public:
 
 private:
 	void setObject(ObjectHandle data, ObjectHandle copy, bool modifyDirectly);
-	void copyReflectedData(IDefinitionManager& definitionManager,
-	                       IReflectionController& reflectionController,
-	                       const ObjectHandle& src,
-	                       const ObjectHandle& dst,
-	                       bool notify);
+	void copyReflectedData(IDefinitionManager& definitionManager, IReflectionController& reflectionController,
+	                       const ObjectHandle& src, const ObjectHandle& dst, bool notify);
 
 	ObjectHandle originalData_;
 	ObjectHandle dialogData_;

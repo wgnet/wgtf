@@ -5,12 +5,11 @@
 #include "windows_debug_logger.hpp"
 #include <vector>
 
-
 namespace wgt
 {
 /**
-* Registers an ILogger with the ILoggingSystem specific to the IDE. 
-* May be configured to support additional IDEs. 
+* Registers an ILogger with the ILoggingSystem specific to the IDE.
+* May be configured to support additional IDEs.
 * At this time it supports Windows/Visual Studio debug output.
 *
 * @ingroup plugins
@@ -18,20 +17,16 @@ namespace wgt
 *       - @ref coreplugins
 *       - LoggingSystemPlugin
 */
-class IDEDebugLoggerPlugin
-	: public PluginMain
+class IDEDebugLoggerPlugin : public PluginMain
 {
 public:
-
-	IDEDebugLoggerPlugin( IComponentContext & contextManager )
-		: windowsDebugLogger_( nullptr)
+	IDEDebugLoggerPlugin(IComponentContext& contextManager) : windowsDebugLogger_(nullptr)
 	{
 	}
 
-	bool PostLoad( IComponentContext & contextManager ) override
-	{		
-		ILoggingSystem* loggingSystem = 
-			contextManager.queryInterface< ILoggingSystem > ();
+	bool PostLoad(IComponentContext& contextManager) override
+	{
+		ILoggingSystem* loggingSystem = contextManager.queryInterface<ILoggingSystem>();
 		if (loggingSystem == nullptr)
 		{
 			return false;
@@ -39,27 +34,25 @@ public:
 
 		// Register the Windows debug logger
 		windowsDebugLogger_ = new WindowsDebugLogger();
-		loggingSystem->registerLogger( windowsDebugLogger_ );
-		loggingSystem->log( LOG_INFO, 
-			"Windows Debug Logger registered and ready." );
+		loggingSystem->registerLogger(windowsDebugLogger_);
+		loggingSystem->log(LOG_INFO, "Windows Debug Logger registered and ready.");
 
 		return true;
 	}
 
-	void Initialise( IComponentContext & contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
-		ILoggingSystem* loggingSystem = 
-			contextManager.queryInterface< ILoggingSystem > ();
+		ILoggingSystem* loggingSystem = contextManager.queryInterface<ILoggingSystem>();
 		if (loggingSystem == nullptr)
 		{
 			return false;
 		}
 
-		loggingSystem->unregisterLogger( windowsDebugLogger_ );
+		loggingSystem->unregisterLogger(windowsDebugLogger_);
 
 		if (windowsDebugLogger_ != nullptr)
 		{
@@ -70,19 +63,18 @@ public:
 		return true;
 	}
 
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for ( auto type: types_ )
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
 
 private:
-
-	std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 	WindowsDebugLogger* windowsDebugLogger_;
 };
 
-PLG_CALLBACK_FUNC( IDEDebugLoggerPlugin )
+PLG_CALLBACK_FUNC(IDEDebugLoggerPlugin)
 } // end namespace wgt

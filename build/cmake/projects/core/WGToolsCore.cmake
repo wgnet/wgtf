@@ -15,6 +15,7 @@ LIST( APPEND BW_LIBRARY_PROJECTS
 
 	#NGT Systems
 	core_common		        core/lib/core_common
+	core_wgtf_app	        core/lib/core_wgtf_app
 	core_variant		    core/lib/core_variant
 	core_dependency_system	core/lib/core_dependency_system
 	core_command_system		core/lib/core_command_system
@@ -29,13 +30,14 @@ LIST( APPEND BW_LIBRARY_PROJECTS
 	core_generic_plugin		    core/lib/core_generic_plugin
 	core_generic_plugin_manager	core/lib/core_generic_plugin_manager
 	core_qt_common			    core/lib/core_qt_common
-	core_qt_script			    core/lib/core_qt_script
 	core_data_model			    core/lib/core_data_model
 	core_data_model_cmds		core/lib/core_data_model_cmds
+	core_view_model				core/lib/core_view_model
 	core_ui_framework		    core/lib/core_ui_framework
 	core_python27				core/lib/core_python27
 
 	# Interfaces
+	common_include				core/interfaces/common_include
 	core_python_script			core/interfaces/core_python_script
 	core_script					core/interfaces/core_script
 	core_splash					core/interfaces/core_splash
@@ -45,6 +47,7 @@ LIST( APPEND BW_LIBRARY_PROJECTS
 LIST( APPEND BW_BINARY_PROJECTS
 	# Apps
 	generic_app			core/app/generic_app
+	qt_desktop			core/app/qt_desktop
 	libpython27-shared	core/third_party/python
 )
 
@@ -67,9 +70,7 @@ LIST( APPEND BW_PLUGIN_PROJECTS
 	plg_editor_interaction		core/plugins/plg_editor_interaction
 	plg_history_ui				core/plugins/plg_history_ui
 	plg_macros_ui				core/plugins/plg_macros_ui
-	plg_qt_app					core/plugins/plg_qt_app
 	plg_qt_common				core/plugins/plg_qt_common
-	plg_qt_resource				core/plugins/plg_qt_resource
 	plg_serialization			core/plugins/plg_serialization
 	plg_logging_system			core/plugins/plg_logging_system
 	plg_idedebug_logger			core/plugins/plg_idedebug_logger

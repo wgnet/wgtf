@@ -8,75 +8,44 @@ namespace wgt
 {
 namespace
 {
-	const wchar_t * s_Group1 = L"SimpleCases";
-	const wchar_t * s_Group2 = L"ComplexCases";
-	const wchar_t * s_Group3 = L"ForPerformance";
+const wchar_t* s_Group1 = L"SimpleCases";
+const wchar_t* s_Group2 = L"ComplexCases";
+const wchar_t* s_Group3 = L"ForPerformance";
 }
 
-BEGIN_EXPOSE( TestPage, MetaNone() )
-	EXPOSE( "Bool", boolTest_, MetaGroup( s_Group1 ) )
-	EXPOSE( "CheckBox",
-		getCheckBoxState, setCheckBoxState,
-		MetaGroup( s_Group1 ) )
-	EXPOSE( "TextField",
-		getTextField, setTextField,
-		MetaGroup( s_Group1 ) )
-	EXPOSE( "Slide",
-		getSlideData, setSlideData,
-		MetaMinMax( static_cast< float >( TestPage::getSlideMinData() ),
-			static_cast< float >( TestPage::getSlideMaxData() ) ) + 
-			MetaSlider() + MetaGroup( s_Group1 ) )
-	EXPOSE( "Number",
-		getNumber, setNumber,
-		MetaGroup( s_Group1 ) )
-	EXPOSE( "ComboBox",
-		getSelected, setSelected,
-		MetaEnum( L"Select0=0|"\
-			L"Select1|Select2" ) + MetaGroup( s_Group1 ) )
-	EXPOSE( "Vector3",
-		getVector3, setVector3,
-		MetaGroup( s_Group1 ) )
-	EXPOSE( "Vector4",
-		getVector4, setVector4,
-		MetaGroup( s_Group1 ) )
-	EXPOSE( "Color3",
-		getColor3, setColor3,
-		MetaGroup( s_Group1 ) + MetaColor() )
-	EXPOSE( "Color4",
-		getColor4, setColor4,
-		MetaGroup( s_Group1 ) + MetaColor() )
-	EXPOSE( "Thumbnail",
-		getThumbnail, 
-		MetaGroup( s_Group1 ) + MetaThumbnail(64, 64) )
-	EXPOSE( "GenericProperties",
-		getGenericObject, setGenericObject,
-		MetaGroup( s_Group1 ) )
-	EXPOSE( "PolyStruct", 
-		getTestPolyStruct, setTestPolyStruct,
-		MetaNoNull() + MetaGroup( s_Group2 ) )
-	EXPOSE( "TestEnumFunc", 
-			getEnumFunc, setEnumFunc,
-				MetaEnumFunc( generateEnumFunc ) )
-	EXPOSE( "UseNativeFileDialog",
-		getFileUrl, setFileUrl,
-		MetaGroup( s_Group1 ) + MetaUrl( false, "FileSelectDialog", "", 1, \
-		"Text files(*.txt) | All files (*)", "Text files(*.txt)" ) )
-	EXPOSE( "UseAssetBrowserDialog",
-		getAssetUrl, setAssetUrl,
-		MetaGroup( s_Group1 ) + MetaUrl( true, "AssetBrowser") )
-	EXPOSE_METHOD( "BUG MethodOnly should not be visible in the UI",
-		methodOnly,
-		MetaGroup( s_Group1 ) )
-	EXPOSE( "TestIntStringVectorMap", testVectorMap_, MetaNone() )
-	EXPOSE( "TestIntStringMap", testMap_, MetaNone() )
-	EXPOSE( "TestStringMap", testStringMap_, MetaNone() )
-	EXPOSE( "TestVectorFunc", getTestVector, MetaNone() )
-	EXPOSE( "TestIntVector", intVector_, MetaNone() )
-	EXPOSE( "TestFloatVector", floatVector_, MetaDecimals( 5 ) + MetaStepSize( 0.00001 ) )
-	EXPOSE( "TestVectorIntVector", vectorVector_, MetaNone() )
+BEGIN_EXPOSE(TestPage, MetaNone())
+EXPOSE("Bool", boolTest_, MetaGroup(s_Group1))
+EXPOSE("CheckBox", getCheckBoxState, setCheckBoxState, MetaGroup(s_Group1))
+EXPOSE("TextField", getTextField, setTextField, MetaGroup(s_Group1))
+EXPOSE("Slide", getSlideData, setSlideData,
+       MetaMinMax(static_cast<float>(TestPage::getSlideMinData()), static_cast<float>(TestPage::getSlideMaxData())) +
+       MetaSlider() + MetaGroup(s_Group1))
+EXPOSE("Number", getNumber, setNumber, MetaGroup(s_Group1))
+EXPOSE("ComboBox", getSelected, setSelected, MetaEnum(L"Select0=0|"
+                                                      L"Select1|Select2") +
+       MetaGroup(s_Group1))
+EXPOSE("Vector3", getVector3, setVector3, MetaGroup(s_Group1))
+EXPOSE("Vector4", getVector4, setVector4, MetaGroup(s_Group1))
+EXPOSE("Color3", getColor3, setColor3, MetaGroup(s_Group1) + MetaColor())
+EXPOSE("Color4", getColor4, setColor4, MetaGroup(s_Group1) + MetaColor())
+EXPOSE("Thumbnail", getThumbnail, MetaGroup(s_Group1) + MetaThumbnail(64, 64))
+EXPOSE("GenericProperties", getGenericObject, setGenericObject, MetaGroup(s_Group1))
+EXPOSE("PolyStruct", getTestPolyStruct, setTestPolyStruct, MetaNoNull() + MetaGroup(s_Group2))
+EXPOSE("TestEnumFunc", getEnumFunc, setEnumFunc, MetaEnumFunc(generateEnumFunc))
+EXPOSE("UseNativeFileDialog", getFileUrl, setFileUrl, MetaGroup(s_Group1) +
+       MetaUrl(true, "FileSelectDialog", "", "Text files(*.txt) | All files (*)", "Text files(*.txt)"))
+EXPOSE("UseAssetBrowserDialog", getAssetUrl, setAssetUrl, MetaGroup(s_Group1) + MetaUrl(false, "AssetBrowserDialog"))
+EXPOSE_METHOD("BUG MethodOnly should not be visible in the UI", methodOnly, MetaGroup(s_Group1))
+EXPOSE("TestIntStringVectorMap", testVectorMap_, MetaNone())
+EXPOSE("TestIntStringMap", testMap_, MetaNone())
+EXPOSE("TestStringMap", testStringMap_, MetaNone())
+EXPOSE("TestVectorFunc", getTestVector, MetaNone())
+EXPOSE("TestIntVector", intVector_, MetaNone())
+EXPOSE("TestFloatVector", floatVector_, MetaDecimals(5) + MetaStepSize(0.00001))
+EXPOSE("TestVectorIntVector", vectorVector_, MetaNone())
 END_EXPOSE()
 
-BEGIN_EXPOSE( TestPage2, MetaNone() )
-	EXPOSE( "TestPage", getTestPage, setTestPage, MetaNone() )
+BEGIN_EXPOSE(TestPage2, MetaNone())
+EXPOSE("TestPage", getTestPage, setTestPage, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

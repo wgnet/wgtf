@@ -20,23 +20,23 @@ public:
 	typedef const_value_type& const_reference;
 
 	ReflectedMethodParameters();
-	ReflectedMethodParameters( const Variant& variant );
-	ReflectedMethodParameters( const ReflectedMethodParameters& rhs );
+	ReflectedMethodParameters(const Variant& variant);
+	ReflectedMethodParameters(const ReflectedMethodParameters& rhs);
 	virtual ~ReflectedMethodParameters();
 
-	ReflectedMethodParameters& operator=( const ReflectedMethodParameters& rhs );
+	ReflectedMethodParameters& operator=(const ReflectedMethodParameters& rhs);
 
-	ReflectedMethodParameters& operator,( const Variant& variant );
+	ReflectedMethodParameters& operator,(const Variant& variant);
 
 	bool empty() const;
 	size_t size() const;
 
 	void clear();
 
-	void push_back( const Variant& variant );
+	void push_back(const Variant& variant);
 
-	reference operator[]( size_t index );
-	const_reference operator[]( size_t index ) const;
+	reference operator[](size_t index);
+	const_reference operator[](size_t index) const;
 
 	struct REFLECTION_DLL const_iterator
 	{
@@ -46,22 +46,22 @@ public:
 
 		const_reference operator*() const;
 		const_pointer operator->() const;
-		const_iterator operator++( int );
+		const_iterator operator++(int);
 		const_iterator& operator++();
-		const_iterator operator+( difference_type n ) const;
-		difference_type operator-( const const_iterator& rhs ) const;
-		bool operator==( const const_iterator& rhs ) const;
-		bool operator!=( const const_iterator& rhs ) const;
-		bool operator<( const const_iterator& rhs ) const;
+		const_iterator operator+(difference_type n) const;
+		difference_type operator-(const const_iterator& rhs) const;
+		bool operator==(const const_iterator& rhs) const;
+		bool operator!=(const const_iterator& rhs) const;
+		bool operator<(const const_iterator& rhs) const;
 
 	protected:
-		const_iterator( const ReflectedMethodParameters& collection, size_t index );
+		const_iterator(const ReflectedMethodParameters& collection, size_t index);
 
 		ReflectedMethodParameters& collection_;
 		size_t index_;
 	};
 
-	struct REFLECTION_DLL iterator: public const_iterator
+	struct REFLECTION_DLL iterator : public const_iterator
 	{
 		friend class ReflectedMethodParameters;
 		typedef std::random_access_iterator_tag iterator_category;
@@ -69,12 +69,12 @@ public:
 
 		reference operator*() const;
 		pointer operator->() const;
-		iterator operator++( int );
+		iterator operator++(int);
 		iterator& operator++();
-		iterator operator+( difference_type n ) const;
+		iterator operator+(difference_type n) const;
 
 	private:
-		iterator( ReflectedMethodParameters& collection, size_t index );
+		iterator(ReflectedMethodParameters& collection, size_t index);
 	};
 
 	const_iterator cbegin() const;
@@ -87,4 +87,4 @@ private:
 	Implementation* impl_;
 };
 } // end namespace wgt
-#endif //REFLECTED_METHOD_PARAMETERS_HPP
+#endif // REFLECTED_METHOD_PARAMETERS_HPP

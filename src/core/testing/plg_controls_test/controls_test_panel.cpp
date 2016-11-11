@@ -22,73 +22,67 @@ public:
 	ColorSliderDataModel();
 	~ColorSliderDataModel();
 
-	IListModel * getColorData() const;
-	IListModel * getPositionData() const;
+	IListModel* getColorData() const;
+	IListModel* getPositionData() const;
 
 private:
-	mutable GenericListT< Vector4 > colorData_;
-	mutable GenericListT< int32_t > positionData_;
+	mutable GenericListT<Vector4> colorData_;
+	mutable GenericListT<int32_t> positionData_;
 };
-BEGIN_EXPOSE(ColorSliderDataModel, MetaNoSerialization() )
-	EXPOSE( "colorSource", getColorData, MetaNone() )
-	EXPOSE( "positionSource", getPositionData, MetaNone() )
+BEGIN_EXPOSE(ColorSliderDataModel, MetaNoSerialization())
+EXPOSE("colorSource", getColorData, MetaNone())
+EXPOSE("positionSource", getPositionData, MetaNone())
 END_EXPOSE()
 
 ColorSliderDataModel::ColorSliderDataModel()
 {
-	colorData_.emplace_back( Vector4( 127, 0, 0, 255 ) );
-	colorData_.emplace_back( Vector4( 255, 0, 0, 255 ) );
-	colorData_.emplace_back( Vector4( 255, 255, 0, 255 ) );
-	colorData_.emplace_back( Vector4( 255, 255, 255, 255 ) );
-	positionData_.emplace_back( 20 );
-	positionData_.emplace_back( 40 );
-	positionData_.emplace_back( 60 );
-	positionData_.emplace_back( 80 );
+	colorData_.emplace_back(Vector4(127, 0, 0, 255));
+	colorData_.emplace_back(Vector4(255, 0, 0, 255));
+	colorData_.emplace_back(Vector4(255, 255, 0, 255));
+	colorData_.emplace_back(Vector4(255, 255, 255, 255));
+	positionData_.emplace_back(20);
+	positionData_.emplace_back(40);
+	positionData_.emplace_back(60);
+	positionData_.emplace_back(80);
 }
 
 ColorSliderDataModel::~ColorSliderDataModel()
 {
 }
 
-IListModel * ColorSliderDataModel::getColorData() const
+IListModel* ColorSliderDataModel::getColorData() const
 {
 	return &colorData_;
 }
 
-IListModel * ColorSliderDataModel::getPositionData() const
+IListModel* ColorSliderDataModel::getPositionData() const
 {
 	return &positionData_;
 }
 
-
-ControlsTestPanel::ControlsTestPanel( IComponentContext & context )
-	: Depends( context )
+ControlsTestPanel::ControlsTestPanel(IComponentContext& context) : Depends(context)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool ControlsTestPanel::addPanel()
 {
-	auto viewCreator = get< IViewCreator >();
-	auto defManager = this->get< IDefinitionManager >();
-	if ((viewCreator == nullptr) ||
-		(defManager == nullptr))
+	auto viewCreator = get<IViewCreator>();
+	auto defManager = this->get<IDefinitionManager>();
+	if ((viewCreator == nullptr) || (defManager == nullptr))
 	{
 		return false;
 	}
 	IDefinitionManager& definitionManager = *defManager;
-	auto def = REGISTER_DEFINITION( ColorSliderDataModel );
+	auto def = REGISTER_DEFINITION(ColorSliderDataModel);
 	controlData_ = def->create();
-	controlsView_ = viewCreator->createView(
-		"WGControlsTest/WGControlsTestPanel.qml",
-		controlData_ );
+	controlsView_ = viewCreator->createView("WGControlsTest/WGControlsTestPanel.qml", controlData_);
 	return true;
 }
 
-
 void ControlsTestPanel::removePanel()
 {
-	auto uiApplication = this->get< IUIApplication >();
+	auto uiApplication = this->get<IUIApplication>();
 	if (uiApplication == nullptr)
 	{
 		return;
@@ -96,8 +90,8 @@ void ControlsTestPanel::removePanel()
 
 	if (controlsView_.valid())
 	{
-        auto view = controlsView_.get();
-		uiApplication->removeView( *view );
+		auto view = controlsView_.get();
+		uiApplication->removeView(*view);
 		view = nullptr;
 	}
 }

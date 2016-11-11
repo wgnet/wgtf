@@ -9,134 +9,111 @@
 #include "wg_types/vector3.hpp"
 #include "wg_types/vector4.hpp"
 
-
 namespace wgt
 {
 namespace
 {
+const char* valueType(const Variant& value, IDefinitionManager& definitionManager)
+{
+	const char* result = value.type()->name();
 
-	const char* valueType( const Variant& value, IDefinitionManager& definitionManager )
-	{
-		const char* result = value.type()->name();
-
-		value.visit<ObjectHandle>( [&]( const ObjectHandle& v )
+	value.visit<ObjectHandle>([&](const ObjectHandle& v) {
+		if (const IClassDefinition* definition = v.getDefinition(definitionManager))
 		{
-			if( const IClassDefinition* definition = v.getDefinition( definitionManager ) )
-			{
-				result = definition->getName();
-			}
-		} );
+			result = definition->getName();
+		}
+	});
 
-		return result;
-	}
-
-	bool writeTypeExplicitly( const TypeId& type )
-	{
-		return
-			type == TypeId::getType<Variant>() ||
-			type == TypeId::getType<ObjectHandle>() ||
-            type == TypeId::getType<Vector2>() ||
-            type == TypeId::getType<Vector3>() ||
-            type == TypeId::getType<Vector4>() ||
-			type == TypeId::getType<BinaryBlock>();
-	}
-
+	return result;
 }
 
+bool writeTypeExplicitly(const TypeId& type)
+{
+	return type == TypeId::getType<Variant>() || type == TypeId::getType<ObjectHandle>() ||
+	type == TypeId::getType<Vector2>() || type == TypeId::getType<Vector3>() || type == TypeId::getType<Vector4>() ||
+	type == TypeId::getType<BinaryBlock>();
+}
+}
 
-XMLWriter::XMLWriter( TextStream& stream, IDefinitionManager& definitionManager, const XMLSerializer::Format& format ):
-	stream_( stream ),
-	definitionManager_( definitionManager ),
-	format_( format ),
-	indent_( format.indent ),
-	tagOpening_( false ),
-	hasChildElements_( false )
+XMLWriter::XMLWriter(TextStream& stream, IDefinitionManager& definitionManager, const XMLSerializer::Format& format)
+    : stream_(stream), definitionManager_(definitionManager), format_(format), indent_(format.indent),
+      tagOpening_(false), hasChildElements_(false)
 {
 }
 
-
-bool XMLWriter::write( const Variant& value )
+bool XMLWriter::write(const Variant& value)
 {
-	beginOpenTag( format_.rootName.c_str() );
-	writeValue( value, true );
-	closeTag( format_.rootName.c_str() );
+	beginOpenTag(format_.rootName.c_str());
+	writeValue(value, true);
+	closeTag(format_.rootName.c_str());
 
 	return !fail();
 }
 
-
-void XMLWriter::writeValue( const Variant& value, bool explicitType, bool isObjectReference /* = false*/ )
+void XMLWriter::writeValue(const Variant& value, bool explicitType, bool isObjectReference /* = false*/)
 {
-	value.visit<ObjectHandle>( [=]( const ObjectHandle& v )
-	{
+	value.visit<ObjectHandle>([=](const ObjectHandle& v) {
 		if (isObjectReference)
 		{
 			RefObjectId id;
 			bool isOk = v.getId(id);
 			if (isOk)
 			{
-				writeAttribute( format_.objectIdAttribute, quoted( id.toString() ) );
-				writeAttribute( format_.objectReferenceAttribute, quoted( "reference" ) );
+				writeAttribute(format_.objectIdAttribute, quoted(id.toString()));
+				writeAttribute(format_.objectReferenceAttribute, quoted("reference"));
 				endOpenTag();
 				return;
 			}
 		}
-		writeObject( v, true );
-	} ) ||
-	value.visit<Collection>( [=]( const Collection& v )
-	{
-		writeCollection( v );
-	} ) ||
-	value.visit<BinaryBlock>( [=]( const BinaryBlock& v )
-	{
-		writeVariant( v, true );
-	} ) ||
-	value.visit<Variant>( [=]( const Variant& v )
-	{
-		if( auto definition = definitionManager_.getDefinition( v.type()->typeId().getName() ) )
+		writeObject(v, true);
+	}) ||
+	value.visit<Collection>([=](const Collection& v) { writeCollection(v); }) ||
+	value.visit<BinaryBlock>([=](const BinaryBlock& v) { writeVariant(v, true); }) ||
+	value.visit<Variant>([=](const Variant& v) {
+		if (auto definition = definitionManager_.getDefinition(v.type()->typeId().getName()))
 		{
-			writeObject( ObjectHandle( v, definition ), true );
+			writeObject(ObjectHandle(v, definition), true);
 		}
 		else
 		{
-			writeVariant( v, explicitType );
+			writeVariant(v, explicitType);
 		}
-	} );
+	});
 }
 
-void XMLWriter::writeObject( const ObjectHandle& object, bool explicitType )
+void XMLWriter::writeObject(const ObjectHandle& object, bool explicitType)
 {
-	if(!object.isValid())
+	if (!object.isValid())
 	{
 		// nullptr objecthandle
 		return;
 	}
 
-	auto rootObject = reflectedRoot( object, definitionManager_ );
+	auto rootObject = reflectedRoot(object, definitionManager_);
 
-	const IClassDefinition* definition = rootObject.getDefinition( definitionManager_ );
-	if( !definition )
+	const IClassDefinition* definition = rootObject.getDefinition(definitionManager_);
+	if (!definition)
 	{
-		stream_.setState( std::ios_base::failbit );
+		stream_.setState(std::ios_base::failbit);
 		return;
 	}
 
-	if( explicitType )
+	if (explicitType)
 	{
 		// actual object type
-		writeAttribute( format_.typeAttribute, quoted( definition->getName() ) );
+		writeAttribute(format_.typeAttribute, quoted(definition->getName()));
 	}
 
 	RefObjectId id;
-	bool isOk = rootObject.getId( id );
+	bool isOk = rootObject.getId(id);
 	if (isOk)
 	{
-		writeAttribute( format_.objectIdAttribute, quoted( id.toString() ) );
+		writeAttribute(format_.objectIdAttribute, quoted(id.toString()));
 	}
 
-	for( IBasePropertyPtr property: definition->allProperties() )
+	for (IBasePropertyPtr property : definition->allProperties())
 	{
-		if( property->isMethod() )
+		if (property->isMethod())
 		{
 			continue;
 		}
@@ -144,38 +121,35 @@ void XMLWriter::writeObject( const ObjectHandle& object, bool explicitType )
 		// write object property
 		const char* propertyName = property->getName();
 
-		beginOpenTag( format_.propertyName.c_str() );
-		writeAttribute( format_.propertyNameAttribute, quoted( propertyName ) );
-		writeValue(
-			property->get( rootObject, definitionManager_ ),
-			writeTypeExplicitly( property->getType() ), true );
-		closeTag( format_.propertyName.c_str() );
+		beginOpenTag(format_.propertyName.c_str());
+		writeAttribute(format_.propertyNameAttribute, quoted(propertyName));
+		writeValue(property->get(rootObject, definitionManager_), writeTypeExplicitly(property->getType()), true);
+		closeTag(format_.propertyName.c_str());
 
-		if( fail() )
+		if (fail())
 		{
 			return;
 		}
 	}
 }
 
-
-void XMLWriter::writeCollection( const Collection& collection )
+void XMLWriter::writeCollection(const Collection& collection)
 {
-	writeAttribute( format_.typeAttribute, quoted( MetaType::get<Collection>()->name() ) );
+	writeAttribute(format_.typeAttribute, quoted(MetaType::get<Collection>()->name()));
 
 	intmax_t assumedKey = 0;
-	for( auto it = collection.begin(), end = collection.end(); it != end; ++it, ++assumedKey )
+	for (auto it = collection.begin(), end = collection.end(); it != end; ++it, ++assumedKey)
 	{
 		const Variant key = it.key();
 
-		beginOpenTag( format_.collectionItemElement.c_str() );
+		beginOpenTag(format_.collectionItemElement.c_str());
 
 		// write key
 		bool keyMatchesAssumed = false;
 		intmax_t keyIndex = 0;
-		if( key.tryCast( keyIndex ) )
+		if (key.tryCast(keyIndex))
 		{
-			if( keyIndex == assumedKey )
+			if (keyIndex == assumedKey)
 			{
 				keyMatchesAssumed = true;
 			}
@@ -185,56 +159,54 @@ void XMLWriter::writeCollection( const Collection& collection )
 			}
 		}
 
-		if( !keyMatchesAssumed )
+		if (!keyMatchesAssumed)
 		{
 			std::string keyValue;
-			if( !key.type()->testFlags( MetaType::DeducibleFromText ) )
+			if (!key.type()->testFlags(MetaType::DeducibleFromText))
 			{
-				writeAttribute( format_.keyTypeAttribute, quoted( valueType( key, definitionManager_ ) ) );
-				if( !key.tryCast( keyValue ) )
+				writeAttribute(format_.keyTypeAttribute, quoted(valueType(key, definitionManager_)));
+				if (!key.tryCast(keyValue))
 				{
 					// arbitrary type can be saved in attribute only as string
-					stream_.setState( std::ios_base::failbit );
+					stream_.setState(std::ios_base::failbit);
 					return;
 				}
 			}
 			else
 			{
-				if( !key.tryCast( keyValue ) )
+				if (!key.tryCast(keyValue))
 				{
 					// arbitrary type can be saved in attribute only as string
-					stream_.setState( std::ios_base::failbit );
+					stream_.setState(std::ios_base::failbit);
 					return;
 				}
 			}
-			writeAttribute( format_.keyAttribute, quoted( keyValue ) );
+			writeAttribute(format_.keyAttribute, quoted(keyValue));
 		}
 
 		// write value
-		writeValue( it.value(), writeTypeExplicitly( collection.valueType() ), true );
+		writeValue(it.value(), writeTypeExplicitly(collection.valueType()), true);
 
-		closeTag( format_.collectionItemElement.c_str() );
+		closeTag(format_.collectionItemElement.c_str());
 
-		if( fail() )
+		if (fail())
 		{
 			return;
 		}
 	}
 }
 
-
-void XMLWriter::writeVariant( const Variant& variant, bool explicitType )
+void XMLWriter::writeVariant(const Variant& variant, bool explicitType)
 {
-	if( variant.isVoid() )
+	if (variant.isVoid())
 	{
 		// nop
 		return;
 	}
 
-	if( explicitType &&
-		!variant.type()->testFlags( MetaType::DeducibleFromText ) )
+	if (explicitType && !variant.type()->testFlags(MetaType::DeducibleFromText))
 	{
-		writeAttribute( format_.typeAttribute, quoted( variant.type()->name() ) );
+		writeAttribute(format_.typeAttribute, quoted(variant.type()->name()));
 	}
 
 	endOpenTag();
@@ -242,31 +214,28 @@ void XMLWriter::writeVariant( const Variant& variant, bool explicitType )
 	stream_ << format_.padding << variant << format_.padding;
 }
 
-
 void XMLWriter::writeIndent()
 {
-	if( !format_.indentString.empty() )
+	if (!format_.indentString.empty())
 	{
-		for( unsigned i = 0; i < indent_; i++ )
+		for (unsigned i = 0; i < indent_; i++)
 		{
 			stream_ << format_.indentString;
 		}
 	}
 }
 
-
 void XMLWriter::writeNewline()
 {
-	if( format_.newLines )
+	if (format_.newLines)
 	{
 		stream_ << "\n";
 	}
 }
 
-
-void XMLWriter::beginOpenTag( const char* tag )
+void XMLWriter::beginOpenTag(const char* tag)
 {
-	if( tagOpening_ )
+	if (tagOpening_)
 	{
 		stream_ << ">";
 		writeNewline();
@@ -279,10 +248,9 @@ void XMLWriter::beginOpenTag( const char* tag )
 	indent_ += 1;
 }
 
-
 void XMLWriter::endOpenTag()
 {
-	if( !tagOpening_ )
+	if (!tagOpening_)
 	{
 		return;
 	}
@@ -291,19 +259,18 @@ void XMLWriter::endOpenTag()
 	tagOpening_ = false;
 }
 
-
-void XMLWriter::closeTag( const char* tag )
+void XMLWriter::closeTag(const char* tag)
 {
 	indent_ -= 1;
 
-	if( tagOpening_ )
+	if (tagOpening_)
 	{
 		stream_ << "/>";
 		tagOpening_ = false;
 	}
 	else
 	{
-		if( hasChildElements_ )
+		if (hasChildElements_)
 		{
 			writeIndent();
 		}

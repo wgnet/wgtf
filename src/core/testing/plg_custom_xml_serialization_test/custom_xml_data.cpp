@@ -9,7 +9,7 @@ bool CustomXmlData::operator==(const CustomXmlData& tdo) const
 
 	if (filename_ != tdo.filename_)
 		return false;
-	
+
 	if (createdBy_ != tdo.createdBy_)
 		return false;
 

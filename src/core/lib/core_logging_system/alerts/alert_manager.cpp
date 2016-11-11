@@ -12,36 +12,34 @@ AlertManager::~AlertManager()
 {
 }
 
-bool AlertManager::registerPresenter( IAlertPresenter* presenter )
+bool AlertManager::registerPresenter(IAlertPresenter* presenter)
 {
-	if (std::find( presenters_.begin(), presenters_.end(), presenter ) 
-		!= presenters_.end())
+	if (std::find(presenters_.begin(), presenters_.end(), presenter) != presenters_.end())
 	{
 		// Presenter already registered
 		return false;
 	}
 
-	presenters_.push_back( presenter );
+	presenters_.push_back(presenter);
 
 	return true;
 }
 
-bool AlertManager::unregisterPresenter( IAlertPresenter* presenter )
+bool AlertManager::unregisterPresenter(IAlertPresenter* presenter)
 {
-	std::vector< IAlertPresenter* >::iterator itrPresenter = 
-		std::find( presenters_.begin(), presenters_.end(), presenter );
+	std::vector<IAlertPresenter*>::iterator itrPresenter = std::find(presenters_.begin(), presenters_.end(), presenter);
 
 	if (itrPresenter != presenters_.end())
 	{
-		presenters_.erase( itrPresenter );
+		presenters_.erase(itrPresenter);
 		return true;
 	}
-	
+
 	// Presenter not found
 	return false;
 }
 
-bool AlertManager::add( const char* text )
+bool AlertManager::add(const char* text)
 {
 	// Call on any registered alert presenters to handle the alert.
 	// Note that if none have been registered, the alerts will not display!
@@ -49,10 +47,10 @@ bool AlertManager::add( const char* text )
 	tPresenterVector::iterator itrPresenterEnd = presenters_.end();
 	for (; itrPresenter != itrPresenterEnd; ++itrPresenter)
 	{
-		IAlertPresenter* presenter = ( *itrPresenter );
+		IAlertPresenter* presenter = (*itrPresenter);
 		if (presenter != nullptr)
 		{
-			presenter->show( text );
+			presenter->show(text);
 		}
 	}
 

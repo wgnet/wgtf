@@ -41,8 +41,7 @@ public:
 		typedef value_type* pointer;
 		typedef value_type& reference;
 
-		ConstIterator(const ConstIterator& rhs)
-		    : iterator_(new Items::const_iterator(*rhs.iterator_))
+		ConstIterator(const ConstIterator& rhs) : iterator_(new Items::const_iterator(*rhs.iterator_))
 		{
 		}
 		ConstIterator& operator=(const ConstIterator& rhs)
@@ -100,8 +99,7 @@ public:
 		ConstIterator()
 		{
 		}
-		ConstIterator(const Items::const_iterator& iterator)
-		    : iterator_(new Items::const_iterator(iterator))
+		ConstIterator(const Items::const_iterator& iterator) : iterator_(new Items::const_iterator(iterator))
 		{
 		}
 
@@ -124,8 +122,7 @@ public:
 		typedef value_type* pointer;
 		typedef value_type& reference;
 
-		Iterator(const Iterator& rhs)
-		    : ConstIterator()
+		Iterator(const Iterator& rhs) : ConstIterator()
 		{
 			this->iterator_.reset(new Items::const_iterator(rhs.iterator()));
 		}
@@ -167,8 +164,7 @@ public:
 		}
 
 	private:
-		Iterator(const Items::iterator& iterator)
-		    : ConstIterator()
+		Iterator(const Items::iterator& iterator) : ConstIterator()
 		{
 			this->iterator_.reset(new Items::const_iterator(iterator));
 		}

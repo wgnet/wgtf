@@ -9,49 +9,15 @@ ITEMROLE(name)
 ITEMROLE(description)
 ITEMROLE(number)
 
-ListData::ListData()
-{
-
-}
-
-ListData::~ListData()
-{
-
-}
-
-void ListData::init(IDefinitionManager & defManager, int objCount)
-{
-
-	for( int i = 0; i < objCount; i++)
-	{
-		auto genericObj = GenericObject::create( defManager );
-		genericObj->set("name", "GenericObject[" + std::to_string(i+1) + "]");
-		genericObj->set("description", "Generic Object");
-		genericObj->set("index", i);
-		objList_.push_back( genericObj );
-	}
-
-	Collection col(objList_);
-	listModel_.setSource( col );
-}
-
-const IListModel* ListData::getSourceModel() const
-{
-	return &listModel_;
-}
-
 class ListDataModelItem : public AbstractListItem
 {
 public:
-	ListDataModelItem( const char * name, const char * description, int index )
-		: name_( name )
-		, description_( description )
-		, index_( index )
+	ListDataModelItem(const char* name, const char* description, int index)
+	    : name_(name), description_(description), index_(index)
 	{
-
 	}
 
-	Variant getData( int column, ItemRole::Id roleId ) const override
+	Variant getData(int column, ItemRole::Id roleId) const override
 	{
 		if (roleId == ItemRole::nameId)
 		{
@@ -68,72 +34,68 @@ public:
 		return Variant();
 	}
 
-	bool setData( int column, ItemRole::Id roleId, const Variant & data ) override
+	bool setData(int column, ItemRole::Id roleId, const Variant& data) override
 	{
 		return false;
 	}
 	std::string name_;
 	std::string description_;
 	int index_;
-
 };
 
 struct ListDataModel::Impl
 {
 	Impl()
 	{
-		
 	}
-	void init( int count )
+	void init(int count)
 	{
 		std::string name;
 		std::string desc = "Test Object";
-		for( int i = 0; i < count; i++)
+		for (int i = 0; i < count; i++)
 		{
-			name = "Object[" + std::to_string(i+1) + "]";
-			items_.emplace_back( new ListDataModelItem(name.c_str(), desc.c_str(), i) );
+			name = "Object[" + std::to_string(i + 1) + "]";
+			items_.emplace_back(new ListDataModelItem(name.c_str(), desc.c_str(), i));
 		}
 	}
-	std::vector< std::unique_ptr< ListDataModelItem > > items_;
+	std::vector<std::unique_ptr<ListDataModelItem>> items_;
 };
 
-ListDataModel::ListDataModel()
-	: impl_( new Impl() )
+ListDataModel::ListDataModel() : impl_(new Impl())
 {
-
 }
 
 ListDataModel::~ListDataModel()
 {
-
 }
 
-void ListDataModel::init( int count )
+void ListDataModel::init(int count)
 {
-	impl_->init( count );
+	impl_->init(count);
 }
 
-AbstractItem * ListDataModel::item(int row) const
+AbstractItem* ListDataModel::item(int row) const
 {
-	assert( row < static_cast< int >( impl_->items_.size() ) && row >= 0 );
+	assert(row < static_cast<int>(impl_->items_.size()) && row >= 0);
 	return impl_->items_[row].get();
 }
 
-int ListDataModel::index(const AbstractItem * item) const
+int ListDataModel::index(const AbstractItem* item) const
 {
-	auto it = std::find_if( impl_->items_.begin(), impl_->items_.end(),
-		[&]( const std::unique_ptr< ListDataModelItem > & listDataModelItem ) { return listDataModelItem.get() == item; } );
-	if(it == impl_->items_.end())
+	auto it = std::find_if(
+	impl_->items_.begin(), impl_->items_.end(),
+	[&](const std::unique_ptr<ListDataModelItem>& listDataModelItem) { return listDataModelItem.get() == item; });
+	if (it == impl_->items_.end())
 	{
-		assert( false );
+		assert(false);
 		return -1;
 	}
-	return static_cast< int >( it - impl_->items_.begin() );
+	return static_cast<int>(it - impl_->items_.begin());
 }
 
 int ListDataModel::rowCount() const
 {
-	return static_cast< int >( impl_->items_.size() );
+	return static_cast<int>(impl_->items_.size());
 }
 
 int ListDataModel::columnCount() const
@@ -141,12 +103,12 @@ int ListDataModel::columnCount() const
 	return 1;
 }
 
-std::vector< std::string > ListDataModel::roles() const
+std::vector<std::string> ListDataModel::roles() const
 {
-	std::vector< std::string > roles;
-	roles.emplace_back( ItemRole::nameName );
-	roles.emplace_back( ItemRole::descriptionName );
-	roles.emplace_back( ItemRole::numberName );
+	std::vector<std::string> roles;
+	roles.emplace_back(ItemRole::nameName);
+	roles.emplace_back(ItemRole::descriptionName);
+	roles.emplace_back(ItemRole::numberName);
 	return roles;
 }
 

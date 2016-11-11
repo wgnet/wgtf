@@ -35,87 +35,82 @@
 #include "core_command_system/i_env_system.hpp"
 #include "core_serialization/i_file_system.hpp"
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
 namespace
 {
-	enum class ModelPropertyValueType : uint8_t
-	{
-		String = 0,
-		Boolean,
-		Integer,
-		Double,
-		EnumList,
-		Vector2,
-		Vector3,
-		Vector4,
-	};
+enum class ModelPropertyValueType : uint8_t
+{
+	String = 0,
+	Boolean,
+	Integer,
+	Double,
+	EnumList,
+	Vector2,
+	Vector3,
+	Vector4,
+};
 }
 
-class DemoDoc: public IViewEventListener
-	, public Depends< IViewCreator >
+class DemoDoc : public IViewEventListener, public Depends<IViewCreator>
 {
 public:
-	DemoDoc( IComponentContext & context, const char* name, IEnvManager* envManager, IUIFramework* uiFramework,
-		IUIApplication* uiApplication, ObjectHandle demo );
+	DemoDoc(IComponentContext& context, const char* name, IEnvManager* envManager, IUIFramework* uiFramework,
+	        IUIApplication* uiApplication, ObjectHandle demo);
 	~DemoDoc();
-    void select();
+	void select();
 
 	// IViewEventListener
-	virtual void onFocusIn( IView* view ) override;
-	virtual void onFocusOut( IView* view ) override;
-	void onLoaded(IView* view) override {}
+	virtual void onFocusIn(IView* view) override;
+	virtual void onFocusOut(IView* view) override;
+	void onLoaded(IView* view) override
+	{
+	}
 
 private:
 	IEnvManager* envManager_;
 	IUIApplication* uiApplication_;
-	wg_future<std::unique_ptr< IView >> centralView_;
+	wg_future<std::unique_ptr<IView>> centralView_;
 	int envId_;
 };
 
-DemoDoc::DemoDoc(
-	IComponentContext & context,
-	const char* name, IEnvManager* envManager, IUIFramework* uiFramework,
-								IUIApplication* uiApplication, ObjectHandle demo)
-	: Depends( context )
-	, envManager_( envManager )
-	, uiApplication_(uiApplication)
+DemoDoc::DemoDoc(IComponentContext& context, const char* name, IEnvManager* envManager, IUIFramework* uiFramework,
+                 IUIApplication* uiApplication, ObjectHandle demo)
+    : Depends(context), envManager_(envManager), uiApplication_(uiApplication)
 {
-	envId_ = envManager_->addEnv( name );
+	envId_ = envManager_->addEnv(name);
 
-    auto viewCreator = get< IViewCreator >();
-    if (viewCreator)
-    {
-        centralView_ = viewCreator->createView(
-            "DemoTest/Demo.qml", demo, 
-            [&](IView & view)
-            {
-                view.registerListener( this );
-            } );
-    }
+	auto viewCreator = get<IViewCreator>();
+	if (viewCreator)
+	{
+		centralView_ =
+		viewCreator->createView("DemoTest/Demo.qml", demo, [&](IView& view) { view.registerListener(this); });
+	}
 }
 
 DemoDoc::~DemoDoc()
 {
 	if (centralView_.valid())
 	{
-        auto view = centralView_.get();
-		uiApplication_->removeView( *view );
-		view->deregisterListener( this );
-        view = nullptr;
+		auto view = centralView_.get();
+		uiApplication_->removeView(*view);
+		view->deregisterListener(this);
+		view = nullptr;
 	}
 
-	envManager_->removeEnv( envId_ );
+	envManager_->removeEnv(envId_);
 }
 
 void DemoDoc::select()
 {
-    envManager_->selectEnv( envId_ );
+	envManager_->selectEnv(envId_);
 }
 
 void DemoDoc::onFocusIn(IView* view)
 {
-    this->select();
+	this->select();
 }
 
 void DemoDoc::onFocusOut(IView* view)
@@ -126,122 +121,109 @@ void DemoDoc::onFocusOut(IView* view)
 * A plugin which creates a 3D viewport that displays sample models which can be interacted with.
 *
 * @ingroup plugins
-* @image html plg_demo_test.png 
+* @image html plg_demo_test.png
 * @note Only works on vs2013+. Requires Plugins:
 *       - @ref coreplugins
 */
-class DemoTestPlugin
-	: public PluginMain
-	, public Depends< IViewCreator >
+class DemoTestPlugin : public PluginMain, public Depends<IViewCreator>
 {
 private:
-	
-	std::unique_ptr< DemoDoc > demoDoc_;
-	std::unique_ptr< DemoDoc > demoDoc2_;
-	wg_future<std::unique_ptr< IView >> propertyView_;
-	wg_future<std::unique_ptr< IView >> sceneBrowser_;
-	wg_future<std::unique_ptr< IView >> viewport_;
+	std::unique_ptr<DemoDoc> demoDoc_;
+	std::unique_ptr<DemoDoc> demoDoc2_;
+	wg_future<std::unique_ptr<IView>> propertyView_;
+	wg_future<std::unique_ptr<IView>> sceneBrowser_;
+	wg_future<std::unique_ptr<IView>> viewport_;
 	ObjectHandle demoModel_;
 
 	IReflectionController* controller_;
 	IDefinitionManager* defManager_;
-	std::unique_ptr< IAction > createAction_;
+	std::unique_ptr<IAction> createAction_;
 
 public:
 	//==========================================================================
-	DemoTestPlugin(IComponentContext & contextManager )
-		: Depends( contextManager )
+	DemoTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
 	{
 	}
 
 	//==========================================================================
-	bool PostLoad( IComponentContext & contextManager )
+	bool PostLoad(IComponentContext& contextManager)
 	{
 		return true;
 	}
 
 	//==========================================================================
-	void Initialise( IComponentContext & contextManager )
+	void Initialise(IComponentContext& contextManager)
 	{
-		defManager_ =
-			contextManager.queryInterface< IDefinitionManager >();
+		defManager_ = contextManager.queryInterface<IDefinitionManager>();
 		assert(defManager_ != nullptr);
-		this->initReflectedTypes( *defManager_ );
+		this->initReflectedTypes(*defManager_);
 
-		controller_ = contextManager.queryInterface< IReflectionController >();
+		controller_ = contextManager.queryInterface<IReflectionController>();
 
 		demoModel_ = defManager_->create<DemoObjects>();
 		demoModel_.getBase<DemoObjects>()->init(contextManager);
 
-		auto uiApplication = contextManager.queryInterface< IUIApplication >();
-		auto uiFramework = contextManager.queryInterface< IUIFramework >();
-		auto envManager = contextManager.queryInterface< IEnvManager >();
-		if ( uiApplication == nullptr || uiFramework == nullptr || envManager == nullptr )
+		auto uiApplication = contextManager.queryInterface<IUIApplication>();
+		auto uiFramework = contextManager.queryInterface<IUIFramework>();
+		auto envManager = contextManager.queryInterface<IEnvManager>();
+		if (uiApplication == nullptr || uiFramework == nullptr || envManager == nullptr)
 		{
 			return;
 		}
 
-		demoDoc_.reset( new DemoDoc( contextManager, "sceneModel0", envManager, uiFramework, uiApplication, demoModel_ ) );
-		demoDoc2_.reset( new DemoDoc( contextManager, "sceneModel1", envManager, uiFramework, uiApplication, demoModel_) );
-        demoDoc_->select();
+		demoDoc_.reset(new DemoDoc(contextManager, "sceneModel0", envManager, uiFramework, uiApplication, demoModel_));
+		demoDoc2_.reset(new DemoDoc(contextManager, "sceneModel1", envManager, uiFramework, uiApplication, demoModel_));
+		demoDoc_->select();
 
-		auto viewCreator = get< IViewCreator >();
+		auto viewCreator = get<IViewCreator>();
 		if (viewCreator)
 		{
-			propertyView_ = viewCreator->createView(
-				"DemoTest/DemoPropertyPanel.qml",
-				demoModel_ );
+			propertyView_ = viewCreator->createView("DemoTest/DemoPropertyPanel.qml", demoModel_);
 
-			sceneBrowser_ = viewCreator->createView(
-				"DemoTest/DemoListPanel.qml",
-				demoModel_ );
+			sceneBrowser_ = viewCreator->createView("DemoTest/DemoListPanel.qml", demoModel_);
 
 #ifdef USE_Qt5_WEB_ENGINE
-			viewport_ = viewCreator->createView(
-				"DemoTest/Framebuffer.qml",
-				demoModel_ );
+			viewport_ = viewCreator->createView("DemoTest/Framebuffer.qml", demoModel_);
 #endif
 		}
 
-        uiFramework->loadActionData( ":/DemoTest/actions.xml", IUIFramework::ResourceType::File );
+		uiFramework->loadActionData(":/DemoTest/actions.xml", IUIFramework::ResourceType::File);
 
-		createAction_ = uiFramework->createAction(
-			"NewObject", 
-			[this] (const IAction * action) { createObject(); },
-			[this] (const IAction * action) { return canCreate(); } );
+		createAction_ = uiFramework->createAction("NewObject", [this](const IAction* action) { createObject(); },
+		                                          [this](const IAction* action) { return canCreate(); });
 
-		uiApplication->addAction( *createAction_ );
+		uiApplication->addAction(*createAction_);
 	}
 
 	//==========================================================================
-	bool Finalise( IComponentContext & contextManager )
+	bool Finalise(IComponentContext& contextManager)
 	{
-		auto uiApplication = contextManager.queryInterface< IUIApplication >();
+		auto uiApplication = contextManager.queryInterface<IUIApplication>();
 		if (uiApplication == nullptr)
 		{
 			return false;
 		}
 		if (propertyView_.valid())
 		{
-            auto view = propertyView_.get();
-			uiApplication->removeView( *view );
-            view = nullptr;
+			auto view = propertyView_.get();
+			uiApplication->removeView(*view);
+			view = nullptr;
 		}
 		if (sceneBrowser_.valid())
 		{
-            auto view = sceneBrowser_.get();
-			uiApplication->removeView( *view );
-            view = nullptr;
+			auto view = sceneBrowser_.get();
+			uiApplication->removeView(*view);
+			view = nullptr;
 		}
 		if (viewport_.valid())
 		{
-            auto view = viewport_.get();
-			uiApplication->removeView( *view );
-            view = nullptr;
+			auto view = viewport_.get();
+			uiApplication->removeView(*view);
+			view = nullptr;
 		}
-		if(createAction_ != nullptr)
+		if (createAction_ != nullptr)
 		{
-			uiApplication->removeAction( *createAction_ );
+			uiApplication->removeAction(*createAction_);
 			createAction_ = nullptr;
 		}
 
@@ -253,30 +235,31 @@ public:
 	}
 
 	//==========================================================================
-	void Unload( IComponentContext & contextManager )
+	void Unload(IComponentContext& contextManager)
 	{
 	}
 
-	void initReflectedTypes( IDefinitionManager & definitionManager )
+	void initReflectedTypes(IDefinitionManager& definitionManager)
 	{
-		REGISTER_DEFINITION( DemoObjects )
+		REGISTER_DEFINITION(DemoObjects)
 	}
 
 private:
 	void createObject()
 	{
 		IClassDefinition* def = defManager_->getDefinition<DemoObjects>();
-		PropertyAccessor pa = def->bindProperty( "New Object", demoModel_ );
-		assert( pa.isValid() );
+		PropertyAccessor pa = def->bindProperty("New Object", demoModel_);
+		assert(pa.isValid());
 		ReflectedMethodParameters parameters;
-		parameters.push_back( Vector3( 0.f, 0.f, -10.f) );
-		Variant returnValue = controller_->invoke( pa, parameters );
+		parameters.push_back(Vector3(0.f, 0.f, -10.f));
+		Variant returnValue = controller_->invoke(pa, parameters);
 	}
 
-	bool canCreate() { return true; }
-
+	bool canCreate()
+	{
+		return true;
+	}
 };
-
 
 PLG_CALLBACK_FUNC(DemoTestPlugin)
 } // end namespace wgt

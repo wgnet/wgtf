@@ -5,15 +5,15 @@
 #include <type_traits>
 
 #ifdef __APPLE__
-	#include <pthread.h>
+#include <pthread.h>
 #endif
 
 namespace wgt
 {
 #ifdef __APPLE__
-	typedef pthread_key_t TLIndexType;
+typedef pthread_key_t TLIndexType;
 #else
-	typedef unsigned int TLIndexType;
+typedef unsigned int TLIndexType;
 #endif
 
 class ThreadLocalBase
@@ -37,7 +37,6 @@ private:
 	virtual void Shutdown() = 0;
 };
 
-
 template <typename T, bool Small>
 class ThreadLocalValueImpl : public ThreadLocalBase
 {
@@ -54,7 +53,6 @@ private:
 	TLIndexType m_tlsId;
 };
 
-
 template <typename T>
 class ThreadLocalValueImpl<T, true> : public ThreadLocalBase
 {
@@ -67,10 +65,9 @@ public:
 	T GetValue();
 
 private:
-	union UnionT
-	{
-		T		value;
-		void*	voidPtr;
+	union UnionT {
+		T value;
+		void* voidPtr;
 	};
 
 	virtual void Initialize();
@@ -79,10 +76,8 @@ private:
 	TLIndexType m_tlsId;
 };
 
-
 template <typename T>
-class ThreadLocalValue :
-	public ThreadLocalValueImpl<T, (sizeof(T) <= sizeof(void*)) && std::is_trivial<T>::value>
+class ThreadLocalValue : public ThreadLocalValueImpl<T, (sizeof(T) <= sizeof(void*)) && std::is_trivial<T>::value>
 {
 };
 } // end namespace wgt
@@ -92,7 +87,7 @@ class ThreadLocalValue :
 #define THREAD_LOCAL(TYPE) ThreadLocalValueImpl<TYPE, (sizeof(TYPE) <= sizeof(void*)) && std::is_trivial<TYPE>::value>
 #define THREAD_LOCAL_SET(VAR, VALUE) VAR.SetValue(VALUE)
 #define THREAD_LOCAL_GET(VAR) VAR.GetValue()
-#define THREAD_LOCAL_INC(VAR) VAR.SetValue(VAR.GetValue()+1)
-#define THREAD_LOCAL_DEC(VAR) VAR.SetValue(VAR.GetValue()-1)
+#define THREAD_LOCAL_INC(VAR) VAR.SetValue(VAR.GetValue() + 1)
+#define THREAD_LOCAL_DEC(VAR) VAR.SetValue(VAR.GetValue() - 1)
 
 #endif // _THREADLOCALVALUE_HPP_

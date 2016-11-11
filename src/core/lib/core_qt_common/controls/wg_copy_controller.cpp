@@ -8,22 +8,17 @@
 namespace wgt
 {
 //==============================================================================
-WGCopyController::WGCopyController( QObject * parent )
-	: QObject( parent )
-	, valueHint_( "" )
-	, bPasted_( false )
+WGCopyController::WGCopyController(QObject* parent) : QObject(parent), valueHint_(""), bPasted_(false)
 {
 }
-
 
 //==============================================================================
 WGCopyController::~WGCopyController()
 {
 }
 
-
 //==============================================================================
-void WGCopyController::setValue( const QVariant & data )
+void WGCopyController::setValue(const QVariant& data)
 {
 	if (data_ == data)
 	{
@@ -33,9 +28,9 @@ void WGCopyController::setValue( const QVariant & data )
 }
 
 //==============================================================================
-void WGCopyController::setValueHint( const QString & hint )
+void WGCopyController::setValueHint(const QString& hint)
 {
-	if(hint.isEmpty() || hint.isNull())
+	if (hint.isEmpty() || hint.isNull())
 	{
 		return;
 	}
@@ -43,25 +38,23 @@ void WGCopyController::setValueHint( const QString & hint )
 }
 
 //==============================================================================
-const char * WGCopyController::getDataHint() const
+const char* WGCopyController::getDataHint() const
 {
 	return valueHint_.c_str();
 }
 
 //==============================================================================
-const Variant & WGCopyController::getData()
+const Variant& WGCopyController::getData()
 {
 	emit dataCopied();
-	value_ = QtHelpers::toVariant( data_ );
+	value_ = QtHelpers::toVariant(data_);
 	return value_;
 }
 
-
 //==============================================================================
-bool WGCopyController::setData( const Variant& value )
+bool WGCopyController::setData(const Variant& value)
 {
-
-	auto data = QtHelpers::toQVariant( value, this );
+	auto data = QtHelpers::toQVariant(value, this);
 	if (data_ != data)
 	{
 		data_ = data;

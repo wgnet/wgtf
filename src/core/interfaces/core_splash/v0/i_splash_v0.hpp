@@ -17,8 +17,7 @@ DECLARE_INTERFACE_BEGIN(ISplash, 0, 0)
  *	@note ownership is transferred from implementation to caller.
  *	@return true on success.
  */
-virtual bool loadData(std::unique_ptr<BinaryBlock>& o_data,
-                      std::string& o_format) const = 0;
+virtual bool loadData(std::unique_ptr<BinaryBlock>& o_data, std::string& o_format) const = 0;
 DECLARE_INTERFACE_END()
 
 } // end namespace wgt

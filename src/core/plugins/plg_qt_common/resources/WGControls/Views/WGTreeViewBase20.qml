@@ -56,6 +56,8 @@ ListView {
         objectName: "WGTreeItem"
         property alias rowHeight: itemRow.height
 
+		Keys.forwardTo: [treeViewBase]
+
         Connections {
             target: view.selectionModel
             onCurrentChanged: {
@@ -90,7 +92,7 @@ ListView {
                         "view": Qt.binding( function() { return treeViewBase.view } ),
                         "model": Qt.binding( function() { return childModel } ),
                         "depth": Qt.binding( function() { return treeViewBase.depth + 1 } ),
-
+                        "spacing": Qt.binding( function() { return treeViewBase.spacing } ),
                         "__onItemPressed": function(mouse, itemIndex, rowIndex) { treeViewBase.itemPressed(mouse, itemIndex, rowIndex) },
                         "__onItemClicked": function(mouse, itemIndex, rowIndex) { treeViewBase.itemClicked(mouse, itemIndex, rowIndex) },
                         "__onItemDoubleClicked": function(mouse, itemIndex, rowIndex) { treeViewBase.itemDoubleClicked(mouse, itemIndex, rowIndex) },

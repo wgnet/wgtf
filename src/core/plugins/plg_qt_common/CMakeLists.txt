@@ -6,27 +6,23 @@ find_package(QT5)
 
 SET( ALL_SRCS
 	plg_qt_common.cpp
-	qt_copy_paste_manager.cpp
-	qt_copy_paste_manager.hpp
-	qt_framework.cpp
-	qt_framework.hpp
-	qt_preferences.cpp
-	qt_preferences.hpp
-	qt_action_manager.cpp
-	qt_action_manager.hpp
-	private/ui_view_creator.hpp
-	private/ui_view_creator.cpp
-	private/qt_ui_worker.hpp
-	private/qt_ui_worker.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
+
+
+SET(QRC_FILE
+	resources.qrc
+)
+source_group("Resource Files" FILES ${QRC_FILE})
+qt5_add_resources(COMPILED_RESOURCES ${QRC_FILE})
+SOURCE_GROUP("Compiled Resources" FILES ${COMPILED_RESOURCES})
 
 BW_QT_ADD_QRC(WGControls resources/WGControls)
 BW_QT_ADD_QRC(private resources/private)
 BW_QT_ADD_CONFIG_QRC()
 BW_GLOB_RESOURCE_FILES()
 
-FILE( GLOB PLUGIN_RESOURCES resources/fonts/* )
+FILE( GLOB PLUGIN_RESOURCES resources/fonts/*)
 BW_COPY_PLUGIN_RESOURCES( "${PLUGIN_RESOURCES}" )
 
 BW_BLOB_SOURCES( BLOB_SRCS
@@ -57,7 +53,6 @@ BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_common
 	core_generic_plugin
 	core_qt_common
-	core_qt_script
 	core_ui_framework
 	Qt5::Core
 	Qt5::Gui

@@ -18,19 +18,17 @@
 namespace wgt
 {
 //==============================================================================
-class ReflectionSystemContextManager
-	: public Implements< IComponentContextCreator >
+class ReflectionSystemContextManager : public Implements<IComponentContextCreator>
 {
 public:
 	//==========================================================================
-	const char * getType() const
+	const char* getType() const
 	{
-		return typeid( ContextDefinitionManager ).name();
+		return typeid(ContextDefinitionManager).name();
 	}
 
-	IInterface * createContext( const wchar_t * contextId );
+	IInterface* createContext(const wchar_t* contextId);
 };
-
 
 //==============================================================================
 class ReflectionSystemHolder
@@ -38,69 +36,62 @@ class ReflectionSystemHolder
 public:
 	//==========================================================================
 	ReflectionSystemHolder()
-		: objectManager_( new ObjectManager() )
-		, definitionManager_( new DefinitionManager( *objectManager_ ) )
-		, contextManager_( new ReflectionSystemContextManager )
-		, controller_( new ReflectionController )
+	    : objectManager_(new ObjectManager()), definitionManager_(new DefinitionManager(*objectManager_)),
+	      contextManager_(new ReflectionSystemContextManager), controller_(new ReflectionController)
 	{
-		objectManager_->init( definitionManager_.get() );
+		objectManager_->init(definitionManager_.get());
 		s_definitionManager_ = definitionManager_.get();
 	}
-
 
 	//==========================================================================
 	~ReflectionSystemHolder()
 	{
-		objectManager_.reset(); 
+		objectManager_.reset();
 		s_definitionManager_ = nullptr;
 		definitionManager_.reset();
 		contextManager_.reset();
 		controller_.reset();
 	}
 
-
 	//==========================================================================
-	static IDefinitionManager * getGlobalDefinitionManager()
+	static IDefinitionManager* getGlobalDefinitionManager()
 	{
 		return s_definitionManager_;
 	}
 
-
 	//==========================================================================
-	DefinitionManager * getDefinitionManager()
+	DefinitionManager* getDefinitionManager()
 	{
 		return definitionManager_.get();
 	}
 
-
 	//==========================================================================
-	ObjectManager * getObjectManager()
+	ObjectManager* getObjectManager()
 	{
 		return objectManager_.get();
 	}
 
 	//==========================================================================
-	ReflectionSystemContextManager * getContextManager()
+	ReflectionSystemContextManager* getContextManager()
 	{
 		return contextManager_.get();
 	}
 
 	//==========================================================================
-	ReflectionController * getController()
+	ReflectionController* getController()
 	{
 		return controller_.get();
 	}
 
 private:
-	static IDefinitionManager *							s_definitionManager_;
-	std::unique_ptr< ObjectManager >					objectManager_;
-	std::unique_ptr< DefinitionManager >				definitionManager_;
-	std::unique_ptr< ReflectionSystemContextManager >	contextManager_;
-	std::unique_ptr< ReflectionController >				controller_;
+	static IDefinitionManager* s_definitionManager_;
+	std::unique_ptr<ObjectManager> objectManager_;
+	std::unique_ptr<DefinitionManager> definitionManager_;
+	std::unique_ptr<ReflectionSystemContextManager> contextManager_;
+	std::unique_ptr<ReflectionController> controller_;
 };
 
-IDefinitionManager * ReflectionSystemHolder::s_definitionManager_ = nullptr;
-
+IDefinitionManager* ReflectionSystemHolder::s_definitionManager_ = nullptr;
 
 /**
  * Usage: {,,plg_reflection.dll} Reflection::inspect( <Address_to ObjectHandle > )
@@ -108,202 +99,176 @@ IDefinitionManager * ReflectionSystemHolder::s_definitionManager_ = nullptr;
  */
 namespace Reflection
 {
-	static std::pair< std::string, std::string > inspectVariant(
-		const Variant * variant = nullptr );
+static std::pair<std::string, std::string> inspectVariant(const Variant* variant = nullptr);
 
-	static std::map< std::string, std::pair< std::string, std::string > > inspect(
-		const ObjectHandle * handle = nullptr )
+static std::map<std::string, std::pair<std::string, std::string>> inspect(const ObjectHandle* handle = nullptr)
+{
+	std::map<std::string, std::pair<std::string, std::string>> debugData;
+	if (handle == nullptr)
 	{
-		std::map< std::string, std::pair< std::string, std::string > > debugData;
-		if (handle == nullptr)
-		{
-			debugData.insert( std::make_pair( "Empty handle", std::make_pair( "empty", "empty" ) ) );
-			return debugData;
-		}
-		auto defManager = 
-			Context::queryInterface< IDefinitionManager >();
-		if (defManager == nullptr)
-		{
-			debugData.insert( std::make_pair( "Empty handle", std::make_pair( "empty", "empty" ) ) );
-			return debugData;
-		}
-		auto definition = handle->getDefinition( *defManager );
-		if (definition == nullptr)
-		{
-			debugData.insert( std::make_pair( "ObjectHandleT", std::make_pair( handle->type().getName(), "" ) ) );
-			return debugData;
-		}
-		auto range = definition->allProperties();
-		for( auto const & prop : range )
-		{
-			Variant variant =
-				prop->get( *handle, *defManager );
-			debugData.insert( std::make_pair( prop->getName(), inspectVariant( &variant ) ) );
-		}
+		debugData.insert(std::make_pair("Empty handle", std::make_pair("empty", "empty")));
 		return debugData;
 	}
-
-
-	template< typename T >
-	bool outputTypeData(
-		const Variant & variant, std::pair< std::string, std::string > & o_Data )
+	auto defManager = Context::queryInterface<IDefinitionManager>();
+	if (defManager == nullptr)
 	{
-		if( variant.typeIs< T >() == false)
-		{
-			return false;
-		}
+		debugData.insert(std::make_pair("Empty handle", std::make_pair("empty", "empty")));
+		return debugData;
+	}
+	auto definition = handle->getDefinition(*defManager);
+	if (definition == nullptr)
+	{
+		debugData.insert(std::make_pair("ObjectHandleT", std::make_pair(handle->type().getName(), "")));
+		return debugData;
+	}
+	auto range = definition->allProperties();
+	for (auto const& prop : range)
+	{
+		Variant variant = prop->get(*handle, *defManager);
+		debugData.insert(std::make_pair(prop->getName(), inspectVariant(&variant)));
+	}
+	return debugData;
+}
 
-		T value;
-		variant.tryCast( value );
-		o_Data = 
-			std::make_pair( typeid( T ).name(), std::to_string( value ) );
+template <typename T>
+bool outputTypeData(const Variant& variant, std::pair<std::string, std::string>& o_Data)
+{
+	if (variant.typeIs<T>() == false)
+	{
+		return false;
+	}
+
+	T value;
+	variant.tryCast(value);
+	o_Data = std::make_pair(typeid(T).name(), std::to_string(value));
+	return true;
+}
+
+template <>
+bool outputTypeData<std::string>(const Variant& variant, std::pair<std::string, std::string>& o_Data)
+{
+	if (variant.typeIs<std::string>())
+	{
+		std::string value;
+		variant.tryCast<std::string>(value);
+		o_Data = std::make_pair(typeid(std::string).name(), value);
 		return true;
 	}
+	return false;
+}
 
-
-	template<>
-	bool outputTypeData< std::string >(
-		const Variant & variant, std::pair< std::string, std::string > & o_Data )
+template <>
+bool outputTypeData<std::wstring>(const Variant& variant, std::pair<std::string, std::string>& o_Data)
+{
+	if (variant.typeIs<std::wstring>())
 	{
-		if( variant.typeIs< std::string >() )
-		{
-			std::string value;
-			variant.tryCast< std::string >( value );
-			o_Data =
-				std::make_pair( typeid( std::string ).name(), value );
-			return true;
-		}
-		return false;
+		std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
+
+		std::wstring wString;
+		variant.tryCast<std::wstring>(wString);
+		auto output = conversion.to_bytes(wString.c_str());
+		o_Data = std::make_pair(typeid(std::wstring).name(), output);
+		return true;
 	}
+	return false;
+}
 
-
-	template<>
-	bool outputTypeData< std::wstring >(
-		const Variant & variant, std::pair< std::string, std::string > & o_Data )
+std::pair<std::string, std::string> inspectVariant(const Variant* variant)
+{
+	std::pair<std::string, std::string> debugData;
+	if (variant == nullptr)
 	{
-		if( variant.typeIs< std::wstring >() )
-		{
-			std::wstring_convert< Utf16to8Facet > conversion( 
-				Utf16to8Facet::create() );
-
-			std::wstring wString;
-			variant.tryCast< std::wstring >( wString );
-			auto output = conversion.to_bytes( wString.c_str() );
-			o_Data =
-				std::make_pair( typeid( std::wstring ).name(), output );
-			return true;
-		}
-		return false;
+		return std::make_pair("Empty variant", "Empty variant");
 	}
-
-	std::pair< std::string, std::string > inspectVariant(
-		const Variant * variant )
+	ObjectHandle childObj;
+	if (variant->tryCast<ObjectHandle>(childObj))
 	{
-		std::pair< std::string, std::string > debugData;
-		if(	variant == nullptr )
-		{
-			return std::make_pair( "Empty variant", "Empty variant" );
-		}
-		ObjectHandle childObj;
-		if (variant->tryCast< ObjectHandle >( childObj ))
-		{
-			debugData =
-				std::make_pair( "ObjectHandleT", std::to_string( ( size_t ) childObj.data() ) );
-			return debugData;
-		}
-#define OUTPUT_TYPE_DATA( type )\
-		if (outputTypeData< type >( *variant, debugData ))\
-		{\
-			return debugData;\
-		}
-
-		OUTPUT_TYPE_DATA( float )
-		OUTPUT_TYPE_DATA( double )
-		OUTPUT_TYPE_DATA( uint64_t )
-		OUTPUT_TYPE_DATA( int64_t )
-		OUTPUT_TYPE_DATA( std::string )
-		OUTPUT_TYPE_DATA( std::wstring )
+		debugData = std::make_pair("ObjectHandleT", std::to_string((size_t)childObj.data()));
 		return debugData;
 	}
+#define OUTPUT_TYPE_DATA(type)                     \
+	if (outputTypeData<type>(*variant, debugData)) \
+	{                                              \
+		return debugData;                          \
+	}
+
+	OUTPUT_TYPE_DATA(float)
+	OUTPUT_TYPE_DATA(double)
+	OUTPUT_TYPE_DATA(uint64_t)
+	OUTPUT_TYPE_DATA(int64_t)
+	OUTPUT_TYPE_DATA(std::string)
+	OUTPUT_TYPE_DATA(std::wstring)
+	return debugData;
+}
 };
 
 //==========================================================================
-IInterface * ReflectionSystemContextManager::createContext(
-	const wchar_t * contextId )
+IInterface* ReflectionSystemContextManager::createContext(const wchar_t* contextId)
 {
-	auto contextManager =
-		new ContextDefinitionManager( contextId );
-	contextManager->init(
-		ReflectionSystemHolder::getGlobalDefinitionManager() );
-	return new InterfaceHolder< ContextDefinitionManager >( contextManager, true );
+	auto contextManager = new ContextDefinitionManager(contextId);
+	contextManager->init(ReflectionSystemHolder::getGlobalDefinitionManager());
+	return new InterfaceHolder<ContextDefinitionManager>(contextManager, true);
 }
 
-/** 
-* A plugin which registers an IDefinitionManager interface to allow reflection 
+/**
+* A plugin which registers an IDefinitionManager interface to allow reflection
 * on class members for easy and unified serialization of data and exposing to UI code
-* 
+*
 * @ingroup plugins
 * @ingroup coreplugins
 */
-class ReflectionPlugin
-	: public PluginMain
+class ReflectionPlugin : public PluginMain
 {
 private:
-	std::vector< IInterface * >					types_;
-	std::unique_ptr< ReflectionComponentProvider > reflectionComponentProvider_;
-	std::unique_ptr< ReflectionSystemHolder >	reflectionSystemHolder_;
-	
+	std::vector<IInterface*> types_;
+	std::unique_ptr<ReflectionComponentProvider> reflectionComponentProvider_;
+	std::unique_ptr<ReflectionSystemHolder> reflectionSystemHolder_;
+
 public:
 	//==========================================================================
-	ReflectionPlugin( IComponentContext & contextManager )
-		: reflectionSystemHolder_( new ReflectionSystemHolder )
-	{ 
-		//Force linkage
+	ReflectionPlugin(IComponentContext& contextManager) : reflectionSystemHolder_(new ReflectionSystemHolder)
+	{
+		// Force linkage
 		Reflection::inspect();
 		Reflection::inspectVariant();
 
-		types_.push_back(
-			contextManager.registerInterface( reflectionSystemHolder_->getObjectManager(), false ) );
-		types_.push_back(
-			contextManager.registerInterface( reflectionSystemHolder_->getDefinitionManager(), false ) );
-		types_.push_back(
-			contextManager.registerInterface( reflectionSystemHolder_->getContextManager(), false ) );
-		types_.push_back(
-			contextManager.registerInterface( reflectionSystemHolder_->getController(), false ) );
-		Reflection::initReflectedTypes( *reflectionSystemHolder_->getDefinitionManager() );
+		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getObjectManager(), false));
+		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getDefinitionManager(), false));
+		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getContextManager(), false));
+		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getController(), false));
+		Reflection::initReflectedTypes(*reflectionSystemHolder_->getDefinitionManager());
 	}
 
 	//==========================================================================
-	void Initialise( IComponentContext & contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
 		auto uiFramework = contextManager.queryInterface<IUIFramework>();
 		if (uiFramework)
 		{
-			reflectionComponentProvider_.reset( 
-				new ReflectionComponentProvider( 
-					*reflectionSystemHolder_->getDefinitionManager() ) );
-			uiFramework->registerComponentProvider( *reflectionComponentProvider_ );
+			reflectionComponentProvider_.reset(
+			new ReflectionComponentProvider(*reflectionSystemHolder_->getDefinitionManager()));
+			uiFramework->registerComponentProvider(*reflectionComponentProvider_);
 		}
 		auto commandManager = contextManager.queryInterface<ICommandManager>();
 		if (commandManager)
 		{
-			reflectionSystemHolder_->getController()->init( *commandManager );
+			reflectionSystemHolder_->getController()->init(*commandManager);
 		}
 	}
 
 	//==========================================================================
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
 		reflectionSystemHolder_->getController()->fini();
 		return true;
 	}
 
 	//==========================================================================
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for( auto type : types_)
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
 };

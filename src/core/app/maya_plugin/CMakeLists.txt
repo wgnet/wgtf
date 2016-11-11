@@ -43,10 +43,6 @@ SET( maya_plugin_SRCS
 	app/maya_plugin.cpp
 	app/application_proxy.cpp
 	app/qwinhost.cpp
-	../generic_app/app/plugin_memory_allocator.hpp
-	../generic_app/app/plugin_memory_allocator.cpp
-	../generic_app/app/memory_plugin_context_creator.hpp
-	../generic_app/app/memory_plugin_context_creator.cpp
 )
 
 SOURCE_GROUP( "Sources" FILES ${maya_plugin_SRCS} )
@@ -75,20 +71,19 @@ ENDIF()
 
 BW_TARGET_LINK_LIBRARIES( maya_plugin PRIVATE
 	core_common
+	core_wgtf_app
 	core_generic_plugin_manager
 	wg_memory
 
 	# external libraries
 	$(PLATFORM_LIBRARIES)
 
-	$<$<NOT:$<CONFIG:Debug>>:${MAYA_Foundation_LIBRARY}>
-	$<$<NOT:$<CONFIG:Debug>>:${MAYA_OpenMaya_LIBRARY}>
-	$<$<NOT:$<CONFIG:Debug>>:${MAYA_OpenMayaUI_LIBRARY}>
-	$<$<NOT:$<CONFIG:Debug>>:${MAYA_OpenMayaAnim_LIBRARY}>
+	${MAYA_Foundation_LIBRARY}
+	${MAYA_OpenMaya_LIBRARY}
+	${MAYA_OpenMayaUI_LIBRARY}
+	${MAYA_OpenMayaAnim_LIBRARY}
 	${QT_LIBRARIES}
 )
 
 # this is a macro defined in FindMaya that sets up our plugin with standard Maya build settings
 MAYA_SET_PLUGIN_PROPERTIES( maya_plugin )
-
-SET_TARGET_PROPERTIES(maya_plugin PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG True)

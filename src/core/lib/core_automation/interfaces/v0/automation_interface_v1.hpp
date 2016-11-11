@@ -7,12 +7,12 @@ namespace wgt
 {
 DECLARE_INTERFACE_BEGIN(AutomationInterface, 0, 1)
 /**
-	 *	@return if the application is ready to quit.
-	 */
+     *	@return if the application is ready to quit.
+     */
 virtual bool timedOut() = 0;
 /**
-	 *	Tell automation that loading has finished.
-	 */
+     *	Tell automation that loading has finished.
+     */
 virtual void notifyLoadingDone() = 0;
 DECLARE_INTERFACE_END()
 } // end namespace wgt

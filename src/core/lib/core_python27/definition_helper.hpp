@@ -8,13 +8,13 @@ namespace wgt
 {
 namespace ReflectedPython
 {
-	class DefinitionHelper : public IDefinitionHelper
-	{
-	public:
-		virtual TypeId typeId() const override;
+class DefinitionHelper : public IDefinitionHelper
+{
+public:
+	virtual TypeId typeId() const override;
 
-		virtual IClassDefinition * getDefinition( const ObjectHandle & object ) const override;
-	};
+	virtual IClassDefinition* getDefinition(const ObjectHandle& object) const override;
+};
 }
 } // end namespace wgt
 #endif

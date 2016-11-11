@@ -13,83 +13,72 @@ namespace wgt
 {
 namespace
 {
-	class ClassDefinitionItem : public AbstractListItem
+class ClassDefinitionItem : public AbstractListItem
+{
+public:
+	ClassDefinitionItem(const IClassDefinition* definition) : definition_(definition)
 	{
-	public:
-		ClassDefinitionItem( const IClassDefinition * definition ) 
-			: definition_( definition )
-		{}
+	}
 
-		Variant getData( int column, ItemRole::Id roleId ) const override
+	Variant getData(int column, ItemRole::Id roleId) const override
+	{
+		if (roleId == ValueRole::roleId_)
 		{
-			if (roleId == ValueRole::roleId_)
-			{
-				return ObjectHandle(
-					const_cast< IClassDefinition * >( definition_ ) );
-			}
-			else if (roleId == ValueTypeRole::roleId_)
-			{
-				return TypeId::getType< ObjectHandle >().getName();
-			}
-			return Variant();
-		}	
-		
-		bool setData( int column, ItemRole::Id roleId, const Variant & data ) override
-		{
-			return false;
+			return ObjectHandle(const_cast<IClassDefinition*>(definition_));
 		}
+		else if (roleId == ValueTypeRole::roleId_)
+		{
+			return TypeId::getType<ObjectHandle>().getName();
+		}
+		return Variant();
+	}
 
-	private:
-		const IClassDefinition * definition_;
-	};
+	bool setData(int column, ItemRole::Id roleId, const Variant& data) override
+	{
+		return false;
+	}
+
+private:
+	const IClassDefinition* definition_;
+};
 }
 
-
-ClassDefinitionModelNew::ClassDefinitionModelNew( const IClassDefinition * definition,
-	const IDefinitionManager & definitionManager )
+ClassDefinitionModelNew::ClassDefinitionModelNew(const IClassDefinition* definition,
+                                                 const IDefinitionManager& definitionManager)
 {
-	std::vector< IClassDefinition * > definitions;
-	definitionManager.getDefinitionsOfType(
-		definition, definitions );
+	std::vector<IClassDefinition*> definitions;
+	definitionManager.getDefinitionsOfType(definition, definitions);
 
 	for (auto it = definitions.begin(); it != definitions.end(); ++it)
 	{
-		items_.emplace_back( new ClassDefinitionItem( *it ) );
+		items_.emplace_back(new ClassDefinitionItem(*it));
 	}
 }
-
 
 ClassDefinitionModelNew::~ClassDefinitionModelNew()
 {
 }
 
-
-AbstractItem * ClassDefinitionModelNew::item( int row ) const /* override */
+AbstractItem* ClassDefinitionModelNew::item(int row) const /* override */
 {
-	assert( row >= 0 );
-	const auto index = static_cast< std::vector< AbstractItem * >::size_type >( row );
-	assert( index < items_.size() );
-	return items_.at( index ).get();
+	assert(row >= 0);
+	const auto index = static_cast<std::vector<AbstractItem*>::size_type>(row);
+	assert(index < items_.size());
+	return items_.at(index).get();
 }
 
-
-int ClassDefinitionModelNew::index( const AbstractItem * item ) const /* override */
+int ClassDefinitionModelNew::index(const AbstractItem* item) const /* override */
 {
-	auto it = std::find_if( items_.cbegin(), items_.cend(),
-		[ item ]( const std::unique_ptr< AbstractItem > & next )
-		{
-			return next.get() == item;
-		} );
-	assert( it != items_.cend() );
-	return static_cast< int >( std::distance( items_.cbegin(), it ) );
+	auto it = std::find_if(items_.cbegin(), items_.cend(),
+	                       [item](const std::unique_ptr<AbstractItem>& next) { return next.get() == item; });
+	assert(it != items_.cend());
+	return static_cast<int>(std::distance(items_.cbegin(), it));
 }
-
 
 int ClassDefinitionModelNew::rowCount() const /* override */
 {
-	return static_cast< int >( items_.size() );
+	return static_cast<int>(items_.size());
 }
-
 
 int ClassDefinitionModelNew::columnCount() const /* override */
 {

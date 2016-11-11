@@ -12,14 +12,15 @@ struct LayoutHint
 {
 public:
 	LayoutHint();
-	LayoutHint( const char * hint, float strength = 1.0f );
-	LayoutHint operator + ( const LayoutHint & other );
-	LayoutHint & operator += ( const LayoutHint & other );
+	LayoutHint(const char* hint, float strength = 1.0f);
+	LayoutHint operator+(const LayoutHint& other);
+	LayoutHint& operator+=(const LayoutHint& other);
 	void clear();
-	float match( const LayoutTags & tags ) const;
+	float match(const LayoutTags& tags) const;
+	const std::map<std::string, float>& hints() const;
 
 private:
-	std::map< std::string, float > hints_;
+	std::map<std::string, float> hints_;
 };
 } // end namespace wgt
-#endif//LAYOUT_HINT_HPP
+#endif // LAYOUT_HINT_HPP

@@ -10,15 +10,15 @@ namespace wgt
 class QtContextMenu : public QtMenu
 {
 public:
-	QtContextMenu( QMenu & qMenu, QWidget * qView, const char * windowId );
+	QtContextMenu(QMenu& qMenu, QWidget* qView, const char* windowId);
 
-	void addAction( IAction & action, const char* path ) override;
-	void removeAction( IAction & action ) override;
+	void addAction(IAction& action, const char* path) override;
+	void removeAction(IAction& action) override;
 	void onPaletteChanged();
 
 private:
-	QMenu & qMenu_;
-	QWidget * qView_;
+	QMenu& qMenu_;
+	QWidget* qView_;
 };
 } // end namespace wgt
 #endif // QT_CONTEXT_MENU

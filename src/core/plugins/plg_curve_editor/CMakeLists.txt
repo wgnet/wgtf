@@ -41,14 +41,7 @@ BW_ADD_TOOL_PLUGIN( plg_curve_editor SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_curve_editor PRIVATE
 	core_generic_plugin
-	core_qt_common
-	core_qt_script
-	core_ui_framework
-	Qt5::Core
-    Qt5::Gui
-    Qt5::QuickWidgets
-    Qt5::Quick
-
+	core_data_model
 )
 
 BW_PROJECT_CATEGORY( plg_curve_editor "Plugins" )

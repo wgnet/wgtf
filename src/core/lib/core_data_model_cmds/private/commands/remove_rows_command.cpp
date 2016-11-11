@@ -40,11 +40,8 @@ bool isValid(const RemoveRowsCommandArgument* pCommandArgs)
 /**
  *	Check that index to be set on the model is within the range of [startPos, count].
  */
-bool isIndexInRange(
-int startPos,
-RemoveRowsCommandArgument::Type type,
-int count,
-const AbstractItemModel::ItemIndex& index)
+bool isIndexInRange(int startPos, RemoveRowsCommandArgument::Type type, int count,
+                    const AbstractItemModel::ItemIndex& index)
 {
 	if (type == RemoveRowsCommandArgument::Type::ROW)
 	{
@@ -74,13 +71,8 @@ const AbstractItemModel::ItemIndex& index)
 /**
  *	Remove empty rows/columns and then set the row/column data back on it.
  */
-bool restoreRows(
-int startPos,
-RemoveRowsCommandArgument::Type type,
-int count,
-const AbstractItem* pParent,
-const RemoveRowsCommandArgument::ExtractedRowsStorage& itemData,
-AbstractItemModel& o_model)
+bool restoreRows(int startPos, RemoveRowsCommandArgument::Type type, int count, const AbstractItem* pParent,
+                 const RemoveRowsCommandArgument::ExtractedRowsStorage& itemData, AbstractItemModel& o_model)
 {
 	// Remove empty row/column
 	if (type == RemoveRowsCommandArgument::Type::ROW)
@@ -104,24 +96,19 @@ AbstractItemModel& o_model)
 	bool setOk = true;
 	for (const auto& extractedRows : itemData)
 	{
-		assert(isIndexInRange(startPos,
-		                      type,
-		                      count,
-		                      extractedRows.index_));
+		assert(isIndexInRange(startPos, type, count, extractedRows.index_));
 		const auto pItem = o_model.item(extractedRows.index_);
 		assert(pItem != nullptr);
 
 		Collection collection;
 		if (extractedRows.data_.tryCast(collection))
 		{
-			auto innerModel = pItem->getData(extractedRows.index_.row_,
-			                                 extractedRows.index_.column_,
-			                                 extractedRows.roleId_);
+			auto innerModel =
+			pItem->getData(extractedRows.index_.row_, extractedRows.index_.column_, extractedRows.roleId_);
 			ObjectHandle handle;
 			innerModel.tryCast(handle);
 			auto pInnerModel = handle.getBase<AbstractItemModel>();
-			const auto pInnerRows = collection.container<
-			RemoveRowsCommandArgument::ExtractedRowsStorage>();
+			const auto pInnerRows = collection.container<RemoveRowsCommandArgument::ExtractedRowsStorage>();
 			setOk &= (pInnerModel != nullptr) && (pInnerRows != nullptr);
 			if (!setOk)
 			{
@@ -133,18 +120,12 @@ AbstractItemModel& o_model)
 			const int innerCount = static_cast<int>(collection.size());
 			const AbstractItem* pInnerParent = nullptr;
 
-			setOk &= RemoveRowsCommand_Detail::restoreRows(innerStartPos,
-			                                               type,
-			                                               count,
-			                                               pParent,
-			                                               (*pInnerRows),
-			                                               (*pInnerModel));
+			setOk &=
+			RemoveRowsCommand_Detail::restoreRows(innerStartPos, type, count, pParent, (*pInnerRows), (*pInnerModel));
 		}
 		else
 		{
-			setOk &= pItem->setData(extractedRows.index_.row_,
-			                        extractedRows.index_.column_,
-			                        extractedRows.roleId_,
+			setOk &= pItem->setData(extractedRows.index_.row_, extractedRows.index_.column_, extractedRows.roleId_,
 			                        extractedRows.data_);
 		}
 	}
@@ -153,8 +134,7 @@ AbstractItemModel& o_model)
 
 } // end namespace RemoveRowsCommand_Detail
 
-RemoveRowsCommand::RemoveRowsCommand(IComponentContext& context)
-    : definitionManager_(context)
+RemoveRowsCommand::RemoveRowsCommand(IComponentContext& context) : definitionManager_(context)
 {
 }
 
@@ -188,12 +168,7 @@ bool RemoveRowsCommand::undo(const ObjectHandle& arguments) const /* override */
 	const auto& pParent = (pCommandArgs->pParent_);
 	const auto& itemData = (pCommandArgs->itemData_);
 
-	const bool inserted = RemoveRowsCommand_Detail::restoreRows(startPos,
-	                                                            type,
-	                                                            count,
-	                                                            pParent,
-	                                                            itemData,
-	                                                            model);
+	const bool inserted = RemoveRowsCommand_Detail::restoreRows(startPos, type, count, pParent, itemData, model);
 	assert(inserted && "Item data was not restored correctly");
 	return inserted;
 }
@@ -224,8 +199,7 @@ bool RemoveRowsCommand::redo(const ObjectHandle& arguments) const /* override */
 	return model.removeColumns(startPos, count, pParent);
 }
 
-ObjectHandle RemoveRowsCommand::getCommandDescription(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle RemoveRowsCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
 	auto handle = GenericObject::create(*definitionManager_);
 	assert(handle.get() != nullptr);
@@ -258,15 +232,13 @@ const char* RemoveRowsCommand::getId() const /* override */
 	return s_Id;
 }
 
-bool RemoveRowsCommand::validateArguments(
-const ObjectHandle& arguments) const /* override */
+bool RemoveRowsCommand::validateArguments(const ObjectHandle& arguments) const /* override */
 {
 	const auto pCommandArgs = arguments.getBase<RemoveRowsCommandArgument>();
 	return RemoveRowsCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle RemoveRowsCommand::execute(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle RemoveRowsCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<RemoveRowsCommandArgument>();
 	if (!RemoveRowsCommand_Detail::isValid(pCommandArgs))
@@ -291,9 +263,7 @@ const ObjectHandle& arguments) const /* override */
 		result = model.removeColumns(startPos, count, pParent);
 	}
 
-	const auto errorCode = result ?
-	CommandErrorCode::COMMAND_NO_ERROR :
-	CommandErrorCode::FAILED;
+	const auto errorCode = result ? CommandErrorCode::COMMAND_NO_ERROR : CommandErrorCode::FAILED;
 	return errorCode;
 }
 

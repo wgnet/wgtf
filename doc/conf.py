@@ -125,7 +125,6 @@ language = None
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = ['third_party', 
                     'build/doxygen/', 
-                    '_static',
                     'doxyfile_rtd.txt',
                     'doxyfile_win.txt',
                     'doxygen.h',
@@ -207,6 +206,7 @@ html_logo = "logo.png"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_context = { 'css_files': ['_static/css/theme.css'] }
    
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

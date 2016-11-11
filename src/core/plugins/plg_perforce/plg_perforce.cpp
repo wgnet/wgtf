@@ -6,28 +6,29 @@
 
 namespace wgt
 {
-class PerforcePlugin
-	: public PluginMain
+class PerforcePlugin : public PluginMain
 {
 public:
-	PerforcePlugin(IComponentContext & contextManager){}
+	PerforcePlugin(IComponentContext& contextManager)
+	{
+	}
 
-	bool PostLoad(IComponentContext & contextManager) override
+	bool PostLoad(IComponentContext& contextManager) override
 	{
 		types_.emplace_back(contextManager.registerInterface<PerforceVersionControl>(new PerforceVersionControl()));
 		return true;
 	}
 
-	void Initialise(IComponentContext & contextManager) override
+	void Initialise(IComponentContext& contextManager) override
 	{
 	}
 
-	bool Finalise(IComponentContext & contextManager) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
 		return true;
 	}
 
-	void Unload(IComponentContext & contextManager) override
+	void Unload(IComponentContext& contextManager) override
 	{
 		for (auto type : types_)
 		{
@@ -36,7 +37,7 @@ public:
 	}
 
 private:
-	std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 };
 
 PLG_CALLBACK_FUNC(PerforcePlugin)

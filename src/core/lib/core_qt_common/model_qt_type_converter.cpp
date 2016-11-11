@@ -8,48 +8,44 @@
 
 namespace wgt
 {
-
-
-ModelQtTypeConverter::ModelQtTypeConverter( IComponentContext & context )
-	: context_( context )
+ModelQtTypeConverter::ModelQtTypeConverter(IComponentContext& context) : context_(context)
 {
 }
 
-
-bool ModelQtTypeConverter::toVariant( const QVariant & qVariant, Variant & o_variant ) const
+bool ModelQtTypeConverter::toVariant(const QVariant& qVariant, Variant& o_variant) const
 {
-	if (qVariant.canConvert< QtTableModel * >())
+	if (qVariant.canConvert<QtTableModel*>())
 	{
-		auto model = qVariant.value< QtTableModel * >();
-		o_variant = ObjectHandle( &model->source() );
+		auto model = qVariant.value<QtTableModel*>();
+		o_variant = ObjectHandle(&model->source());
 		return true;
 	}
 
-	if (qVariant.canConvert< QtTreeModel * >())
+	if (qVariant.canConvert<QtTreeModel*>())
 	{
-		auto model = qVariant.value< QtTreeModel * >();
-		o_variant = ObjectHandle( &model->source() );
+		auto model = qVariant.value<QtTreeModel*>();
+		o_variant = ObjectHandle(&model->source());
 		return true;
 	}
 
-	if (qVariant.canConvert< QtListModel * >())
+	if (qVariant.canConvert<QtListModel*>())
 	{
-		auto model = qVariant.value< QtListModel * >();
-		o_variant = ObjectHandle( &model->source() );
+		auto model = qVariant.value<QtListModel*>();
+		o_variant = ObjectHandle(&model->source());
 		return true;
 	}
 
-	if (qVariant.canConvert< QtItemModel * >())
+	if (qVariant.canConvert<QtItemModel*>())
 	{
-		auto model = qVariant.value< QtItemModel * >();
-		o_variant = ObjectHandle( &model->source() );
+		auto model = qVariant.value<QtItemModel*>();
+		o_variant = ObjectHandle(&model->source());
 		return true;
 	}
 
 	return false;
 }
 
-bool ModelQtTypeConverter::toQVariant(const Variant & variant, QVariant & o_qVariant, QObject* parent) const
+bool ModelQtTypeConverter::toQVariant(const Variant& variant, QVariant& o_qVariant, QObject* parent) const
 {
 	if (variant.typeIs<AbstractItemModel>())
 	{

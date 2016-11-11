@@ -6,13 +6,13 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( AlertObjectModel, MetaNone() )
-	EXPOSE( "message", getMessage )
+BEGIN_EXPOSE(AlertObjectModel, MetaNone())
+EXPOSE("message", getMessage)
 END_EXPOSE()
 
-BEGIN_EXPOSE( AlertPageModel, MetaNone() )
-	EXPOSE( "alerts", getAlerts, MetaDisplayName( L"Alerts" ) )
-	EXPOSE( "removeAlert", removeAlert, MetaNone() )
-	EXPOSE( "currentSelectedRowIndex", currentSelectedRowIndex, currentSelectedRowIndex, MetaNone() )
+BEGIN_EXPOSE(AlertPageModel, MetaNone())
+EXPOSE("alerts", getAlerts, MetaDisplayName(L"Alerts"))
+EXPOSE("removeAlert", removeAlert, MetaNone())
+EXPOSE("currentSelectedRowIndex", currentSelectedRowIndex, currentSelectedRowIndex, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

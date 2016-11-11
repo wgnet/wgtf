@@ -3,11 +3,9 @@
 
 namespace wgt
 {
-
-bool isCommandSuccess( CommandErrorCode errorCode )
+bool isCommandSuccess(CommandErrorCode errorCode)
 {
-	return ((errorCode == CommandErrorCode::COMMAND_NO_ERROR) ||
-		(errorCode == CommandErrorCode::BATCH_NO_ERROR));
+	return ((errorCode == CommandErrorCode::COMMAND_NO_ERROR) || (errorCode == CommandErrorCode::BATCH_NO_ERROR));
 }
 
 //==============================================================================
@@ -18,62 +16,49 @@ Command::~Command()
 }
 
 //==============================================================================
-void Command::registerCommandStatusListener(
-	ICommandEventListener * listener )
+void Command::registerCommandStatusListener(ICommandEventListener* listener)
 {
-	eventListenerCollection_.push_back( listener );
+	eventListenerCollection_.push_back(listener);
 }
 
-
 //==============================================================================
-void Command::setCommandSystemProvider(
-	ICommandManager * commandSystemProvider )
+void Command::setCommandSystemProvider(ICommandManager* commandSystemProvider)
 {
 	commandSystemProvider_ = commandSystemProvider;
 }
 
-
 //==============================================================================
-ICommandManager * Command::getCommandSystemProvider() const
+ICommandManager* Command::getCommandSystemProvider() const
 {
 	return commandSystemProvider_;
 }
 
-
 //==============================================================================
-void Command::fireCommandStatusChanged(
-	const CommandInstance & command ) const
+void Command::fireCommandStatusChanged(const CommandInstance& command) const
 {
-	EventListenerCollection::const_iterator it =
-		eventListenerCollection_.begin();
-	EventListenerCollection::const_iterator itEnd =
-		eventListenerCollection_.end();
-	for( ; it != itEnd; ++it )
+	EventListenerCollection::const_iterator it = eventListenerCollection_.begin();
+	EventListenerCollection::const_iterator itEnd = eventListenerCollection_.end();
+	for (; it != itEnd; ++it)
 	{
-		(*it)->statusChanged( command );
+		(*it)->statusChanged(command);
 	}
 }
 
-
 //==============================================================================
-void Command::fireProgressMade( const CommandInstance & command ) const
+void Command::fireProgressMade(const CommandInstance& command) const
 {
-	EventListenerCollection::const_iterator it =
-		eventListenerCollection_.begin();
-	EventListenerCollection::const_iterator itEnd =
-		eventListenerCollection_.end();
-	for( ; it != itEnd; ++it )
+	EventListenerCollection::const_iterator it = eventListenerCollection_.begin();
+	EventListenerCollection::const_iterator itEnd = eventListenerCollection_.end();
+	for (; it != itEnd; ++it)
 	{
-		(*it)->progressMade( command );
+		(*it)->progressMade(command);
 	}
 }
 
-void Command::fireCommandExecuted(const CommandInstance & command, CommandOperation operation) const
+void Command::fireCommandExecuted(const CommandInstance& command, CommandOperation operation) const
 {
-	EventListenerCollection::const_iterator it =
-		eventListenerCollection_.begin();
-	EventListenerCollection::const_iterator itEnd =
-		eventListenerCollection_.end();
+	EventListenerCollection::const_iterator it = eventListenerCollection_.begin();
+	EventListenerCollection::const_iterator itEnd = eventListenerCollection_.end();
 	for (; it != itEnd; ++it)
 	{
 		(*it)->commandExecuted(command, operation);
@@ -81,8 +66,7 @@ void Command::fireCommandExecuted(const CommandInstance & command, CommandOperat
 }
 
 //==============================================================================
-/*virtual */ObjectHandle Command::execute(
-	const ObjectHandle & arguments ) const
+/*virtual */ ObjectHandle Command::execute(const ObjectHandle& arguments) const
 {
 	return CommandErrorCode::COMMAND_NO_ERROR;
 }

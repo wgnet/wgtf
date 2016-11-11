@@ -22,7 +22,8 @@ class IVersionControl
 public:
 	virtual ~IVersionControl(){};
 
-	virtual IResultPtr initialize(const char* depot, const char* port, const char* user, const char* client, const char * password) = 0;
+	virtual IResultPtr initialize(const char* depot, const char* port, const char* user, const char* client,
+	                              const char* password) = 0;
 
 	virtual std::unique_ptr<IDepotView> createDepotView(const char* depotPath, const char* clientPath) = 0;
 };

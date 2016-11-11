@@ -7,30 +7,28 @@
 namespace wgt
 {
 //==============================================================================
-void TestObjects::initDefs( IDefinitionManager & definitionManager )
+void TestObjects::initDefs(IDefinitionManager& definitionManager)
 {
-	REGISTER_DEFINITION( TestStructure );
-	REGISTER_DEFINITION( TestInheritedStruct );
-	REGISTER_DEFINITION( TestPolyStruct );
-	REGISTER_DEFINITION( TestInheritedPolyStruct );
-	REGISTER_DEFINITION( TestMethodsObject );
-	REGISTER_DEFINITION( TestEmptyStructure );
+	REGISTER_DEFINITION(TestStructure);
+	REGISTER_DEFINITION(TestInheritedStruct);
+	REGISTER_DEFINITION(TestPolyStruct);
+	REGISTER_DEFINITION(TestInheritedPolyStruct);
+	REGISTER_DEFINITION(TestMethodsObject);
+	REGISTER_DEFINITION(TestEmptyStructure);
 }
 
-
-void TestObjects::finiDefs( IDefinitionManager & definitionManager )
+void TestObjects::finiDefs(IDefinitionManager& definitionManager)
 {
-	DEREGISTER_DEFINITION( TestEmptyStructure );
-	DEREGISTER_DEFINITION( TestMethodsObject );
-	DEREGISTER_DEFINITION( TestInheritedPolyStruct );
-	DEREGISTER_DEFINITION( TestPolyStruct );
-	DEREGISTER_DEFINITION( TestInheritedStruct );
-	DEREGISTER_DEFINITION( TestStructure );
+	DEREGISTER_DEFINITION(TestEmptyStructure);
+	DEREGISTER_DEFINITION(TestMethodsObject);
+	DEREGISTER_DEFINITION(TestInheritedPolyStruct);
+	DEREGISTER_DEFINITION(TestPolyStruct);
+	DEREGISTER_DEFINITION(TestInheritedStruct);
+	DEREGISTER_DEFINITION(TestStructure);
 }
-
 
 //=============================================================================
-TestStructure & TestObjects::getTestStructure()
+TestStructure& TestObjects::getTestStructure()
 {
 	return structure_;
 }

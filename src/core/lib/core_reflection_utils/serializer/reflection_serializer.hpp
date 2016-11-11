@@ -6,7 +6,6 @@
 #include "core_reflection/property_accessor.hpp"
 #include "core_serialization/serializer/i_serializer.hpp"
 
-
 namespace wgt
 {
 class ObjectHandle;
@@ -17,35 +16,31 @@ class ObjectHandle;
 class ReflectionSerializer : public ISerializer
 {
 public:
-	ReflectionSerializer( ISerializationManager & serializationManager, 
-						  IObjectManager & objManager,
-						  IDefinitionManager & defManager );
+	ReflectionSerializer(ISerializationManager& serializationManager, IObjectManager& objManager,
+	                     IDefinitionManager& defManager);
 	~ReflectionSerializer();
 
 	std::vector<TypeId> getSupportedType();
 
 private:
-	bool write( 
-		IDataStream * dataStream, const Variant & variant ) override;
-	bool read( 
-		IDataStream * dataStream, Variant & variant ) override;
+	bool write(IDataStream* dataStream, const Variant& variant) override;
+	bool read(IDataStream* dataStream, Variant& variant) override;
 
-	void writeProperties( const ObjectHandle & provider );
-	void writeProperty( const PropertyAccessor & property );
-	void writePropertyValue( const Variant & value );
-	void writeCollection( const Collection & collection );
+	void writeProperties(const ObjectHandle& provider);
+	void writeProperty(const PropertyAccessor& property);
+	void writePropertyValue(const Variant& value);
+	void writeCollection(const Collection& collection);
 
-	void readProperties( const ObjectHandle & provider );
-	void readProperty( const ObjectHandle & provider );
-	void readPropertyValue( const char * valueType, PropertyAccessor & pa );
-	void readCollection( const PropertyAccessor & prop );
-	
+	void readProperties(const ObjectHandle& provider);
+	void readProperty(const ObjectHandle& provider);
+	void readPropertyValue(const char* valueType, PropertyAccessor& pa);
+	void readCollection(const PropertyAccessor& prop);
 
-	ISerializationManager & serializationManager_;
-	IObjectManager & objManager_;
-	IDefinitionManager & defManager_;
-	IDataStream * curDataStream_;
-	typedef std::vector< std::pair< PropertyAccessor, RefObjectId > > ObjLinks;
+	ISerializationManager& serializationManager_;
+	IObjectManager& objManager_;
+	IDefinitionManager& defManager_;
+	IDataStream* curDataStream_;
+	typedef std::vector<std::pair<PropertyAccessor, RefObjectId>> ObjLinks;
 	std::vector<TypeId> typeList;
 	ObjLinks objLinks_;
 };

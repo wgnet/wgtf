@@ -18,17 +18,15 @@
 
 namespace wgt
 {
-BezierPointData getPointData( const BezierPoint& point )
+BezierPointData getPointData(const BezierPoint& point)
 {
-	BezierPointData data = {
-		{ point.pos->getX(), point.pos->getY() },
-		{ point.cp1->getX(), point.cp1->getY() },
-		{ point.cp2->getX(), point.cp2->getY() }
-	};
+	BezierPointData data = { { point.pos->getX(), point.pos->getY() },
+		                     { point.cp1->getX(), point.cp1->getY() },
+		                     { point.cp2->getX(), point.cp2->getY() } };
 	return data;
 }
 
-void setPointData( const BezierPointData& data, BezierPoint& point )
+void setPointData(const BezierPointData& data, BezierPoint& point)
 {
 	point.pos->setX(data.pos.x);
 	point.pos->setY(data.pos.y);
@@ -39,11 +37,8 @@ void setPointData( const BezierPointData& data, BezierPoint& point )
 }
 
 Curve::Curve(ICurveInterpolatorPtr interpolator, IDefinitionManager* definitionManager)
-	: currentState_(-1)
-	, definitionManager_(definitionManager)
-	, showControlPoints_(false)
-	, dirty_(false)
-	, interpolator_(std::move(interpolator))
+    : currentState_(-1), definitionManager_(definitionManager), showControlPoints_(false), dirty_(false),
+      interpolator_(std::move(interpolator))
 {
 }
 
@@ -53,50 +48,51 @@ Curve::~Curve()
 
 void Curve::add(const BezierPointData& point, bool triggerCallback)
 {
-	if ( definitionManager_ == nullptr )
+	if (definitionManager_ == nullptr)
 	{
 		assert(!"Failed to add point because definition manager is null");
 		return;
 	}
 
 	auto def = definitionManager_->getDefinition<BezierPoint>();
-	if ( def == nullptr )
+	if (def == nullptr)
 	{
 		assert(!"Failed to add point because BezierPoint definition is null");
 		return;
 	}
 
-	auto handle = TypeClassDefinition<BezierPoint>::create(*def, *definitionManager_,
-		Point(point.pos.x, point.pos.y), Point(point.cp1.x, point.cp1.y), Point(point.cp2.x, point.cp2.y));
-	
+	auto handle =
+	TypeClassDefinition<BezierPoint>::create(*def, *definitionManager_, Point(point.pos.x, point.pos.y),
+	                                         Point(point.cp1.x, point.cp1.y), Point(point.cp2.x, point.cp2.y));
+
 	insertPoint(handle, false, triggerCallback);
 }
 
 void Curve::addAt(float x, bool triggerCallback)
 {
-	if ( definitionManager_ == nullptr )
+	if (definitionManager_ == nullptr)
 		return;
 
 	auto ptDefinition = definitionManager_->getDefinition<Point>();
-	if ( ptDefinition == nullptr )
+	if (ptDefinition == nullptr)
 		return;
-	
-	auto bezPtDefinition = definitionManager_->getDefinition<BezierPoint>();
-	auto newBezPointHandle = TypeClassDefinition<BezierPoint>::create(
-		*bezPtDefinition, *definitionManager_, Point(x, 0));
 
-	insertPoint( newBezPointHandle, true, triggerCallback );
+	auto bezPtDefinition = definitionManager_->getDefinition<BezierPoint>();
+	auto newBezPointHandle =
+	TypeClassDefinition<BezierPoint>::create(*bezPtDefinition, *definitionManager_, Point(x, 0));
+
+	insertPoint(newBezPointHandle, true, triggerCallback);
 }
 
 float Curve::at(const float& time)
 {
 	BezierPoint* prevPoint = nullptr;
-	for ( auto iter = std::begin(points_); iter != std::end(points_); ++iter )
+	for (auto iter = std::begin(points_); iter != std::end(points_); ++iter)
 	{
 		auto& point = *(*iter);
-		if ( point.pos->getX() >= time )
+		if (point.pos->getX() >= time)
 		{
-			if ( prevPoint )
+			if (prevPoint)
 			{
 				auto localTime = interpolator_->timeAtX(time, *prevPoint, point);
 				return interpolator_->interpolate(localTime, *prevPoint, point).pos.y;
@@ -116,13 +112,11 @@ float Curve::at(const float& time)
 BezierPointData Curve::at(unsigned int index)
 {
 	assert(index < points_.size());
-	auto& point = *points_[index]; 
+	auto& point = *points_[index];
 
-	BezierPointData pointData = {
-		{ point.pos->getX(), point.pos->getY() },
-		{ point.cp1->getX(), point.cp1->getY() },
-		{ point.cp2->getX(), point.cp2->getY() }
-	};
+	BezierPointData pointData = { { point.pos->getX(), point.pos->getY() },
+		                          { point.cp1->getX(), point.cp1->getY() },
+		                          { point.cp2->getX(), point.cp2->getY() } };
 
 	return pointData;
 }
@@ -130,15 +124,13 @@ BezierPointData Curve::at(unsigned int index)
 void Curve::enumerate(PointCallback callback)
 {
 	auto index = 0;
-	for( auto iter = points_.begin(); iter != points_.end(); ++iter, ++index )
+	for (auto iter = points_.begin(); iter != points_.end(); ++iter, ++index)
 	{
 		auto& point = *(*iter);
 
-		BezierPointData data = {
-			{ point.pos->getX(), point.pos->getY() },
-			{ point.cp1->getX(), point.cp1->getY() },
-			{ point.cp2->getX(), point.cp2->getY() }
-		};
+		BezierPointData data = { { point.pos->getX(), point.pos->getY() },
+			                     { point.cp1->getX(), point.cp1->getY() },
+			                     { point.cp2->getX(), point.cp2->getY() } };
 		PointUpdateData current;
 		current.point = data;
 		current.index = index;
@@ -152,48 +144,45 @@ void Curve::removeAt(float time, bool triggerCallback)
 {
 	ObjectHandleT<BezierPoint> bezierPoint;
 	auto index = 0;
-	for ( auto iter = std::begin(points_); iter != std::end(points_); ++iter, ++index )
+	for (auto iter = std::begin(points_); iter != std::end(points_); ++iter, ++index)
 	{
-		auto& point = *( *iter );
-		if ( abs(point.pos->getX() - time) < EPSILON )
+		auto& point = *(*iter);
+		if (abs(point.pos->getX() - time) < EPSILON)
 		{
 			bezierPoint = *iter;
 			break;
 		}
 	}
 
-	if(bezierPoint.get() == nullptr)
+	if (bezierPoint.get() == nullptr)
 	{
 		NGT_ERROR_MSG("Failed to find point at time %lf\n", time);
-		pushModification([](){}, [](){});
+		pushModification([]() {}, []() {});
 		return;
 	}
 
 	auto& points = points_;
 	auto& removedCallback = removed_;
-	auto removeListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint){ removeListeners(bezierPoint); };
-	auto executeFunc = [index, bezierPoint, removeListenersFunc, triggerCallback, &points, &removedCallback]()
-	{
+	auto removeListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint) { removeListeners(bezierPoint); };
+	auto executeFunc = [index, bezierPoint, removeListenersFunc, triggerCallback, &points, &removedCallback]() {
 		auto currentIndex = 0;
 		auto iter = std::begin(points);
-		for ( ; iter != std::end(points); ++iter, ++currentIndex )
+		for (; iter != std::end(points); ++iter, ++currentIndex)
 		{
-			if ( currentIndex == index )
+			if (currentIndex == index)
 				break;
 		}
 
 		auto& point = *(*iter);
-		if ( &point == bezierPoint.get() )
+		if (&point == bezierPoint.get())
 		{
 			removeListenersFunc(*iter);
 			points.erase(iter);
-			if(triggerCallback)
+			if (triggerCallback)
 			{
-				BezierPointData data = {
-					{ point.pos->getX(), point.pos->getY() },
-					{ point.cp1->getX(), point.cp1->getY() },
-					{ point.cp2->getX(), point.cp2->getY() }
-				};
+				BezierPointData data = { { point.pos->getX(), point.pos->getY() },
+					                     { point.cp1->getX(), point.cp1->getY() },
+					                     { point.cp2->getX(), point.cp2->getY() } };
 				PointUpdateData removed;
 				removed.point = data;
 				removed.index = index;
@@ -203,14 +192,13 @@ void Curve::removeAt(float time, bool triggerCallback)
 	};
 
 	auto& addedCallback = added_;
-	auto addListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint){ addListeners(bezierPoint); };
-	auto undoFunc = [index, bezierPoint, addListenersFunc, triggerCallback, &points, &addedCallback]()
-	{
+	auto addListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint) { addListeners(bezierPoint); };
+	auto undoFunc = [index, bezierPoint, addListenersFunc, triggerCallback, &points, &addedCallback]() {
 		auto currentIndex = 0;
 		auto iter = std::begin(points);
-		for ( ; iter != std::end(points); ++iter, ++currentIndex )
+		for (; iter != std::end(points); ++iter, ++currentIndex)
 		{
-			if(currentIndex == index)
+			if (currentIndex == index)
 				break;
 		}
 
@@ -218,13 +206,11 @@ void Curve::removeAt(float time, bool triggerCallback)
 
 		addListenersFunc(bezierPoint);
 
-		if ( triggerCallback )
+		if (triggerCallback)
 		{
-			BezierPointData data = {
-				{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
-				{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
-				{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-			};
+			BezierPointData data = { { bezierPoint->pos->getX(), bezierPoint->pos->getY() },
+				                     { bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
+				                     { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 			PointUpdateData added;
 			added.point = data;
 			added.index = index;
@@ -237,7 +223,7 @@ void Curve::removeAt(float time, bool triggerCallback)
 
 void Curve::modify(unsigned int index, const BezierPointData& data)
 {
-	if( index >= points_.size() )
+	if (index >= points_.size())
 		return;
 
 	BezierPoint& point = *points_[index];
@@ -249,16 +235,15 @@ void Curve::modify(unsigned int index, const BezierPointData& data)
 	point.cp2->setY(data.cp2.y);
 	dirty_.value(true);
 	dirty_.value(false);
-	
 }
 
 unsigned int Curve::find_index(const BezierPointData& value)
 {
 	unsigned int index = 0;
-	for( auto iter = std::begin(points_); iter != std::end(points_); ++iter, ++index )
+	for (auto iter = std::begin(points_); iter != std::end(points_); ++iter, ++index)
 	{
 		auto& point = *(*iter);
-		if( point.pos->getX() == value.pos.x )
+		if (point.pos->getX() == value.pos.x)
 			return index;
 	}
 
@@ -267,20 +252,16 @@ unsigned int Curve::find_index(const BezierPointData& value)
 
 void Curve::addListeners(ObjectHandleT<BezierPoint> bezierPoint)
 {
-	bezierPoint->pos->xChanged.connect( [=](float oldX, float newX){
-		BezierPointData oldData = {
-			{ oldX, bezierPoint->pos->getY() },
-			{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+	bezierPoint->pos->xChanged.connect([=](float oldX, float newX) {
+		BezierPointData oldData = { { oldX, bezierPoint->pos->getY() },
+			                        { bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData oldPoint;
 		oldPoint.point = oldData;
 
-		BezierPointData newData = {
-			{ newX, bezierPoint->pos->getY() },
-			{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+		BezierPointData newData = { { newX, bezierPoint->pos->getY() },
+			                        { bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData newPoint;
 		newPoint.point = newData;
 
@@ -288,75 +269,63 @@ void Curve::addListeners(ObjectHandleT<BezierPoint> bezierPoint)
 		newPoint.index = oldPoint.index;
 
 		modified_(oldPoint, newPoint);
-	} );
+	});
 
-	bezierPoint->pos->yChanged.connect( [=](float oldY, float newY){
-		BezierPointData oldData = {
-			{ bezierPoint->pos->getX(), oldY },
-			{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+	bezierPoint->pos->yChanged.connect([=](float oldY, float newY) {
+		BezierPointData oldData = { { bezierPoint->pos->getX(), oldY },
+			                        { bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData oldPoint;
 		oldPoint.point = oldData;
 		oldPoint.index = find_index(oldPoint.point);
 
-		BezierPointData newData = {
-			{ bezierPoint->pos->getX(), newY },
-			{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+		BezierPointData newData = { { bezierPoint->pos->getX(), newY },
+			                        { bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData newPoint;
 		newPoint.point = newData;
 		newPoint.index = oldPoint.index;
 
 		modified_(oldPoint, newPoint);
-	} );
+	});
 
-	bezierPoint->cp1->xChanged.connect( [=](float oldX, float newX){
-		BezierPointData oldData = {
-			{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
-			{ oldX, bezierPoint->cp1->getY() },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+	bezierPoint->cp1->xChanged.connect([=](float oldX, float newX) {
+		BezierPointData oldData = { { bezierPoint->pos->getX(), bezierPoint->pos->getY() },
+			                        { oldX, bezierPoint->cp1->getY() },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData oldPoint;
 		oldPoint.point = oldData;
 		oldPoint.index = find_index(oldPoint.point);
 
-		BezierPointData newData = {
-			{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
-			{ newX, bezierPoint->cp1->getY() },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+		BezierPointData newData = { { bezierPoint->pos->getX(), bezierPoint->pos->getY() },
+			                        { newX, bezierPoint->cp1->getY() },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData newPoint;
 		newPoint.point = newData;
 		newPoint.index = oldPoint.index;
 
 		modified_(oldPoint, newPoint);
-	} );
+	});
 
-	bezierPoint->cp1->yChanged.connect( [=](float oldY, float newY){
-		BezierPointData oldData = {
-			{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
-			{ bezierPoint->cp1->getX(), oldY },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+	bezierPoint->cp1->yChanged.connect([=](float oldY, float newY) {
+		BezierPointData oldData = { { bezierPoint->pos->getX(), bezierPoint->pos->getY() },
+			                        { bezierPoint->cp1->getX(), oldY },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData oldPoint;
 		oldPoint.point = oldData;
 		oldPoint.index = find_index(oldPoint.point);
 
-		BezierPointData newData = {
-			{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
-			{ bezierPoint->cp1->getX(), newY },
-			{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-		};
+		BezierPointData newData = { { bezierPoint->pos->getX(), bezierPoint->pos->getY() },
+			                        { bezierPoint->cp1->getX(), newY },
+			                        { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 		PointUpdateData newPoint;
 		newPoint.point = newData;
 		newPoint.index = oldPoint.index;
 
 		modified_(oldPoint, newPoint);
-	} );
+	});
 
-	bezierPoint->cp2->xChanged.connect( [=](float oldX, float newX){
+	bezierPoint->cp2->xChanged.connect([=](float oldX, float newX) {
 		BezierPointData oldData = {
 			{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
 			{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
@@ -376,9 +345,9 @@ void Curve::addListeners(ObjectHandleT<BezierPoint> bezierPoint)
 		newPoint.index = oldPoint.index;
 
 		modified_(oldPoint, newPoint);
-	} );
+	});
 
-	bezierPoint->cp2->yChanged.connect( [=](float oldY, float newY){
+	bezierPoint->cp2->yChanged.connect([=](float oldY, float newY) {
 		BezierPointData oldData = {
 			{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
 			{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
@@ -398,7 +367,7 @@ void Curve::addListeners(ObjectHandleT<BezierPoint> bezierPoint)
 		newPoint.index = oldPoint.index;
 
 		modified_(oldPoint, newPoint);
-	} );
+	});
 }
 
 void Curve::removeListeners(ObjectHandleT<BezierPoint> bezierPoint)
@@ -421,12 +390,12 @@ void Curve::insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos,
 	auto x = newPoint.pos->getX();
 
 	auto iter = std::begin(points_);
-	for ( ; iter != std::end(points_); ++iter )
+	for (; iter != std::end(points_); ++iter)
 	{
-		nextPoint = &*( *iter );
-		if ( nextPoint->pos->getX() > x )
+		nextPoint = &*(*iter);
+		if (nextPoint->pos->getX() > x)
 		{
-			if(updateYPos)
+			if (updateYPos)
 			{
 				newPos.setY(nextPoint->pos->getY());
 			}
@@ -435,7 +404,7 @@ void Curve::insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos,
 		prevPoint = nextPoint;
 	}
 
-	if ( iter == std::end(points_) )
+	if (iter == std::end(points_))
 	{
 		nextPoint = nullptr;
 	}
@@ -443,30 +412,29 @@ void Curve::insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos,
 	auto interpolator = interpolator_.get();
 	auto& points = points_;
 	auto& addCallback = added_;
-	auto addListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint){ addListeners(bezierPoint); };
-	auto executeFunc = [bezierPoint, prevPoint, nextPoint, interpolator,
-		x, updateYPos, triggerCallback, addListenersFunc, &points, &addCallback]()
-	{
+	auto addListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint) { addListeners(bezierPoint); };
+	auto executeFunc = [bezierPoint, prevPoint, nextPoint, interpolator, x, updateYPos, triggerCallback,
+	                    addListenersFunc, &points, &addCallback]() {
 		auto& newPoint = *bezierPoint.get();
 		auto& newPos = *bezierPoint->pos.get();
 
 		size_t index = 0;
 		auto iter = std::begin(points);
-		for ( ; iter != std::end(points); ++iter )
+		for (; iter != std::end(points); ++iter)
 		{
-			if ( (*iter)->pos->getX() > x )
+			if ((*iter)->pos->getX() > x)
 				break;
 			++index;
 		}
 
 		// Adding the point to the end of the curve
-		if ( nextPoint == nullptr )
+		if (nextPoint == nullptr)
 		{
-			if( updateYPos )
+			if (updateYPos)
 			{
 				newPos.setY(prevPoint ? prevPoint->pos->getY() : 0);
 			}
-			if ( prevPoint )
+			if (prevPoint)
 			{
 				interpolator->updateControlPoints(newPoint, prevPoint, nullptr);
 			}
@@ -476,10 +444,10 @@ void Curve::insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos,
 		else
 		{
 			// Are there both previous and next points?
-			if ( prevPoint )
+			if (prevPoint)
 			{
 				auto t = interpolator->timeAtX(x, *prevPoint, *nextPoint);
-				if( updateYPos )
+				if (updateYPos)
 				{
 					newPoint = interpolator->interpolate(t, *prevPoint, *nextPoint);
 				}
@@ -497,13 +465,11 @@ void Curve::insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos,
 		addListenersFunc(bezierPoint);
 
 		// Notify the point was added to the curve
-		if( triggerCallback )
+		if (triggerCallback)
 		{
-			BezierPointData point = {
-				{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
-				{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
-				{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-			};
+			BezierPointData point = { { bezierPoint->pos->getX(), bezierPoint->pos->getY() },
+				                      { bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
+				                      { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 			PointUpdateData data;
 			data.point = point;
 			data.index = (unsigned int)index;
@@ -511,41 +477,39 @@ void Curve::insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos,
 			addCallback(data);
 		}
 	};
-	
+
 	auto nextData = nextPoint ? getPointData(*nextPoint) : BezierPointData();
 	auto prevData = prevPoint ? getPointData(*prevPoint) : BezierPointData();
 	auto& removedCallback = removed_;
-	auto removeListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint){ removeListeners(bezierPoint); };
-	auto undoFunc = [bezierPoint, nextData, prevData, nextPoint, prevPoint,
-		triggerCallback, removeListenersFunc, &points, &removedCallback](){
+	auto removeListenersFunc = [this](ObjectHandleT<BezierPoint> bezierPoint) { removeListeners(bezierPoint); };
+	auto undoFunc = [bezierPoint, nextData, prevData, nextPoint, prevPoint, triggerCallback, removeListenersFunc,
+	                 &points, &removedCallback]() {
 
 		removeListenersFunc(bezierPoint);
 
-		if(nextPoint)
+		if (nextPoint)
 		{
 			setPointData(nextData, *nextPoint);
 		}
-		if(prevPoint)
+		if (prevPoint)
 		{
 			setPointData(prevData, *prevPoint);
 		}
-		
+
 		auto index = 0;
-		for ( auto iter = std::begin(points); iter != std::end(points); ++iter, ++index )
+		for (auto iter = std::begin(points); iter != std::end(points); ++iter, ++index)
 		{
-			if(*iter == bezierPoint)
+			if (*iter == bezierPoint)
 			{
 				points.erase(iter);
 				break;
 			}
 		}
-		if(triggerCallback)
+		if (triggerCallback)
 		{
-			BezierPointData point = {
-				{ bezierPoint->pos->getX(), bezierPoint->pos->getY() },
-				{ bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
-				{ bezierPoint->cp2->getX(), bezierPoint->cp2->getY() }
-			};
+			BezierPointData point = { { bezierPoint->pos->getX(), bezierPoint->pos->getY() },
+				                      { bezierPoint->cp1->getX(), bezierPoint->cp1->getY() },
+				                      { bezierPoint->cp2->getX(), bezierPoint->cp2->getY() } };
 			PointUpdateData removed;
 			removed.point = point;
 			removed.index = index;
@@ -558,7 +522,7 @@ void Curve::insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos,
 
 void Curve::pushModification(ModificationFunction&& executeFunc, ModificationFunction&& undoFunc)
 {
-	while ( currentState_ < modificationStack_.size() - 1 )
+	while (currentState_ < modificationStack_.size() - 1)
 	{
 		modificationStack_.pop_back();
 	}

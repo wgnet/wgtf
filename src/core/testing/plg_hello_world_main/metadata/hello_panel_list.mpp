@@ -6,8 +6,8 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( HelloPanelListExposed, MetaNone() )
-    EXPOSE( "sampleCollection", sampleCollection_, MetaNone() )
-    EXPOSE_METHOD( "getCollectionItem", getCollectionItem, MetaNone() )
+BEGIN_EXPOSE(HelloPanelListExposed, MetaNone())
+EXPOSE("sampleCollection", sampleCollection_, MetaNone())
+EXPOSE_METHOD("getCollectionItem", getCollectionItem, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

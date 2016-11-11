@@ -8,38 +8,36 @@
 
 namespace wgt
 {
-class WGCopyController
-	: public QObject
-	, public ICopyableObject
+class WGCopyController : public QObject, public ICopyableObject
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QVariant data MEMBER data_  )
-	Q_PROPERTY( bool pasted MEMBER bPasted_  )
+	Q_PROPERTY(QVariant data MEMBER data_)
+	Q_PROPERTY(bool pasted MEMBER bPasted_)
 
 public:
-	WGCopyController( QObject * parent = NULL );
+	WGCopyController(QObject* parent = NULL);
 	~WGCopyController();
 
-	Q_INVOKABLE void setValue( const QVariant & data );
-	// This hint is designed for 
-	// searching most suitable controls which the value could paste to. 
-	Q_INVOKABLE void setValueHint( const QString & hint );
+	Q_INVOKABLE void setValue(const QVariant& data);
+	// This hint is designed for
+	// searching most suitable controls which the value could paste to.
+	Q_INVOKABLE void setValueHint(const QString& hint);
 	DECLARE_QT_MEMORY_HANDLER
 
-	const char * getDataHint() const override;
-	const Variant & getData() override;
-	bool setData( const Variant & value ) override;
+	const char* getDataHint() const override;
+	const Variant& getData() override;
+	bool setData(const Variant& value) override;
 
 signals:
 	void dataCopied();
 	void dataPasted();
 
 private:
-	std::string  valueHint_;
+	std::string valueHint_;
 	QVariant data_;
 	Variant value_;
 	bool bPasted_;
 };
 } // end namespace wgt
-#endif //WG_COPY_CONTROLLER_HPP
+#endif // WG_COPY_CONTROLLER_HPP

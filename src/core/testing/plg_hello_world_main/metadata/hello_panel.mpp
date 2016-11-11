@@ -6,12 +6,12 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( HelloPanelExposed, MetaNone() )
-    EXPOSE( "clickDescription", clickDescription_, MetaNone() )
-    EXPOSE( "clickCount", clickCount_, MetaNone() )
-    EXPOSE_METHOD( "clickButton", clickButton, undoClickButton, redoClickButton )
+BEGIN_EXPOSE(HelloPanelExposed, MetaNone())
+EXPOSE("clickDescription", clickDescription_, MetaNone())
+EXPOSE("clickCount", clickCount_, MetaNone())
+EXPOSE_METHOD("clickButton", clickButton, undoClickButton, redoClickButton)
 END_EXPOSE()
-BEGIN_EXPOSE( HelloPanelExposedSource, MetaNone() )
-    EXPOSE( "sourceModel", sourceModel, MetaNone() )
+BEGIN_EXPOSE(HelloPanelExposedSource, MetaNone())
+EXPOSE("sourceModel", sourceModel, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

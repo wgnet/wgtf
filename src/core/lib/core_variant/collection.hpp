@@ -11,7 +11,6 @@
 
 #include "variant_dll.hpp"
 
-
 namespace wgt
 {
 /** Collection iterator implementations base. */
@@ -58,7 +57,6 @@ public:
 	virtual CollectionIteratorImplPtr clone() const = 0;
 };
 
-
 /** Collection implementations base. */
 class VARIANT_DLL CollectionImplBase
 {
@@ -77,34 +75,28 @@ public:
 		MAPPING = 1,
 
 		/** Element data can be changed.
-		Note that setting new values can still fail even with this flag. */
+	    Note that setting new values can still fail even with this flag. */
 		WRITABLE = 2,
 
 		/** Elements can be inserted and erased.
-		Note that in some cases insert() or erase() can still fail even with this flag. */
+	    Note that in some cases insert() or erase() can still fail even with this flag. */
 		RESIZABLE = 4,
 
 		/** Elements are always sorted by key.
-		Sorting predicate is defined by a concrete implementation. */
+	    Sorting predicate is defined by a concrete implementation. */
 		ORDERED = 8,
 
 		/** Container may have multiple elements with equal key. */
 		NON_UNIQUE_KEYS = 16
 	};
 
-	typedef void ElementRangeCallbackSignature(
-		const CollectionIteratorImplPtr& pos,
-		size_t count );
-	typedef void ElementPreChangeCallbackSignature(
-		const CollectionIteratorImplPtr& pos,
-		const Variant& newValue );
-	typedef void ElementPostChangedCallbackSignature(
-		const CollectionIteratorImplPtr& pos,
-		const Variant& oldValue );
+	typedef void ElementRangeCallbackSignature(const CollectionIteratorImplPtr& pos, size_t count);
+	typedef void ElementPreChangeCallbackSignature(const CollectionIteratorImplPtr& pos, const Variant& newValue);
+	typedef void ElementPostChangedCallbackSignature(const CollectionIteratorImplPtr& pos, const Variant& oldValue);
 
-	typedef std::function< ElementRangeCallbackSignature > ElementRangeCallback;
-	typedef std::function< ElementPreChangeCallbackSignature > ElementPreChangeCallback;
-	typedef std::function< ElementPostChangedCallbackSignature > ElementPostChangedCallback;
+	typedef std::function<ElementRangeCallbackSignature> ElementRangeCallback;
+	typedef std::function<ElementPreChangeCallbackSignature> ElementPreChangeCallback;
+	typedef std::function<ElementPostChangedCallbackSignature> ElementPostChangedCallback;
 
 	/** Returns elements count currently held in collection. */
 	virtual size_t size() const = 0;
@@ -122,7 +114,7 @@ public:
 	if a new element was inserted or @c false if an equivalent key already
 	existed.
 	@note end() can still be returned if key is not found and insertion	failed. */
-	virtual std::pair< CollectionIteratorImplPtr, bool > get( const Variant& key, GetPolicy policy ) = 0;
+	virtual std::pair<CollectionIteratorImplPtr, bool> get(const Variant& key, GetPolicy policy) = 0;
 
 	/** Insert a new element, with a default value.
 	@return an iterator pointing to the newly inserted element or end() on failure. */
@@ -130,23 +122,21 @@ public:
 
 	/** Insert a new element, with the given value.
 	@return an iterator pointing to the newly inserted element or end() on failure. */
-	virtual CollectionIteratorImplPtr insert(const Variant& key,
-	                                         const Variant& value) = 0;
+	virtual CollectionIteratorImplPtr insert(const Variant& key, const Variant& value) = 0;
 
 	/** Erase the element at pos.
 	@return an iterator pointing to the position immediately following the erased element. */
-	virtual CollectionIteratorImplPtr erase( const CollectionIteratorImplPtr& pos ) = 0;
+	virtual CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) = 0;
 
 	/** Erase all elements with given key.
 	Returns amount of elements erased. */
-	virtual size_t eraseKey( const Variant& key ) = 0;
+	virtual size_t eraseKey(const Variant& key) = 0;
 
 	/** Erase elements between first and last, not including last.
 	@return an iterator pointing to the position immediately following the last
 	of the elements erased. */
-	virtual CollectionIteratorImplPtr erase(
-		const CollectionIteratorImplPtr& first,
-		const CollectionIteratorImplPtr& last ) = 0;
+	virtual CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& first,
+	                                        const CollectionIteratorImplPtr& last) = 0;
 
 	/** Return TypeId of collection key */
 	virtual const TypeId& keyType() const = 0;
@@ -167,46 +157,42 @@ public:
 	/** Return combination of Flag values that describe some Collection properties. */
 	virtual int flags() const = 0;
 
-	virtual Connection connectPreInsert( ElementRangeCallback callback )
+	virtual Connection connectPreInsert(ElementRangeCallback callback)
 	{
 		return Connection();
 	}
 
-	virtual Connection connectPostInserted( ElementRangeCallback callback )
+	virtual Connection connectPostInserted(ElementRangeCallback callback)
 	{
 		return Connection();
 	}
 
-	virtual Connection connectPreErase( ElementRangeCallback callback )
+	virtual Connection connectPreErase(ElementRangeCallback callback)
 	{
 		return Connection();
 	}
 
-	virtual Connection connectPostErased( ElementRangeCallback callback)
+	virtual Connection connectPostErased(ElementRangeCallback callback)
 	{
 		return Connection();
 	}
 
-	virtual Connection connectPreChange( ElementPreChangeCallback callback )
+	virtual Connection connectPreChange(ElementPreChangeCallback callback)
 	{
 		return Connection();
 	}
 
-	virtual Connection connectPostChanged( ElementPostChangedCallback callback )
+	virtual Connection connectPostChanged(ElementPostChangedCallback callback)
 	{
 		return Connection();
 	}
-
 };
 
 typedef std::shared_ptr<CollectionImplBase> CollectionImplPtr;
 
-
 namespace collection_details
 {
-
-	void deduceCollectionImplType(...);
-
+void deduceCollectionImplType(...);
 }
 } // end namespace wgt
 
@@ -217,44 +203,37 @@ namespace wgt
 {
 namespace collection_details
 {
+template <typename Container>
+struct CollectionImpl
+{
+	typedef decltype(deduceCollectionImplType(std::declval<Container&>())) type;
+};
 
-	template<typename Container>
-	struct CollectionImpl
-	{
-		typedef decltype(deduceCollectionImplType(std::declval<Container&>())) type;
-	};
+// downcaster
 
-	// downcaster
+template <typename Impl>
+struct Downcaster
+{
+	typedef typename Impl::downcaster type;
+};
 
-	template<typename Impl>
-	struct Downcaster
-	{
-		typedef typename Impl::downcaster type;
-	};
-
-	template<>
-	struct Downcaster<void>
-	{
-		typedef void type;
-	};
-
+template <>
+struct Downcaster<void>
+{
+	typedef void type;
+};
 }
 
 /** Helper function used to create collection implementation for given argument(s). */
 void createCollectionImpl(...);
 
-template<typename T>
-typename std::enable_if<
-	!std::is_same<
-		typename collection_details::CollectionImpl<T>::type,
-		void
-	>::value,
-	CollectionImplPtr
->::type createCollectionImpl(T& container)
+template <typename T>
+typename std::enable_if<!std::is_same<typename collection_details::CollectionImpl<T>::type, void>::value,
+                        CollectionImplPtr>::type
+createCollectionImpl(T& container)
 {
-	return std::make_shared< typename collection_details::CollectionImpl<T>::type >(container);
+	return std::make_shared<typename collection_details::CollectionImpl<T>::type>(container);
 }
-
 
 /** Wrapper for generic container. */
 class VARIANT_DLL Collection
@@ -264,30 +243,29 @@ public:
 	class VARIANT_DLL ValueRef
 	{
 	public:
-		ValueRef(const CollectionIteratorImplPtr& impl):
-			impl_(impl)
+		ValueRef(const CollectionIteratorImplPtr& impl) : impl_(impl)
 		{
 		}
 
-		template<typename T>
+		template <typename T>
 		bool tryCast(T& out) const
 		{
 			return impl_->value().tryCast(out);
 		}
 
-		template<typename T>
+		template <typename T>
 		T cast() const
 		{
 			return impl_->value().cast<T>();
 		}
 
-		template<typename T>
+		template <typename T>
 		T value() const
 		{
 			return impl_->value().value<T>();
 		}
 
-		template<typename T>
+		template <typename T>
 		T value(const T& def) const
 		{
 			return impl_->value().value<T>(def);
@@ -298,20 +276,20 @@ public:
 			return impl_->value();
 		}
 
-		template<typename T>
+		template <typename T>
 		ValueRef& operator=(const T& v)
 		{
 			impl_->setValue(v);
 			return *this;
 		}
 
-		template<typename T>
+		template <typename T>
 		bool operator==(const T& v) const
 		{
 			return impl_->value() == v;
 		}
 
-		template<typename T>
+		template <typename T>
 		bool operator!=(const T& v) const
 		{
 			return !(*this == v);
@@ -319,7 +297,6 @@ public:
 
 	private:
 		CollectionIteratorImplPtr impl_;
-
 	};
 
 	/** Read only forward iterator to collection element.
@@ -332,14 +309,12 @@ public:
 	public:
 		typedef CollectionIteratorImplBase::iterator_category iterator_category;
 		typedef Variant value_type;
-		typedef CollectionIteratorImplBase::difference_type
-			difference_type;
+		typedef CollectionIteratorImplBase::difference_type difference_type;
 
 		typedef const Variant reference;
 		typedef void pointer;
 
-		ConstIterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()):
-			impl_(impl)
+		ConstIterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()) : impl_(impl)
 		{
 		}
 
@@ -401,14 +376,12 @@ public:
 		void detach();
 
 		CollectionIteratorImplPtr impl_;
-
 	};
 
 	/** Read-write forward iterator to collection element.
 	@note This iterator implementation doesn't conform fully to standard
 	iterator requirements. */
-	class VARIANT_DLL Iterator:
-		public ConstIterator
+	class VARIANT_DLL Iterator : public ConstIterator
 	{
 	public:
 		typedef ConstIterator base;
@@ -420,8 +393,7 @@ public:
 		typedef ValueRef reference;
 		typedef void pointer;
 
-		Iterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()):
-			base(impl)
+		Iterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()) : base(impl)
 		{
 		}
 
@@ -447,49 +419,40 @@ public:
 			++(*this);
 			return tmp;
 		}
-
 	};
 
 	/** Check if specified container type is supported by Collection. */
-	template<typename Container>
+	template <typename Container>
 	struct traits
 	{
-		static const bool is_supported =
-			!std::is_convertible<Container, CollectionImplPtr>::value &&
-			std::is_same<
-				decltype(createCollectionImpl(std::declval<Container&>())),
-				CollectionImplPtr>::value;
+		static const bool is_supported = !std::is_convertible<Container, CollectionImplPtr>::value &&
+		std::is_same<decltype(createCollectionImpl(std::declval<Container&>())), CollectionImplPtr>::value;
 
-		typedef typename collection_details::Downcaster<typename collection_details::CollectionImpl<Container>::type>::type downcaster;
+		typedef
+		typename collection_details::Downcaster<typename collection_details::CollectionImpl<Container>::type>::type
+		downcaster;
 
 		static const bool can_downcast = !std::is_same<downcaster, void>::value;
 	};
 
-	typedef void ElementRangeCallbackSignature(
-		const Iterator& pos,
-		size_t count );
-	typedef void ElementPreChangeCallbackSignature(
-		const Iterator& pos,
-		const Variant& newValue );
-	typedef void ElementPostChangedCallbackSignature(
-		const Iterator& pos,
-		const Variant& oldValue );
+	typedef void ElementRangeCallbackSignature(const Iterator& pos, size_t count);
+	typedef void ElementPreChangeCallbackSignature(const Iterator& pos, const Variant& newValue);
+	typedef void ElementPostChangedCallbackSignature(const Iterator& pos, const Variant& oldValue);
 
-	typedef std::function< ElementRangeCallbackSignature > ElementRangeCallback;
-	typedef std::function< ElementPreChangeCallbackSignature > ElementPreChangeCallback;
-	typedef std::function< ElementPostChangedCallbackSignature > ElementPostChangedCallback;
+	typedef std::function<ElementRangeCallbackSignature> ElementRangeCallback;
+	typedef std::function<ElementPreChangeCallbackSignature> ElementPreChangeCallback;
+	typedef std::function<ElementPostChangedCallbackSignature> ElementPostChangedCallback;
 
 	/** Construct Collection using given implementation. */
-	explicit Collection(const CollectionImplPtr& impl = CollectionImplPtr()):
-		impl_(impl)
+	explicit Collection(const CollectionImplPtr& impl = CollectionImplPtr()) : impl_(impl)
 	{
 	}
 
 	/** Construct Collection wrapper for given container.
 	Note that current implementation allows only pointers to containers. */
-	template<typename Container>
-	explicit Collection(Container& container, typename std::enable_if<traits<Container>::is_supported>::type* = nullptr):
-		impl_(createCollectionImpl(container))
+	template <typename Container>
+	explicit Collection(Container& container, typename std::enable_if<traits<Container>::is_supported>::type* = nullptr)
+	    : impl_(createCollectionImpl(container))
 	{
 	}
 
@@ -505,24 +468,24 @@ public:
 	/** Try to cast underlying container pointer.
 	@note cv-qualifiers are not checked, so casting to non-const
 	container may be unsafe. This is subject of future improvements. */
-	template<typename Container>
+	template <typename Container>
 	Container* container() const
 	{
-		if( !impl_ )
+		if (!impl_)
 		{
 			return nullptr;
 		}
 
-		if( impl_->containerType() == TypeId::getType< Container >() )
+		if (impl_->containerType() == TypeId::getType<Container>())
 		{
-			return ( Container* )impl_->container();
+			return (Container*)impl_->container();
 		}
 
 		return nullptr;
 	}
 
 	/** Check whether underlying container matches a given one. */
-	bool isSame( const void* container ) const;
+	bool isSame(const void* container) const;
 
 	/** Check if collection is empty. */
 	bool empty() const;
@@ -597,7 +560,7 @@ public:
 
 	/** Erase elements between first and last, not including last.
 	@return an iterator pointing to the position immediately following the last
-		of the elements erased. */
+	    of the elements erased. */
 	Iterator erase(const Iterator& first, const Iterator& last);
 
 	/** Access value associated by given key. */
@@ -613,21 +576,21 @@ public:
 	int flags() const;
 
 	/** Convenience function to test Flag or combination of Flags. */
-	bool testFlags( int f ) const
+	bool testFlags(int f) const
 	{
-		return ( flags() & f ) == f;
+		return (flags() & f) == f;
 	}
 
 	/** Test if the collection is a mapping. */
 	bool isMapping() const
 	{
-		return testFlags( CollectionImplBase::MAPPING );
+		return testFlags(CollectionImplBase::MAPPING);
 	}
 
 	/** Test if the collection can be resized larger or smaller. */
 	bool canResize() const
 	{
-		return testFlags( CollectionImplBase::RESIZABLE );
+		return testFlags(CollectionImplBase::RESIZABLE);
 	}
 
 	const CollectionImplPtr& impl() const
@@ -635,26 +598,22 @@ public:
 		return impl_;
 	}
 
-	Connection connectPreInsert( ElementRangeCallback callback );
-	Connection connectPostInserted( ElementRangeCallback callback );
-	Connection connectPreErase( ElementRangeCallback callback );
-	Connection connectPostErased( ElementRangeCallback callback);
-	Connection connectPreChange( ElementPreChangeCallback callback );
-	Connection connectPostChanged( ElementPostChangedCallback callback );
+	Connection connectPreInsert(ElementRangeCallback callback);
+	Connection connectPostInserted(ElementRangeCallback callback);
+	Connection connectPreErase(ElementRangeCallback callback);
+	Connection connectPostErased(ElementRangeCallback callback);
+	Connection connectPreChange(ElementPreChangeCallback callback);
+	Connection connectPostChanged(ElementPostChangedCallback callback);
 
 private:
 	CollectionImplPtr impl_;
-
 };
 
-
-template<typename T>
-typename std::enable_if<
-	Collection::traits<T>::is_supported && Collection::traits<T>::can_downcast,
-	bool
->::type downcast(T* v, const Collection& storage)
+template <typename T>
+typename std::enable_if<Collection::traits<T>::is_supported && Collection::traits<T>::can_downcast, bool>::type
+downcast(T* v, const Collection& storage)
 {
-	if(auto impl = storage.impl())
+	if (auto impl = storage.impl())
 	{
 		return Collection::traits<T>::downcaster::downcast(v, *impl);
 	}
@@ -664,26 +623,20 @@ typename std::enable_if<
 	}
 }
 
-template<typename T>
-typename std::enable_if<
-	Collection::traits<T>::is_supported && !Collection::traits<T>::can_downcast,
-	void
->::type downcast(T* v, const Collection& storage);
+template <typename T>
+typename std::enable_if<Collection::traits<T>::is_supported && !Collection::traits<T>::can_downcast, void>::type
+downcast(T* v, const Collection& storage);
 
 // don't try to store ValueRef in Variant, use ValueRef::operator Variant() instead
 void upcast(const Collection::ValueRef&);
 
-
-template< typename T >
-class CollectionHolder:
-	public collection_details::CollectionImpl<T>::type
+template <typename T>
+class CollectionHolder : public collection_details::CollectionImpl<T>::type
 {
 	typedef typename collection_details::CollectionImpl<T>::type base;
 
 public:
-	CollectionHolder():
-		base( collection_ ),
-		collection_()
+	CollectionHolder() : base(collection_), collection_()
 	{
 	}
 
@@ -694,29 +647,26 @@ public:
 
 private:
 	T collection_;
-
 };
 
 } // end namespace wgt
 
-META_TYPE_NAME( wgt::Collection, "Collection" )
+META_TYPE_NAME(wgt::Collection, "Collection")
 
 namespace std
 {
+// store compatible type from std namespace in Variant as Collection
+template <typename T>
+typename enable_if<wgt::Collection::traits<T>::is_supported, wgt::Collection>::type upcast(T&& v)
+{
+	return wgt::Collection(v);
+}
 
-	// store compatible type from std namespace in Variant as Collection
-	template<typename T>
-	typename enable_if<wgt::Collection::traits<T>::is_supported, wgt::Collection>::type upcast(T&& v)
-	{
-		return wgt::Collection(v);
-	}
-
-	template<typename T>
-	typename enable_if<wgt::Collection::traits<T>::is_supported, wgt::Collection>::type upcast(const T& v)
-	{
-		return wgt::Collection(v);
-	}
-
+template <typename T>
+typename enable_if<wgt::Collection::traits<T>::is_supported, wgt::Collection>::type upcast(const T& v)
+{
+	return wgt::Collection(v);
+}
 }
 
 #endif

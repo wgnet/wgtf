@@ -8,31 +8,27 @@ namespace wgt
 {
 //==============================================================================
 TestDataModelFixture::TestDataModelFixture()
-	: objectManager_( new ObjectManager() )
-	, definitionManager_( new DefinitionManager( *objectManager_ ) )
+    : objectManager_(new ObjectManager()), definitionManager_(new DefinitionManager(*objectManager_))
 {
-	objectManager_->init( definitionManager_.get() );
-	Reflection::initReflectedTypes( *definitionManager_ );
+	objectManager_->init(definitionManager_.get());
+	Reflection::initReflectedTypes(*definitionManager_);
 }
-
 
 //==============================================================================
 TestDataModelFixture::~TestDataModelFixture()
 {
-	objectManager_.reset(); 
+	objectManager_.reset();
 	definitionManager_.reset();
 }
 
-
 //==============================================================================
-IObjectManager * TestDataModelFixture::getObjectManager() const
+IObjectManager* TestDataModelFixture::getObjectManager() const
 {
 	return objectManager_.get();
 }
 
-
 //==============================================================================
-IDefinitionManager * TestDataModelFixture::getDefinitionManager() const
+IDefinitionManager* TestDataModelFixture::getDefinitionManager() const
 {
 	return definitionManager_.get();
 }

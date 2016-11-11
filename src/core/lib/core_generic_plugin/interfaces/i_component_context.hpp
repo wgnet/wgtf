@@ -14,21 +14,32 @@ class IComponentContextCreator;
 class IComponentContextListener
 {
 public:
-	typedef std::function< void * ( const TypeId & ) > InterfaceCaster;
+	typedef std::function<void*(const TypeId&)> InterfaceCaster;
 
-	virtual ~IComponentContextListener() {}
-	virtual void onContextCreatorRegistered( IComponentContextCreator * ) {}
-	virtual void onContextCreatorDeregistered( IComponentContextCreator * ) {}
+	virtual ~IComponentContextListener()
+	{
+	}
+	virtual void onContextCreatorRegistered(IComponentContextCreator*)
+	{
+	}
+	virtual void onContextCreatorDeregistered(IComponentContextCreator*)
+	{
+	}
 
-	virtual void onInterfaceRegistered( InterfaceCaster & ) {}
-	virtual void onInterfaceDeregistered( InterfaceCaster & ) {}
+	virtual void onInterfaceRegistered(InterfaceCaster&)
+	{
+	}
+	virtual void onInterfaceDeregistered(InterfaceCaster&)
+	{
+	}
 };
 
-class IComponentContext
-	: public IComponentContextListener
+class IComponentContext : public IComponentContextListener
 {
 public:
-	virtual ~IComponentContext() {}
+	virtual ~IComponentContext()
+	{
+	}
 
 	enum ContextRegState
 	{
@@ -37,43 +48,34 @@ public:
 		Reg_Global = Reg_Parent
 	};
 
-	template< class T >
-	IInterface * registerInterface( T * pImpl,
-		bool transferOwnership = true, ContextRegState regState = Reg_Global )
+	template <class T>
+	IInterface* registerInterface(T* pImpl, bool transferOwnership = true, ContextRegState regState = Reg_Global)
 	{
-		return registerInterfaceImpl(
-			TypeId::getType< T >(), new InterfaceHolder< T >( pImpl, transferOwnership ), regState );
+		return registerInterfaceImpl(TypeId::getType<T>(), new InterfaceHolder<T>(pImpl, transferOwnership), regState);
 	}
 
-	virtual IInterface * registerInterfaceImpl(
-		const TypeId &, IInterface * pImpl,
-		ContextRegState regState ) = 0;
+	virtual IInterface* registerInterfaceImpl(const TypeId&, IInterface* pImpl, ContextRegState regState) = 0;
 
+	virtual bool deregisterInterface(IInterface* typeId) = 0;
 
-	virtual bool deregisterInterface( IInterface * typeId ) = 0;
+	virtual void* queryInterface(const TypeId&) = 0;
 
-	virtual void * queryInterface( const TypeId & ) = 0;
-
-	template< class T >
-	T * queryInterface()
+	template <class T>
+	T* queryInterface()
 	{
-		return reinterpret_cast< T * >(
-			queryInterface( typeid( T ).name() ) );
+		return reinterpret_cast<T*>(queryInterface(typeid(T).name()));
 	}
 
-	virtual void queryInterface(
-		const TypeId &, std::vector< void * > & o_Impls ) = 0;
+	virtual void queryInterface(const TypeId&, std::vector<void*>& o_Impls) = 0;
 
-	template< class T >
-	void queryInterface( std::vector< T * > & o_Impls )
+	template <class T>
+	void queryInterface(std::vector<T*>& o_Impls)
 	{
-		queryInterface(
-			typeid( T ).name(),
-			reinterpret_cast< std::vector< void * > & >( o_Impls ) );
+		queryInterface(typeid(T).name(), reinterpret_cast<std::vector<void*>&>(o_Impls));
 	}
 
-	virtual void registerListener( IComponentContextListener & listener ) = 0;
-	virtual void deregisterListener( IComponentContextListener & listener ) = 0;
+	virtual void registerListener(IComponentContextListener& listener) = 0;
+	virtual void deregisterListener(IComponentContextListener& listener) = 0;
 };
 } // end namespace wgt
-#endif //I_COMPONENT_CONTEXT_HPP
+#endif // I_COMPONENT_CONTEXT_HPP

@@ -6,26 +6,23 @@
 
 namespace wgt
 {
-QtApplicationAdapter::QtApplicationAdapter(IComponentContext& context)
-    : QtApplication(context, __argc, __argv)
+QtApplicationAdapter::QtApplicationAdapter(IComponentContext& context) : QtApplication(context, __argc, __argv)
 {
-	QObject::connect( QGuiApplication::instance(),
-		SIGNAL( applicationStateChanged( Qt::ApplicationState ) ),
-		this,
-		SLOT( applicationStateChanged( Qt::ApplicationState ) ) );
+	QObject::connect(QGuiApplication::instance(), SIGNAL(applicationStateChanged(Qt::ApplicationState)), this,
+	                 SLOT(applicationStateChanged(Qt::ApplicationState)));
 
-	QObject::connect( QCoreApplication::instance(), SIGNAL( aboutToQuit() ), this, SLOT( applicationStopped() ) );
+	QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(applicationStopped()));
 }
 
 QtApplicationAdapter::~QtApplicationAdapter()
 {
 }
 
-void QtApplicationAdapter::applicationStateChanged( Qt::ApplicationState state )
+void QtApplicationAdapter::applicationStateChanged(Qt::ApplicationState state)
 {
 	if (state == Qt::ApplicationActive)
 	{
-		for(auto & listener : listeners_)
+		for (auto& listener : listeners_)
 		{
 			listener->applicationStarted();
 		}
@@ -42,21 +39,21 @@ void QtApplicationAdapter::applicationStopped()
 
 int QtApplicationAdapter::startApplication()
 {
-	assert( application_ != nullptr );
+	assert(application_ != nullptr);
 	application_->sendPostedEvents();
 	update();
 	return 0;
 }
 
-void QtApplicationAdapter::addListener( IApplicationListener * listener )
+void QtApplicationAdapter::addListener(IApplicationListener* listener)
 {
-	listeners_.push_back( listener );
+	listeners_.push_back(listener);
 }
 
-void QtApplicationAdapter::removeListener( IApplicationListener * listener )
+void QtApplicationAdapter::removeListener(IApplicationListener* listener)
 {
-	auto && listenerIt = std::find( listeners_.begin(), listeners_.end(), listener );
-	assert( listenerIt != listeners_.end() );
-	listeners_.erase( listenerIt );
+	auto&& listenerIt = std::find(listeners_.begin(), listeners_.end(), listener);
+	assert(listenerIt != listeners_.end());
+	listeners_.erase(listenerIt);
 }
 } // end namespace wgt

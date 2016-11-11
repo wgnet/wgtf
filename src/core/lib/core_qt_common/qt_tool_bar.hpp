@@ -10,13 +10,13 @@ namespace wgt
 class QtToolBar : public QtMenu
 {
 public:
-	QtToolBar( QToolBar & qToolBar, const char * windowId );
+	QtToolBar(QToolBar& qToolBar, const char* windowId);
 
-	void addAction( IAction & action, const char * path ) override;
-	void removeAction( IAction & action ) override;
+	void addAction(IAction& action, const char* path) override;
+	void removeAction(IAction& action) override;
 
 private:
-	QToolBar & qToolBar_;
+	QToolBar& qToolBar_;
 };
 } // end namespace wgt
-#endif//QT_TOOL_BAR_HPP
+#endif // QT_TOOL_BAR_HPP

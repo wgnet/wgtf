@@ -2,12 +2,9 @@
 
 #include <cassert>
 
-
 namespace wgt
 {
-ColumnListAdapter::ColumnListAdapter(const QModelIndex& row)
-    : model_(row.model())
-    , row_(row)
+ColumnListAdapter::ColumnListAdapter(const QModelIndex& row) : model_(row.model()), row_(row)
 {
 	assert(row_.isValid());
 	parent_ = row_.parent();
@@ -34,20 +31,16 @@ int ColumnListAdapter::rowCount(const QModelIndex& parent) const
 	return model()->columnCount();
 }
 
-void ColumnListAdapter::onParentDataChanged(const QModelIndex& topLeft,
-                                            const QModelIndex& bottomRight, const QVector<int>& roles)
+void ColumnListAdapter::onParentDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+                                            const QVector<int>& roles)
 {
 	auto row = row_.row();
 
-	if (topLeft.row() <= row &&
-	    bottomRight.row() >= row &&
-	    topLeft.parent() == parent_ &&
+	if (topLeft.row() <= row && bottomRight.row() >= row && topLeft.parent() == parent_ &&
 	    bottomRight.parent() == parent_)
 	{
-		emit dataChanged(
-		createIndex(topLeft.column(), 0, topLeft.internalPointer()),
-		createIndex(bottomRight.column(), 0, bottomRight.internalPointer()),
-		roles);
+		emit dataChanged(createIndex(topLeft.column(), 0, topLeft.internalPointer()),
+		                 createIndex(bottomRight.column(), 0, bottomRight.internalPointer()), roles);
 	}
 }
 
@@ -94,11 +87,8 @@ void ColumnListAdapter::onParentColumnsRemoved(const QModelIndex& parent, int fi
 	}
 }
 
-void ColumnListAdapter::onParentColumnsAboutToBeMoved(const QModelIndex& sourceParent,
-                                                      int sourceFirst,
-                                                      int sourceLast,
-                                                      const QModelIndex& destinationParent,
-                                                      int destinationColumn)
+void ColumnListAdapter::onParentColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+                                                      const QModelIndex& destinationParent, int destinationColumn)
 {
 	if (!sourceParent.isValid() && !destinationParent.isValid())
 	{
@@ -106,16 +96,13 @@ void ColumnListAdapter::onParentColumnsAboutToBeMoved(const QModelIndex& sourceP
 	}
 }
 
-void ColumnListAdapter::onParentColumnsMoved(const QModelIndex& sourceParent,
-                                             int sourceFirst,
-                                             int sourceLast,
-                                             const QModelIndex& destinationParent,
-                                             int destinationColumn)
-    {
-	    if (!sourceParent.isValid() && !destinationParent.isValid())
-	    {
-		    this->reset();
-		    endMoveRows();
-	    }
-    }
+void ColumnListAdapter::onParentColumnsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+                                             const QModelIndex& destinationParent, int destinationColumn)
+{
+	if (!sourceParent.isValid() && !destinationParent.isValid())
+	{
+		this->reset();
+		endMoveRows();
+	}
+}
 } // end namespace wgt

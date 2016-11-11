@@ -65,35 +65,35 @@ TEST(file_sytem)
 	CHECK(!fileSystem_.exists(filename2));
 
 	std::vector<IFileInfoPtr> infos;
-	fileSystem_.enumerate(tempPath, [&](IFileInfoPtr&& info){
+	fileSystem_.enumerate(tempPath, [&](IFileInfoPtr&& info) {
 		infos.emplace_back(std::move(info));
 		return true;
 	});
 
-	fileSystem_.enumerate(getenv("HOMEDRIVE"), [&](IFileInfoPtr&& info){
+	fileSystem_.enumerate(getenv("HOMEDRIVE"), [&](IFileInfoPtr&& info) {
 		CHECK(fileSystem_.exists(info->fullPath()));
 		CHECK(fileSystem_.getFileInfo(info->fullPath())->size() == info->size());
 		return true;
 	});
 
-    char userDirectoryPath[MAX_PATH];
-    CHECK( GetUserDirectoryPath( userDirectoryPath ) );
-    CHECK( fileSystem_.exists( userDirectoryPath ) );
+	char userDirectoryPath[MAX_PATH];
+	CHECK(GetUserDirectoryPath(userDirectoryPath));
+	CHECK(fileSystem_.exists(userDirectoryPath));
 
-    std::string userToolsPath = userDirectoryPath;
-    userToolsPath += FilePath::kNativeDirectorySeparator;
-    userToolsPath += "wgtools_testing";
+	std::string userToolsPath = userDirectoryPath;
+	userToolsPath += FilePath::kNativeDirectorySeparator;
+	userToolsPath += "wgtools_testing";
 
-    if( fileSystem_.exists( userToolsPath.c_str() ) )
-    {
-        rmdir( userToolsPath.c_str() );
-    }
+	if (fileSystem_.exists(userToolsPath.c_str()))
+	{
+		rmdir(userToolsPath.c_str());
+	}
 
-    CHECK( !fileSystem_.exists( userToolsPath.c_str() ) );
-    CHECK( CreateDirectoryPath( userToolsPath.c_str() ) );
-    CHECK( fileSystem_.exists( userToolsPath.c_str() ) );
-    CHECK( CreateDirectoryPath( userToolsPath.c_str() ) ); // Ensure multiple calls return true
-    CHECK( rmdir( userToolsPath.c_str() ) == 0 );
-    CHECK( !fileSystem_.exists( userToolsPath.c_str() ) );
+	CHECK(!fileSystem_.exists(userToolsPath.c_str()));
+	CHECK(CreateDirectoryPath(userToolsPath.c_str()));
+	CHECK(fileSystem_.exists(userToolsPath.c_str()));
+	CHECK(CreateDirectoryPath(userToolsPath.c_str())); // Ensure multiple calls return true
+	CHECK(rmdir(userToolsPath.c_str()) == 0);
+	CHECK(!fileSystem_.exists(userToolsPath.c_str()));
 }
 } // end namespace wgt

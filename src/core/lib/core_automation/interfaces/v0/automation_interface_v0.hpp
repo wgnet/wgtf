@@ -5,10 +5,10 @@
 
 namespace wgt
 {
-DECLARE_INTERFACE_BEGIN( AutomationInterface, 0, 0 )
+DECLARE_INTERFACE_BEGIN(AutomationInterface, 0, 0)
 /**
-	 *	@return if the application is ready to quit.
-	 */
+     *	@return if the application is ready to quit.
+     */
 virtual bool timedOut() = 0;
 DECLARE_INTERFACE_END()
 } // end namespace wgt

@@ -21,35 +21,31 @@ namespace wgt
 {
 namespace internal
 {
-	// Base class of the callback function holder
-	// Without the function signature so that it can be
-	// used within the non-templated Connection class.
-	struct SignalHolder
+// Base class of the callback function holder
+// Without the function signature so that it can be
+// used within the non-templated Connection class.
+struct SignalHolder
+{
+	bool enabled_;
+	bool expired_;
+
+	explicit SignalHolder(bool enabled) : enabled_(enabled), expired_(false)
 	{
-		bool enabled_;
-		bool expired_;
+	}
+};
 
-		explicit SignalHolder(bool enabled)
-			: enabled_(enabled)
-			, expired_(false)
-		{
-		}
-	};
+// Templated callback function holder
+template <typename Signature>
+struct TemplateSignalHolder : public SignalHolder
+{
+	typedef std::function<Signature> Function;
 
-	// Templated callback function holder
-	template <typename Signature>
-	struct TemplateSignalHolder : public SignalHolder
+	Function function_;
+
+	explicit TemplateSignalHolder(Function function, bool enabled = true) : SignalHolder(enabled), function_(function)
 	{
-		typedef std::function<Signature> Function;
-
-		Function function_;
-
-		explicit TemplateSignalHolder(Function function, bool enabled = true)
-			: SignalHolder(enabled)
-			, function_(function)
-		{
-		}
-	};
+	}
+};
 }
 
 // Maintains the connection between the callback function
@@ -65,12 +61,12 @@ private:
 public:
 	Connection();
 	explicit Connection(SignalHolderPtr entry);
-	Connection(const Connection & other);
-	Connection(Connection && other);
+	Connection(const Connection& other);
+	Connection(Connection&& other);
 	~Connection();
 
-	Connection & operator=(const Connection & other);
-	Connection & operator=(Connection && other);
+	Connection& operator=(const Connection& other);
+	Connection& operator=(Connection&& other);
 
 	void enable();
 	void disable();
@@ -79,7 +75,6 @@ public:
 
 	bool enabled() const;
 	bool connected() const;
-
 };
 
 class ConnectionHolder
@@ -89,17 +84,17 @@ public:
 	~ConnectionHolder();
 
 	void clear();
-	void add(const Connection & connection);
+	void add(const Connection& connection);
 
-	void operator+=(const Connection & connection);
+	void operator+=(const Connection& connection);
 
 private:
-	std::vector< Connection > connections_;
+	std::vector<Connection> connections_;
 
-	ConnectionHolder(const ConnectionHolder &);
-	ConnectionHolder(ConnectionHolder && other);
-	ConnectionHolder & operator=(const ConnectionHolder &);
-	ConnectionHolder & operator=(ConnectionHolder && other);
+	ConnectionHolder(const ConnectionHolder&);
+	ConnectionHolder(ConnectionHolder&& other);
+	ConnectionHolder& operator=(const ConnectionHolder&);
+	ConnectionHolder& operator=(ConnectionHolder&& other);
 };
 
 // Maintains a list of callback functions to call when an event occurs.
@@ -126,7 +121,7 @@ public:
 	{
 	}
 
-	Signal(Signal && other)
+	Signal(Signal&& other)
 	{
 		*this = std::move(other);
 	}
@@ -136,7 +131,7 @@ public:
 		clear();
 	}
 
-	Signal & operator=(Signal && other)
+	Signal& operator=(Signal&& other)
 	{
 		using std::swap;
 
@@ -176,63 +171,65 @@ public:
 		entries_.erase(erase_begin, std::end(entries_));
 
 		// Create new entry
-		auto entry = std::make_shared< SignatureHolder >(callback);
+		auto entry = std::make_shared<SignatureHolder>(callback);
 		entries_.push_back(entry);
 		return Connection(entry);
 	}
 
-	// Helper macro for the body of a call(...) function since 
-	// we can't use variadic templates just yet.
-#define CALL_FUNCTION_ITERATE_ENTRIES(function_call_args) \
-	std::lock_guard<std::mutex> lock(mutex_); \
-	for (auto entry : entries_) \
-	{ \
+// Helper macro for the body of a call(...) function since
+// we can't use variadic templates just yet.
+#define CALL_FUNCTION_ITERATE_ENTRIES(function_call_args)            \
+	std::lock_guard<std::mutex> lock(mutex_);                        \
+	for (auto entry : entries_)                                      \
+	{                                                                \
 		if (!entry->expired_ && entry->function_ && entry->enabled_) \
-		{ \
-			entry->function_ function_call_args ; \
-		} \
+		{                                                            \
+			entry->function_ function_call_args;                     \
+		}                                                            \
 	}
 
 	void operator()() const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES( () )
+		CALL_FUNCTION_ITERATE_ENTRIES(())
 	}
 
 	template <class TArg1>
-	void operator()(TArg1 && arg1) const
+	void operator()(TArg1&& arg1) const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>(arg1)) )
+		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1)))
 	}
 
 	template <class TArg1, class TArg2>
-	void operator()(TArg1 && arg1, TArg2 && arg2) const
+	void operator()(TArg1&& arg1, TArg2&& arg2) const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>(arg1), std::forward<TArg2>(arg2)) )
+		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1), std::forward<TArg2>(arg2)))
 	}
 
 	template <class TArg1, class TArg2, class TArg3>
-	void operator()(TArg1 && arg1, TArg2 && arg2, TArg3 && arg3) const
+	void operator()(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3) const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3)) )
+		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3)))
 	}
 
 	template <class TArg1, class TArg2, class TArg3, class TArg4>
-	void operator()( TArg1 && arg1, TArg2 && arg2, TArg3 && arg3, TArg4 && arg4 ) const
+	void operator()(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3, TArg4&& arg4) const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>( arg1 ), std::forward<TArg2>( arg2 ), std::forward<TArg3>( arg3 ), std::forward<TArg4>( arg4 )) )
+		CALL_FUNCTION_ITERATE_ENTRIES(
+		(std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3), std::forward<TArg4>(arg4)))
 	}
 
 	template <class TArg1, class TArg2, class TArg3, class TArg4, class TArg5>
-	void operator()( TArg1 && arg1, TArg2 && arg2, TArg3 && arg3, TArg4 && arg4, TArg5 && arg5 ) const
+	void operator()(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3, TArg4&& arg4, TArg5&& arg5) const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES( (std::forward<TArg1>( arg1 ), std::forward<TArg2>( arg2 ), std::forward<TArg3>( arg3 ), std::forward<TArg4>( arg4 ), std::forward<TArg5>( arg5 )) )
+		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3),
+		                               std::forward<TArg4>(arg4), std::forward<TArg5>(arg5)))
 	}
 
 #undef CALL_FUNCTION_ITERATE_ENTRIES
 	Signal& operator=(const Signal&);
 
 private:
-	Signal(const Signal &);
+	Signal(const Signal&);
 };
 } // end namespace wgt
 #endif // SIGNAL_H_

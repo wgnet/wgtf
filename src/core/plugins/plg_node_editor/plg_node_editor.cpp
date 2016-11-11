@@ -38,8 +38,8 @@ void NodeEditorPlugin::Initialise(IComponentContext& context)
 	auto uiApplication = context.queryInterface<IUIApplication>();
 	auto uiFramework = context.queryInterface<IUIFramework>();
 
-    assert(uiApplication != nullptr);
-    assert(uiFramework != nullptr);
+	assert(uiApplication != nullptr);
+	assert(uiFramework != nullptr);
 
 	auto& definitionManager = (*pDefinitionManager);
 	REGISTER_DEFINITION(INodeEditor);
@@ -56,24 +56,22 @@ void NodeEditorPlugin::Initialise(IComponentContext& context)
 	context.registerInterface<INodeEditor>(nodeEditor.get(), false);
 
 	auto viewCreator = context.queryInterface<IViewCreator>();
-    if (viewCreator)
-    {
-        view_ = viewCreator->createView(
-            "plg_node_editor/NodeEditorView.qml",
-            std::move(nodeEditor) );
-    }
+	if (viewCreator)
+	{
+		view_ = viewCreator->createView("plg_node_editor/NodeEditorView.qml", std::move(nodeEditor));
+	}
 }
 
 bool NodeEditorPlugin::Finalise(IComponentContext& context)
 {
 	auto uiApplication = context.queryInterface<IUIApplication>();
 	assert(uiApplication != nullptr);
-    if(view_.valid())
-    {
-        auto view = view_.get();
-        uiApplication->removeView(*view);
-        view.reset(nullptr);
-    }
+	if (view_.valid())
+	{
+		auto view = view_.get();
+		uiApplication->removeView(*view);
+		view.reset(nullptr);
+	}
 
 	return true;
 }

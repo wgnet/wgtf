@@ -5,13 +5,10 @@
 namespace wgt
 {
 //------------------------------------------------------------------------------
-HashedStringRef::HashedStringRef( const char * str )
-	: hash_( static_cast<size_t>( HashUtilities::compute( str ) ) )
-	, pStart_( str )
-	, length_( strlen( pStart_ ) )
+HashedStringRef::HashedStringRef(const char* str)
+    : hash_(static_cast<size_t>(HashUtilities::compute(str))), pStart_(str), length_(strlen(pStart_))
 {
 }
-
 
 //------------------------------------------------------------------------------
 size_t HashedStringRef::hash() const
@@ -19,9 +16,8 @@ size_t HashedStringRef::hash() const
 	return hash_;
 }
 
-
 //------------------------------------------------------------------------------
-bool HashedStringRef::operator == ( const HashedStringRef & other ) const
+bool HashedStringRef::operator==(const HashedStringRef& other) const
 {
 	if (hash_ != other.hash_)
 	{
@@ -31,6 +27,6 @@ bool HashedStringRef::operator == ( const HashedStringRef & other ) const
 	{
 		return false;
 	}
-	return strcmp( pStart_, other.pStart_ ) == 0;
+	return strcmp(pStart_, other.pStart_) == 0;
 }
 } // end namespace wgt

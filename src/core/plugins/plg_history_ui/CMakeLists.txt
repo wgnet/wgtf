@@ -30,10 +30,7 @@ BW_ADD_TOOL_PLUGIN( plg_history_ui SHARED
 BW_TARGET_LINK_LIBRARIES( plg_history_ui PRIVATE
 	core_command_system
 	core_reflection
-	core_qt_common
 	core_generic_plugin
-    Qt5::Core
-    Qt5::Quick
 )
 
 BW_PROJECT_CATEGORY( plg_history_ui "Plugins" )

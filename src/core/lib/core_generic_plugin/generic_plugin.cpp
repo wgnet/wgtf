@@ -11,280 +11,270 @@ namespace wgt
 {
 namespace
 {
-	class DefaultMemoryAllocator : public IMemoryAllocator
+class DefaultMemoryAllocator : public IMemoryAllocator
+{
+	virtual void* mem_new(size_t size) override
 	{
-		virtual void * mem_new(size_t size) override
-		{
-			return malloc(size);
-		}
-
-		virtual void * mem_new(size_t size, const std::nothrow_t & throwable) override
-		{
-			return malloc(size);
-		}
-
-		virtual void * mem_new_array(size_t size) override
-		{
-			return malloc(size);
-		}
-
-		virtual void * mem_new_array(size_t size, const std::nothrow_t & throwable) override
-		{
-			return malloc(size);
-		}
-
-		virtual void mem_delete(void* ptr) override
-		{
-			free(ptr);
-		}
-
-		virtual void mem_delete(void* ptr, const std::nothrow_t & throwable) override
-		{
-			free(ptr);
-		}
-
-		virtual void mem_delete_array(void* ptr) override
-		{
-			free(ptr);
-		}
-
-		virtual void mem_delete_array(void* ptr, const std::nothrow_t & throwable) override
-		{
-			free(ptr);
-		}
-
-	};
-
-	IMemoryAllocator* getDefaultAllocator()
-	{
-		static DefaultMemoryAllocator s_defaultAllocator;
-		return &s_defaultAllocator;
+		return malloc(size);
 	}
 
-	IMemoryAllocator * getMemoryAllocator()
+	virtual void* mem_new(size_t size, const std::nothrow_t& throwable) override
 	{
-		static IMemoryAllocator * s_allocator = nullptr;
-		if (s_allocator == nullptr)
-		{
-			IComponentContext * context = PluginMain::getContext();
-			if (context != nullptr)
-			{
-				s_allocator = context->queryInterface< IMemoryAllocator >();
-			}
-			if (s_allocator == nullptr)
-			{
-				s_allocator = getDefaultAllocator();
-				return s_allocator;
-			}
-		}
-		return s_allocator;
+		return malloc(size);
 	}
 
-	class ContextInitializer
+	virtual void* mem_new_array(size_t size) override
 	{
-	public:
-		ContextInitializer()
-		{
-			PluginMain::setContext( getEnvContext() );
-		}
-	};
+		return malloc(size);
+	}
 
-	static ContextInitializer s_ContextInitializer;
+	virtual void* mem_new_array(size_t size, const std::nothrow_t& throwable) override
+	{
+		return malloc(size);
+	}
+
+	virtual void mem_delete(void* ptr) override
+	{
+		free(ptr);
+	}
+
+	virtual void mem_delete(void* ptr, const std::nothrow_t& throwable) override
+	{
+		free(ptr);
+	}
+
+	virtual void mem_delete_array(void* ptr) override
+	{
+		free(ptr);
+	}
+
+	virtual void mem_delete_array(void* ptr, const std::nothrow_t& throwable) override
+	{
+		free(ptr);
+	}
+};
+
+IMemoryAllocator* getDefaultAllocator()
+{
+	static DefaultMemoryAllocator s_defaultAllocator;
+	return &s_defaultAllocator;
 }
 
+IMemoryAllocator* getMemoryAllocator()
+{
+	static IMemoryAllocator* s_allocator = nullptr;
+	if (s_allocator == nullptr)
+	{
+		IComponentContext* context = PluginMain::getContext();
+		if (context != nullptr)
+		{
+			s_allocator = context->queryInterface<IMemoryAllocator>();
+		}
+		if (s_allocator == nullptr)
+		{
+			s_allocator = getDefaultAllocator();
+			return s_allocator;
+		}
+	}
+	return s_allocator;
+}
+
+class ContextInitializer
+{
+public:
+	ContextInitializer()
+	{
+		PluginMain::setContext(getEnvContext());
+	}
+};
+
+static ContextInitializer s_ContextInitializer;
+}
 
 //==============================================================================
-PluginMain::PluginMain()
-	: name_( NULL )
+PluginMain::PluginMain() : name_(NULL)
 {
 }
 
-
 //==============================================================================
-void PluginMain::init( const char * name )
+void PluginMain::init(const char* name)
 {
 	name_ = name;
 }
 
-
 //==============================================================================
 namespace Context
 {
+bool deregisterInterface(IInterface* pImpl)
+{
+	IComponentContext* context = PluginMain::getContext();
+	assert(context != nullptr);
+	return context->deregisterInterface(pImpl);
+}
 
-	bool deregisterInterface( IInterface * pImpl )
-	{
-		IComponentContext * context = PluginMain::getContext();
-		assert(context != nullptr );
-		return context->deregisterInterface( pImpl );
-	}
+void* queryInterface(const TypeId& name)
+{
+	IComponentContext* context = PluginMain::getContext();
+	assert(context != nullptr);
+	return context->queryInterface(name);
+}
 
-	void * queryInterface( const TypeId & name )
-	{
-		IComponentContext * context = PluginMain::getContext();
-		assert(context != nullptr );
-		return context->queryInterface( name );
-	}
+void queryInterface(const TypeId& name, std::vector<void*>& o_Impls)
+{
+	IComponentContext* context = PluginMain::getContext();
+	assert(context != nullptr);
+	return context->queryInterface(name, o_Impls);
+}
 
-	void queryInterface( const TypeId & name, std::vector< void * > & o_Impls )
-	{
-		IComponentContext * context = PluginMain::getContext();
-		assert(context != nullptr );
-		return context->queryInterface( name, o_Impls );
-	}
-
-}/* Namespace context*/
+} /* Namespace context*/
 
 #ifdef NGT_ALLOCATOR
 } // end namespace wgt
 //==============================================================================
-void * operator new( std::size_t size )
+void* operator new(std::size_t size)
 {
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
 	if (memAlloc == nullptr)
 	{
-		return malloc( size );
+		return malloc(size);
 	}
-	return memAlloc->mem_new( size );
-}
-
-
-//==============================================================================
-void * operator new ( std::size_t size, const std::nothrow_t & throwable ) NOEXCEPT
-{
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
-	if (memAlloc == nullptr)
-	{
-		return malloc( size );
-	}
-	return memAlloc->mem_new( size, throwable );
+	return memAlloc->mem_new(size);
 }
 
 //==============================================================================
-void * operator new[]( std::size_t size )
+void* operator new(std::size_t size, const std::nothrow_t& throwable) NOEXCEPT
 {
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
 	if (memAlloc == nullptr)
 	{
-		return malloc( size );
+		return malloc(size);
 	}
-	return wgt::getMemoryAllocator()->mem_new_array( size );
+	return memAlloc->mem_new(size, throwable);
 }
 
 //==============================================================================
-void * operator new[]( std::size_t size, const std::nothrow_t & throwable ) NOEXCEPT
+void* operator new[](std::size_t size)
 {
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
 	if (memAlloc == nullptr)
 	{
-		return malloc( size );
+		return malloc(size);
 	}
-	return memAlloc->mem_new_array( size, throwable );
+	return wgt::getMemoryAllocator()->mem_new_array(size);
 }
 
-
 //==============================================================================
-void operator delete( void* ptr ) NOEXCEPT
+void* operator new[](std::size_t size, const std::nothrow_t& throwable) NOEXCEPT
 {
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
 	if (memAlloc == nullptr)
 	{
-		free( ptr );
+		return malloc(size);
+	}
+	return memAlloc->mem_new_array(size, throwable);
+}
+
+//==============================================================================
+void operator delete(void* ptr)NOEXCEPT
+{
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
+	if (memAlloc == nullptr)
+	{
+		free(ptr);
 		return;
 	}
-	memAlloc->mem_delete( ptr );
-}
-
-
-//==============================================================================
-void operator delete( void* ptr, const std::nothrow_t & throwable ) NOEXCEPT
-{
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
-	if (memAlloc == nullptr)
-	{
-		free( ptr );
-		return;
-	}
-	memAlloc->mem_delete( ptr, throwable );
-}
-
-
-//==============================================================================
-void operator delete[]( void* ptr ) NOEXCEPT
-{
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
-	if (memAlloc == nullptr)
-	{
-		free( ptr );
-		return;
-	}
-	memAlloc->mem_delete_array( ptr );
+	memAlloc->mem_delete(ptr);
 }
 
 //==============================================================================
-void operator delete[]( void* ptr, const std::nothrow_t & throwable ) NOEXCEPT
+void operator delete(void* ptr, const std::nothrow_t& throwable)NOEXCEPT
 {
-	wgt::IMemoryAllocator * memAlloc = wgt::getMemoryAllocator();
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
 	if (memAlloc == nullptr)
 	{
-		free( ptr );
+		free(ptr);
 		return;
 	}
-	memAlloc->mem_delete_array( ptr, throwable );
+	memAlloc->mem_delete(ptr, throwable);
+}
+
+//==============================================================================
+void operator delete[](void* ptr) NOEXCEPT
+{
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
+	if (memAlloc == nullptr)
+	{
+		free(ptr);
+		return;
+	}
+	memAlloc->mem_delete_array(ptr);
+}
+
+//==============================================================================
+void operator delete[](void* ptr, const std::nothrow_t& throwable) NOEXCEPT
+{
+	wgt::IMemoryAllocator* memAlloc = wgt::getMemoryAllocator();
+	if (memAlloc == nullptr)
+	{
+		free(ptr);
+		return;
+	}
+	memAlloc->mem_delete_array(ptr, throwable);
 }
 namespace wgt
 {
 #endif // NGT_ALLOCATOR
 
-PluginMain * createPlugin( IComponentContext & contextManager );
+PluginMain* createPlugin(IComponentContext& contextManager);
 
-IComponentContext * PluginMain::s_Context_ = nullptr;
+IComponentContext* PluginMain::s_Context_ = nullptr;
 bool PluginMain::s_ContextInitialized_ = false;
 
-void PluginMain::setContext( IComponentContext * context )
+void PluginMain::setContext(IComponentContext* context)
 {
 	// Context may be set more than once
 	// By ContextInitializer and PluginMain::getContext()
 	// Assert that it is always set to the same context
-	assert( (s_Context_ == nullptr) || (s_Context_ == context) );
+	assert((s_Context_ == nullptr) || (s_Context_ == context));
 	s_Context_ = context;
 	s_ContextInitialized_ = true;
 }
 
-IComponentContext * PluginMain::getContext()
+IComponentContext* PluginMain::getContext()
 {
 	if (!s_ContextInitialized_)
 	{
 		// This can happen if a static variable is initialized before
 		// s_ContextInitializer and it tries to access the context.
-		PluginMain::setContext( getEnvContext() );
+		PluginMain::setContext(getEnvContext());
 	}
 	return s_Context_;
 }
 
 //==============================================================================
-EXPORT bool __cdecl PLG_CALLBACK( GenericPluginLoadState loadState )
+EXPORT bool __cdecl PLG_CALLBACK(GenericPluginLoadState loadState)
 {
-	static PluginMain * s_pluginMain = nullptr;
+	static PluginMain* s_pluginMain = nullptr;
 	auto contextManager = PluginMain::getContext();
-	assert( contextManager );
+	assert(contextManager);
 	switch (loadState)
 	{
 	case GenericPluginLoadState::Create:
-		s_pluginMain = createPlugin( *contextManager );
+		s_pluginMain = createPlugin(*contextManager);
 		return true;
 
 	case GenericPluginLoadState::PostLoad:
-		return s_pluginMain->PostLoad( *contextManager );
+		return s_pluginMain->PostLoad(*contextManager);
 
 	case GenericPluginLoadState::Initialise:
-		s_pluginMain->Initialise( *contextManager );
+		s_pluginMain->Initialise(*contextManager);
 		return true;
 
 	case GenericPluginLoadState::Finalise:
-		return s_pluginMain->Finalise( *contextManager );
+		return s_pluginMain->Finalise(*contextManager);
 
 	case GenericPluginLoadState::Unload:
-		s_pluginMain->Unload( *contextManager );
+		s_pluginMain->Unload(*contextManager);
 		return true;
 
 	case GenericPluginLoadState::Destroy:

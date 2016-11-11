@@ -664,38 +664,32 @@ Rectangle {
                             text: "Pick from screen"
                             iconSource: "icons/dropper_16x16.png"
                             checkable: true
-
                             MouseArea {
+                                id: pickButtonMouseArea
                                 anchors.fill: parent
 
                                 onPressed: {
                                     previewColorActive = true
                                     pickButton.checked = true
-                                    startObservingColor();
                                 }
 
                                 onReleased: {
                                     previewColorActive = false
                                     pickButton.checked = false
 
-                                    var sampledColor = pixelColor;
-
-                                    endObservingColor();
-
-                                    setColorRGBA(sampledColor.x, sampledColor.y, sampledColor.z, 1)
-
+                                    var sampledColor = grabScreenColor(mouse.x, mouse.y, pickButtonMouseArea);
+                                    setColorRGBA(sampledColor.r, sampledColor.g, sampledColor.b, 1)
                                     previewColor = currentColor
                                 }
-                            }
 
-                            Connections {
-                                target : self
-                                onPixelColorChanged : {
-                                    var sampledColor = pixelColor;
-                                    previewColor = Qt.rgba(sampledColor.x, sampledColor.y, sampledColor.z, sampledColor.w)
+                                onPositionChanged: {
+                                    if ( pickButton.checked === true )
+                                    {
+                                        var sampledColor = grabScreenColor(mouse.x, mouse.y, pickButtonMouseArea);
+                                        previewColor = sampledColor;
+                                    }
                                 }
                             }
-
                         }
 
                         WGLabel {

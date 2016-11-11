@@ -11,7 +11,6 @@ namespace wgt
 class wg_read_write_lock
 {
 public:
-
 	wg_read_write_lock();
 	~wg_read_write_lock();
 
@@ -21,7 +20,6 @@ public:
 	void write_unlock();
 
 private:
-
 	bool writer_;
 	int readers_;
 	mutable std::mutex mutex_;
@@ -32,22 +30,34 @@ private:
 class wg_read_lock_guard
 {
 public:
-	explicit wg_read_lock_guard( wg_read_write_lock & lock ) : read_Lock_( lock ) { read_Lock_.read_lock(); }
-	~wg_read_lock_guard() { read_Lock_.read_unlock(); }
+	explicit wg_read_lock_guard(wg_read_write_lock& lock) : read_Lock_(lock)
+	{
+		read_Lock_.read_lock();
+	}
+	~wg_read_lock_guard()
+	{
+		read_Lock_.read_unlock();
+	}
 
 private:
-	wg_read_write_lock & read_Lock_;
+	wg_read_write_lock& read_Lock_;
 };
 
 /// Write lock guard
 class wg_write_lock_guard
 {
 public:
-	explicit wg_write_lock_guard( wg_read_write_lock & lock ) : write_Lock_( lock ) { write_Lock_.write_lock(); }
-	~wg_write_lock_guard() { write_Lock_.write_unlock(); }
+	explicit wg_write_lock_guard(wg_read_write_lock& lock) : write_Lock_(lock)
+	{
+		write_Lock_.write_lock();
+	}
+	~wg_write_lock_guard()
+	{
+		write_Lock_.write_unlock();
+	}
 
 private:
-	wg_read_write_lock & write_Lock_;
+	wg_read_write_lock& write_Lock_;
 };
 } // end namespace wgt
 #endif // WG_READ_WRITE_LOCK

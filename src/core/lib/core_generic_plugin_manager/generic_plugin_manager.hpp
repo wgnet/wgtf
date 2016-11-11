@@ -17,46 +17,53 @@ class IPluginContextManager;
 class GenericPluginManager
 {
 public:
-	typedef std::vector< HMODULE > PluginList;
-	typedef std::vector< std::wstring > PluginNameList;
+	typedef std::vector<HMODULE> PluginList;
+	typedef std::vector<std::wstring> PluginNameList;
 
-    GenericPluginManager(bool applyDebugPostfix = true);
+	GenericPluginManager(bool applyDebugPostfix = true);
 	virtual ~GenericPluginManager();
 
-	void loadPlugins( const PluginNameList& plugins );
+	void loadPlugins(const PluginNameList& plugins);
 
-	void unloadPlugins( const PluginNameList& plugins );
-	void unloadPlugins( const PluginList& plugins );
+	void beginIncrementalPluginLoading();
+	void pushPlugin(std::wstring pluginName);
+	void pushPlugins(PluginNameList pluginList);
+	void endIncrementalPluginLoading();
 
-	IPluginContextManager & getContextManager() const;
+	void unloadPlugins(const PluginNameList& plugins);
+	void unloadPlugins(const PluginList& plugins);
 
-	template< class T >
-	T * queryInterface()
+	IPluginContextManager& getContextManager() const;
+
+	template <class T>
+	T* queryInterface()
 	{
-		return reinterpret_cast< T * >( queryInterface(
-			typeid( T ).name() ) );
+		return reinterpret_cast<T*>(queryInterface(typeid(T).name()));
 	}
 
 private:
-	void * queryInterface( const char * name ) const;
+	void* queryInterface(const char* name) const;
 
-	typedef std::function< bool (HMODULE) > NotifyFunction;
-	void notifyPlugins( const PluginList& plugins, NotifyFunction func );
+	typedef std::function<bool(HMODULE)> NotifyFunction;
+	void notifyPlugins(const PluginList& plugins, NotifyFunction func);
 
-	HMODULE loadPlugin( const std:: wstring& filename );
-	bool unloadPlugin( HMODULE hPlugin );
-	void unloadContext( HMODULE hPlugin );
+	HMODULE loadPlugin(const std::wstring& filename);
+	bool unloadPlugin(HMODULE hPlugin);
+	void unloadContext(HMODULE hPlugin);
 
-	typedef std::vector< std::pair<std::wstring, HMODULE> > PluginMap;
+	typedef std::vector<std::pair<std::wstring, HMODULE>> PluginMap;
 	PluginMap::iterator findPlugin(HMODULE hPlugin);
 
 	std::wstring processPluginFilename(const std::wstring& filename);
 
 	PluginMap plugins_; // don't use std::map since we need to keep original modules' loading order
 
-	std::map< std::wstring, IMemoryAllocator * >	memoryContext_;
-	std::unique_ptr< IPluginContextManager >		contextManager_;
-    bool applyDebugPostfix;
+	PluginMap incrementalPlugins_;
+	bool incrementallyLoading_;
+
+	std::map<std::wstring, IMemoryAllocator*> memoryContext_;
+	std::unique_ptr<IPluginContextManager> contextManager_;
+	bool applyDebugPostfix;
 };
 } // end namespace wgt
-#endif //GENERIC_PLUGIN_MANAGER_HPP
+#endif // GENERIC_PLUGIN_MANAGER_HPP

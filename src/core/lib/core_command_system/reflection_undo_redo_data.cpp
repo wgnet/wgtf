@@ -16,58 +16,51 @@ namespace wgt
 namespace RPURU = ReflectedPropertyUndoRedoUtility;
 namespace
 {
+void initReflectedMethodInDisplayObject(GenericObject& object, RPURU::ReflectedClassMemberUndoRedoHelper* helper)
+{
+	object.set("Type", "Method");
+	auto methodHelper = static_cast<RPURU::ReflectedMethodUndoRedoHelper*>(helper);
+	size_t max = methodHelper->parameters_.size();
+	char parameterName[32] = "Parameter";
+	char* counterPointer = &parameterName[strlen(parameterName)];
 
-	void initReflectedMethodInDisplayObject(GenericObject& object, RPURU::ReflectedClassMemberUndoRedoHelper* helper)
+	for (size_t i = 0; i < max; ++i)
 	{
-		object.set("Type", "Method");
-		auto methodHelper = static_cast<RPURU::ReflectedMethodUndoRedoHelper*>(helper);
-		size_t max = methodHelper->parameters_.size();
-		char parameterName[32] = "Parameter";
-		char * counterPointer = &parameterName[strlen(parameterName)];
-
-		for (size_t i = 0; i < max; ++i)
-		{
-#if defined(_MSC_VER) && ( _MSC_VER < 1900 )
-			sprintf(counterPointer, "%d", i);
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+		sprintf(counterPointer, "%d", i);
 #else
-			sprintf(counterPointer, "%zd", i);
+		sprintf(counterPointer, "%zd", i);
 #endif
-			object.set(parameterName, methodHelper->parameters_[i]);
-		}
-	}    
+		object.set(parameterName, methodHelper->parameters_[i]);
+	}
+}
 }
 
-
-class PropertyAccessorWrapper
-	: public PropertyAccessorListener
+class PropertyAccessorWrapper : public PropertyAccessorListener
 {
 public:
-	PropertyAccessorWrapper( RPURU::UndoRedoHelperList & undoRedoHelperList )
-		: undoRedoHelperList_( undoRedoHelperList )
+	PropertyAccessorWrapper(RPURU::UndoRedoHelperList& undoRedoHelperList) : undoRedoHelperList_(undoRedoHelperList)
 	{
 	}
-
 
 	~PropertyAccessorWrapper()
 	{
 	}
 
-
-	void preSetValue(
-		const PropertyAccessor & accessor, const Variant & value ) override
+	void preSetValue(const PropertyAccessor& accessor, const Variant& value) override
 	{
-		const auto & obj = accessor.getRootObject();
-		assert( obj != nullptr );
+		const auto& obj = accessor.getRootObject();
+		assert(obj != nullptr);
 		RefObjectId id;
-		bool ok = obj.getId( id );
+		bool ok = obj.getId(id);
 		if (!ok)
 		{
 			return; // Unmanaged objects do not support undo/redo
 		}
-		const char * propertyPath = accessor.getFullPath();
+		const char* propertyPath = accessor.getFullPath();
 		const TypeId type = accessor.getType();
 		Variant prevalue = accessor.getValue();
-		auto pHelper = this->findUndoRedoHelper( id, propertyPath );
+		auto pHelper = this->findUndoRedoHelper(id, propertyPath);
 		if (pHelper != nullptr)
 		{
 			return;
@@ -92,26 +85,24 @@ public:
 			helper->preValue_ = std::move(prevalue);
 		}
 
-		undoRedoHelperList_.emplace_back( helper );
+		undoRedoHelperList_.emplace_back(helper);
 	}
 
-
-	void postSetValue(
-		const PropertyAccessor & accessor, const Variant & value ) override
+	void postSetValue(const PropertyAccessor& accessor, const Variant& value) override
 	{
-		const auto & obj = accessor.getRootObject();
-		assert( obj != nullptr );
+		const auto& obj = accessor.getRootObject();
+		assert(obj != nullptr);
 		RefObjectId id;
-		bool ok = obj.getId( id );
+		bool ok = obj.getId(id);
 		if (!ok)
 		{
 			return; // Unmanaged objects do not support undo/redo
 		}
-		const char * propertyPath = accessor.getFullPath();
+		const char* propertyPath = accessor.getFullPath();
 		Variant postValue = accessor.getValue();
-		RPURU::ReflectedPropertyUndoRedoHelper* pHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>(
-			this->findUndoRedoHelper( id, propertyPath ) );
-		assert( pHelper != nullptr );
+		RPURU::ReflectedPropertyUndoRedoHelper* pHelper =
+		static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>(this->findUndoRedoHelper(id, propertyPath));
+		assert(pHelper != nullptr);
 		if (postValue.isPointer())
 		{
 			// handle property value return by reference data, we need a copy of the value
@@ -129,14 +120,12 @@ public:
 		}
 	}
 
-
-	void preInvoke(
-		const PropertyAccessor & accessor, const ReflectedMethodParameters& parameters, bool undo ) override
+	void preInvoke(const PropertyAccessor& accessor, const ReflectedMethodParameters& parameters, bool undo) override
 	{
 		auto method = dynamic_cast<ReflectedMethod*>(accessor.getProperty().get());
 		if (method != nullptr)
 		{
-			//don't record readonly method
+			// don't record readonly method
 			if (method->getUndoMethod() == nullptr)
 			{
 				return;
@@ -145,14 +134,14 @@ public:
 
 		const char* path = accessor.getFullPath();
 		const auto& object = accessor.getRootObject();
-		assert( object != nullptr );
+		assert(object != nullptr);
 
 		RefObjectId id;
-		bool ok = object.getId( id );
+		bool ok = object.getId(id);
 		assert(ok);
 
-		RPURU::ReflectedMethodUndoRedoHelper* helper = static_cast<RPURU::ReflectedMethodUndoRedoHelper*>(
-			this->findUndoRedoHelper( id, path ) );
+		RPURU::ReflectedMethodUndoRedoHelper* helper =
+		static_cast<RPURU::ReflectedMethodUndoRedoHelper*>(this->findUndoRedoHelper(id, path));
 
 		if (helper == nullptr)
 		{
@@ -160,7 +149,7 @@ public:
 			helper->objectId_ = id;
 			helper->path_ = path;
 			helper->parameters_ = parameters;
-			undoRedoHelperList_.emplace_back( helper );
+			undoRedoHelperList_.emplace_back(helper);
 		}
 		else
 		{
@@ -168,23 +157,23 @@ public:
 		}
 	}
 
-	void postInvoke( const PropertyAccessor & accessor, Variant result, bool undo ) override
+	void postInvoke(const PropertyAccessor& accessor, Variant result, bool undo) override
 	{
 		auto method = dynamic_cast<ReflectedMethod*>(accessor.getProperty().get());
 		if (method != nullptr)
 		{
-			//don't record readonly method
+			// don't record readonly method
 			if (method->getUndoMethod() == nullptr)
 			{
 				return;
 			}
 		}
 		const auto& object = accessor.getRootObject();
-		assert( object != nullptr );
+		assert(object != nullptr);
 
 		RefObjectId id;
-		bool ok = object.getId( id );
-		assert( ok );
+		bool ok = object.getId(id);
+		assert(ok);
 
 		if (undoRedoHelperList_.size() > 0)
 		{
@@ -201,10 +190,8 @@ public:
 		}
 	}
 
-
 private:
-	RPURU::ReflectedClassMemberUndoRedoHelper* findUndoRedoHelper( 
-		const RefObjectId & id, const char * propertyPath )
+	RPURU::ReflectedClassMemberUndoRedoHelper* findUndoRedoHelper(const RefObjectId& id, const char* propertyPath)
 	{
 		RPURU::ReflectedClassMemberUndoRedoHelper* helper = nullptr;
 		for (auto& findIt : undoRedoHelperList_)
@@ -217,97 +204,90 @@ private:
 		}
 		return helper;
 	}
+
 private:
-	RPURU::UndoRedoHelperList &	undoRedoHelperList_;
+	RPURU::UndoRedoHelperList& undoRedoHelperList_;
 };
 
-
-ReflectionUndoRedoData::ReflectionUndoRedoData( CommandInstance & commandInstance )
-	: commandInstance_( commandInstance )
-	, paListener_( new PropertyAccessorWrapper( undoRedoHelperList_ ) )
+ReflectionUndoRedoData::ReflectionUndoRedoData(CommandInstance& commandInstance)
+    : commandInstance_(commandInstance), paListener_(new PropertyAccessorWrapper(undoRedoHelperList_))
 {
-
 }
-
 
 void ReflectionUndoRedoData::connect()
 {
 	auto definitionManager = commandInstance_.defManager_;
-	assert( definitionManager != nullptr );
-	definitionManager->registerPropertyAccessorListener( paListener_ );
+	assert(definitionManager != nullptr);
+	definitionManager->registerPropertyAccessorListener(paListener_);
 }
-
 
 void ReflectionUndoRedoData::disconnect()
 {
 	auto definitionManager = commandInstance_.defManager_;
-	assert( definitionManager != nullptr );
-	definitionManager->deregisterPropertyAccessorListener( paListener_ );
+	assert(definitionManager != nullptr);
+	definitionManager->deregisterPropertyAccessorListener(paListener_);
 }
 
 void ReflectionUndoRedoData::consolidate()
 {
 	auto definitionManager = commandInstance_.defManager_;
-	assert( definitionManager != nullptr );
+	assert(definitionManager != nullptr);
 
-	XMLSerializer undoSerializer( undoData_, *definitionManager );
-	undoSerializer.serialize( RPURU::getUndoStreamHeaderTag() );
-	undoSerializer.serialize( undoRedoHelperList_.size() );
+	XMLSerializer undoSerializer(undoData_, *definitionManager);
+	undoSerializer.serialize(RPURU::getUndoStreamHeaderTag());
+	undoSerializer.serialize(undoRedoHelperList_.size());
 
-	XMLSerializer redoSerializer( redoData_, *definitionManager );
-	redoSerializer.serialize( RPURU::getRedoStreamHeaderTag() );
-	redoSerializer.serialize( undoRedoHelperList_.size() );
+	XMLSerializer redoSerializer(redoData_, *definitionManager);
+	redoSerializer.serialize(RPURU::getRedoStreamHeaderTag());
+	redoSerializer.serialize(undoRedoHelperList_.size());
 
 	for (const auto& helper : undoRedoHelperList_)
 	{
-		RPURU::saveUndoData( undoSerializer, *helper );
-		RPURU::saveRedoData( redoSerializer, *helper );
+		RPURU::saveUndoData(undoSerializer, *helper);
+		RPURU::saveRedoData(redoSerializer, *helper);
 	}
 
 	undoRedoHelperList_.clear();
 }
 
-
 void ReflectionUndoRedoData::undo()
 {
 	auto definitionManager = commandInstance_.defManager_;
-	assert( definitionManager != nullptr );
+	assert(definitionManager != nullptr);
 	const auto pObjectManager = definitionManager->getObjectManager();
-	assert( pObjectManager != nullptr );
+	assert(pObjectManager != nullptr);
 
 	if (!undoData_.buffer().empty())
 	{
-		undoData_.seek( 0 );
-		XMLSerializer serializer( undoData_, *definitionManager );
-		RPURU::performReflectedUndo( serializer, *pObjectManager, *definitionManager );
+		undoData_.seek(0);
+		XMLSerializer serializer(undoData_, *definitionManager);
+		RPURU::performReflectedUndo(serializer, *pObjectManager, *definitionManager);
 	}
 }
-
 
 void ReflectionUndoRedoData::redo()
 {
 	auto definitionManager = commandInstance_.defManager_;
-	assert( definitionManager != nullptr );
+	assert(definitionManager != nullptr);
 	const auto pObjectManager = definitionManager->getObjectManager();
-	assert( pObjectManager != nullptr );
+	assert(pObjectManager != nullptr);
 	if (!redoData_.buffer().empty())
 	{
-		redoData_.seek( 0 );
-		XMLSerializer serializer( redoData_, *definitionManager );
-		RPURU::performReflectedRedo( serializer, *pObjectManager, *definitionManager );
+		redoData_.seek(0);
+		XMLSerializer serializer(redoData_, *definitionManager);
+		RPURU::performReflectedRedo(serializer, *pObjectManager, *definitionManager);
 	}
 }
-
 
 ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 {
 	auto definitionManager = commandInstance_.defManager_;
-	assert( definitionManager != nullptr );
+	assert(definitionManager != nullptr);
 	auto pObjectManager = definitionManager->getObjectManager();
 	assert(pObjectManager != nullptr);
 	auto& objectManager = (*pObjectManager);
-	const char * undoStreamHeaderTag = RPURU::getUndoStreamHeaderTag();
-	const char * redoStreamHeaderTag = RPURU::getRedoStreamHeaderTag();
+	const char* undoStreamHeaderTag = RPURU::getUndoStreamHeaderTag();
+	const char* redoStreamHeaderTag = RPURU::getRedoStreamHeaderTag();
 
 	ObjectHandle result;
 	RPURU::UndoRedoHelperList propertyCache;
@@ -340,12 +320,8 @@ ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 		assert(redoHeader == redoStreamHeaderTag);
 
 		// Read properties into cache
-		const bool reflectedPropertiesLoaded = loadReflectedProperties(
-			propertyCache,
-			undoSerializer,
-			redoSerializer,
-			objectManager,
-			*definitionManager);
+		const bool reflectedPropertiesLoaded =
+		loadReflectedProperties(propertyCache, undoSerializer, redoSerializer, objectManager, *definitionManager);
 		if (!reflectedPropertiesLoaded)
 		{
 			return ObjectHandle();
@@ -375,12 +351,12 @@ ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 			else
 			{
 				assert(object != nullptr);
-				PropertyAccessor pa(object.getDefinition(*definitionManager)->bindProperty(
-					helper->path_.c_str(), object));
-				auto metaData = findFirstMetaData< MetaInPlacePropertyNameObj >(pa, *definitionManager);
+				PropertyAccessor pa(
+				object.getDefinition(*definitionManager)->bindProperty(helper->path_.c_str(), object));
+				auto metaData = findFirstMetaData<MetaInPlacePropertyNameObj>(pa, *definitionManager);
 				if (metaData != nullptr)
 				{
-					const char * propName = metaData->getPropertyName();
+					const char* propName = metaData->getPropertyName();
 					pa = object.getDefinition(*definitionManager)->bindProperty(propName, object);
 					auto value = pa.getValue();
 					std::string name;
@@ -420,9 +396,8 @@ ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 			// genericObject.set( "Children", children );
 			// is unsafe, because it takes a reference
 			// which will be deleted when children goes out of scope
-			typedef std::vector< GenericObjectPtr > Children;
-			auto collectionHolder =
-				std::make_shared< CollectionHolder< Children > >();
+			typedef std::vector<GenericObjectPtr> Children;
+			auto collectionHolder = std::make_shared<CollectionHolder<Children>>();
 
 			Children& children = collectionHolder->storage();
 			children.reserve(propertyCache.size());
@@ -443,12 +418,12 @@ ObjectHandle ReflectionUndoRedoData::getCommandDescription() const
 				}
 				else
 				{
-					PropertyAccessor pa(object.getDefinition(*definitionManager)->bindProperty(
-						helper->path_.c_str(), object));
-					auto metaData = findFirstMetaData< MetaInPlacePropertyNameObj >(pa, *definitionManager);
+					PropertyAccessor pa(
+					object.getDefinition(*definitionManager)->bindProperty(helper->path_.c_str(), object));
+					auto metaData = findFirstMetaData<MetaInPlacePropertyNameObj>(pa, *definitionManager);
 					if (metaData != nullptr)
 					{
-						const char * propName = metaData->getPropertyName();
+						const char* propName = metaData->getPropertyName();
 						pa = object.getDefinition(*definitionManager)->bindProperty(propName, object);
 						auto value = pa.getValue();
 						std::string name;

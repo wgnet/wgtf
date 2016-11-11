@@ -13,24 +13,22 @@
 
 #include <memory>
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
 /**
 * This plugin creates a panel which allows testing of custom QML dialogs
 *
 * @ingroup plugins
-* @image html plg_dialog_test.png 
+* @image html plg_dialog_test.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class DialogTestPlugin
-: public PluginMain
-  ,
-  public Depends<IViewCreator>
+class DialogTestPlugin : public PluginMain, public Depends<IViewCreator>
 {
 public:
-	DialogTestPlugin(IComponentContext& context)
-	    : Depends(context)
+	DialogTestPlugin(IComponentContext& context) : Depends(context)
 	{
 	}
 

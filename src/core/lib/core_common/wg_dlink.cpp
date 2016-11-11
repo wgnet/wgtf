@@ -1,10 +1,7 @@
 #include "wg_dlink.hpp"
 
-
 namespace
 {
-
-
 #if 0
 
 	class Unit
@@ -31,44 +28,32 @@ namespace
 	} unit;
 
 #endif
-
-
 }
 
 namespace wgt
 {
-
-DLink::DLink():
-	next_(this),
-	prev_(this)
+DLink::DLink() : next_(this), prev_(this)
 {
 }
 
-
-DLink::DLink(const DLink& v):
-	next_(this),
-	prev_(this)
+DLink::DLink(const DLink& v) : next_(this), prev_(this)
 {
 }
-
 
 DLink::~DLink()
 {
 	unlink();
 }
 
-
 DLink& DLink::operator=(const DLink& v)
 {
 	return *this;
 }
 
-
 bool DLink::isLinked() const
 {
 	return next_ != this;
 }
-
 
 void DLink::unlink()
 {
@@ -78,7 +63,6 @@ void DLink::unlink()
 	prev_ = this;
 	next_ = this;
 }
-
 
 void DLink::prepend(DLink* link)
 {
@@ -90,7 +74,6 @@ void DLink::prepend(DLink* link)
 	prev_ = link;
 }
 
-
 void DLink::append(DLink* link)
 {
 	link->unlink();
@@ -100,5 +83,4 @@ void DLink::append(DLink* link)
 	link->prev_ = this;
 	next_ = link;
 }
-
 }

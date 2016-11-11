@@ -1,7 +1,7 @@
 #ifndef __PLATFORM_DLL_HPP__
 #define __PLATFORM_DLL_HPP__
 
-#if defined( _WIN32 )
+#if defined(_WIN32)
 #include <windows.h>
 #endif
 

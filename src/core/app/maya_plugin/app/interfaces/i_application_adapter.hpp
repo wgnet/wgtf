@@ -9,10 +9,12 @@ namespace wgt
 class IApplicationAdapter
 {
 public:
-	virtual ~IApplicationAdapter() {}
+	virtual ~IApplicationAdapter()
+	{
+	}
 
-	virtual void addListener( IApplicationListener * listener ) = 0;
-	virtual void removeListener( IApplicationListener * listener ) = 0;
+	virtual void addListener(IApplicationListener* listener) = 0;
+	virtual void removeListener(IApplicationListener* listener) = 0;
 };
 } // end namespace wgt
-#endif//I_APPLICATION_ADAPTER_HPP
+#endif // I_APPLICATION_ADAPTER_HPP

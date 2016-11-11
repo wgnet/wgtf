@@ -83,7 +83,9 @@ Style {
 
     property Component groove: Item {
 
-        anchors.verticalCenter: parent.verticalCenter
+        //anchors.verticalCenter: parent.verticalCenter
+
+        y: Math.round(parent.height / 2) - Math.round(height / 2)
 
         implicitWidth: Math.round(defaultSpacing.minimumRowHeight / 4)
         implicitHeight: Math.round(defaultSpacing.minimumRowHeight / 4)
@@ -165,12 +167,14 @@ Style {
         implicitWidth: control.width
         implicitHeight: control.height
 
-        anchors.centerIn: parent
+        x: Math.round(parent.width / 2) - Math.round(width / 2)
+        y: Math.round(parent.height / 2) - Math.round(height / 2)
 
         Item {
             objectName: "sliderFrame"
             id: sliderFrame
-            anchors.centerIn: parent
+            x: Math.round(parent.width / 2) - Math.round(width / 2)
+            y: Math.round(parent.height / 2) - Math.round(height / 2)
 
             height: __horizontal ? control.height : control.width
             width: __horizontal ? control.width : control.height
@@ -251,7 +255,7 @@ Style {
 
                     sourceComponent: control.__handlePosList[index].handleStyle
 
-                    anchors.verticalCenter: grooveLoader.verticalCenter
+                    y: Math.round(parent.height / 2 - height / 2)
 
                     x: Math.round((((control.__handlePosList[index].value - control.minimumValue) / (control.maximumValue - control.minimumValue)) * __clampedLength) + control.__visualMinPos + handleOffset)
 

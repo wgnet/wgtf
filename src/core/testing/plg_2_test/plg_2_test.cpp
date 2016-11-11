@@ -5,20 +5,20 @@
 
 namespace wgt
 {
-class TestClassB
-	: public Implements< TestInterface > //Always implement latest version
+class TestClassB : public Implements<TestInterface> // Always implement latest version
 {
 public:
-	TestClassB( float value )
-		: value_( value )
+	TestClassB(float value) : value_(value)
 	{
 	}
-	virtual ~TestClassB() {}
-	void test( int value )
+	virtual ~TestClassB()
 	{
-		char buffer[ 256 ];
-		sprintf( buffer, "%s - %f - %d\n", typeid( *this ).name(), value_, value );
-		::OutputDebugStringA( buffer );
+	}
+	void test(int value)
+	{
+		char buffer[256];
+		sprintf(buffer, "%s - %f - %d\n", typeid(*this).name(), value_, value);
+		::OutputDebugStringA(buffer);
 	}
 
 private:
@@ -26,7 +26,7 @@ private:
 };
 
 /**
-* A plugin which tests using multiple registered interfaces of 
+* A plugin which tests using multiple registered interfaces of
 * the same type by outputting test data to the debug window
 *
 * @ingroup plugins
@@ -36,27 +36,27 @@ private:
 *       - CommandSystemPlugin
 *       - MainTestPlugin
 */
-class TestPlugin2
-	: public PluginMain
+class TestPlugin2 : public PluginMain
 {
 public:
 	//==========================================================================
-	TestPlugin2( IComponentContext & contextManager ){}
+	TestPlugin2(IComponentContext& contextManager)
+	{
+	}
 
 	//==========================================================================
-	bool PostLoad( IComponentContext & contextManager )
+	bool PostLoad(IComponentContext& contextManager)
 	{
-		contextManager.registerInterface( new TestClassB( 0.5f ) );
-		contextManager.registerInterface( new TestClassB( 2.5f ) );
+		contextManager.registerInterface(new TestClassB(0.5f));
+		contextManager.registerInterface(new TestClassB(2.5f));
 		return true;
 	}
 
 	//==========================================================================
-	void Initialise( IComponentContext & contextManager )
+	void Initialise(IComponentContext& contextManager)
 	{
-
 	}
 };
 
-PLG_CALLBACK_FUNC( TestPlugin2 )
+PLG_CALLBACK_FUNC(TestPlugin2)
 } // end namespace wgt

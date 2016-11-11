@@ -7,31 +7,28 @@ namespace wgt
 {
 namespace PyScript
 {
-
-/* static */ bool ScriptModule::moduleExists( const char * name )
+/* static */ bool ScriptModule::moduleExists(const char* name)
 {
-	assert( name );
-	
-	char buf[ MAX_PATH ];
+	assert(name);
 
-	FILE * fp = NULL;
-	PyObject * pLoader = NULL;
+	char buf[MAX_PATH];
 
-	bool result = (_PyImport_FindModule( name, NULL, buf, sizeof( buf ),
-		&fp, &pLoader ) != NULL);
+	FILE* fp = NULL;
+	PyObject* pLoader = NULL;
+
+	bool result = (_PyImport_FindModule(name, NULL, buf, sizeof(buf), &fp, &pLoader) != NULL);
 
 	if (fp)
 	{
-		fclose( fp );
+		fclose(fp);
 	}
 
-	Py_XDECREF( pLoader );
+	Py_XDECREF(pLoader);
 
 	Script::clearError();
 
 	return result;
 }
-
 
 } // namespace PyScript
 

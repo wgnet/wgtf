@@ -10,21 +10,20 @@ class IDataStream;
 class CommandManager;
 namespace
 {
-	class CommandManagerImpl;
+class CommandManagerImpl;
 }
 
-class UndoRedoCommand 
-	: public Command
+class UndoRedoCommand : public Command
 {
 public:
-	const char * getId() const override;
-	ObjectHandle execute( const ObjectHandle & arguments ) const override;
+	const char* getId() const override;
+	ObjectHandle execute(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
 
 private:
 	friend CommandManagerImpl;
-	UndoRedoCommand( CommandManager * pCommandManager );
-	CommandManager * pCommandManager_;
+	UndoRedoCommand(CommandManager* pCommandManager);
+	CommandManager* pCommandManager_;
 };
 } // end namespace wgt
-#endif//UNDO_REDO_COMMAND_HPP
+#endif // UNDO_REDO_COMMAND_HPP

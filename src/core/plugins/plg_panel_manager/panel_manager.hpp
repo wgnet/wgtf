@@ -11,26 +11,18 @@
 
 namespace wgt
 {
-class PanelManager
-: public Implements<IPanelManager>
-  ,
-  public Depends<IViewCreator>
+class PanelManager : public Implements<IPanelManager>, public Depends<IViewCreator>
 {
 public:
 	PanelManager(IComponentContext& contextManager);
 	virtual ~PanelManager();
 
 	wg_future<std::unique_ptr<IView>> createAssetBrowser(
-	ObjectHandleT<IAssetBrowserModel> dataModel,
-	std::unique_ptr<IAssetBrowserEventModel> eventModel = nullptr) override;
-
-	wg_future<std::unique_ptr<IView>> createAssetBrowser20(
-	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel,
-	std::unique_ptr<AssetBrowser20::IAssetBrowserEventModel> eventModel = nullptr) override;
+	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> assetModel) override;
 
 private:
 	IComponentContext& contextManager_;
-	std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 };
 } // end namespace wgt
 #endif // ASSET_BROWSER_VIEW_HPP

@@ -8,10 +8,6 @@ namespace wgt
 {
 BEGIN_EXPOSE(TestUIContext, MetaNone())
 EXPOSE("treeModel", treeModel, MetaNoSerialization())
-EXPOSE_METHOD("runTestScript",
-              updateValues,
-              undoUpdateValues,
-              redoUpdateValues,
-              MetaDescription(L"Run Test Script"))
+EXPOSE_METHOD("runTestScript", updateValues, undoUpdateValues, redoUpdateValues, MetaDescription(L"Run Test Script"))
 END_EXPOSE()
 } // end namespace wgt

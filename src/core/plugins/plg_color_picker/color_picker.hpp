@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _COLOR_PICKER_HPP
 #define _COLOR_PICKER_HPP
- 
+
 #include "core_ui_framework/i_view.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_dependency_system/depends.hpp"
@@ -16,21 +16,19 @@
 
 namespace wgt
 {
-class ColorPicker
-	: Depends< IUIFramework, IUIApplication, IDefinitionManager, IViewCreator >
+class ColorPicker : Depends<IUIFramework, IUIApplication, IDefinitionManager, IViewCreator>
 
 {
 public:
-	ColorPicker( IComponentContext & context );
+	ColorPicker(IComponentContext& context);
 
 	bool addPanel();
 	void removePanel();
 
 private:
-	wg_future<std::unique_ptr< IView >> colorView_;
+	wg_future<std::unique_ptr<IView>> colorView_;
 	ObjectHandle colorPickerContext_;
 };
- 
- 
+
 } // end namespace wgt
 #endif // _COLOR_PICKER_HPP

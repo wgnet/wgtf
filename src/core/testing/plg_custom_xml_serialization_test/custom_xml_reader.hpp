@@ -19,20 +19,19 @@ class IBaseProperty;
 class IDefinitionManager;
 
 // just a simple xml reader, you can make your own robust xml reader
-class CustomXmlDataReader:
-	private SimpleApiForXml
+class CustomXmlDataReader : private SimpleApiForXml
 {
 	typedef SimpleApiForXml base;
 
 public:
-	CustomXmlDataReader( TextStream& stream );
+	CustomXmlDataReader(TextStream& stream);
 
-	bool read( Variant& value );
+	bool read(Variant& value);
 
 private:
 	struct StackItem
 	{
-		explicit StackItem( Variant value = Variant() );
+		explicit StackItem(Variant value = Variant());
 
 		void cast();
 
@@ -42,15 +41,14 @@ private:
 		bool hasChildren;
 	};
 
-	std::list< StackItem > stack_;
+	std::list<StackItem> stack_;
 	bool pushed_;
 	bool done_;
 	unsigned ignore_;
 
-	void elementStart( const char* elementName, const char* const* attributes ) override;
-	void elementEnd( const char* elementName ) override;
-	void characterData( const char* data, size_t length ) override;
-
+	void elementStart(const char* elementName, const char* const* attributes) override;
+	void elementEnd(const char* elementName) override;
+	void characterData(const char* data, size_t length) override;
 };
 } // end namespace wgt
-#endif//CUSTOM_XML_READER_HPP_INCLUDED
+#endif // CUSTOM_XML_READER_HPP_INCLUDED

@@ -26,7 +26,7 @@ enum class CommandErrorCode : uint8_t
  *	@param errorCode code from command to be checked.
  *	@return true if the command has completed successfully.
  */
-bool isCommandSuccess( CommandErrorCode errorCode );
+bool isCommandSuccess(CommandErrorCode errorCode);
 
 enum class CommandThreadAffinity : uint8_t
 {
@@ -44,7 +44,7 @@ class Command
 {
 public:
 	virtual ~Command();
-	virtual const char * getId() const = 0;
+	virtual const char* getId() const = 0;
 
 	/**
 	 *	Run the command.
@@ -52,38 +52,55 @@ public:
 	 *	@return the CommandErrorCode or the return value.
 	 *		Not returning a CommandErrorCode assumes the code is COMMAND_NO_ERROR.
 	 */
-	virtual ObjectHandle execute(const ObjectHandle & arguments) const = 0;
+	virtual ObjectHandle execute(const ObjectHandle& arguments) const = 0;
 
-
-	virtual bool validateArguments(const ObjectHandle & arguments) const 
+	virtual bool validateArguments(const ObjectHandle& arguments) const
 	{
-		//NOTE(aidan): 
-		//If there are any conditions that argument objects must follow, override this function. It should
-		//just return if the command could execute correctly with the given arguments
-		return true; 
+		// NOTE(aidan):
+		// If there are any conditions that argument objects must follow, override this function. It should
+		// just return if the command could execute correctly with the given arguments
+		return true;
 	}
 
-	virtual CommandThreadAffinity threadAffinity() const { return CommandThreadAffinity::COMMAND_THREAD; }
+	virtual CommandThreadAffinity threadAffinity() const
+	{
+		return CommandThreadAffinity::COMMAND_THREAD;
+	}
 
-	virtual bool customUndo() const { return false; }
-	virtual bool canUndo( const ObjectHandle & arguments ) const { return true; }
-	virtual bool undo( const ObjectHandle & arguments ) const { return false; }
-	virtual bool redo( const ObjectHandle & arguments ) const { return false; }
-	virtual ObjectHandle getCommandDescription(const ObjectHandle & arguments) const { return ObjectHandle(); }
+	virtual bool customUndo() const
+	{
+		return false;
+	}
+	virtual bool canUndo(const ObjectHandle& arguments) const
+	{
+		return true;
+	}
+	virtual bool undo(const ObjectHandle& arguments) const
+	{
+		return false;
+	}
+	virtual bool redo(const ObjectHandle& arguments) const
+	{
+		return false;
+	}
+	virtual ObjectHandle getCommandDescription(const ObjectHandle& arguments) const
+	{
+		return ObjectHandle();
+	}
 
-	virtual void setCommandSystemProvider( ICommandManager * commandSystemProvider );
-	virtual void registerCommandStatusListener( ICommandEventListener * listener );
+	virtual void setCommandSystemProvider(ICommandManager* commandSystemProvider);
+	virtual void registerCommandStatusListener(ICommandEventListener* listener);
 
-	ICommandManager * getCommandSystemProvider() const;
+	ICommandManager* getCommandSystemProvider() const;
 
-	virtual void fireCommandStatusChanged( const CommandInstance & command ) const;
-	virtual void fireProgressMade( const CommandInstance & command ) const;
-	virtual void fireCommandExecuted( const CommandInstance & command, CommandOperation operation) const;
+	virtual void fireCommandStatusChanged(const CommandInstance& command) const;
+	virtual void fireProgressMade(const CommandInstance& command) const;
+	virtual void fireCommandExecuted(const CommandInstance& command, CommandOperation operation) const;
 
 private:
-	typedef std::list< ICommandEventListener * > EventListenerCollection;
+	typedef std::list<ICommandEventListener*> EventListenerCollection;
 	EventListenerCollection eventListenerCollection_;
-	ICommandManager * commandSystemProvider_;
+	ICommandManager* commandSystemProvider_;
 };
 } // end namespace wgt
-#endif //COMMAND_HPP
+#endif // COMMAND_HPP

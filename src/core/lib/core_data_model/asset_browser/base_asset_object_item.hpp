@@ -9,8 +9,8 @@ namespace wgt
 class BaseAssetObjectItem : public IAssetObjectItem
 {
 public:
-	BaseAssetObjectItem(const IFileInfoPtr& fileInfo, const IItem* parent,
-	                    IFileSystem* fileSystem, IAssetPresentationProvider* presentationProvider);
+	BaseAssetObjectItem(const IFileInfoPtr& fileInfo, const IItem* parent, IFileSystem* fileSystem,
+	                    IAssetPresentationProvider* presentationProvider);
 	BaseAssetObjectItem(const BaseAssetObjectItem& rhs);
 	virtual ~BaseAssetObjectItem();
 

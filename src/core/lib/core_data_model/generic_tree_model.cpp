@@ -1,60 +1,57 @@
 #include "generic_tree_model.hpp"
 #include "generic_tree_item.hpp"
 
-
 namespace wgt
 {
-GenericTreeModel::GenericTreeModel( int columnCount/* = 1 */ )
-	:columnCount_( columnCount )
+GenericTreeModel::GenericTreeModel(int columnCount /* = 1 */) : columnCount_(columnCount)
 {
 }
 
-void GenericTreeModel::addRootItem( GenericTreeItem * item )
+void GenericTreeModel::addRootItem(GenericTreeItem* item)
 {
-	assert( item->getParent() == nullptr );
-	assert( item->model_ == nullptr );
+	assert(item->getParent() == nullptr);
+	assert(item->model_ == nullptr);
 	item->model_ = this;
 
-    size_t index = rootItems_.size();
-    signalPreItemsInserted(nullptr, index, 1);
-	rootItems_.push_back( item );
-    signalPostItemsInserted(nullptr, index, 1);
+	size_t index = rootItems_.size();
+	signalPreItemsInserted(nullptr, index, 1);
+	rootItems_.push_back(item);
+	signalPostItemsInserted(nullptr, index, 1);
 }
 
-void GenericTreeModel::removeRootItem( GenericTreeItem * item )
+void GenericTreeModel::removeRootItem(GenericTreeItem* item)
 {
-	assert( item != nullptr );
-	assert( item->model_ == this );
-	const auto foundItr =
-		std::find( rootItems_.cbegin(), rootItems_.cend(), item );
-	assert( foundItr != rootItems_.cend() );
+	assert(item != nullptr);
+	assert(item->model_ == this);
+	const auto foundItr = std::find(rootItems_.cbegin(), rootItems_.cend(), item);
+	assert(foundItr != rootItems_.cend());
 
 	item->model_ = nullptr;
-    auto findIter = std::find(rootItems_.begin(), rootItems_.end(), item);
-    if (findIter == rootItems_.end())
-        return;
+	auto findIter = std::find(rootItems_.begin(), rootItems_.end(), item);
+	if (findIter == rootItems_.end())
+		return;
 
-    size_t index = std::distance(findIter, rootItems_.begin());
-    signalPreItemsRemoved(nullptr, index, 1);
-	rootItems_.erase( foundItr );
-    signalPostItemsRemoved(nullptr, index, 1);
+	size_t index = std::distance(findIter, rootItems_.begin());
+	signalPreItemsRemoved(nullptr, index, 1);
+	rootItems_.erase(foundItr);
+	signalPostItemsRemoved(nullptr, index, 1);
 }
 
-IItem * GenericTreeModel::item( size_t index, const IItem * parent ) const
+IItem* GenericTreeModel::item(size_t index, const IItem* parent) const
 {
-	auto genericParent = static_cast< const GenericTreeItem * >( parent );
-	assert( parent == nullptr || genericParent != nullptr );
+	auto genericParent = static_cast<const GenericTreeItem*>(parent);
+	assert(parent == nullptr || genericParent != nullptr);
 
-	auto itemCount = getChildCountInternal( genericParent );
+	auto itemCount = getChildCountInternal(genericParent);
 	for (size_t i = 0; i < itemCount; ++i)
 	{
-		auto item = getItemInternal( i, genericParent );
+		auto item = getItemInternal(i, genericParent);
 		if (item != nullptr && item->hidden())
 		{
-			auto childItemCount = getChildCountInternal( item );
+			auto childItemCount = getChildCountInternal(item);
 			if (index < childItemCount)
 			{
-				return this->item( index, item );
+				return this->item(index, item);
 			}
 			index -= childItemCount;
 		}
@@ -70,36 +67,33 @@ IItem * GenericTreeModel::item( size_t index, const IItem * parent ) const
 	return nullptr;
 }
 
-ITreeModel::ItemIndex GenericTreeModel::index( const IItem * item ) const
+ITreeModel::ItemIndex GenericTreeModel::index(const IItem* item) const
 {
 	if (item == nullptr)
 	{
-		return std::make_pair< size_t, IItem * >( 0, nullptr );
+		return std::make_pair<size_t, IItem*>(0, nullptr);
 	}
 
-	auto genericItem = static_cast< const GenericTreeItem * >( item );
-	assert( genericItem != nullptr );
+	auto genericItem = static_cast<const GenericTreeItem*>(item);
+	assert(genericItem != nullptr);
 
 	size_t index = 0;
 	auto parent = genericItem->getParent();
-	auto indexInternal = getIndexInternal( genericItem );
+	auto indexInternal = getIndexInternal(genericItem);
 	for (size_t i = 0; i < indexInternal; ++i)
 	{
-		auto itemInternal = getItemInternal( i, parent );
-		index += itemInternal != nullptr && itemInternal->hidden() ? 
-			this->size( itemInternal ) : 1;
+		auto itemInternal = getItemInternal(i, parent);
+		index += itemInternal != nullptr && itemInternal->hidden() ? this->size(itemInternal) : 1;
 	}
 
 	if (parent != nullptr && parent->hidden())
 	{
-		auto parentIndex = this->index( parent );
+		auto parentIndex = this->index(parent);
 		index += parentIndex.first;
-		parent = const_cast<GenericTreeItem *>(
-			static_cast< const GenericTreeItem * >( parentIndex.second ) );
+		parent = const_cast<GenericTreeItem*>(static_cast<const GenericTreeItem*>(parentIndex.second));
 	}
-	return std::make_pair( index, parent );
+	return std::make_pair(index, parent);
 }
-
 
 /**
  *	Check if tree has child items, excluding hidden items, including null items
@@ -116,23 +110,23 @@ ITreeModel::ItemIndex GenericTreeModel::index( const IItem * item ) const
  *	>> group3 <- hidden
  *	hasChildren( group1 ) == false
  */
-bool GenericTreeModel::empty( const IItem * item ) const
+bool GenericTreeModel::empty(const IItem* item) const
 {
-	auto genericItem = static_cast< const GenericTreeItem * >( item );
-	assert( item == nullptr || genericItem != nullptr );
+	auto genericItem = static_cast<const GenericTreeItem*>(item);
+	assert(item == nullptr || genericItem != nullptr);
 
 	// No children
-	if (this->emptyInternal( genericItem ))
+	if (this->emptyInternal(genericItem))
 	{
 		return true;
 	}
 
 	// Has children, but they might be hidden
-	auto childCount = getChildCountInternal( genericItem );
+	auto childCount = getChildCountInternal(genericItem);
 	for (size_t i = 0; i < childCount; ++i)
 	{
-		auto childItem = getItemInternal( i, genericItem );
-		if (childItem == nullptr || !childItem->hidden() || !this->empty( childItem ))
+		auto childItem = getItemInternal(i, genericItem);
+		if (childItem == nullptr || !childItem->hidden() || !this->empty(childItem))
 		{
 			return false;
 		}
@@ -141,7 +135,6 @@ bool GenericTreeModel::empty( const IItem * item ) const
 	// All children are hidden
 	return true;
 }
-
 
 /**
  *	Get the number of child items, excluding hidden items, including null items
@@ -159,17 +152,17 @@ bool GenericTreeModel::empty( const IItem * item ) const
  *	>> group3 <- hidden
  *	getChildCount( group1 ) == 0
  */
-size_t GenericTreeModel::size( const IItem * item ) const
+size_t GenericTreeModel::size(const IItem* item) const
 {
-	auto genericItem = static_cast< const GenericTreeItem * >( item );
-	assert( item == nullptr || genericItem != nullptr );
+	auto genericItem = static_cast<const GenericTreeItem*>(item);
+	assert(item == nullptr || genericItem != nullptr);
 
 	size_t count = 0;
-	auto childCount = getChildCountInternal( genericItem );
+	auto childCount = getChildCountInternal(genericItem);
 	for (size_t i = 0; i < childCount; ++i)
 	{
-		auto childItem = getItemInternal( i, genericItem );
-		count += childItem != nullptr && childItem->hidden() ? this->size( childItem ) : 1;
+		auto childItem = getItemInternal(i, genericItem);
+		count += childItem != nullptr && childItem->hidden() ? this->size(childItem) : 1;
 	}
 	return count;
 }
@@ -179,17 +172,17 @@ int GenericTreeModel::columnCount() const
 	return columnCount_;
 }
 
-GenericTreeItem * GenericTreeModel::getItemInternal( size_t index, const GenericTreeItem * parent ) const
+GenericTreeItem* GenericTreeModel::getItemInternal(size_t index, const GenericTreeItem* parent) const
 {
 	if (parent == nullptr)
 	{
 		return index < rootItems_.size() ? rootItems_[index] : nullptr;
 	}
 
-	return parent->getChild( index );
+	return parent->getChild(index);
 }
 
-size_t GenericTreeModel::getIndexInternal( const GenericTreeItem * item ) const
+size_t GenericTreeModel::getIndexInternal(const GenericTreeItem* item) const
 {
 	if (item == nullptr)
 	{
@@ -202,18 +195,17 @@ size_t GenericTreeModel::getIndexInternal( const GenericTreeItem * item ) const
 		const auto count = parent->size();
 		for (size_t i = 0; i < count; ++i)
 		{
-			if (parent->getChild( i ) == item)
+			if (parent->getChild(i) == item)
 			{
 				return i;
 			}
 		}
 	}
 
-	auto findIt = std::find( rootItems_.begin(), rootItems_.end(), item );
-	assert( findIt != rootItems_.end() );
+	auto findIt = std::find(rootItems_.begin(), rootItems_.end(), item);
+	assert(findIt != rootItems_.end());
 	return findIt - rootItems_.begin();
 }
-
 
 /**
  *	Check if there are children in tree, at one level, under the given item.
@@ -223,8 +215,7 @@ size_t GenericTreeModel::getIndexInternal( const GenericTreeItem * item ) const
  *	>> group2 <- hidden
  *	hasChildrenInternal( group1 ) == true
  */
-bool GenericTreeModel::emptyInternal(
-	const GenericTreeItem * item ) const
+bool GenericTreeModel::emptyInternal(const GenericTreeItem* item) const
 {
 	if (item == nullptr)
 	{
@@ -233,7 +224,6 @@ bool GenericTreeModel::emptyInternal(
 
 	return item->empty();
 }
-
 
 /**
  *	Get number of children in tree, at one level, under the given item.
@@ -247,7 +237,7 @@ bool GenericTreeModel::emptyInternal(
  *	>> item4 - count
  *	getChildCountInternal( group1 ) == 2 // group2 and item4
  */
-size_t GenericTreeModel::getChildCountInternal( const GenericTreeItem * item ) const
+size_t GenericTreeModel::getChildCountInternal(const GenericTreeItem* item) const
 {
 	if (item == nullptr)
 	{

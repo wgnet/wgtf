@@ -25,17 +25,9 @@ BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 )
 
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
-	core_data_model
 	core_generic_plugin
-	core_qt_common
-	core_qt_script
 	core_reflection
-	core_ui_framework
 	data_model_test
-	Qt5::Core
-	Qt5::Gui
-	Qt5::Quick
-	Qt5::Widgets
 )
 
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Plugins" )

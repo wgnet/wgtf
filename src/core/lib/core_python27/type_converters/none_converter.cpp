@@ -3,14 +3,11 @@
 #include "core_variant/variant.hpp"
 #include "wg_pyscript/py_script_object.hpp"
 
-
 namespace wgt
 {
 namespace PythonType
 {
-
-bool NoneConverter::toVariant( const PyScript::ScriptObject & inObject,
-	Variant & outVariant ) /* override */
+bool NoneConverter::toVariant(const PyScript::ScriptObject& inObject, Variant& outVariant) /* override */
 {
 	// Check for types.NoneType
 	if (!inObject.isNone())
@@ -22,8 +19,8 @@ bool NoneConverter::toVariant( const PyScript::ScriptObject & inObject,
 	return true;
 }
 
-bool NoneConverter::toScriptType( const Variant & inVariant,
-	PyScript::ScriptObject & outObject, void* userData ) /* override */
+bool NoneConverter::toScriptType(const Variant& inVariant, PyScript::ScriptObject& outObject,
+                                 void* userData) /* override */
 {
 	if (inVariant.typeIs<void>() || inVariant.isNullPointer())
 	{
@@ -32,7 +29,6 @@ bool NoneConverter::toScriptType( const Variant & inVariant,
 	}
 	return false;
 }
-
 
 } // namespace PythonType
 } // end namespace wgt

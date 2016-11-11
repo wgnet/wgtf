@@ -11,15 +11,16 @@ namespace wgt
 {
 class IDefinitionManager;
 
-class SERIALIZATION_DLL XMLSerializer:
-	public Implements< ISerializer >
+class SERIALIZATION_DLL XMLSerializer : public ISerializer
 {
 public:
 	using ISerializer::deserialize;
 
 	struct SERIALIZATION_DLL Format
 	{
-		struct Unformatted {};
+		struct Unformatted
+		{
+		};
 
 		/**
 		Construct Format with default values.
@@ -29,7 +30,7 @@ public:
 		/**
 		Construct Format with all formatting turned off.
 		*/
-		Format( Unformatted );
+		Format(Unformatted);
 
 		/**
 		Name of the root node.
@@ -85,17 +86,17 @@ public:
 		std::string collectionItemElement;
 	};
 
-	XMLSerializer( IDataStream& dataStream, IDefinitionManager& definitionManager );
+	XMLSerializer(IDataStream& dataStream, IDefinitionManager& definitionManager);
 
-	bool serialize( const Variant& value ) override;
-	bool deserialize( Variant& value ) override;
+	bool serialize(const Variant& value) override;
+	bool deserialize(Variant& value) override;
 
 	const Format& format() const
 	{
 		return format_;
 	}
 
-	void setFormat( const Format& format );
+	void setFormat(const Format& format);
 
 	bool sync();
 
@@ -103,7 +104,6 @@ private:
 	TextStream stream_;
 	IDefinitionManager& definitionManager_;
 	Format format_;
-
 };
 
 } // end namespace wgt

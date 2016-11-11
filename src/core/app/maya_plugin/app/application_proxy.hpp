@@ -17,14 +17,14 @@ class ApplicationProxy : public QObject, public IApplicationListener, public IWi
 {
 	Q_OBJECT
 public:
-	ApplicationProxy( IUIApplication* application, QObject* parent = 0 );
+	ApplicationProxy(IUIApplication* application, QObject* parent = 0);
 	virtual ~ApplicationProxy();
 
 	void applicationStarted() override;
 	void applicationStopped() override;
-	void windowShown( IWindowAdapter * window ) override;
-	void windowHidden( IWindowAdapter * window ) override;
-	void windowClosed( IWindowAdapter * window ) override;
+	void windowShown(IWindowAdapter* window) override;
+	void windowHidden(IWindowAdapter* window) override;
+	void windowClosed(IWindowAdapter* window) override;
 
 	bool started() const;
 	bool visible() const;
@@ -38,9 +38,9 @@ public slots:
 
 private:
 	IUIApplication* application_;
-	std::map< IWindowAdapter*, QWinHost * > windows_;
+	std::map<IWindowAdapter*, QWinHost*> windows_;
 	bool started_;
 	bool visible_;
 };
 } // end namespace wgt
-#endif//APPLICATION_PROXY_HPP
+#endif // APPLICATION_PROXY_HPP

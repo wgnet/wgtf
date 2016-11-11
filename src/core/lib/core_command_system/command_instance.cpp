@@ -26,45 +26,33 @@ namespace RPURU = ReflectedPropertyUndoRedoUtility;
 
 //==============================================================================
 CommandInstance::CommandInstance()
-	: defManager_( nullptr )
-	, status_( Complete )
-	, arguments_( nullptr )
-	, pCmdSysProvider_( nullptr )
-	, commandId_("")
-	, contextObject_( nullptr )
-	, errorCode_( CommandErrorCode::COMMAND_NO_ERROR )
+    : defManager_(nullptr), status_(Complete), arguments_(nullptr), pCmdSysProvider_(nullptr), commandId_(""),
+      contextObject_(nullptr), errorCode_(CommandErrorCode::COMMAND_NO_ERROR)
 {
 }
-
 
 //==============================================================================
 CommandInstance::~CommandInstance()
 {
 }
 
-
 //==============================================================================
 void CommandInstance::cancel()
 {
 }
 
-
 //==============================================================================
 void CommandInstance::waitForCompletion()
 {
-	std::unique_lock<std::mutex> lock( mutex_ );
+	std::unique_lock<std::mutex> lock(mutex_);
 
-	while( !completeStatus_.wait_for(
-		lock,
-		std::chrono::milliseconds( 1 ),
-		[this] { return status_ == Complete; } ) )
+	while (!completeStatus_.wait_for(lock, std::chrono::milliseconds(1), [this] { return status_ == Complete; }))
 	{
 		lock.unlock();
-		getCommand()->fireProgressMade( *this );
+		getCommand()->fireProgressMade(*this);
 		lock.lock();
 	}
 }
-
 
 //==============================================================================
 CommandErrorCode CommandInstance::getErrorCode() const
@@ -82,13 +70,13 @@ CommandErrorCode CommandInstance::getErrorCode() const
 	}
 
 	// Check children in batch command
-	for (const auto & child : children_)
+	for (const auto& child : children_)
 	{
 		// A batch command is just a group of commands,
 		// if one item in the group succeeded, then the batch performed an operation
 		// so mark the whole batch as succeeded
 		const auto childError = child->getErrorCode();
-		if (wgt::isCommandSuccess( childError ))
+		if (wgt::isCommandSuccess(childError))
 		{
 			return childError;
 		}
@@ -98,77 +86,68 @@ CommandErrorCode CommandInstance::getErrorCode() const
 	return CommandErrorCode::BATCH_NO_ERROR;
 }
 
-
 //==============================================================================
 bool CommandInstance::hasChildren() const
 {
 	return !children_.empty();
 }
 
-
 //==============================================================================
-void CommandInstance::setArguments( const ObjectHandle & arguments )
+void CommandInstance::setArguments(const ObjectHandle& arguments)
 {
 	arguments_ = arguments;
 }
 
-
 //==============================================================================
-void CommandInstance::setDefinitionManager( IDefinitionManager & defManager )
+void CommandInstance::setDefinitionManager(IDefinitionManager& defManager)
 {
 	defManager_ = &defManager;
 }
 
-
 //==============================================================================
-const char * CommandInstance::getCommandId() const
+const char* CommandInstance::getCommandId() const
 {
 	return commandId_.c_str();
 }
 
-
 //==============================================================================
-void CommandInstance::setCommandId( const char * commandName )
+void CommandInstance::setCommandId(const char* commandName)
 {
 	commandId_ = commandName;
 }
 
-
 //==============================================================================
-Command * CommandInstance::getCommand()
+Command* CommandInstance::getCommand()
 {
-	assert( pCmdSysProvider_ != nullptr );
-	Command * pCommand = pCmdSysProvider_->findCommand( commandId_.c_str() );
-	assert( pCommand != nullptr );
+	assert(pCmdSysProvider_ != nullptr);
+	Command* pCommand = pCmdSysProvider_->findCommand(commandId_.c_str());
+	assert(pCommand != nullptr);
 	return pCommand;
 }
 
-
 //==============================================================================
-const Command * CommandInstance::getCommand() const
+const Command* CommandInstance::getCommand() const
 {
-	assert( pCmdSysProvider_ != nullptr );
-	Command * pCommand = pCmdSysProvider_->findCommand( commandId_.c_str() );
-	assert( pCommand != nullptr );
+	assert(pCmdSysProvider_ != nullptr);
+	Command* pCommand = pCmdSysProvider_->findCommand(commandId_.c_str());
+	assert(pCommand != nullptr);
 	return pCommand;
 }
 
-
 //==============================================================================
-void CommandInstance::setStatus( ExecutionStatus status )
+void CommandInstance::setStatus(ExecutionStatus status)
 {
 	// Lock is required for CommandInstance::waitForCompletion()
 	{
-		std::unique_lock<std::mutex> lock( mutex_ );
+		std::unique_lock<std::mutex> lock(mutex_);
 		status_ = status;
 	}
-	getCommand()->fireCommandStatusChanged( *this );
+	getCommand()->fireCommandStatusChanged(*this);
 	if (status == Complete)
 	{
 		completeStatus_.notify_all();
 	}
 }
-
 
 //==============================================================================
 void CommandInstance::undo()
@@ -177,10 +156,9 @@ void CommandInstance::undo()
 	{
 		(*it)->undo();
 	}
-	const Command * command = getCommand();
+	const Command* command = getCommand();
 	command->fireCommandExecuted(*this, CommandOperation::UNDO);
 }
-
 
 //==============================================================================
 void CommandInstance::redo()
@@ -189,27 +167,26 @@ void CommandInstance::redo()
 	{
 		(*it)->redo();
 	}
-	const Command * command = getCommand();
+	const Command* command = getCommand();
 	command->fireCommandExecuted(*this, CommandOperation::REDO);
 }
-
 
 //==============================================================================
 void CommandInstance::execute()
 {
-	const Command * command = getCommand();
+	const Command* command = getCommand();
 	if (command->customUndo())
 	{
-		returnValue_ = command->execute( arguments_ );
-		undoRedoData_.emplace_back( new CustomUndoRedoData( *this ) );
+		returnValue_ = command->execute(arguments_);
+		undoRedoData_.emplace_back(new CustomUndoRedoData(*this));
 	}
 	else
 	{
-		auto undoRedoData = new ReflectionUndoRedoData( *this );
+		auto undoRedoData = new ReflectionUndoRedoData(*this);
 		undoRedoData->connect();
-		returnValue_ = command->execute( arguments_ );
+		returnValue_ = command->execute(arguments_);
 		undoRedoData->disconnect();
-		undoRedoData_.emplace_back( undoRedoData );
+		undoRedoData_.emplace_back(undoRedoData);
 	}
 	command->fireCommandExecuted(*this, CommandOperation::EXECUTE);
 	auto errorCode = returnValue_.getBase<CommandErrorCode>();
@@ -225,13 +202,11 @@ void CommandInstance::execute()
 	}
 }
 
-
 //==============================================================================
 bool CommandInstance::isComplete() const
 {
 	return status_ == Complete;
 }
-
 
 //==============================================================================
 ExecutionStatus CommandInstance::getExecutionStatus() const
@@ -239,13 +214,11 @@ ExecutionStatus CommandInstance::getExecutionStatus() const
 	return status_;
 }
 
-
 //==============================================================================
-void CommandInstance::setContextObject( const ObjectHandle & contextObject )
+void CommandInstance::setContextObject(const ObjectHandle& contextObject)
 {
 	contextObject_ = contextObject;
 }
-
 
 //==============================================================================
 ObjectHandle CommandInstance::getCommandDescription() const
@@ -260,7 +233,7 @@ ObjectHandle CommandInstance::getCommandDescription() const
 	{
 		return nullptr;
 	}
-	
+
 	// Single command
 	// OR
 	// Batch command with one child
@@ -277,48 +250,46 @@ ObjectHandle CommandInstance::getCommandDescription() const
 
 	// First item is the batch itself
 	auto batchHandle = itr->get()->getCommandDescription();
-	auto pBatchDescription = batchHandle.getBase< GenericObject >();
-	assert( pBatchDescription != nullptr );
-	auto & genericObject = *pBatchDescription;
+	auto pBatchDescription = batchHandle.getBase<GenericObject>();
+	assert(pBatchDescription != nullptr);
+	auto& genericObject = *pBatchDescription;
 
 	// Get copy of children
 	Collection childrenCollection;
-	const auto getCollection = genericObject.get( "Children", childrenCollection );
-	assert( getCollection );
+	const auto getCollection = genericObject.get("Children", childrenCollection);
+	assert(getCollection);
 
 	// Latter items are children of the batch
 	++itr;
 	for (; itr != undoRedoData_.end(); ++itr)
 	{
 		auto childHandle = itr->get()->getCommandDescription();
-		auto collectionItem = childrenCollection.insert( childrenCollection.size() );
-		const auto setValue = collectionItem.setValue( childHandle );
-		assert( setValue );
+		auto collectionItem = childrenCollection.insert(childrenCollection.size());
+		const auto setValue = collectionItem.setValue(childHandle);
+		assert(setValue);
 	}
 
 	// Copy back to batch
-	const auto setCollection = genericObject.set( "Children", childrenCollection );
-	assert( setCollection );
+	const auto setCollection = genericObject.set("Children", childrenCollection);
+	assert(setCollection);
 
 	return batchHandle;
 }
 
-
 //==============================================================================
-void CommandInstance::setCommandSystemProvider( ICommandManager * pCmdSysProvider )
+void CommandInstance::setCommandSystemProvider(ICommandManager* pCmdSysProvider)
 {
 	pCmdSysProvider_ = pCmdSysProvider;
 }
 
-
 //==============================================================================
-void CommandInstance::consolidateUndoRedoData( CommandInstance * parentInstance )
+void CommandInstance::consolidateUndoRedoData(CommandInstance* parentInstance)
 {
 	if (parentInstance == nullptr)
 	{
-		for (auto & data : undoRedoData_)
+		for (auto& data : undoRedoData_)
 		{
-			auto reflectionUndoRedoData = dynamic_cast< ReflectionUndoRedoData * >( data.get() );
+			auto reflectionUndoRedoData = dynamic_cast<ReflectionUndoRedoData*>(data.get());
 			if (reflectionUndoRedoData != nullptr)
 			{
 				reflectionUndoRedoData->consolidate();
@@ -327,21 +298,22 @@ void CommandInstance::consolidateUndoRedoData( CommandInstance * parentInstance 
 		return;
 	}
 
-	auto lastParent = parentInstance->undoRedoData_.empty() ? nullptr : dynamic_cast< ReflectionUndoRedoData * >( parentInstance->undoRedoData_.back().get() );
+	auto lastParent = parentInstance->undoRedoData_.empty() ?
+	nullptr :
+	dynamic_cast<ReflectionUndoRedoData*>(parentInstance->undoRedoData_.back().get());
 	if (lastParent != nullptr)
 	{
-		if (lastParent->undoRedoHelperList_.size() == 1 &&
-			lastParent->undoRedoHelperList_[0]->isMethod())
+		if (lastParent->undoRedoHelperList_.size() == 1 && lastParent->undoRedoHelperList_[0]->isMethod())
 		{
 			lastParent = nullptr;
 		}
 	}
 
-	auto firstChild = undoRedoData_.empty() ? nullptr : dynamic_cast< ReflectionUndoRedoData * >( undoRedoData_.front().get() );
+	auto firstChild =
+	undoRedoData_.empty() ? nullptr : dynamic_cast<ReflectionUndoRedoData*>(undoRedoData_.front().get());
 	if (firstChild != nullptr)
 	{
-		if (firstChild->undoRedoHelperList_.size() == 1 &&
-			firstChild->undoRedoHelperList_[0]->isMethod())
+		if (firstChild->undoRedoHelperList_.size() == 1 && firstChild->undoRedoHelperList_[0]->isMethod())
 		{
 			firstChild = nullptr;
 		}
@@ -349,34 +321,34 @@ void CommandInstance::consolidateUndoRedoData( CommandInstance * parentInstance 
 
 	if (lastParent != nullptr && firstChild != nullptr)
 	{
-		for (auto & childHelper : firstChild->undoRedoHelperList_)
+		for (auto& childHelper : firstChild->undoRedoHelperList_)
 		{
-			auto it = std::find_if( lastParent->undoRedoHelperList_.begin(), lastParent->undoRedoHelperList_.end(),
-				[ &childHelper ]( std::unique_ptr< RPURU::ReflectedClassMemberUndoRedoHelper > & item )
-				{
-					return childHelper->objectId_ == item->objectId_ && childHelper->path_ == item->path_;
-				} );
+			auto it =
+			std::find_if(lastParent->undoRedoHelperList_.begin(), lastParent->undoRedoHelperList_.end(),
+			             [&childHelper](std::unique_ptr<RPURU::ReflectedClassMemberUndoRedoHelper>& item) {
+				             return childHelper->objectId_ == item->objectId_ && childHelper->path_ == item->path_;
+				         });
 			if (it != lastParent->undoRedoHelperList_.end())
 			{
-				auto & helper = *it;
-				assert( !helper->isMethod() );
-				assert( !childHelper->isMethod() );
-				auto propertyHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>( helper.get() );
-				auto childPropertyHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>( childHelper.get() );
+				auto& helper = *it;
+				assert(!helper->isMethod());
+				assert(!childHelper->isMethod());
+				auto propertyHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>(helper.get());
+				auto childPropertyHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>(childHelper.get());
 				propertyHelper->postValue_ = childPropertyHelper->postValue_;
 			}
 			else
 			{
-				assert( !childHelper->isMethod() );
-				lastParent->undoRedoHelperList_.emplace_back( childHelper.release() );
+				assert(!childHelper->isMethod());
+				lastParent->undoRedoHelperList_.emplace_back(childHelper.release());
 			}
 		}
-		undoRedoData_.erase( undoRedoData_.begin() );
+		undoRedoData_.erase(undoRedoData_.begin());
 	}
 
-	for (auto & data : undoRedoData_)
+	for (auto& data : undoRedoData_)
 	{
-		parentInstance->undoRedoData_.emplace_back( data.release() );
+		parentInstance->undoRedoData_.emplace_back(data.release());
 	}
 	undoRedoData_.clear();
 }

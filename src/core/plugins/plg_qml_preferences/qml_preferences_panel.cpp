@@ -4,43 +4,34 @@
 
 namespace wgt
 {
-QmlPreferencesPanel::QmlPreferencesPanel( IComponentContext & context )
-	: Depends( context )
+QmlPreferencesPanel::QmlPreferencesPanel(IComponentContext& context) : Depends(context)
 {
 }
 
-
 bool QmlPreferencesPanel::addPanel()
 {
+	auto uiFramework = this->get<IUIFramework>();
+	auto uiApplication = this->get<IUIApplication>();
 
-	auto uiFramework = this->get< IUIFramework >();
-	auto uiApplication = this->get< IUIApplication >();
-
-	if ((uiFramework == nullptr) ||
-		(uiApplication == nullptr))
+	if ((uiFramework == nullptr) || (uiApplication == nullptr))
 	{
 		return false;
 	}
 
-	uiFramework->loadActionData(
-	":/WGQmlPreferences/actions.xml",
-	IUIFramework::ResourceType::File);
+	uiFramework->loadActionData(":/WGQmlPreferences/actions.xml", IUIFramework::ResourceType::File);
 
-	auto viewCreator = get< IViewCreator >();
+	auto viewCreator = get<IViewCreator>();
 	if (viewCreator)
 	{
-		qmlPreferencesView_ = viewCreator->createView(
-			"WGQmlPreferences/QmlPreferencesPanel.qml",
-			ObjectHandle());
+		qmlPreferencesView_ = viewCreator->createView("WGQmlPreferences/QmlPreferencesPanel.qml", ObjectHandle());
 	}
 
 	return true;
 }
 
-
 void QmlPreferencesPanel::removePanel()
 {
-	auto uiApplication = this->get< IUIApplication >();
+	auto uiApplication = this->get<IUIApplication>();
 	if (uiApplication == nullptr)
 	{
 		return;
@@ -49,7 +40,7 @@ void QmlPreferencesPanel::removePanel()
 	if (qmlPreferencesView_.valid())
 	{
 		auto view = qmlPreferencesView_.get();
-		uiApplication->removeView( *view );
+		uiApplication->removeView(*view);
 	}
 }
 }

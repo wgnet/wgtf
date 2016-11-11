@@ -5,7 +5,7 @@
 #include <core_variant/variant.hpp>
 #include <QVariant>
 
-Q_DECLARE_METATYPE( std::shared_ptr< wgt::BinaryBlock > );
+Q_DECLARE_METATYPE(std::shared_ptr<wgt::BinaryBlock>);
 Q_DECLARE_METATYPE(wgt::Variant);
 
 namespace wgt
@@ -21,28 +21,29 @@ public:
 	/**
 	 *	Interface required by TypeConverterQueue.
 	 */
-	virtual bool toVariant( const QVariant & qVariant, Variant & o_variant ) const = 0;
-	
+	virtual bool toVariant(const QVariant& qVariant, Variant& o_variant) const = 0;
+
 	/**
 	*	 Interface required by TypeConverterQueue.
 	*/
-	bool toScriptType(const Variant & variant, QVariant & o_qVariant, QObject* parent = nullptr ) const
+	bool toScriptType(const Variant& variant, QVariant& o_qVariant, QObject* parent = nullptr) const
 	{
-		return this->toQVariant( variant, o_qVariant, parent );
+		return this->toQVariant(variant, o_qVariant, parent);
 	}
 
-	virtual bool toQVariant(const Variant & variant, QVariant & o_qVariant, QObject* parent = nullptr ) const = 0;
+	virtual bool toQVariant(const Variant& variant, QVariant& o_qVariant, QObject* parent = nullptr) const = 0;
 
-	virtual bool toQVariant( const ObjectHandle & object,
-		QVariant & o_qVariant, QObject* parent = nullptr ) const
-	{ return false; };
+	virtual bool toQVariant(const ObjectHandle& object, QVariant& o_qVariant, QObject* parent = nullptr) const
+	{
+		return false;
+	};
 };
 
-template< typename T, typename U = T >
+template <typename T, typename U = T>
 class GenericQtTypeConverter : public IQtTypeConverter
 {
 public:
-	bool toVariant( const QVariant & qVariant, Variant & o_variant ) const override
+	bool toVariant(const QVariant& qVariant, Variant& o_variant) const override
 	{
 		int typeId = qVariant.type();
 		if (typeId == QVariant::UserType)
@@ -55,11 +56,11 @@ public:
 			return false;
 		}
 
-		o_variant = static_cast<T>( qVariant.value<U>() );
+		o_variant = static_cast<T>(qVariant.value<U>());
 		return true;
 	}
 
-	bool toQVariant( const Variant & variant, QVariant & o_qVariant, QObject* parent = nullptr ) const override
+	bool toQVariant(const Variant& variant, QVariant& o_qVariant, QObject* parent = nullptr) const override
 	{
 		if (TypeId::getType<T>() == TypeId::getType<Variant>())
 		{
@@ -67,7 +68,8 @@ public:
 			{
 				return false;
 			}
-			// handle pointer like IListModel*/ITreeModel*/IComponentContext* or reflected property which return reference value
+			// handle pointer like IListModel*/ITreeModel*/IComponentContext* or reflected property which return
+			// reference value
 			o_qVariant = QVariant::fromValue(variant);
 			return true;
 		}

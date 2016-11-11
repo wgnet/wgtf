@@ -16,7 +16,7 @@ namespace wgt
 BezierPoint::BezierPoint(IDefinitionManager& definitionManager, const Point& pos)
 {
 	auto def = definitionManager.getDefinition<Point>();
-	if(def)
+	if (def)
 	{
 		this->pos = TypeClassDefinition<Point>::create(*def, pos);
 		cp1 = safeCast<Point>(def->create());
@@ -27,7 +27,7 @@ BezierPoint::BezierPoint(IDefinitionManager& definitionManager, const Point& pos
 BezierPoint::BezierPoint(IDefinitionManager& definitionManager, const Point& pos, const Point& cp1, const Point& cp2)
 {
 	auto def = definitionManager.getDefinition<Point>();
-	if ( def )
+	if (def)
 	{
 		this->pos = TypeClassDefinition<Point>::create(*def, pos);
 		this->cp1 = TypeClassDefinition<Point>::create(*def, cp1);
@@ -35,7 +35,7 @@ BezierPoint::BezierPoint(IDefinitionManager& definitionManager, const Point& pos
 	}
 }
 
-BezierPoint& BezierPoint::operator=( const BezierPointData& rhs )
+BezierPoint& BezierPoint::operator=(const BezierPointData& rhs)
 {
 	pos->setX(rhs.pos.x);
 	pos->setY(rhs.pos.y);
@@ -46,11 +46,8 @@ BezierPoint& BezierPoint::operator=( const BezierPointData& rhs )
 	return *this;
 }
 
-
-bool operator==( BezierPoint& lhs, BezierPoint& rhs )
+bool operator==(BezierPoint& lhs, BezierPoint& rhs)
 {
-	return lhs.pos == rhs.pos
-		&& lhs.cp1 == rhs.cp1
-		&& lhs.cp2 == rhs.cp2;
+	return lhs.pos == rhs.pos && lhs.cp1 == rhs.cp1 && lhs.cp2 == rhs.cp2;
 }
 } // end namespace wgt

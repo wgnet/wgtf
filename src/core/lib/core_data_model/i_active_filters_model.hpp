@@ -20,9 +20,12 @@ class ActiveFilterTerm
 	DECLARE_REFLECTED
 
 public:
-
-	ActiveFilterTerm() : display_(""), value_( "" ), active_( true ) {}
-	virtual ~ActiveFilterTerm() {}
+	ActiveFilterTerm() : display_(""), value_(""), active_(true)
+	{
+	}
+	virtual ~ActiveFilterTerm()
+	{
+	}
 
 	virtual const std::string& getDisplay() const
 	{
@@ -42,8 +45,14 @@ public:
 		value_ = value;
 	}
 
-	virtual bool isActive() const { return active_; }
-	virtual void setActive( const bool & active ) {	active_ = active; }
+	virtual bool isActive() const
+	{
+		return active_;
+	}
+	virtual void setActive(const bool& active)
+	{
+		active_ = active;
+	}
 
 private:
 	std::string display_;
@@ -61,21 +70,30 @@ class SavedActiveFilter
 	DECLARE_REFLECTED
 
 public:
-
-	SavedActiveFilter() {}
-	virtual ~SavedActiveFilter() {}
+	SavedActiveFilter()
+	{
+	}
+	virtual ~SavedActiveFilter()
+	{
+	}
 
 	virtual const std::string& getFilterId() const
 	{
 		return filterId_;
 	}
-	virtual void setFilterId( const std::string & value ) { filterId_ = value; }
+	virtual void setFilterId(const std::string& value)
+	{
+		filterId_ = value;
+	}
 
 	virtual const std::string& getTerms() const
 	{
 		return rawTerms_;
 	}
-	virtual void setTerms( const std::string & rawTerms ) { rawTerms_ = rawTerms; }
+	virtual void setTerms(const std::string& rawTerms)
+	{
+		rawTerms_ = rawTerms;
+	}
 
 private:
 	std::string filterId_;
@@ -93,7 +111,6 @@ class IActiveFiltersModel
 	DECLARE_REFLECTED
 
 public:
-
 	//-------------------------------------
 	// Lifecycle
 	//-------------------------------------
@@ -104,37 +121,59 @@ public:
 		// allows abstract classes.
 	}
 
-	virtual ~IActiveFiltersModel() {}
-	
+	virtual ~IActiveFiltersModel()
+	{
+	}
+
 	//-------------------------------------
 	// Data Model Accessors
 	//-------------------------------------
-	
+
 	// Returns the active filter terms
 	// Expected: IListModel of ActiveFilterTerm objects
-	virtual IListModel * getCurrentFilterTerms() const { return nullptr; }
-		
+	virtual IListModel* getCurrentFilterTerms() const
+	{
+		return nullptr;
+	}
+
 	// Removes a filter term from the current list
-	virtual void removeFilterTerm( int index ) {}
+	virtual void removeFilterTerm(int index)
+	{
+	}
 
 	// Clears the current filter terms
-	virtual void clearCurrentFilter() {}
-	
+	virtual void clearCurrentFilter()
+	{
+	}
+
 	// Adds a filter term to the list
-	virtual void addFilterTerm( std::string display, std::string value, bool active ) {}
+	virtual void addFilterTerm(std::string display, std::string value, bool active)
+	{
+	}
 
 	// Returns saved active filters names
 	// Expected: IListModel of saved active filter IDs as saved by the preferences system
-	virtual IListModel * getSavedFilters() const { return nullptr; }
+	virtual IListModel* getSavedFilters() const
+	{
+		return nullptr;
+	}
 
 	// Saves the current filter terms to the preferences system as a new saved filter entry
-	virtual std::string saveFilter( bool overwrite ) { return std::string( "" ); }
+	virtual std::string saveFilter(bool overwrite)
+	{
+		return std::string("");
+	}
 
 	// Loads the specified filter by its known ID in the preferences system
-	virtual bool loadFilter( std::string filterId ) { return false; }
+	virtual bool loadFilter(std::string filterId)
+	{
+		return false;
+	}
 
 	// Clears out saved filters from the preferences system
-	virtual void clearSavedFilters() {}
+	virtual void clearSavedFilters()
+	{
+	}
 };
 } // end namespace wgt
-#endif //I_ACTIVE_FILTERS_MODEL_HPP
+#endif // I_ACTIVE_FILTERS_MODEL_HPP

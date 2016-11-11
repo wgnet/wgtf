@@ -7,7 +7,7 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( LoggingViewModel, MetaNone() )
-	EXPOSE( "loggingModel", getModel )
+BEGIN_EXPOSE(LoggingViewModel, MetaNone())
+EXPOSE("loggingModel", getModel)
 END_EXPOSE()
 } // end namespace wgt

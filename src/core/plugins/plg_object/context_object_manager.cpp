@@ -2,9 +2,7 @@
 
 namespace wgt
 {
-ContextObjectManager::ContextObjectManager( IObjectManagerNew & parent, const wchar_t * contextName )
-	: parent_( parent )
+ContextObjectManager::ContextObjectManager(IObjectManagerNew& parent, const wchar_t* contextName) : parent_(parent)
 {
-
 }
 } // end namespace wgt

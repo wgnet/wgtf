@@ -2,6 +2,8 @@ import QtQuick 2.5
 import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.2
 
+import WGControls 2.0
+import WGControls.Layouts 2.0
 
 
 /*!
@@ -14,11 +16,17 @@ WGFileDialog {
     objectName: "WGAssetBrowserDialog"
     WGComponent { type: "WGAssetBrowserDialog" }
 
+    property alias model : assetBrowser.model
+    property alias nameFilters: assetBrowser.nameFilters
+    property alias selectedNameFilter: assetBrowser.selectedNameFilter
+
     onOpen: {
+        if (!assetBrowser.selectPath(curValue)) {
+            assetBrowser.selectFolder(folder);
+        }
+
         abInstance.width = dWidth
         abInstance.height = dHeight
-        //TODO: Reenable this and make this point to the currently selected file
-        //abInstance.fileUrl = curValue
         abInstance.open()
     }
 
@@ -31,24 +39,30 @@ WGFileDialog {
         modality: mainDialog.modality
         title: mainDialog.title
 
-        //TODO: make this point to the currently selected AB instance file
-        property url fileUrl: "file:///sample_file"
+        property var fileUrl: ""
 
         contentItem: Rectangle {
-            width: parent.width
-            height: parent.height
             color: palette.mainWindowColor
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: defaultSpacing.standardMargin
 
                 WGAssetBrowser {
+                    id: assetBrowser
                     objectName: "assetBrowser"
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    //TODO: Make this load a proper file system and AB stuff.
-                    viewModel: view
+                    onCurrentPathChanged: {
+                        abInstance.fileUrl = currentPath
+                    }
+
+                    onAssetAccepted: {
+                        abInstance.fileUrl = assetPath
+                        abInstance.accepted()
+                        abInstance.close()
+                    }
                 }
 
                 WGExpandingRowLayout {
@@ -72,6 +86,7 @@ WGFileDialog {
                         text: "Open"
                         onClicked: {
                             abInstance.accepted()
+                            abInstance.close()
                         }
                     }
 
@@ -80,6 +95,7 @@ WGFileDialog {
                         text: "Cancel"
                         onClicked: {
                             abInstance.rejected()
+                            abInstance.close()
                         }
                     }
                 }

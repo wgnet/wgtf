@@ -16,16 +16,21 @@ class IItem;
  */
 class IItemFilter
 {
-	typedef Signal< void( void ) > SignalVoid;
+	typedef Signal<void(void)> SignalVoid;
 
 public:
-	virtual ~IItemFilter() {}
-	
-	virtual bool checkFilter( const IItem * item ) = 0;
+	virtual ~IItemFilter()
+	{
+	}
 
-	virtual void setRole( ItemRole::Id roleId ) = 0;
+	virtual bool checkFilter(const IItem* item) = 0;
 
-	virtual bool filterDescendantsOfMatchingItems() { return false; }
+	virtual void setRole(ItemRole::Id roleId) = 0;
+
+	virtual bool filterDescendantsOfMatchingItems()
+	{
+		return false;
+	}
 
 	SignalVoid signalFilterChanged;
 };

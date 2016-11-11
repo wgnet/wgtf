@@ -13,184 +13,139 @@
 #include "wg_pyscript/py_script_object.hpp"
 #include "wg_types/hash_utilities.hpp"
 
-
 namespace wgt
 {
 namespace ReflectedPython
 {
-
-
-typedef Depends< PythonType::Converters  > ImplementationDepends;
-class Property::Implementation
-	: public ImplementationDepends
+typedef Depends<PythonType::Converters> ImplementationDepends;
+class Property::Implementation : public ImplementationDepends
 {
 public:
-	Implementation( IComponentContext & context,
-		const char * key,
-		const PyScript::ScriptObject & pythonObject, MetaHandle metaData );
+	Implementation(IComponentContext& context, const char* key, const PyScript::ScriptObject& pythonObject,
+	               MetaHandle metaData);
 
-	Implementation( IComponentContext & context,
-		const char * key,
-		const TypeId & typeId,
-		const PyScript::ScriptObject & pythonObject, MetaHandle metaData );
+	Implementation(IComponentContext& context, const char* key, const TypeId& typeId,
+	               const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
 
-	bool setValue( const Variant & value );
-	Variant getValue( const ObjectHandle & handle );
-    void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
-
+	bool setValue(const Variant& value);
+	Variant getValue(const ObjectHandle& handle);
+	void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
 
 	// Need to store a copy of the string
 	std::string key_;
 	TypeId type_;
 	PyScript::ScriptObject pythonObject_;
-    MetaHandle metaData_;
+	MetaHandle metaData_;
 	uint64_t hash_;
 
 private:
-    void updatePropertyType();
+	void updatePropertyType();
 };
 
-
-Property::Implementation::Implementation( IComponentContext & context,
-	const char * key,
-	const PyScript::ScriptObject & pythonObject,
-    MetaHandle metaData )
-	: ImplementationDepends( context )
-	, key_( key )
-	, pythonObject_( pythonObject )
-    , metaData_(metaData)
-	, hash_( HashUtilities::compute( key_ ) )
+Property::Implementation::Implementation(IComponentContext& context, const char* key,
+                                         const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
+    : ImplementationDepends(context), key_(key), pythonObject_(pythonObject), metaData_(metaData),
+      hash_(HashUtilities::compute(key_))
 {
 	updatePropertyType();
 }
 
-
-Property::Implementation::Implementation( IComponentContext & context,
-	const char * key,
-	const TypeId & typeId,
-	const PyScript::ScriptObject & pythonObject,
-    MetaHandle metaData )
-	: ImplementationDepends( context )
-	, key_( key )
-	, type_( typeId )
-	, pythonObject_( pythonObject )
-    , metaData_(metaData)
-	, hash_( HashUtilities::compute( key_ ) )
+Property::Implementation::Implementation(IComponentContext& context, const char* key, const TypeId& typeId,
+                                         const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
+    : ImplementationDepends(context), key_(key), type_(typeId), pythonObject_(pythonObject), metaData_(metaData),
+      hash_(HashUtilities::compute(key_))
 {
 	// TODO: set a default value of type_ on the attribute
 }
 
-
-bool Property::Implementation::setValue( const Variant & value )
+bool Property::Implementation::setValue(const Variant& value)
 {
-	auto pTypeConverters = get< PythonType::Converters >();
-	assert( pTypeConverters != nullptr );
+	auto pTypeConverters = get<PythonType::Converters>();
+	assert(pTypeConverters != nullptr);
 
 	PyScript::ScriptObject scriptObject;
-	const bool success = pTypeConverters->toScriptType( value, scriptObject );
-	assert( success );
+	const bool success = pTypeConverters->toScriptType(value, scriptObject);
+	assert(success);
 	PyScript::ScriptErrorPrint errorHandler;
-	if (!pythonObject_.setAttribute( key_.c_str(),
-		scriptObject,
-		errorHandler ))
+	if (!pythonObject_.setAttribute(key_.c_str(), scriptObject, errorHandler))
 	{
 		return false;
 	}
 
-	type_ = PythonType::scriptTypeToTypeId( scriptObject );
+	type_ = PythonType::scriptTypeToTypeId(scriptObject);
 	return true;
 }
 
-
-Variant Property::Implementation::getValue( const ObjectHandle & handle )
+Variant Property::Implementation::getValue(const ObjectHandle& handle)
 {
-#if defined( _DEBUG )
-	auto pInstance = handle.getBase< DefinedInstance >();
-	assert( pInstance != nullptr );
-	assert( pInstance->pythonObject().compareTo( pythonObject_,
-		PyScript::ScriptErrorPrint() ) == 0 );
+#if defined(_DEBUG)
+	auto pInstance = handle.getBase<DefinedInstance>();
+	assert(pInstance != nullptr);
+	assert(pInstance->pythonObject().compareTo(pythonObject_, PyScript::ScriptErrorPrint()) == 0);
 #endif // defined( _DEBUG )
 
 	PyScript::ScriptErrorPrint errorHandler;
 
 	// Get the attribute
-	PyScript::ScriptObject attribute = pythonObject_.getAttribute(
-		key_.c_str(),
-		errorHandler );
+	PyScript::ScriptObject attribute = pythonObject_.getAttribute(key_.c_str(), errorHandler);
 
-	auto pTypeConverters = get< PythonType::Converters >();
-	assert( pTypeConverters != nullptr );
+	auto pTypeConverters = get<PythonType::Converters>();
+	assert(pTypeConverters != nullptr);
 
 	Variant value;
-	const bool success = pTypeConverters->toVariant( attribute, value, handle, key_ );
-	assert( success );
+	const bool success = pTypeConverters->toVariant(attribute, value, handle, key_);
+	assert(success);
 	return value;
 }
 
-void Property::Implementation::updatePropertyData(const char* name, 
-                                                  const PyScript::ScriptObject& pythonObject, 
+void Property::Implementation::updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject,
                                                   MetaHandle metaData)
 {
-    key_ = name;
-    metaData_ = metaData;
-    pythonObject_ = pythonObject;
-    hash_ = HashUtilities::compute(key_);
-    updatePropertyType();
+	key_ = name;
+	metaData_ = metaData;
+	pythonObject_ = pythonObject;
+	hash_ = HashUtilities::compute(key_);
+	updatePropertyType();
 }
 
 void Property::Implementation::updatePropertyType()
 {
-    const auto attribute = pythonObject_.getAttribute(key_.c_str(),
-        PyScript::ScriptErrorPrint());
-    assert(attribute.exists());
-    type_ = PythonType::scriptTypeToTypeId(attribute);
+	const auto attribute = pythonObject_.getAttribute(key_.c_str(), PyScript::ScriptErrorPrint());
+	assert(attribute.exists());
+	type_ = PythonType::scriptTypeToTypeId(attribute);
 }
 
-
-Property::Property( IComponentContext & context,
-	const char * key,
-	const PyScript::ScriptObject & pythonObject,
-    MetaHandle metaData )
-	: IBaseProperty()
-	, impl_( new Implementation( context, key, pythonObject, metaData ) )
+Property::Property(IComponentContext& context, const char* key, const PyScript::ScriptObject& pythonObject,
+                   MetaHandle metaData)
+    : IBaseProperty(), impl_(new Implementation(context, key, pythonObject, metaData))
 {
 }
 
-
-Property::Property( IComponentContext & context,
-	const char * key,
-	const TypeId & typeId,
-	const PyScript::ScriptObject & pythonObject,
-    MetaHandle metaData )
-	: IBaseProperty()
-	, impl_( new Implementation( context, key, typeId, pythonObject, metaData ) )
+Property::Property(IComponentContext& context, const char* key, const TypeId& typeId,
+                   const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
+    : IBaseProperty(), impl_(new Implementation(context, key, typeId, pythonObject, metaData))
 {
 }
 
-
-const TypeId & Property::getType() const /* override */
+const TypeId& Property::getType() const /* override */
 {
 	return impl_->type_;
 }
 
-
-const char * Property::getName() const /* override */
+const char* Property::getName() const /* override */
 {
 	return impl_->key_.c_str();
 }
-
 
 uint64_t Property::getNameHash() const /* override */
 {
 	return impl_->hash_;
 }
 
-
 MetaHandle Property::getMetaData() const /* override */
 {
 	return impl_->metaData_;
 }
-
 
 bool Property::readOnly() const /* override */
 {
@@ -201,15 +156,12 @@ bool Property::readOnly() const /* override */
 	return false;
 }
 
-
 bool Property::isMethod() const /* override */
 {
 	// Get the attribute
 	PyScript::ScriptErrorPrint errorHandler;
-	PyScript::ScriptObject attribute = impl_->pythonObject_.getAttribute(
-		impl_->key_.c_str(),
-		errorHandler );
-	assert( attribute.exists() );
+	PyScript::ScriptObject attribute = impl_->pythonObject_.getAttribute(impl_->key_.c_str(), errorHandler);
+	assert(attribute.exists());
 	if (!attribute.exists())
 	{
 		return false;
@@ -224,92 +176,74 @@ bool Property::isMethod() const /* override */
 	return attribute.isCallable();
 }
 
-
 bool Property::isValue() const /* override */
 {
 	// Attribute must exist
 	return true;
 }
 
-
-bool Property::set( const ObjectHandle & handle,
-	const Variant & value,
-	const IDefinitionManager & definitionManager ) const /* override */
+bool Property::set(const ObjectHandle& handle, const Variant& value,
+                   const IDefinitionManager& definitionManager) const /* override */
 {
-	return impl_->setValue( value );
+	return impl_->setValue(value);
 }
 
-
-Variant Property::get( const ObjectHandle & handle,
-	const IDefinitionManager & definitionManager ) const /* override */
+Variant Property::get(const ObjectHandle& handle, const IDefinitionManager& definitionManager) const /* override */
 {
-	return impl_->getValue( handle );
+	return impl_->getValue(handle);
 }
 
-
-Variant Property::invoke( const ObjectHandle& object,
-	const IDefinitionManager & definitionManager,
-	const ReflectedMethodParameters& parameters ) /* override */
+Variant Property::invoke(const ObjectHandle& object, const IDefinitionManager& definitionManager,
+                         const ReflectedMethodParameters& parameters) /* override */
 {
 	const bool callable = this->isMethod();
-	assert( callable );
+	assert(callable);
 	if (!callable)
 	{
 		return Variant();
 	}
 
-	auto pTypeConverters = impl_->get< PythonType::Converters >();
-	assert( pTypeConverters != nullptr );
+	auto pTypeConverters = impl_->get<PythonType::Converters>();
+	assert(pTypeConverters != nullptr);
 
 	// Parse arguments
-	auto tuple = PyScript::ScriptTuple::create( parameters.size() );
+	auto tuple = PyScript::ScriptTuple::create(parameters.size());
 	size_t i = 0;
 
-	for (auto itr = parameters.cbegin();
-		(i < parameters.size()) && (itr != parameters.cend());
-		++i, ++itr)
+	for (auto itr = parameters.cbegin(); (i < parameters.size()) && (itr != parameters.cend()); ++i, ++itr)
 	{
 		auto parameter = (*itr);
 		PyScript::ScriptObject scriptObject;
-		const bool success = pTypeConverters->toScriptType( parameter, scriptObject );
-		assert( success );
-		tuple.setItem( i, scriptObject );
+		const bool success = pTypeConverters->toScriptType(parameter, scriptObject);
+		assert(success);
+		tuple.setItem(i, scriptObject);
 	}
 
-	PyScript::ScriptArgs args = PyScript::ScriptArgs( tuple.get(),
-		PyScript::ScriptObject::FROM_BORROWED_REFERENCE );
+	PyScript::ScriptArgs args = PyScript::ScriptArgs(tuple.get(), PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
 
 	// Call method
 	PyScript::ScriptErrorPrint errorHandler;
 	const bool allowNullMethod = false;
-	PyScript::ScriptObject returnValue = impl_->pythonObject_.callMethod(
-		impl_->key_.c_str(),
-		args,
-		errorHandler,
-		allowNullMethod );
+	PyScript::ScriptObject returnValue =
+	impl_->pythonObject_.callMethod(impl_->key_.c_str(), args, errorHandler, allowNullMethod);
 
 	// Return value
 	Variant result;
 
 	if (returnValue.exists())
 	{
-		const bool success = pTypeConverters->toVariant( returnValue,
-			result,
-			object,
-			impl_->key_ );
-		assert( success );
+		const bool success = pTypeConverters->toVariant(returnValue, result, object, impl_->key_);
+		assert(success);
 	}
 
 	return result;
 }
 
-
 size_t Property::parameterCount() const /* override */
 {
-	PyScript::ScriptObject attribute = impl_->pythonObject_.getAttribute(
-		impl_->key_.c_str(),
-		PyScript::ScriptErrorPrint() );
-	assert( attribute.exists() );
+	PyScript::ScriptObject attribute =
+	impl_->pythonObject_.getAttribute(impl_->key_.c_str(), PyScript::ScriptErrorPrint());
+	assert(attribute.exists());
 	if (!attribute.exists())
 	{
 		return 0;
@@ -321,37 +255,37 @@ size_t Property::parameterCount() const /* override */
 	}
 
 	// -- Old-style class instance.__call__(self)
-	if (PyScript::ScriptInstance::check( attribute ))
+	if (PyScript::ScriptInstance::check(attribute))
 	{
-		auto callObject = attribute.getAttribute( "__call__", PyScript::ScriptErrorClear() );
+		auto callObject = attribute.getAttribute("__call__", PyScript::ScriptErrorClear());
 		if (!callObject.exists())
 		{
 			return 0;
 		}
 
 		// Convert __call__(self) method object to a function()
-		auto methodObject = PyScript::ScriptMethod::create( callObject );
-		assert( methodObject.exists() );
+		auto methodObject = PyScript::ScriptMethod::create(callObject);
+		assert(methodObject.exists());
 
 		auto functionObject = methodObject.function();
-		assert( functionObject.exists() );
+		assert(functionObject.exists());
 
 		// Convert function to code and get arg count
 		auto codeObject = functionObject.code();
-		assert( codeObject.exists() );
+		assert(codeObject.exists());
 
 		const auto argCount = codeObject.argCount();
 
 		// Methods subtract 1 argument for "self".
 		const int selfArg = 1;
-		assert( argCount > 0 );
+		assert(argCount > 0);
 		return (argCount - selfArg);
 	}
 
 	// -- Old-style class constructor instance(self)
-	if (PyScript::ScriptClass::check( attribute ))
+	if (PyScript::ScriptClass::check(attribute))
 	{
-		auto initObject = attribute.getAttribute( "__init__", PyScript::ScriptErrorClear() );
+		auto initObject = attribute.getAttribute("__init__", PyScript::ScriptErrorClear());
 		if (!initObject.exists())
 		{
 			// Default __init__(self)
@@ -359,94 +293,94 @@ size_t Property::parameterCount() const /* override */
 		}
 
 		// Convert __init__(self) method object to a function()
-		auto methodObject = PyScript::ScriptMethod::create( initObject );
-		assert( methodObject.exists() );
+		auto methodObject = PyScript::ScriptMethod::create(initObject);
+		assert(methodObject.exists());
 
 		auto functionObject = methodObject.function();
-		assert( functionObject.exists() );
+		assert(functionObject.exists());
 
 		// Convert function to code and get arg count
 		auto codeObject = functionObject.code();
-		assert( codeObject.exists() );
+		assert(codeObject.exists());
 
 		const auto argCount = codeObject.argCount();
 
 		// Methods subtract 1 argument for "self".
 		const int selfArg = 1;
-		assert( argCount > 0 );
+		assert(argCount > 0);
 		return (argCount - selfArg);
 	}
 
 	// -- Method like self.function(self)
-	auto methodObject = PyScript::ScriptMethod::create( attribute );
+	auto methodObject = PyScript::ScriptMethod::create(attribute);
 	if (methodObject.exists())
 	{
 		// Convert self.function() method object to a function()
 		auto functionObject = methodObject.function();
-		assert( functionObject.exists() );
+		assert(functionObject.exists());
 
 		// Convert function to code and get arg count
 		auto codeObject = functionObject.code();
-		assert( codeObject.exists() );
+		assert(codeObject.exists());
 
 		const auto argCount = codeObject.argCount();
 
 		// Methods subtract 1 argument for "self".
 		const int selfArg = 1;
-		assert( argCount > 0 );
+		assert(argCount > 0);
 		return (argCount - selfArg);
 	}
 
 	// -- Plain function or lambda type
-	auto functionObject = PyScript::ScriptFunction::create( attribute );
+	auto functionObject = PyScript::ScriptFunction::create(attribute);
 	if (functionObject.exists())
 	{
 		auto codeObject = functionObject.code();
-		assert( codeObject.exists() );
+		assert(codeObject.exists());
 		return codeObject.argCount();
 	}
 
 	// -- New-style class instance.__call__(self)
-	auto callObject = attribute.getAttribute( "__call__", PyScript::ScriptErrorClear() );
+	auto callObject = attribute.getAttribute("__call__", PyScript::ScriptErrorClear());
 
 	// Convert __call__(self) method object to a function()
-	methodObject = PyScript::ScriptMethod::create( callObject );
+	methodObject = PyScript::ScriptMethod::create(callObject);
 	if (methodObject.exists())
 	{
 		// Convert function to code and get arg count
 		functionObject = methodObject.function();
-		assert( functionObject.exists() );
+		assert(functionObject.exists());
 
 		auto codeObject = functionObject.code();
-		assert( codeObject.exists() );
+		assert(codeObject.exists());
 
 		const auto argCount = codeObject.argCount();
 
 		// Methods subtract 1 argument for "self".
 		const int selfArg = 1;
-		assert( argCount > 0 );
+		assert(argCount > 0);
 		return (argCount - selfArg);
 	}
 
 	// -- New-style class constructor instance.__init__(self)
-	auto initObject = attribute.getAttribute( "__init__", PyScript::ScriptErrorClear() );
+	auto initObject = attribute.getAttribute("__init__", PyScript::ScriptErrorClear());
 
 	// Convert __init__(self) method object to a function()
-	methodObject = PyScript::ScriptMethod::create( initObject );
+	methodObject = PyScript::ScriptMethod::create(initObject);
 	if (methodObject.exists())
 	{
 		// Convert function to code and get arg count
 		functionObject = methodObject.function();
-		assert( functionObject.exists() );
+		assert(functionObject.exists());
 
 		auto codeObject = functionObject.code();
-		assert( codeObject.exists() );
+		assert(codeObject.exists());
 
 		const auto argCount = codeObject.argCount();
 
 		// Methods subtract 1 argument for "self".
 		const int selfArg = 1;
-		assert( argCount > 0 );
+		assert(argCount > 0);
 		return (argCount - selfArg);
 	}
 
@@ -456,9 +390,8 @@ size_t Property::parameterCount() const /* override */
 
 void Property::updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
 {
-    impl_->updatePropertyData(name, pythonObject, metaData);
+	impl_->updatePropertyData(name, pythonObject, metaData);
 }
-
 
 } // namespace ReflectedPython
 } // end namespace wgt

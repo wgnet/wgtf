@@ -9,26 +9,21 @@
 #include "commands/metadata/set_item_data_command_arg.mpp"
 #include "core_reflection/i_definition_manager.hpp"
 
-
 namespace wgt
 {
-
 namespace ItemModelCommands
 {
-
-void registerTypes( IDefinitionManager & definitionManager )
+void registerTypes(IDefinitionManager& definitionManager)
 {
 	REGISTER_DEFINITION(InsertDefaultCommandArgument);
 	REGISTER_DEFINITION(InsertItemCommandArgument);
 	REGISTER_DEFINITION(InsertRowsCommandArgument);
-	REGISTER_DEFINITION( MoveItemDataCommandArgument );
+	REGISTER_DEFINITION(MoveItemDataCommandArgument);
 	REGISTER_DEFINITION(RemoveItemCommandArgument);
 	REGISTER_DEFINITION(RemoveRowsCommandArgument);
-	REGISTER_DEFINITION( SetItemDataCommandArgument );
-	REGISTER_DEFINITION( SetModelDataCommandArgument );
+	REGISTER_DEFINITION(SetItemDataCommandArgument);
+	REGISTER_DEFINITION(SetModelDataCommandArgument);
 }
-
 }
 
 } // end namespace wgt
-

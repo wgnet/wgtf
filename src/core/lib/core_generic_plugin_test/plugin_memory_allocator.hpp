@@ -6,23 +6,23 @@
 
 namespace wgt
 {
-class PluginMemoryAllocator
-	: public Implements< IMemoryAllocator >
+class PluginMemoryAllocator : public Implements<IMemoryAllocator>
 {
 public:
-	PluginMemoryAllocator( const wchar_t * name );
+	PluginMemoryAllocator(const wchar_t* name);
 	~PluginMemoryAllocator();
 
-	void * mem_new( size_t size );
-	void * mem_new( size_t size, const std::nothrow_t & throwable );
-	void * mem_new_array( size_t size );
-	void * mem_new_array( size_t size, const std::nothrow_t & throwable );
-	void mem_delete( void* ptr );
-	void mem_delete( void* ptr, const std::nothrow_t & throwable );
-	void mem_delete_array( void* ptr );
-	void mem_delete_array( void* ptr, const std::nothrow_t & throwable );
+	void* mem_new(size_t size);
+	void* mem_new(size_t size, const std::nothrow_t& throwable);
+	void* mem_new_array(size_t size);
+	void* mem_new_array(size_t size, const std::nothrow_t& throwable);
+	void mem_delete(void* ptr);
+	void mem_delete(void* ptr, const std::nothrow_t& throwable);
+	void mem_delete_array(void* ptr);
+	void mem_delete_array(void* ptr, const std::nothrow_t& throwable);
+
 private:
-	void * memoryContext_;
+	void* memoryContext_;
 };
 } // end namespace wgt
-#endif //PLUGIN_MEMORY_ALLOCATOR_HPP
+#endif // PLUGIN_MEMORY_ALLOCATOR_HPP

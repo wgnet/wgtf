@@ -8,18 +8,18 @@
 
 namespace wgt
 {
-ITEMROLE( image )
+ITEMROLE(image)
 
 ImageExtension::ImageExtension()
 {
-	roles_.push_back( ItemRole::imageName );
+	roles_.push_back(ItemRole::imageName);
 }
 
 ImageExtension::~ImageExtension()
 {
 }
 
-QVariant ImageExtension::data( const QModelIndex &index, ItemRole::Id roleId ) const
+QVariant ImageExtension::data(const QModelIndex& index, ItemRole::Id roleId) const
 {
 	if (roleId != ItemRole::imageId)
 	{
@@ -36,7 +36,7 @@ QVariant ImageExtension::data( const QModelIndex &index, ItemRole::Id roleId ) c
 	auto imageProvider = dynamic_cast<QtImageProvider*>(qtFramework->qmlEngine()->imageProvider(id));
 	if (imageProvider == nullptr)
 	{
-		return QVariant( QVariant::Invalid );
+		return QVariant(QVariant::Invalid);
 	}
 
 	auto decoration = extensionData_->data(index, ItemRole::decorationId);
@@ -74,6 +74,6 @@ QVariant ImageExtension::data( const QModelIndex &index, ItemRole::Id roleId ) c
 		return imageProvider->encode(image);
 	}
 
-	return QVariant( QVariant::Invalid );
+	return QVariant(QVariant::Invalid);
 }
 } // end namespace wgt

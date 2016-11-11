@@ -1,7 +1,6 @@
 #include "collection.hpp"
 #include <cassert>
 
-
 namespace wgt
 {
 CollectionIteratorImplPtr CollectionImplBase::insert(const Variant& key)
@@ -16,10 +15,9 @@ Collection::ConstIterator& Collection::ConstIterator::operator++()
 	return *this;
 }
 
-
 bool Collection::ConstIterator::operator==(const Collection::ConstIterator& that) const
 {
-	if(impl_ && that.impl_)
+	if (impl_ && that.impl_)
 	{
 		return impl_->equals(*that.impl_);
 	}
@@ -29,42 +27,34 @@ bool Collection::ConstIterator::operator==(const Collection::ConstIterator& that
 	}
 }
 
-
 void Collection::ConstIterator::detach()
 {
-	if(impl_ && !impl_.unique())
+	if (impl_ && !impl_.unique())
 	{
 		impl_ = impl_->clone();
 	}
 }
-
 
 bool Collection::isValid() const
 {
 	return impl_.get() != nullptr;
 }
 
-
 const TypeId& Collection::keyType() const
 {
 	return impl_->keyType();
 }
-
 
 const TypeId& Collection::valueType() const
 {
 	return impl_->valueType();
 }
 
-
-bool Collection::isSame( const void* container ) const
+bool Collection::isSame(const void* container) const
 {
-	return
-		impl_ &&
-		container && // never match nullptr
-		impl_->container() == container;
+	return impl_ && container && // never match nullptr
+	impl_->container() == container;
 }
-
 
 bool Collection::empty() const
 {
@@ -78,10 +68,9 @@ bool Collection::empty() const
 	}
 }
 
-
 size_t Collection::size() const
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->size();
 	}
@@ -91,10 +80,9 @@ size_t Collection::size() const
 	}
 }
 
-
 Collection::Iterator Collection::begin()
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->begin();
 	}
@@ -103,11 +91,10 @@ Collection::Iterator Collection::begin()
 		return Iterator();
 	}
 }
-
 
 Collection::ConstIterator Collection::begin() const
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->begin();
 	}
@@ -117,10 +104,9 @@ Collection::ConstIterator Collection::begin() const
 	}
 }
 
-
 Collection::Iterator Collection::end()
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->end();
 	}
@@ -129,11 +115,10 @@ Collection::Iterator Collection::end()
 		return Iterator();
 	}
 }
-
 
 Collection::ConstIterator Collection::end() const
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->end();
 	}
@@ -143,10 +128,9 @@ Collection::ConstIterator Collection::end() const
 	}
 }
 
-
 Collection::Iterator Collection::find(const Variant& key)
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->get(key, CollectionImplBase::GET_EXISTING).first;
 	}
@@ -156,10 +140,9 @@ Collection::Iterator Collection::find(const Variant& key)
 	}
 }
 
-
 Collection::ConstIterator Collection::find(const Variant& key) const
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->get(key, CollectionImplBase::GET_EXISTING).first;
 	}
@@ -169,10 +152,9 @@ Collection::ConstIterator Collection::find(const Variant& key) const
 	}
 }
 
-
 Collection::Iterator Collection::insert(const Variant& key)
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->get(key, CollectionImplBase::GET_NEW).first;
 	}
@@ -196,7 +178,7 @@ Collection::Iterator Collection::insertValue(const Variant& key, const Variant& 
 
 std::pair<Collection::Iterator, bool> Collection::get(const Variant& key)
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->get(key, CollectionImplBase::GET_AUTO);
 	}
@@ -206,10 +188,9 @@ std::pair<Collection::Iterator, bool> Collection::get(const Variant& key)
 	}
 }
 
-
 Collection::Iterator Collection::erase(const Iterator& pos)
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->erase(pos.impl());
 	}
@@ -219,10 +200,9 @@ Collection::Iterator Collection::erase(const Iterator& pos)
 	}
 }
 
-
 size_t Collection::eraseKey(const Variant& key)
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->eraseKey(key);
 	}
@@ -232,10 +212,9 @@ size_t Collection::eraseKey(const Variant& key)
 	}
 }
 
-
 Collection::Iterator Collection::erase(const Iterator& first, const Iterator& last)
 {
-	if(impl_)
+	if (impl_)
 	{
 		return impl_->erase(first.impl(), last.impl());
 	}
@@ -245,7 +224,6 @@ Collection::Iterator Collection::erase(const Iterator& first, const Iterator& la
 	}
 }
 
-
 Collection::ValueRef Collection::operator[](const Variant& key)
 {
 	assert(impl_);
@@ -253,14 +231,12 @@ Collection::ValueRef Collection::operator[](const Variant& key)
 	return impl_->get(key, CollectionImplBase::GET_AUTO).first;
 }
 
-
 const Variant Collection::operator[](const Variant& key) const
 {
 	assert(impl_);
 
 	return impl_->get(key, CollectionImplBase::GET_EXISTING).first->value();
 }
-
 
 bool Collection::operator==(const Collection& that) const
 {
@@ -284,8 +260,7 @@ bool Collection::operator==(const Collection& that) const
 	auto thatIt = that.impl_->begin();
 	for (size_t i = 0; i < size; ++i)
 	{
-		if (thisIt->key() != thatIt->key() ||
-			thisIt->value() != thatIt->value())
+		if (thisIt->key() != thatIt->key() || thisIt->value() != thatIt->value())
 		{
 			return false;
 		}
@@ -297,10 +272,9 @@ bool Collection::operator==(const Collection& that) const
 	return true;
 }
 
-
 int Collection::flags() const
 {
-	if( impl_ )
+	if (impl_)
 	{
 		return impl_->flags();
 	}
@@ -310,12 +284,11 @@ int Collection::flags() const
 	}
 }
 
-
-Connection Collection::connectPreInsert( ElementRangeCallback callback )
+Connection Collection::connectPreInsert(ElementRangeCallback callback)
 {
-	if( impl_ )
+	if (impl_)
 	{
-		return impl_->connectPreInsert( callback );
+		return impl_->connectPreInsert(callback);
 	}
 	else
 	{
@@ -323,12 +296,11 @@ Connection Collection::connectPreInsert( ElementRangeCallback callback )
 	}
 }
 
-
-Connection Collection::connectPostInserted( ElementRangeCallback callback )
+Connection Collection::connectPostInserted(ElementRangeCallback callback)
 {
-	if( impl_ )
+	if (impl_)
 	{
-		return impl_->connectPostInserted( callback );
+		return impl_->connectPostInserted(callback);
 	}
 	else
 	{
@@ -336,12 +308,11 @@ Connection Collection::connectPostInserted( ElementRangeCallback callback )
 	}
 }
 
-
-Connection Collection::connectPreErase( ElementRangeCallback callback )
+Connection Collection::connectPreErase(ElementRangeCallback callback)
 {
-	if( impl_ )
+	if (impl_)
 	{
-		return impl_->connectPreErase( callback );
+		return impl_->connectPreErase(callback);
 	}
 	else
 	{
@@ -349,12 +320,11 @@ Connection Collection::connectPreErase( ElementRangeCallback callback )
 	}
 }
 
-
-Connection Collection::connectPostErased( ElementRangeCallback callback)
+Connection Collection::connectPostErased(ElementRangeCallback callback)
 {
-	if( impl_ )
+	if (impl_)
 	{
-		return impl_->connectPostErased( callback );
+		return impl_->connectPostErased(callback);
 	}
 	else
 	{
@@ -362,12 +332,11 @@ Connection Collection::connectPostErased( ElementRangeCallback callback)
 	}
 }
 
-
-Connection Collection::connectPreChange( ElementPreChangeCallback callback )
+Connection Collection::connectPreChange(ElementPreChangeCallback callback)
 {
-	if( impl_ )
+	if (impl_)
 	{
-		return impl_->connectPreChange( callback );
+		return impl_->connectPreChange(callback);
 	}
 	else
 	{
@@ -375,12 +344,11 @@ Connection Collection::connectPreChange( ElementPreChangeCallback callback )
 	}
 }
 
-
-Connection Collection::connectPostChanged( ElementPostChangedCallback callback )
+Connection Collection::connectPostChanged(ElementPostChangedCallback callback)
 {
-	if( impl_ )
+	if (impl_)
 	{
-		return impl_->connectPostChanged( callback );
+		return impl_->connectPostChanged(callback);
 	}
 	else
 	{

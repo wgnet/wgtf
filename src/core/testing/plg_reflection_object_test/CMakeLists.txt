@@ -5,7 +5,6 @@ ADD_DEFINITIONS( -DNOMINMAX )
 
 INCLUDE( WGToolsCoreProject )
 
-find_package(QT5)
 
 REMOVE_DEFINITIONS( /WX )
 ADD_DEFINITIONS(
@@ -30,7 +29,6 @@ BW_TARGET_LINK_LIBRARIES( plg_reflection_object_test PRIVATE
 	core_generic_plugin
 	core_reflection
 	reflection_objects_test
-    Qt5::Core
 )
 
 BW_PROJECT_CATEGORY( plg_reflection_object_test "Plugins" )

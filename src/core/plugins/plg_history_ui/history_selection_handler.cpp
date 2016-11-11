@@ -2,7 +2,6 @@
 #include "core_variant/variant.hpp"
 #include "core_variant/collection.hpp"
 
-
 namespace wgt
 {
 //==============================================================================
@@ -10,22 +9,19 @@ HistorySelectionHandler::HistorySelectionHandler()
 {
 }
 
-
 //==============================================================================
 HistorySelectionHandler::~HistorySelectionHandler()
 {
 }
 
-
 //==============================================================================
-void HistorySelectionHandler::setSelection( const HistorySelectionHandler::Selection & selectionCollection )
+void HistorySelectionHandler::setSelection(const HistorySelectionHandler::Selection& selectionCollection)
 {
 	selectionSet_ = selectionCollection;
 }
 
-
 //==============================================================================
-const HistorySelectionHandler::Selection & HistorySelectionHandler::getSelection() const
+const HistorySelectionHandler::Selection& HistorySelectionHandler::getSelection() const
 {
 	return selectionSet_;
 }

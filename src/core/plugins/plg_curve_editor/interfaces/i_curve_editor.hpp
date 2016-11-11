@@ -27,10 +27,10 @@ namespace wgt
 class ICurve;
 typedef std::shared_ptr<ICurve> ICurvePtr;
 
-#define SET_REFLECTED_PROPERTY(prop) \
+#define SET_REFLECTED_PROPERTY(prop)                                                                \
 	auto definition = Context::queryInterface<IDefinitionManager>()->getDefinition<ICurveEditor>(); \
-	auto handle = ObjectHandleT<ICurveEditor>(this, definition); \
-	PropertyAccessor pa = definition->bindProperty(#prop, handle); \
+	auto handle = ObjectHandleT<ICurveEditor>(this, definition);                                    \
+	PropertyAccessor pa = definition->bindProperty(#prop, handle);                                  \
 	pa.setValue(prop);
 
 struct ScaleChangeData
@@ -42,8 +42,11 @@ struct ScaleChangeData
 class ICurveEditor
 {
 	DECLARE_REFLECTED;
+
 public:
-	virtual ~ICurveEditor(){}
+	virtual ~ICurveEditor()
+	{
+	}
 
 	virtual bool addCurve(ICurvePtr /*curve*/) = 0;
 
@@ -54,7 +57,7 @@ public:
 	virtual const std::string& getSubTitle() const = 0;
 
 	virtual const float& getXScale() const = 0;
-	
+
 	virtual const float& getYScale() const = 0;
 
 	virtual const bool& getTimeScaleEditEnabled() const = 0;
@@ -65,7 +68,7 @@ public:
 	{
 		SET_REFLECTED_PROPERTY(subTitle);
 	}
-	
+
 	void setXScale(const float& xScale)
 	{
 		SET_REFLECTED_PROPERTY(xScale);
@@ -83,7 +86,7 @@ public:
 
 	typedef std::function<void(ScaleChangeData)> ScaleChangeCallback;
 	virtual void connectOnScaleChange(ScaleChangeCallback) = 0;
-	
+
 private:
 	virtual const IListModel* getCurves() const = 0;
 
@@ -94,7 +97,6 @@ private:
 	virtual void putYScale(const float&) = 0;
 
 	virtual void putTimeScaleEditEnabled(const bool&) = 0;
-
 };
 } // end namespace wgt
 #endif // i_curve_editor_H_

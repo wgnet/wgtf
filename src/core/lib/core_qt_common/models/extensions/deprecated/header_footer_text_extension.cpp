@@ -5,24 +5,21 @@
 #include "core_qt_common/models/wg_list_model.hpp"
 #include "core_qt_common/models/wg_tree_model.hpp"
 
-
 namespace wgt
 {
 HeaderFooterTextExtension::HeaderFooterTextExtension()
 {
 }
 
-
 HeaderFooterTextExtension::~HeaderFooterTextExtension()
 {
 }
 
-
 QHash<int, QByteArray> HeaderFooterTextExtension::roleNames() const
 {
-	QHash< int, QByteArray > roleNames;
-	registerRole( headerTextRole::roleName_, roleNames );
-	registerRole( footerTextRole::roleName_, roleNames );
+	QHash<int, QByteArray> roleNames;
+	registerRole(headerTextRole::roleName_, roleNames);
+	registerRole(footerTextRole::roleName_, roleNames);
 	return roleNames;
 }
 } // end namespace wgt

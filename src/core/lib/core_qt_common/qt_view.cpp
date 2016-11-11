@@ -6,10 +6,7 @@
 namespace wgt
 {
 QtView::QtView(const char* id, IQtFramework& qtFramework, QIODevice& source)
-    : id_(id)
-    , qtFramework_(qtFramework)
-    , widgetView_(nullptr)
-    , released_(false)
+    : qtFramework_(qtFramework), widgetView_(nullptr), id_(id), released_(false)
 {
 	QUiLoader loader;
 

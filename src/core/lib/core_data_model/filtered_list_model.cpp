@@ -59,7 +59,6 @@ change, and a postDataChange after the change.
 This is to tell the view to update its data.
 */
 
-
 #include "filtered_list_model.hpp"
 #include "core_variant/variant.hpp"
 #include <algorithm>
@@ -81,52 +80,49 @@ struct FilteredListModel::Implementation
 		IGNORE
 	};
 
-	typedef std::vector< size_t > IndexMap;
+	typedef std::vector<size_t> IndexMap;
 
-	Implementation( FilteredListModel & self );
-	Implementation( FilteredListModel & self, const FilteredListModel::Implementation & rhs );
+	Implementation(FilteredListModel& self);
+	Implementation(FilteredListModel& self, const FilteredListModel::Implementation& rhs);
 	~Implementation();
 
 	void initialize();
 	void haltRemapping();
 
-	void setSource( IListModel * source );
+	void setSource(IListModel* source);
 
 	void mapIndices();
 	void remapIndices();
-	void copyIndices( IndexMap& target ) const;
+	void copyIndices(IndexMap& target) const;
 
-	void removeIndex( size_t index );
-	void insertIndex( size_t index, size_t sourceIndex );
-	void findItemsToRemove( size_t sourceIndex, size_t sourceCount, size_t& removeFrom, size_t& removeCount );
+	void removeIndex(size_t index);
+	void insertIndex(size_t index, size_t sourceIndex);
+	void findItemsToRemove(size_t sourceIndex, size_t sourceCount, size_t& removeFrom, size_t& removeCount);
 
-	FilterUpdateType checkUpdateType( size_t sourceIndex , size_t& newIndex ) const;
+	FilterUpdateType checkUpdateType(size_t sourceIndex, size_t& newIndex) const;
 
-	void preItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
-	void postItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data );
-	void preItemsInserted( size_t index, size_t count );
-	void postItemsInserted( size_t index, size_t count );
-	void preItemsRemoved( size_t index, size_t count );
-	void postItemsRemoved( size_t index, size_t count );
+	void preItemDataChanged(const IItem* item, int column, ItemRole::Id roleId, const Variant& data);
+	void postItemDataChanged(const IItem* item, int column, ItemRole::Id roleId, const Variant& data);
+	void preItemsInserted(size_t index, size_t count);
+	void postItemsInserted(size_t index, size_t count);
+	void preItemsRemoved(size_t index, size_t count);
+	void postItemsRemoved(size_t index, size_t count);
 	void onDestructing();
 
 	/// Is the item found by invoking filterFound_ function
-	bool filterMatched( const IItem * item ) const;
+	bool filterMatched(const IItem* item) const;
 
 	struct UpdateData
 	{
-		UpdateData()
-			: index_( 0 ), count_( 0 ), valid_( false )
-		{}
-
-		void set(
-			size_t index = 0,
-			size_t count = 0,
-			bool valid = false )
+		UpdateData() : index_(0), count_(0), valid_(false)
 		{
-			index_	= index;
-			count_	= count;
-			valid_	= valid;
+		}
+
+		void set(size_t index = 0, size_t count = 0, bool valid = false)
+		{
+			index_ = index;
+			count_ = count;
+			valid_ = valid;
 		}
 
 		size_t index_;
@@ -134,9 +130,9 @@ struct FilteredListModel::Implementation
 		bool valid_;
 	} lastUpdateData_;
 
-	FilteredListModel & self_;
-	IListModel * model_;
-	IItemFilter * listFilter_;
+	FilteredListModel& self_;
+	IListModel* model_;
+	IItemFilter* listFilter_;
 	mutable std::recursive_mutex indexMapMutex_;
 	mutable std::mutex eventControlMutex_;
 	std::atomic_uint_fast8_t remapping_;
@@ -145,21 +141,17 @@ struct FilteredListModel::Implementation
 	ConnectionHolder connections_;
 };
 
-FilteredListModel::Implementation::Implementation( FilteredListModel & self )
-	: self_( self )
-	, model_( nullptr )
-	, listFilter_( nullptr )
+FilteredListModel::Implementation::Implementation(FilteredListModel& self)
+    : self_(self), model_(nullptr), listFilter_(nullptr)
 {
 	mapIndices();
 	initialize();
 }
 
-FilteredListModel::Implementation::Implementation( FilteredListModel & self, const FilteredListModel::Implementation & rhs )
-	: self_( self )
-	, model_( rhs.model_ )
-	, listFilter_( rhs.listFilter_ )
+FilteredListModel::Implementation::Implementation(FilteredListModel& self, const FilteredListModel::Implementation& rhs)
+    : self_(self), model_(rhs.model_), listFilter_(rhs.listFilter_)
 {
-	rhs.copyIndices( indexMap_ );
+	rhs.copyIndices(indexMap_);
 	initialize();
 }
 
@@ -182,23 +174,30 @@ void FilteredListModel::Implementation::haltRemapping()
 		std::this_thread::yield();
 	}
 
-	setSource( nullptr );
+	setSource(nullptr);
 }
 
-void FilteredListModel::Implementation::setSource( IListModel * source )
+void FilteredListModel::Implementation::setSource(IListModel* source)
 {
 	connections_.clear();
 	model_ = source;
 	if (model_ != nullptr)
 	{
 		using namespace std::placeholders;
-		connections_+= model_->signalPreItemDataChanged.connect( std::bind( &FilteredListModel::Implementation::preItemDataChanged, this, _1, _2, _3, _4 ) );
-		connections_+= model_->signalPostItemDataChanged.connect( std::bind( &FilteredListModel::Implementation::postItemDataChanged, this, _1, _2, _3, _4 ) );
-		connections_+= model_->signalPreItemsInserted.connect( std::bind( &FilteredListModel::Implementation::preItemsInserted, this, _1, _2 ) );
-		connections_+= model_->signalPostItemsInserted.connect( std::bind( &FilteredListModel::Implementation::postItemsInserted, this, _1, _2 ) );
-		connections_+= model_->signalPreItemsRemoved.connect( std::bind( &FilteredListModel::Implementation::preItemsRemoved, this, _1, _2 ) );
-		connections_+= model_->signalPostItemsRemoved.connect( std::bind( &FilteredListModel::Implementation::postItemsRemoved, this, _1, _2 ) );
-		connections_+= model_->signalDestructing.connect( std::bind( &FilteredListModel::Implementation::onDestructing, this ) );
+		connections_ += model_->signalPreItemDataChanged.connect(
+		std::bind(&FilteredListModel::Implementation::preItemDataChanged, this, _1, _2, _3, _4));
+		connections_ += model_->signalPostItemDataChanged.connect(
+		std::bind(&FilteredListModel::Implementation::postItemDataChanged, this, _1, _2, _3, _4));
+		connections_ += model_->signalPreItemsInserted.connect(
+		std::bind(&FilteredListModel::Implementation::preItemsInserted, this, _1, _2));
+		connections_ += model_->signalPostItemsInserted.connect(
+		std::bind(&FilteredListModel::Implementation::postItemsInserted, this, _1, _2));
+		connections_ += model_->signalPreItemsRemoved.connect(
+		std::bind(&FilteredListModel::Implementation::preItemsRemoved, this, _1, _2));
+		connections_ += model_->signalPostItemsRemoved.connect(
+		std::bind(&FilteredListModel::Implementation::postItemsRemoved, this, _1, _2));
+		connections_ +=
+		model_->signalDestructing.connect(std::bind(&FilteredListModel::Implementation::onDestructing, this));
 	}
 }
 
@@ -209,17 +208,17 @@ void FilteredListModel::Implementation::mapIndices()
 		return;
 	}
 
-	std::lock_guard<std::recursive_mutex> lock( indexMapMutex_ );
+	std::lock_guard<std::recursive_mutex> lock(indexMapMutex_);
 	indexMap_.clear();
 	size_t itemCount = model_->size();
 
 	for (size_t index = 0; index < itemCount; ++index)
 	{
-		const IItem * item = model_->item( index );
+		const IItem* item = model_->item(index);
 
-		if (filterMatched( item ))
+		if (filterMatched(item))
 		{
-			indexMap_.push_back( index );
+			indexMap_.push_back(index);
 		}
 	}
 }
@@ -228,16 +227,16 @@ void FilteredListModel::Implementation::remapIndices()
 {
 	++remapping_;
 	self_.onFilteringBegin();
-	std::lock_guard<std::mutex> guard( eventControlMutex_ );
+	std::lock_guard<std::mutex> guard(eventControlMutex_);
 
 	size_t modelCount = model_ == nullptr ? 0 : model_->size();
 	size_t index = 0;
 
 	for (size_t i = 0; i < modelCount; ++i)
 	{
-		const IItem* item = model_->item( i );
+		const IItem* item = model_->item(i);
 
-		bool itemInFilter = filterMatched( item );
+		bool itemInFilter = filterMatched(item);
 		bool indexInList = index < indexMap_.size() && indexMap_[index] == i;
 
 		if (itemInFilter && indexInList)
@@ -247,15 +246,15 @@ void FilteredListModel::Implementation::remapIndices()
 		}
 		else if (!itemInFilter && indexInList)
 		{
-			self_.signalPreItemsRemoved( index, 1 );
-			removeIndex( index );
-			self_.signalPostItemsRemoved( index, 1 );
+			self_.signalPreItemsRemoved(index, 1);
+			removeIndex(index);
+			self_.signalPostItemsRemoved(index, 1);
 		}
 		else if (itemInFilter)
 		{
-			self_.signalPreItemsInserted( index, 1 );
-			insertIndex( index, i );
-			self_.signalPostItemsInserted( index, 1 );
+			self_.signalPreItemsInserted(index, 1);
+			insertIndex(index, i);
+			self_.signalPostItemsInserted(index, 1);
 			++index;
 		}
 
@@ -267,7 +266,7 @@ void FilteredListModel::Implementation::remapIndices()
 
 	if (!stopRemapping_)
 	{
-		indexMap_.resize( index );
+		indexMap_.resize(index);
 	}
 
 	--remapping_;
@@ -277,37 +276,37 @@ void FilteredListModel::Implementation::remapIndices()
 	}
 }
 
-void FilteredListModel::Implementation::copyIndices( IndexMap& target ) const
+void FilteredListModel::Implementation::copyIndices(IndexMap& target) const
 {
-	std::lock( eventControlMutex_, indexMapMutex_ );
+	std::lock(eventControlMutex_, indexMapMutex_);
 	target = indexMap_;
 	indexMapMutex_.unlock();
 	eventControlMutex_.unlock();
 }
 
-void FilteredListModel::Implementation::removeIndex( size_t index )
+void FilteredListModel::Implementation::removeIndex(size_t index)
 {
-	std::lock_guard<std::recursive_mutex> guard( indexMapMutex_ );
-	indexMap_.erase( indexMap_.begin() + index );
+	std::lock_guard<std::recursive_mutex> guard(indexMapMutex_);
+	indexMap_.erase(indexMap_.begin() + index);
 }
 
-void FilteredListModel::Implementation::insertIndex( size_t index, size_t sourceIndex )
+void FilteredListModel::Implementation::insertIndex(size_t index, size_t sourceIndex)
 {
-	std::lock_guard<std::recursive_mutex> guard( indexMapMutex_ );
+	std::lock_guard<std::recursive_mutex> guard(indexMapMutex_);
 	auto itr = indexMap_.begin() + index;
-	indexMap_.insert( itr, sourceIndex );
+	indexMap_.insert(itr, sourceIndex);
 }
 
 /// Find the starting index and number of indices to remove.
-void FilteredListModel::Implementation::findItemsToRemove(
-	size_t sourceIndex, size_t sourceCount, size_t& removeFrom, size_t& removeCount )
+void FilteredListModel::Implementation::findItemsToRemove(size_t sourceIndex, size_t sourceCount, size_t& removeFrom,
+                                                          size_t& removeCount)
 {
 	size_t lastSourceIndex = sourceIndex + sourceCount - 1;
-	//size_t max = std::min( lastSourceIndex + 1, indexMap_.size() );
-	//bool foundone = false;
+	// size_t max = std::min( lastSourceIndex + 1, indexMap_.size() );
+	// bool foundone = false;
 	removeCount = 0;
 
-	auto itr = std::lower_bound( indexMap_.begin(), indexMap_.end(), sourceIndex );
+	auto itr = std::lower_bound(indexMap_.begin(), indexMap_.end(), sourceIndex);
 
 	if (itr != indexMap_.end() && *itr <= lastSourceIndex)
 	{
@@ -321,12 +320,12 @@ void FilteredListModel::Implementation::findItemsToRemove(
 }
 
 FilteredListModel::Implementation::FilterUpdateType FilteredListModel::Implementation::checkUpdateType(
-	size_t sourceIndex, size_t& newIndex ) const
+size_t sourceIndex, size_t& newIndex) const
 {
-	auto itr = std::lower_bound( indexMap_.begin(), indexMap_.end(), sourceIndex );
-	const IItem* item = model_->item( sourceIndex );
+	auto itr = std::lower_bound(indexMap_.begin(), indexMap_.end(), sourceIndex);
+	const IItem* item = model_->item(sourceIndex);
 	bool wasInFilter = itr != indexMap_.end() && *itr == sourceIndex;
-	bool nowInFilter = filterMatched( item );
+	bool nowInFilter = filterMatched(item);
 	newIndex = itr - indexMap_.begin();
 
 	if (nowInFilter && !wasInFilter)
@@ -347,72 +346,74 @@ FilteredListModel::Implementation::FilterUpdateType FilteredListModel::Implement
 	return FilterUpdateType::IGNORE;
 }
 
-void FilteredListModel::Implementation::preItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
+void FilteredListModel::Implementation::preItemDataChanged(const IItem* item, int column, ItemRole::Id roleId,
+                                                           const Variant& data)
 {
 	eventControlMutex_.lock();
-	self_.signalPreItemDataChanged( item, column, roleId, data );
+	self_.signalPreItemDataChanged(item, column, roleId, data);
 	indexMapMutex_.lock();
 }
 
-void FilteredListModel::Implementation::postItemDataChanged( const IItem * item, int column, ItemRole::Id roleId, const Variant & data )
+void FilteredListModel::Implementation::postItemDataChanged(const IItem* item, int column, ItemRole::Id roleId,
+                                                            const Variant& data)
 {
-	std::lock_guard<std::mutex> blockEvents( eventControlMutex_, std::adopt_lock );
+	std::lock_guard<std::mutex> blockEvents(eventControlMutex_, std::adopt_lock);
 	indexMapMutex_.unlock();
 
 	size_t newIndex;
-	size_t sourceIndex = model_->index( item );
-	FilterUpdateType updateType = checkUpdateType( sourceIndex, newIndex );
+	size_t sourceIndex = model_->index(item);
+	FilterUpdateType updateType = checkUpdateType(sourceIndex, newIndex);
 
-	self_.signalPostItemDataChanged( item, column, roleId, data );
+	self_.signalPostItemDataChanged(item, column, roleId, data);
 
 	switch (updateType)
 	{
 	case FilterUpdateType::INSERT:
-		self_.signalPreItemsInserted( newIndex, 1 );
-		insertIndex( newIndex, sourceIndex );
-		self_.signalPostItemsInserted( newIndex, 1 );
+		self_.signalPreItemsInserted(newIndex, 1);
+		insertIndex(newIndex, sourceIndex);
+		self_.signalPostItemsInserted(newIndex, 1);
 		break;
 
 	case FilterUpdateType::REMOVE:
-		self_.signalPreItemsRemoved( newIndex, 1 );
-		removeIndex( newIndex );
-		self_.signalPostItemsRemoved( newIndex, 1 );
+		self_.signalPreItemsRemoved(newIndex, 1);
+		removeIndex(newIndex);
+		self_.signalPostItemsRemoved(newIndex, 1);
 		break;
 	default:
 		break;
 	}
 }
 
-void FilteredListModel::Implementation::preItemsInserted( size_t index, size_t count )
+void FilteredListModel::Implementation::preItemsInserted(size_t index, size_t count)
 {
 	eventControlMutex_.lock();
 	indexMapMutex_.lock();
 }
 
-void FilteredListModel::Implementation::postItemsInserted( size_t index, size_t count )
+void FilteredListModel::Implementation::postItemsInserted(size_t index, size_t count)
 {
-	std::lock_guard<std::mutex> blockEvents( eventControlMutex_, std::adopt_lock );
+	std::lock_guard<std::mutex> blockEvents(eventControlMutex_, std::adopt_lock);
 	indexMapMutex_.unlock();
 
-	auto itr = std::lower_bound( indexMap_.begin(), indexMap_.end(), index );
+	auto itr = std::lower_bound(indexMap_.begin(), indexMap_.end(), index);
 	size_t newIndex = itr - indexMap_.begin();
 	size_t max = index + count;
 	IndexMap newIndices;
 
 	for (size_t i = index; i < max; ++i)
 	{
-		const IItem* item = model_->item( i );
+		const IItem* item = model_->item(i);
 
-		if (filterMatched( item ))
+		if (filterMatched(item))
 		{
-			newIndices.push_back( i );
+			newIndices.push_back(i);
 		}
 	}
 
 	size_t newCount = newIndices.size();
 
 	{
-		std::lock_guard<std::recursive_mutex> guard( indexMapMutex_ );
+		std::lock_guard<std::recursive_mutex> guard(indexMapMutex_);
 		max = indexMap_.size();
 
 		for (size_t i = newIndex; i < max; ++i)
@@ -423,8 +424,8 @@ void FilteredListModel::Implementation::postItemsInserted( size_t index, size_t 
 
 	if (newIndices.size() > 0)
 	{
-		self_.signalPreItemsInserted( newIndex, newCount );
-		indexMap_.resize( indexMap_.size() + newCount );
+		self_.signalPreItemsInserted(newIndex, newCount);
+		indexMap_.resize(indexMap_.size() + newCount);
 
 		for (size_t i = indexMap_.size() - 1; i >= newIndex + newCount; --i)
 		{
@@ -436,20 +437,20 @@ void FilteredListModel::Implementation::postItemsInserted( size_t index, size_t 
 			indexMap_[i] = newIndices[i - newIndex];
 		}
 
-		self_.signalPostItemsInserted( newIndex, newCount );
+		self_.signalPostItemsInserted(newIndex, newCount);
 	}
 }
 
-void FilteredListModel::Implementation::preItemsRemoved( size_t index, size_t count )
+void FilteredListModel::Implementation::preItemsRemoved(size_t index, size_t count)
 {
 	eventControlMutex_.lock();
 
-	findItemsToRemove( index, count, lastUpdateData_.index_, lastUpdateData_.count_ );
+	findItemsToRemove(index, count, lastUpdateData_.index_, lastUpdateData_.count_);
 
 	if (lastUpdateData_.count_ > 0)
 	{
 		lastUpdateData_.valid_ = true;
-		self_.signalPreItemsRemoved( lastUpdateData_.index_, lastUpdateData_.count_ );
+		self_.signalPreItemsRemoved(lastUpdateData_.index_, lastUpdateData_.count_);
 	}
 
 	indexMapMutex_.lock();
@@ -472,73 +473,73 @@ void FilteredListModel::Implementation::preItemsRemoved( size_t index, size_t co
 	}
 }
 
-void FilteredListModel::Implementation::postItemsRemoved( size_t index, size_t count )
+void FilteredListModel::Implementation::postItemsRemoved(size_t index, size_t count)
 {
-	std::lock_guard<std::mutex> blockEvents( eventControlMutex_, std::adopt_lock );
+	std::lock_guard<std::mutex> blockEvents(eventControlMutex_, std::adopt_lock);
 	indexMapMutex_.unlock();
 
 	if (lastUpdateData_.valid_)
 	{
-		self_.signalPostItemsRemoved( lastUpdateData_.index_, lastUpdateData_.count_ );
+		self_.signalPostItemsRemoved(lastUpdateData_.index_, lastUpdateData_.count_);
 		lastUpdateData_.set();
 	}
 }
 
 void FilteredListModel::Implementation::onDestructing()
 {
-	setSource( nullptr );
+	setSource(nullptr);
 }
 
-bool FilteredListModel::Implementation::filterMatched( const IItem * item ) const
+bool FilteredListModel::Implementation::filterMatched(const IItem* item) const
 {
-	bool matched = listFilter_ ? item != nullptr && listFilter_->checkFilter( item ) : true;
+	bool matched = listFilter_ ? item != nullptr && listFilter_->checkFilter(item) : true;
 	return matched;
 }
 
-FilteredListModel::FilteredListModel()
-	: impl_( new Implementation( *this ) )
-{}
+FilteredListModel::FilteredListModel() : impl_(new Implementation(*this))
+{
+}
 
-FilteredListModel::FilteredListModel( const FilteredListModel& rhs )
-	: impl_( new Implementation( *this, *rhs.impl_ ) )
-{}
+FilteredListModel::FilteredListModel(const FilteredListModel& rhs) : impl_(new Implementation(*this, *rhs.impl_))
+{
+}
 
 FilteredListModel::~FilteredListModel()
 {
-	setSource( nullptr );
+	setSource(nullptr);
 }
 
-FilteredListModel & FilteredListModel::operator=( const FilteredListModel & rhs )
+FilteredListModel& FilteredListModel::operator=(const FilteredListModel& rhs)
 {
 	if (this != &rhs)
 	{
-		impl_.reset( new Implementation( *this, *rhs.impl_ ) );
+		impl_.reset(new Implementation(*this, *rhs.impl_));
 	}
 
 	return *this;
 }
 
-IItem * FilteredListModel::item( size_t index ) const
+IItem* FilteredListModel::item(size_t index) const
 {
-	std::lock_guard<std::recursive_mutex> guard( impl_->indexMapMutex_ );
+	std::lock_guard<std::recursive_mutex> guard(impl_->indexMapMutex_);
 
 	if (index >= impl_->indexMap_.size())
 	{
 		return nullptr;
 	}
 
-	return impl_->model_->item( impl_->indexMap_[index] );
+	return impl_->model_->item(impl_->indexMap_[index]);
 }
 
-size_t FilteredListModel::index( const IItem* item ) const
+size_t FilteredListModel::index(const IItem* item) const
 {
-	std::lock_guard<std::recursive_mutex> guard( impl_->indexMapMutex_ );
+	std::lock_guard<std::recursive_mutex> guard(impl_->indexMapMutex_);
 	size_t returnIndex = 0;
 	size_t count = impl_->indexMap_.size();
 
 	for (size_t i = 0; i < count; ++i)
 	{
-		const IItem * listItem = impl_->model_->item( impl_->indexMap_[i] );
+		const IItem* listItem = impl_->model_->item(impl_->indexMap_[i]);
 
 		if (item == listItem)
 		{
@@ -552,13 +553,13 @@ size_t FilteredListModel::index( const IItem* item ) const
 
 bool FilteredListModel::empty() const
 {
-	std::lock_guard<std::recursive_mutex> guard( impl_->indexMapMutex_ );
+	std::lock_guard<std::recursive_mutex> guard(impl_->indexMapMutex_);
 	return impl_->indexMap_.empty();
 }
 
 size_t FilteredListModel::size() const
 {
-	std::lock_guard<std::recursive_mutex> guard( impl_->indexMapMutex_ );
+	std::lock_guard<std::recursive_mutex> guard(impl_->indexMapMutex_);
 	return impl_->indexMap_.size();
 }
 
@@ -572,46 +573,46 @@ int FilteredListModel::columnCount() const
 	return impl_->model_->columnCount();
 }
 
-Variant FilteredListModel::getData( int column, ItemRole::Id roleId ) const
+Variant FilteredListModel::getData(int column, ItemRole::Id roleId) const
 {
 	if (impl_->model_ == nullptr)
 	{
 		return Variant();
 	}
 
-	return impl_->model_->getData( column, roleId );
+	return impl_->model_->getData(column, roleId);
 }
 
-bool FilteredListModel::setData( int column, ItemRole::Id roleId, const Variant & data )
+bool FilteredListModel::setData(int column, ItemRole::Id roleId, const Variant& data)
 {
 	if (impl_->model_ == nullptr)
 	{
 		return false;
 	}
 
-	return impl_->model_->setData( column, roleId, data );
+	return impl_->model_->setData(column, roleId, data);
 }
 
-void FilteredListModel::setSource( IListModel * source )
+void FilteredListModel::setSource(IListModel* source)
 {
 	// Kill any current remapping going on in the background
 	impl_->haltRemapping();
 
 	// Initialize and remap the indices based on the new source
-	std::lock_guard<std::mutex> blockEvents( impl_->eventControlMutex_ );
+	std::lock_guard<std::mutex> blockEvents(impl_->eventControlMutex_);
 
 	// Set the new source
-	impl_->setSource( source );
+	impl_->setSource(source);
 
 	impl_->mapIndices();
 	impl_->initialize();
 }
 
-void FilteredListModel::setFilter( IItemFilter * filter )
+void FilteredListModel::setFilter(IItemFilter* filter)
 {
 	{
 		// wait for previous refresh to finish.
-		std::lock_guard<std::mutex> blockEvents( impl_->eventControlMutex_ );
+		std::lock_guard<std::mutex> blockEvents(impl_->eventControlMutex_);
 		impl_->listFilter_ = filter;
 	}
 
@@ -633,7 +634,7 @@ bool FilteredListModel::isFiltering() const
 	return impl_->remapping_ > 0;
 }
 
-void FilteredListModel::refresh( bool waitToFinish )
+void FilteredListModel::refresh(bool waitToFinish)
 {
 	if (impl_->model_ == nullptr)
 	{
@@ -654,7 +655,7 @@ void FilteredListModel::refresh( bool waitToFinish )
 	}
 
 	void (FilteredListModel::Implementation::*refreshMethod)() = &FilteredListModel::Implementation::remapIndices;
-	std::thread nextRefresh( std::bind( refreshMethod, impl_.get() ) );
+	std::thread nextRefresh(std::bind(refreshMethod, impl_.get()));
 	nextRefresh.detach();
 }
 } // end namespace wgt

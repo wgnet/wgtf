@@ -35,25 +35,22 @@ enum class QmlDialogState
 
 struct QmlDialog::Implementation
 {
-	Implementation(QmlDialog& self,
-	               IQtFramework& framework,
-	               IComponentContext& componentContext,
-	               QQmlEngine& engine);
+	Implementation(QmlDialog& self, IQtFramework& framework, IComponentContext& componentContext, QQmlEngine& engine);
 
 	~Implementation();
 
 	void initialise();
-	void load( const QUrl& url, QQmlComponent* component );
-	void loadCommon( const QUrl& url, QQmlComponent* component );
-	void reload( const QUrl& url, QQmlComponent* component );
+	void load(const QUrl& url, QQmlComponent* component);
+	void loadCommon(const QUrl& url, QQmlComponent* component);
+	void reload(const QUrl& url, QQmlComponent* component);
 	ObjectHandleT<DialogModel> createDefaultModel();
 	void waitForStateChangeFrom(QmlDialogState from);
 	void onClose();
 	void onShow();
 	void focusInEvent();
 	void focusOutEvent();
-	void findChildDialogs( QObject* obj );
-	void setWatched( bool isWatched, QObject* root = nullptr );
+	void findChildDialogs(QObject* obj);
+	void setWatched(bool isWatched, QObject* root = nullptr);
 
 	QmlDialog& self_;
 	IQtFramework& framework_;
@@ -75,18 +72,10 @@ struct QmlDialog::Implementation
 	bool watched_;
 };
 
-QmlDialog::Implementation::Implementation(QmlDialog& self,
-                                          IQtFramework& framework,
-                                          IComponentContext& componentContext,
+QmlDialog::Implementation::Implementation(QmlDialog& self, IQtFramework& framework, IComponentContext& componentContext,
                                           QQmlEngine& engine)
-    : self_(self)
-    , framework_(framework)
-    , componentContext_(componentContext)
-    , engine_(engine)
-    , model_(nullptr)
-    , qmlContext_(new QQmlContext(engine.rootContext()))
-    , state_(QmlDialogState::INVALID)
-	, watched_ (false)
+    : self_(self), framework_(framework), componentContext_(componentContext), engine_(engine), model_(nullptr),
+      qmlContext_(new QQmlContext(engine.rootContext())), state_(QmlDialogState::INVALID), watched_(false)
 {
 	initialise();
 }
@@ -97,7 +86,7 @@ QmlDialog::Implementation::~Implementation()
 	{
 		frame_->removeEventFilter(&self_);
 	}
-	setWatched( false );
+	setWatched(false);
 
 	frame_->disconnect(errorConnection_);
 	frame_.reset();
@@ -113,18 +102,18 @@ void QmlDialog::Implementation::initialise()
 	title_ = "";
 }
 
-void QmlDialog::Implementation::setWatched( bool isWatched, QObject* root )
+void QmlDialog::Implementation::setWatched(bool isWatched, QObject* root)
 {
 	if (isWatched != watched_)
 	{
 		auto watcher = framework_.qmlWatcher();
 		if (isWatched)
 		{
-			QObject::connect( watcher, SIGNAL( fileChanged( const QString& ) ), &self_, SLOT( reload( const QString& ) ) );
+			QObject::connect(watcher, SIGNAL(fileChanged(const QString&)), &self_, SLOT(reload(const QString&)));
 		}
 		else
 		{
-			QObject::disconnect( watcher, SIGNAL( fileChanged( const QString& ) ), &self_, SLOT( reload( const QString& ) ) );
+			QObject::disconnect(watcher, SIGNAL(fileChanged(const QString&)), &self_, SLOT(reload(const QString&)));
 		}
 
 		watched_ = isWatched;
@@ -133,56 +122,56 @@ void QmlDialog::Implementation::setWatched( bool isWatched, QObject* root )
 	if (isWatched)
 	{
 		const auto& types = components_.getTypes();
-		watchedComponents_.insert( types.begin(), types.end() );
+		watchedComponents_.insert(types.begin(), types.end());
 	}
 }
 
-void QmlDialog::Implementation::loadCommon( const QUrl& url, QQmlComponent* component )
+void QmlDialog::Implementation::loadCommon(const QUrl& url, QQmlComponent* component)
 {
-	std::unique_ptr<QObject> content( component->create( qmlContext_.get() ) );
-	QVariant titleProperty = content->property( "title" );
+	std::unique_ptr<QObject> content(component->create(qmlContext_.get()));
+	QVariant titleProperty = content->property("title");
 
 	bool shouldBeWatched = false;
 	if (url.scheme() == "file")
 	{
-		QVariant autoReload = content->property( "autoReload" );
+		QVariant autoReload = content->property("autoReload");
 		shouldBeWatched = !autoReload.isValid() || (autoReload.isValid() && autoReload.toBool());
 	}
-	setWatched( shouldBeWatched, content.get() );
-	
-	childDialogs_.clear();
-	findChildDialogs( content.get() );
+	setWatched(shouldBeWatched, content.get());
 
-	QObject * rootObject = frame_->rootObject();
+	childDialogs_.clear();
+	findChildDialogs(content.get());
+
+	QObject* rootObject = frame_->rootObject();
 	if (rootObject)
 	{
 		rootObject->deleteLater();
 	}
 
-	frame_->setContent( url, component, content.release() );
-	frame_->setResizeMode( QQuickWidget::SizeRootObjectToView );
+	frame_->setContent(url, component, content.release());
+	frame_->setResizeMode(QQuickWidget::SizeRootObjectToView);
 
 	if (titleProperty.type() == QVariant::Type::String)
 	{
 		title_ = titleProperty.toString().toUtf8().data();
-		frame_->setWindowTitle( titleProperty.toString() );
+		frame_->setWindowTitle(titleProperty.toString());
 	}
 }
 
-void QmlDialog::Implementation::load( const QUrl& url, QQmlComponent* component )
+void QmlDialog::Implementation::load(const QUrl& url, QQmlComponent* component)
 {
 	initialise();
 
-	loadCommon( url, component );
+	loadCommon(url, component);
 
 	frame_->installEventFilter(&self_);
 	url_ = url;
 	state_ = QmlDialogState::READY;
 }
 
-void QmlDialog::Implementation::reload( const QUrl& url, QQmlComponent* component )
+void QmlDialog::Implementation::reload(const QUrl& url, QQmlComponent* component)
 {
-	loadCommon( url, component );
+	loadCommon(url, component);
 }
 
 void QmlDialog::Implementation::findChildDialogs(QObject* obj)
@@ -258,15 +247,12 @@ void QmlDialog::Implementation::focusOutEvent()
 	model->onFocusOut(itr != childDialogs_.end());
 }
 
-QmlDialog::QmlDialog(IComponentContext& context,
-                     QQmlEngine& engine,
-                     IQtFramework& framework)
-    : QObject(nullptr)
-    , impl_(new Implementation(*this, framework, context, engine))
+QmlDialog::QmlDialog(IComponentContext& context, QQmlEngine& engine, IQtFramework& framework)
+    : QObject(nullptr), impl_(new Implementation(*this, framework, context, engine))
 {
-	impl_->errorConnection_ = QObject::connect(impl_->frame_.get(),
-	                                           SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)),
-	                                           this, SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
+	impl_->errorConnection_ =
+	QObject::connect(impl_->frame_.get(), SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)), this,
+	                 SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
 }
 
 QmlDialog::~QmlDialog()
@@ -300,7 +286,7 @@ void QmlDialog::setModel(ObjectHandleT<DialogModel> model)
 	impl_->qmlContext_->setContextObject(qtModel);
 
 	impl_->qmlContext_->setContextProperty(QString("dialog"), this);
-	impl_->qmlContext_->setContextProperty( QString( "qmlComponents" ), &impl_->components_ );
+	impl_->qmlContext_->setContextProperty(QString("qmlComponents"), &impl_->components_);
 	impl_->model_ = model;
 }
 
@@ -316,25 +302,25 @@ void QmlDialog::load(const char* resource)
 	{
 		// Automatically watch any other files in the same folder as the view
 		// as these can be added as components without using a module
-		const QDir directory( FilePath::getFolder( url.toLocalFile().toUtf8().constData() ).c_str() );
+		const QDir directory(FilePath::getFolder(url.toLocalFile().toUtf8().constData()).c_str());
 
 		QStringList filter;
-		filter.push_back( "*.qml" );
-		filter.push_back( "*.js" );
+		filter.push_back("*.qml");
+		filter.push_back("*.js");
 
-		const auto files = directory.entryList( filter );
+		const auto files = directory.entryList(filter);
 		for (const auto& file : files)
 		{
-			const auto name( FilePath::getFileNoExtension( file.toUtf8().constData() ) );
-			impl_->watchedComponents_.insert( QString( name.c_str() ) );
+			const auto name(FilePath::getFileNoExtension(file.toUtf8().constData()));
+			impl_->watchedComponents_.insert(QString(name.c_str()));
 		}
 	}
 
-	impl_->frame_.reset( new QQuickWidget( &impl_->engine_, nullptr ) );
-	auto qmlComponent = new QQmlComponent( &impl_->engine_, impl_->frame_.get() );
+	impl_->frame_.reset(new QQuickWidget(&impl_->engine_, nullptr));
+	auto qmlComponent = new QQmlComponent(&impl_->engine_, impl_->frame_.get());
 	QmlComponentLoaderHelper helper(qmlComponent, url);
-	helper.data_->connections_ += helper.data_->sig_Loaded_.connect(
-	std::bind(&Implementation::load, impl_.get(), url, std::placeholders::_1));
+	helper.data_->connections_ +=
+	helper.data_->sig_Loaded_.connect(std::bind(&Implementation::load, impl_.get(), url, std::placeholders::_1));
 
 	helper.load(true);
 }
@@ -384,8 +370,7 @@ void QmlDialog::setParent(QObject* parent)
 
 void QmlDialog::error(QQuickWindow::SceneGraphError error, const QString& message)
 {
-	NGT_ERROR_MSG("QmlView::error, rendering error: %s\n",
-	              message.toLatin1().constData());
+	NGT_ERROR_MSG("QmlView::error, rendering error: %s\n", message.toLatin1().constData());
 }
 
 ObjectHandle QmlDialog::model() const
@@ -428,21 +413,21 @@ bool QmlDialog::eventFilter(QObject* object, QEvent* event)
 }
 
 //------------------------------------------------------------------------------
-void QmlDialog::reload( const QString& url )
+void QmlDialog::reload(const QString& url)
 {
-	const QString name( FilePath::getFileNoExtension( url.toUtf8().constData() ).c_str() );
-	if (impl_->watchedComponents_.find( name ) != impl_->watchedComponents_.end())
+	const QString name(FilePath::getFileNoExtension(url.toUtf8().constData()).c_str());
+	if (impl_->watchedComponents_.find(name) != impl_->watchedComponents_.end())
 	{
-		std::unique_lock< std::mutex > holder( impl_->loadMutex_ );
+		std::unique_lock<std::mutex> holder(impl_->loadMutex_);
 
-		auto qmlComponent = new QQmlComponent( impl_->qmlContext_->engine(), impl_->frame_.get() );
+		auto qmlComponent = new QQmlComponent(impl_->qmlContext_->engine(), impl_->frame_.get());
 
-		QmlComponentLoaderHelper helper( qmlComponent, impl_->url_ );
+		QmlComponentLoaderHelper helper(qmlComponent, impl_->url_);
 
 		helper.data_->connections_ += helper.data_->sig_Loaded_.connect(
-			std::bind( &Implementation::reload, impl_.get(), impl_->url_, std::placeholders::_1 ) );
+		std::bind(&Implementation::reload, impl_.get(), impl_->url_, std::placeholders::_1));
 
-		helper.load( true );
+		helper.load(true);
 	}
 }
 

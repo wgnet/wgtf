@@ -4,8 +4,7 @@
 
 namespace wgt
 {
-class LeakApplication
-: public Implements<IApplication>
+class LeakApplication : public Implements<IApplication>
 {
 public:
 	int startApplication() override
@@ -25,8 +24,7 @@ public:
  *
  * @ingroup plugins
  */
-class LeakTestPlugin
-: public PluginMain
+class LeakTestPlugin : public PluginMain
 {
 public:
 	LeakTestPlugin(IComponentContext& contextManager)

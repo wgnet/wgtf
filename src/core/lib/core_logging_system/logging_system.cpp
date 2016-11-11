@@ -13,14 +13,11 @@
 
 namespace wgt
 {
-LoggingSystem::LoggingSystem( DIRef< IDefinitionManager > definitionManager )
-	: alertManager_( new AlertManager() )
-	, basicAlertLogger_( nullptr )
-	, hasAlertManagement_( false )
-	, running_( true )
+LoggingSystem::LoggingSystem(DIRef<IDefinitionManager> definitionManager)
+    : alertManager_(new AlertManager()), basicAlertLogger_(nullptr), hasAlertManagement_(false), running_(true)
 {
-	processor_ = new std::thread( &LoggingSystem::process, this );
-	definitionManager.get()->registerDefinition<TypeClassDefinition< ILoggingModel >>();
+	processor_ = new std::thread(&LoggingSystem::process, this);
+	definitionManager.get()->registerDefinition<TypeClassDefinition<ILoggingModel>>();
 }
 
 LoggingSystem::~LoggingSystem()
@@ -38,8 +35,8 @@ void LoggingSystem::enableAlertManagement()
 {
 	if (!hasAlertManagement_)
 	{
-		basicAlertLogger_ = new BasicAlertLogger( *alertManager_ );
-		registerLogger( basicAlertLogger_ );
+		basicAlertLogger_ = new BasicAlertLogger(*alertManager_);
+		registerLogger(basicAlertLogger_);
 		hasAlertManagement_ = true;
 	}
 }
@@ -48,7 +45,7 @@ void LoggingSystem::disableAlertManagement()
 {
 	if (basicAlertLogger_ != nullptr)
 	{
-		unregisterLogger( basicAlertLogger_ );
+		unregisterLogger(basicAlertLogger_);
 		delete basicAlertLogger_;
 		basicAlertLogger_ = nullptr;
 		hasAlertManagement_ = false;
@@ -68,7 +65,7 @@ void LoggingSystem::shutdown()
 		}
 
 		{
-			tMessageLock guard( messageMutex_ );
+			tMessageLock guard(messageMutex_);
 			running_ = false;
 		}
 		processorCV_.notify_one();
@@ -79,31 +76,30 @@ void LoggingSystem::shutdown()
 	}
 }
 
-bool LoggingSystem::registerLogger( ILogger* logger )
+bool LoggingSystem::registerLogger(ILogger* logger)
 {
-	std::lock_guard< std::mutex  > guard( loggerMutex_ );
+	std::lock_guard<std::mutex> guard(loggerMutex_);
 
-	if (std::find( loggers_.begin(), loggers_.end(), logger ) != loggers_.end())
+	if (std::find(loggers_.begin(), loggers_.end(), logger) != loggers_.end())
 	{
 		// Logger already registered
 		return false;
 	}
 
-	loggers_.push_back( logger );
+	loggers_.push_back(logger);
 
 	return true;
 }
 
-bool LoggingSystem::unregisterLogger( ILogger* logger )
+bool LoggingSystem::unregisterLogger(ILogger* logger)
 {
-	std::lock_guard< std::mutex  >  guard( loggerMutex_ );
+	std::lock_guard<std::mutex> guard(loggerMutex_);
 
-	std::vector< ILogger* >::iterator itrLogger = std::find( loggers_.begin(),
-		loggers_.end(), logger );
+	std::vector<ILogger*>::iterator itrLogger = std::find(loggers_.begin(), loggers_.end(), logger);
 
 	if (itrLogger != loggers_.end())
 	{
-		loggers_.erase( itrLogger );
+		loggers_.erase(itrLogger);
 		return true;
 	}
 
@@ -111,21 +107,21 @@ bool LoggingSystem::unregisterLogger( ILogger* logger )
 	return false;
 }
 
-void LoggingSystem::log( LogLevel level, const char* format, ... )
+void LoggingSystem::log(LogLevel level, const char* format, ...)
 {
 	va_list arguments;
-	va_start( arguments, format );
-	LogMessage* message = new LogMessage( level, format, arguments );
-	va_end( arguments );
+	va_start(arguments, format);
+	LogMessage* message = new LogMessage(level, format, arguments);
+	va_end(arguments);
 
-	log( message );
+	log(message);
 }
 
-void LoggingSystem::log( LogMessage* message )
+void LoggingSystem::log(LogMessage* message)
 {
 	{
-		tMessageLock guard( messageMutex_ );
-		messages_.push( message );
+		tMessageLock guard(messageMutex_);
+		messages_.push(message);
 	}
 	processorCV_.notify_one();
 }
@@ -136,7 +132,7 @@ void LoggingSystem::process()
 	{
 		bool isEmpty = true;
 		{
-			tMessageLock guard( messageMutex_ );
+			tMessageLock guard(messageMutex_);
 			isEmpty = messages_.empty();
 		}
 
@@ -145,7 +141,7 @@ void LoggingSystem::process()
 			// Pop a message and broadcast it
 			LogMessage* currentMessage = nullptr;
 			{
-				tMessageLock guard( messageMutex_ );
+				tMessageLock guard(messageMutex_);
 				currentMessage = messages_.front();
 				messages_.pop();
 			}
@@ -153,12 +149,12 @@ void LoggingSystem::process()
 			if (currentMessage != nullptr)
 			{
 				{
-					std::lock_guard< std::mutex > guard( loggerMutex_ );
+					std::lock_guard<std::mutex> guard(loggerMutex_);
 
 					for (auto& logger : loggers_)
 					{
-						assert( logger != nullptr );
-						logger->out( currentMessage );
+						assert(logger != nullptr);
+						logger->out(currentMessage);
 					}
 				}
 
@@ -170,8 +166,8 @@ void LoggingSystem::process()
 		{
 			if (!running_)
 				break;
-			tMessageLock lock( messageMutex_ );
-			processorCV_.wait( lock, [this](){ return !running_ || !messages_.empty(); } );
+			tMessageLock lock(messageMutex_);
+			processorCV_.wait(lock, [this]() { return !running_ || !messages_.empty(); });
 		}
 	}
 }

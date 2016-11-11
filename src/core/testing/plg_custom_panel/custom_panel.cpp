@@ -7,31 +7,26 @@
 
 namespace wgt
 {
-CustomPanel::CustomPanel( IComponentContext & context )
-	: Depends( context )
+CustomPanel::CustomPanel(IComponentContext& context) : Depends(context)
 {
 }
- 
- 
+
 bool CustomPanel::addPanel()
 {
-	auto viewCreator = this->get< IViewCreator >();
-	
+	auto viewCreator = this->get<IViewCreator>();
+
 	if (viewCreator == nullptr)
 	{
 		return false;
 	}
 
-	customView_ = viewCreator->createView(
-		"plg_custom_panel/custom_panel.qml",
-		ObjectHandle() );
+	customView_ = viewCreator->createView("plg_custom_panel/custom_panel.qml", ObjectHandle());
 	return true;
 }
- 
- 
+
 void CustomPanel::removePanel()
 {
-	auto uiApplication = this->get< IUIApplication >();
+	auto uiApplication = this->get<IUIApplication>();
 	if (uiApplication == nullptr)
 	{
 		return;
@@ -39,8 +34,8 @@ void CustomPanel::removePanel()
 
 	if (customView_.valid())
 	{
-        auto view = customView_.get();
-		uiApplication->removeView( *view );
+		auto view = customView_.get();
+		uiApplication->removeView(*view);
 		view = nullptr;
 	}
 }

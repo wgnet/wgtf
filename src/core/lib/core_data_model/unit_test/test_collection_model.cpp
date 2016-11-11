@@ -8,13 +8,13 @@
 
 namespace wgt
 {
-template< typename T >
-struct TestCollectionModelFixture : public TestAbstractItemModelFixture< CollectionModel >
+template <typename T>
+struct TestCollectionModelFixture : public TestAbstractItemModelFixture<CollectionModel>
 {
 	TestCollectionModelFixture()
 	{
-		Collection collection( collection_ );
-		model_.setSource( collection );
+		Collection collection(collection_);
+		model_.setSource(collection);
 	}
 
 	bool testInsertItemLinear(TestResult& result_, const char*& m_name);
@@ -25,12 +25,14 @@ struct TestCollectionModelFixture : public TestAbstractItemModelFixture< Collect
 	T collection_;
 };
 
-struct TestLinearCollectionModelFixture : public TestCollectionModelFixture< std::vector< int > > {};
+struct TestLinearCollectionModelFixture : public TestCollectionModelFixture<std::vector<int>>
+{
+};
 struct TestMappingCollectionModelFixture : public TestCollectionModelFixture<std::unordered_map<int, int>>
 {
 };
 
-#define X( TEST ) ABSTRACT_ITEM_MODEL_TEST_F( TestLinearCollectionModelFixture, TEST )
+#define X(TEST) ABSTRACT_ITEM_MODEL_TEST_F(TestLinearCollectionModelFixture, TEST)
 ABSTRACT_ITEM_MODEL_TESTS
 X(InsertItemLinear)
 X(RemoveItemLinear)
@@ -42,8 +44,7 @@ X(RemoveItemMapping)
 #undef X
 
 template <typename T>
-bool TestCollectionModelFixture<T>::testInsertItemLinear(TestResult& result_,
-                                                         const char*& m_name)
+bool TestCollectionModelFixture<T>::testInsertItemLinear(TestResult& result_, const char*& m_name)
 {
 	auto rowCount = model_.rowCount();
 
@@ -131,18 +132,14 @@ bool TestCollectionModelFixture<T>::testInsertItemLinear(TestResult& result_,
 	// Test insertion callbacks
 	{
 		auto preInsertedCalled = false;
-		auto preInserted =
-		[&result_, &m_name, &preInsertedCalled](int startRow, int count)
-		{
+		auto preInserted = [&result_, &m_name, &preInsertedCalled](int startRow, int count) {
 			preInsertedCalled = true;
 			CHECK_EQUAL(3, startRow);
 			CHECK_EQUAL(1, count);
 		};
 
 		auto postInsertedCalled = false;
-		auto postInserted =
-		[&result_, &m_name, &postInsertedCalled](int startRow, int count)
-		{
+		auto postInserted = [&result_, &m_name, &postInsertedCalled](int startRow, int count) {
 			postInsertedCalled = true;
 			CHECK_EQUAL(3, startRow);
 			CHECK_EQUAL(1, count);
@@ -165,8 +162,7 @@ bool TestCollectionModelFixture<T>::testInsertItemLinear(TestResult& result_,
 }
 
 template <typename T>
-bool TestCollectionModelFixture<T>::testInsertItemMapping(TestResult& result_,
-                                                          const char*& m_name)
+bool TestCollectionModelFixture<T>::testInsertItemMapping(TestResult& result_, const char*& m_name)
 {
 	auto rowCount = model_.rowCount();
 
@@ -234,17 +230,13 @@ bool TestCollectionModelFixture<T>::testInsertItemMapping(TestResult& result_,
 	// Test insertion callbacks
 	{
 		auto preInsertedCalled = false;
-		auto preInserted =
-		[&result_, &m_name, &preInsertedCalled](int startRow, int count)
-		{
+		auto preInserted = [&result_, &m_name, &preInsertedCalled](int startRow, int count) {
 			preInsertedCalled = true;
 			CHECK_EQUAL(1, count);
 		};
 
 		auto postInsertedCalled = false;
-		auto postInserted =
-		[&result_, &m_name, &postInsertedCalled](int startRow, int count)
-		{
+		auto postInserted = [&result_, &m_name, &postInsertedCalled](int startRow, int count) {
 			postInsertedCalled = true;
 			CHECK_EQUAL(1, count);
 		};
@@ -266,8 +258,7 @@ bool TestCollectionModelFixture<T>::testInsertItemMapping(TestResult& result_,
 }
 
 template <typename T>
-bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_,
-                                                         const char*& m_name)
+bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_, const char*& m_name)
 {
 	// Insert some items to play with
 	const int defaultRowCount = 25;
@@ -283,16 +274,12 @@ bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_,
 		const auto firstKey = 0;
 		const auto firstItem = model_.item(firstKey);
 		CHECK(firstItem != nullptr);
-		const auto firstItemData = firstItem->getData(firstKey,
-		                                              column,
-		                                              ValueRole::roleId_);
+		const auto firstItemData = firstItem->getData(firstKey, column, ValueRole::roleId_);
 		CHECK_EQUAL(Variant(firstKey), firstItemData);
 		auto lastKey = rowCount - 1;
 		const auto lastItem = model_.item(lastKey);
 		CHECK(lastItem != nullptr);
-		const auto lastItemData = lastItem->getData(lastKey,
-		                                            column,
-		                                            ValueRole::roleId_);
+		const auto lastItemData = lastItem->getData(lastKey, column, ValueRole::roleId_);
 		CHECK_EQUAL(Variant(lastKey), lastItemData);
 		const auto endKey = rowCount;
 		const auto endItem = model_.item(endKey);
@@ -311,21 +298,15 @@ bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_,
 		const auto firstKey = 0;
 		const auto newFirstItem = model_.item(firstKey);
 		CHECK(newFirstItem != nullptr);
-		const auto newFirstItemData = newFirstItem != nullptr ?
-		newFirstItem->getData(firstKey,
-		                      column,
-		                      ValueRole::roleId_) :
-		Variant();
+		const auto newFirstItemData =
+		newFirstItem != nullptr ? newFirstItem->getData(firstKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(1), newFirstItemData);
 
 		const auto lastKey = rowCount - 1;
 		const auto newLastItem = model_.item(lastKey);
 		CHECK(newLastItem != nullptr);
-		const auto newLastItemData = newLastItem != nullptr ?
-		newLastItem->getData(lastKey,
-		                     column,
-		                     ValueRole::roleId_) :
-		Variant();
+		const auto newLastItemData =
+		newLastItem != nullptr ? newLastItem->getData(lastKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(24), newLastItemData);
 
 		const auto endKey = rowCount;
@@ -343,21 +324,15 @@ bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_,
 		const auto firstKey = 0;
 		const auto newFirstItem = model_.item(firstKey);
 		CHECK(newFirstItem != nullptr);
-		const auto newFirstItemData = newFirstItem != nullptr ?
-		newFirstItem->getData(firstKey,
-		                      column,
-		                      ValueRole::roleId_) :
-		Variant();
+		const auto newFirstItemData =
+		newFirstItem != nullptr ? newFirstItem->getData(firstKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(1), newFirstItemData);
 
 		const auto lastKey = rowCount - 1;
 		const auto newLastItem = model_.item(lastKey);
 		CHECK(newLastItem != nullptr);
-		const auto newLastItemData = newLastItem != nullptr ?
-		newLastItem->getData(lastKey,
-		                     column,
-		                     ValueRole::roleId_) :
-		Variant();
+		const auto newLastItemData =
+		newLastItem != nullptr ? newLastItem->getData(lastKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(23), newLastItemData);
 
 		const auto endKey = rowCount;
@@ -375,21 +350,15 @@ bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_,
 		const auto firstKey = 0;
 		const auto newFirstItem = model_.item(firstKey);
 		CHECK(newFirstItem != nullptr);
-		const auto newFirstItemData = newFirstItem != nullptr ?
-		newFirstItem->getData(firstKey,
-		                      column,
-		                      ValueRole::roleId_) :
-		Variant();
+		const auto newFirstItemData =
+		newFirstItem != nullptr ? newFirstItem->getData(firstKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(1), newFirstItemData);
 
 		const auto lastKey = rowCount - 1;
 		const auto newLastItem = model_.item(lastKey);
 		CHECK(newLastItem != nullptr);
-		const auto newLastItemData = newLastItem != nullptr ?
-		newLastItem->getData(lastKey,
-		                     column,
-		                     ValueRole::roleId_) :
-		Variant();
+		const auto newLastItemData =
+		newLastItem != nullptr ? newLastItem->getData(lastKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(23), newLastItemData);
 
 		const auto endKey = rowCount;
@@ -400,18 +369,14 @@ bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_,
 	// Test removal callbacks
 	{
 		auto preRemovedCalled = false;
-		auto preRemoved =
-		[&result_, &m_name, &preRemovedCalled](int startRow, int count)
-		{
+		auto preRemoved = [&result_, &m_name, &preRemovedCalled](int startRow, int count) {
 			preRemovedCalled = true;
 			CHECK_EQUAL(0, startRow);
 			CHECK_EQUAL(1, count);
 		};
 
 		auto postRemovedCalled = false;
-		auto postRemoved =
-		[&result_, &m_name, &postRemovedCalled](int startRow, int count)
-		{
+		auto postRemoved = [&result_, &m_name, &postRemovedCalled](int startRow, int count) {
 			postRemovedCalled = true;
 			CHECK_EQUAL(0, startRow);
 			CHECK_EQUAL(1, count);
@@ -430,8 +395,7 @@ bool TestCollectionModelFixture<T>::testRemoveItemLinear(TestResult& result_,
 }
 
 template <typename T>
-bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
-                                                          const char*& m_name)
+bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_, const char*& m_name)
 {
 	// Insert some items to play with
 	const int defaultRowCount = 25;
@@ -447,21 +411,15 @@ bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
 		const auto firstKey = 0;
 		const auto newFirstItem = model_.find(firstKey);
 		CHECK(newFirstItem != nullptr);
-		const auto newFirstItemData = newFirstItem != nullptr ?
-		newFirstItem->getData(firstKey,
-		                      column,
-		                      ValueRole::roleId_) :
-		Variant();
+		const auto newFirstItemData =
+		newFirstItem != nullptr ? newFirstItem->getData(firstKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(firstKey), newFirstItemData);
 
 		const auto lastKey = rowCount - 1;
 		const auto newLastItem = model_.find(lastKey);
 		CHECK(newLastItem != nullptr);
-		const auto newLastItemData = newLastItem != nullptr ?
-		newLastItem->getData(lastKey,
-		                     column,
-		                     ValueRole::roleId_) :
-		Variant();
+		const auto newLastItemData =
+		newLastItem != nullptr ? newLastItem->getData(lastKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(lastKey), newLastItemData);
 		const auto endKey = 25;
 		const auto endItem = model_.find(endKey);
@@ -484,21 +442,15 @@ bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
 		const auto newFirstKey = 1;
 		const auto newFirstItem = model_.find(newFirstKey);
 		CHECK(newFirstItem != nullptr);
-		const auto newFirstItemData = newFirstItem != nullptr ?
-		newFirstItem->getData(newFirstKey,
-		                      column,
-		                      ValueRole::roleId_) :
-		Variant();
+		const auto newFirstItemData =
+		newFirstItem != nullptr ? newFirstItem->getData(newFirstKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(newFirstKey), newFirstItemData);
 
 		const auto newLastKey = 24;
 		const auto newLastItem = model_.find(newLastKey);
 		CHECK(newLastItem != nullptr);
-		const auto newLastItemData = newLastItem != nullptr ?
-		newLastItem->getData(newLastKey,
-		                     column,
-		                     ValueRole::roleId_) :
-		Variant();
+		const auto newLastItemData =
+		newLastItem != nullptr ? newLastItem->getData(newLastKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(newLastKey), newLastItemData);
 
 		const auto endKey = 25;
@@ -516,11 +468,8 @@ bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
 		const auto oldFirstKey = 1;
 		const auto oldFirstItem = model_.find(oldFirstKey);
 		CHECK(oldFirstItem != nullptr);
-		const auto oldFirstItemData = oldFirstItem != nullptr ?
-		oldFirstItem->getData(oldFirstKey,
-		                      column,
-		                      ValueRole::roleId_) :
-		Variant();
+		const auto oldFirstItemData =
+		oldFirstItem != nullptr ? oldFirstItem->getData(oldFirstKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(oldFirstKey), oldFirstItemData);
 
 		const auto oldLastKey = 24;
@@ -530,11 +479,8 @@ bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
 		const auto newLastKey = 23;
 		const auto newLastItem = model_.find(newLastKey);
 		CHECK(newLastItem != nullptr);
-		const auto newLastItemData = newLastItem != nullptr ?
-		newLastItem->getData(newLastKey,
-		                     column,
-		                     ValueRole::roleId_) :
-		Variant();
+		const auto newLastItemData =
+		newLastItem != nullptr ? newLastItem->getData(newLastKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(newLastKey), newLastItemData);
 
 		const auto endKey = 24;
@@ -552,11 +498,8 @@ bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
 		const auto oldFirstKey = 1;
 		const auto oldFirstItem = model_.find(oldFirstKey);
 		CHECK(oldFirstItem != nullptr);
-		const auto oldFirstItemData = oldFirstItem != nullptr ?
-		oldFirstItem->getData(oldFirstKey,
-		                      column,
-		                      ValueRole::roleId_) :
-		Variant();
+		const auto oldFirstItemData =
+		oldFirstItem != nullptr ? oldFirstItem->getData(oldFirstKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(oldFirstKey), oldFirstItemData);
 
 		const auto oldMiddleKey = 2;
@@ -566,21 +509,15 @@ bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
 		const auto newMiddleKey = 1;
 		const auto newMiddleItem = model_.find(newMiddleKey);
 		CHECK(newMiddleItem != nullptr);
-		const auto newMiddleItemData = newMiddleItem != nullptr ?
-		newMiddleItem->getData(newMiddleKey,
-		                       column,
-		                       ValueRole::roleId_) :
-		Variant();
+		const auto newMiddleItemData =
+		newMiddleItem != nullptr ? newMiddleItem->getData(newMiddleKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(newMiddleKey), newMiddleItemData);
 
 		const auto lastKey = 23;
 		const auto newLastItem = model_.find(lastKey);
 		CHECK(newLastItem != nullptr);
-		const auto newLastItemData = newLastItem != nullptr ?
-		newLastItem->getData(lastKey,
-		                     column,
-		                     ValueRole::roleId_) :
-		Variant();
+		const auto newLastItemData =
+		newLastItem != nullptr ? newLastItem->getData(lastKey, column, ValueRole::roleId_) : Variant();
 		CHECK_EQUAL(Variant(23), newLastItemData);
 
 		const auto endKey = 24;
@@ -591,17 +528,13 @@ bool TestCollectionModelFixture<T>::testRemoveItemMapping(TestResult& result_,
 	// Test removal callbacks
 	{
 		auto preRemovedCalled = false;
-		auto preRemoved =
-		[&result_, &m_name, &preRemovedCalled](int startRow, int count)
-		{
+		auto preRemoved = [&result_, &m_name, &preRemovedCalled](int startRow, int count) {
 			preRemovedCalled = true;
 			CHECK_EQUAL(1, count);
 		};
 
 		auto postRemovedCalled = false;
-		auto postRemoved =
-		[&result_, &m_name, &postRemovedCalled](int startRow, int count)
-		{
+		auto postRemoved = [&result_, &m_name, &postRemovedCalled](int startRow, int count) {
 			postRemovedCalled = true;
 			CHECK_EQUAL(1, count);
 		};

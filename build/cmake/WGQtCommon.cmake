@@ -93,6 +93,13 @@ ELSEIF(BW_PLATFORM_MAC)
 	SET(DEPLOY_QT_COMMAND "${CMAKE_CURRENT_LIST_DIR}/../deployqt.sh")
 ENDIF()
 
+# Detect if building with Qt Creator instead of Visual Studio
+IF( CMAKE_GENERATOR_TOOLSET STREQUAL "")
+	SET( QT_CREATOR_BUILD ON )
+ELSE()
+	SET( QT_CREATOR_BUILD OFF )
+ENDIF()
+
 # Copy Qt dlls to bin.
 # Use SET( DEPLOY_QT_SUPPORT ON ) to enable.
 # DEPLOY_QT_TARGET_PROJECT must be set. It defines which exe the default is generic_app.
@@ -111,10 +118,17 @@ FUNCTION( BW_DEPLOY_QT )
 		IF ( Qt5_WEB_ENGINE_SUPPORT )
 			SET(WEB_ENGINE_DEPLOY_ARGS)
 
+			IF( QT_CREATOR_BUILD )
+				SET( SET_VCINSTALLDIR echo cannot detect VCINSTALLDIR )
+			ELSE( QT_CREATOR_BUILD )
+				# $(VCInstallDir) is a Visual studio macro
+				SET( SET_VCINSTALLDIR set VCINSTALLDIR=$(VCInstallDir) )
+			ENDIF( QT_CREATOR_BUILD )
+
 			# Debug
 			ADD_CUSTOM_COMMAND(	TARGET ${PROJECT_NAME} POST_BUILD
 				# Removes "Warning: Cannot find Visual Studio installation directory, VCINSTALLDIR is not set."
-				COMMAND set VCINSTALLDIR=$(VCInstallDir)
+				COMMAND ${SET_VCINSTALLDIR}
 				COMMAND if $<CONFIG:Debug> equ 1 echo "Deploy Qt dependencies, debug"
 				COMMAND if $<CONFIG:Debug> equ 1 call "${DEPLOY_QT_COMMAND}" ${Qt5Bin_DIR}
 					--debug
@@ -126,7 +140,7 @@ FUNCTION( BW_DEPLOY_QT )
 			# Release
 			ADD_CUSTOM_COMMAND(	TARGET ${PROJECT_NAME} POST_BUILD
 				# Removes "Warning: Cannot find Visual Studio installation directory, VCINSTALLDIR is not set."
-				COMMAND set VCINSTALLDIR=$(VCInstallDir)
+				COMMAND ${SET_VCINSTALLDIR}
 				COMMAND echo "Deploy Qt dependencies, release webengine"
 				# WebEngineView depends on QtWebEngineProcess.exe which depends on release binaries so always deploy them
 				COMMAND "${DEPLOY_QT_COMMAND}" ${Qt5Bin_DIR}
@@ -136,7 +150,7 @@ FUNCTION( BW_DEPLOY_QT )
 					${WEB_ENGINE_DEPLOY_ARGS}
 			)
 
-			# Rename the deployed resources directory to qtresources/resources to avoid issues with engines that use that folder
+			# Rename the deployed resources directory to qtresources to avoid issues with engines that use that folder
 			# The qt.conf file specifies Data=qtresources so this path can be found
 			FILE( GLOB QT_CONF_FILE "${CMAKE_SOURCE_DIR}/../build/qt.conf" )
 			GET_FILENAME_COMPONENT( QT_CONF_FILE_NAME "${QT_CONF_FILE}" NAME )
@@ -150,8 +164,7 @@ FUNCTION( BW_DEPLOY_QT )
 				# Requires qt.conf to point to qtresources
 				COMMAND echo "Move resources to qtresources"
 				COMMAND ${CMAKE_COMMAND} -E remove_directory \"${QTRESOURCE_PATH}\"
-				COMMAND ${CMAKE_COMMAND} -E make_directory \"${QTRESOURCE_PATH}\"
-				COMMAND ${CMAKE_COMMAND} -E rename \"${RESOURCE_PATH}\" \"${QTRESOURCE_PATH}/resources\" )
+				COMMAND ${CMAKE_COMMAND} -E rename \"${RESOURCE_PATH}\" \"${QTRESOURCE_PATH}\" )
 
 		# Deploy everything, except webengine
 		ELSE( Qt5_WEB_ENGINE_SUPPORT )

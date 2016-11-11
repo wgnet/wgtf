@@ -12,11 +12,8 @@ class ScriptObject;
 } // namespace PyScript
 class Variant;
 
-
 namespace PythonType
 {
-
-
 /**
  *	Attempts to convert ScriptObject<->Variant.
  *	This is for any Python type that inherits from "object".
@@ -24,20 +21,17 @@ namespace PythonType
 class DefaultConverter : public IParentConverter
 {
 public:
-	DefaultConverter( IComponentContext & context );
+	DefaultConverter(IComponentContext& context);
 
-	virtual bool toVariant( const PyScript::ScriptObject & inObject,
-		Variant & outVariant,
-		const ObjectHandle & parentHandle,
-		const std::string & childPath ) override;
+	virtual bool toVariant(const PyScript::ScriptObject& inObject, Variant& outVariant,
+	                       const ObjectHandle& parentHandle, const std::string& childPath) override;
 
-	virtual bool toScriptType( const Variant & inVariant,
-		PyScript::ScriptObject & outObject, void* userData = nullptr ) override;
+	virtual bool toScriptType(const Variant& inVariant, PyScript::ScriptObject& outObject,
+	                          void* userData = nullptr) override;
 
 private:
-	IComponentContext & context_;
+	IComponentContext& context_;
 };
-
 
 } // namespace PythonType
 } // end namespace wgt

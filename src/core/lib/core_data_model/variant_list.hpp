@@ -7,16 +7,15 @@
 
 namespace wgt
 {
-class VariantList
-	: public IListModel
+class VariantList : public IListModel
 {
 public:
 	VariantList();
 	virtual ~VariantList();
 
 	// IListModel
-	virtual IItem * item( size_t index ) const override;
-	virtual size_t index( const IItem * item ) const override;
+	virtual IItem* item(size_t index) const override;
+	virtual size_t index(const IItem* item) const override;
 
 	virtual bool empty() const override;
 	virtual size_t size() const override;
@@ -26,7 +25,7 @@ public:
 	void clear() override;
 	//
 
-	typedef std::vector< std::unique_ptr< IItem > > Items;
+	typedef std::vector<std::unique_ptr<IItem>> Items;
 
 	class ConstIterator
 	{
@@ -34,25 +33,27 @@ public:
 		typedef std::random_access_iterator_tag iterator_category;
 		typedef Items::const_iterator::difference_type difference_type;
 		typedef const Variant value_type;
-		typedef value_type * pointer;
-		typedef value_type & reference;
+		typedef value_type* pointer;
+		typedef value_type& reference;
 
-		ConstIterator( const ConstIterator& rhs );
-		ConstIterator& operator=( const ConstIterator& rhs );
+		ConstIterator(const ConstIterator& rhs);
+		ConstIterator& operator=(const ConstIterator& rhs);
 
-		reference operator*( ) const;
+		reference operator*() const;
 		pointer operator->() const;
-		ConstIterator & operator++( );
-		ConstIterator operator++( int );
-		bool operator==( const ConstIterator & other ) const;
-		bool operator!=( const ConstIterator & other ) const;
-		bool operator<( const ConstIterator & other ) const;
-		difference_type operator-( const ConstIterator & other ) const;
+		ConstIterator& operator++();
+		ConstIterator operator++(int);
+		bool operator==(const ConstIterator& other) const;
+		bool operator!=(const ConstIterator& other) const;
+		bool operator<(const ConstIterator& other) const;
+		difference_type operator-(const ConstIterator& other) const;
 		ConstIterator operator+(difference_type n) const;
 
 	protected:
-		ConstIterator() {}
-		ConstIterator( const Items::const_iterator & iterator );
+		ConstIterator()
+		{
+		}
+		ConstIterator(const Items::const_iterator& iterator);
 
 		const Items::const_iterator& iterator() const;
 
@@ -67,27 +68,27 @@ public:
 		typedef std::random_access_iterator_tag iterator_category;
 		typedef Items::iterator::difference_type difference_type;
 		typedef Variant value_type;
-		typedef value_type * pointer;
-		typedef value_type & reference;
+		typedef value_type* pointer;
+		typedef value_type& reference;
 
-		Iterator( const Iterator& rhs );
-		Iterator& operator=( const Iterator& rhs );
+		Iterator(const Iterator& rhs);
+		Iterator& operator=(const Iterator& rhs);
 
-		reference operator*( ) const;
+		reference operator*() const;
 		pointer operator->() const;
-		Iterator & operator++( );
-		Iterator operator++( int );
+		Iterator& operator++();
+		Iterator operator++(int);
 		Iterator operator+(difference_type n) const;
 
 	private:
-		Iterator( const Items::iterator & iterator );
+		Iterator(const Items::iterator& iterator);
 
 		const Items::const_iterator& iterator() const;
 
 		friend class VariantList;
 	};
 
-	void resize( size_t newSize );
+	void resize(size_t newSize);
 
 	ConstIterator cbegin() const;
 	ConstIterator cend() const;
@@ -96,17 +97,17 @@ public:
 	Iterator begin();
 	Iterator end();
 
-	template<class InputIt>
-	Iterator insert( const Iterator & position, InputIt first, InputIt last )
+	template <class InputIt>
+	Iterator insert(const Iterator& position, InputIt first, InputIt last)
 	{
-		auto index = std::distance( items_.cbegin(), position.iterator() );
-		auto count = std::distance( first, last );
+		auto index = std::distance(items_.cbegin(), position.iterator());
+		auto count = std::distance(first, last);
 		auto insertedPosition = position;
-		signalPreItemsInserted( index, count );
+		signalPreItemsInserted(index, count);
 
 		size_t i = index;
 		size_t oldSize = items_.size();
-		items_.resize( oldSize + count );
+		items_.resize(oldSize + count);
 		size_t newSize = items_.size();
 
 		for (int c = 0; i < oldSize; ++i, ++c)
@@ -118,33 +119,33 @@ public:
 
 		for (auto itr = first; itr != last; ++itr, ++i)
 		{
-			items_[i].reset( createItem( *itr ) );
+			items_[i].reset(createItem(*itr));
 		}
 
-		signalPostItemsInserted( index, count );
+		signalPostItemsInserted(index, count);
 		return insertedPosition;
 	}
 
-	Iterator insert( const Iterator & position, const Variant & value );
-	Iterator erase( const Iterator & position );
-	Iterator erase( const Iterator & first, const Iterator & last );
+	Iterator insert(const Iterator& position, const Variant& value);
+	Iterator erase(const Iterator& position);
+	Iterator erase(const Iterator& first, const Iterator& last);
 
-	void emplace_back( Variant && value );
-	void push_back( const Variant & value );
-	void push_front( const Variant & value );
+	void emplace_back(Variant&& value);
+	void push_back(const Variant& value);
+	void push_front(const Variant& value);
 	Variant pop_back();
 	Variant pop_front();
-	const Variant & back() const;
-	const Variant & front() const;
+	const Variant& back() const;
+	const Variant& front() const;
 
-	Variant & operator[](size_t index);
-	const Variant & operator[](size_t index) const;
+	Variant& operator[](size_t index);
+	const Variant& operator[](size_t index) const;
 
 private:
-	VariantList( const VariantList& rhs );
-	VariantList& operator=( const VariantList& rhs );
+	VariantList(const VariantList& rhs);
+	VariantList& operator=(const VariantList& rhs);
 
-	IItem* createItem( const Variant& value );
+	IItem* createItem(const Variant& value);
 
 	Items items_;
 

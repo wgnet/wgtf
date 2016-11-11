@@ -11,11 +11,11 @@ class ReflectedCollectionInsertCommandParameters
 public:
 	RefObjectId id_;
 	std::string path_;
-	Variant		key_;
-	Variant		value_;
+	Variant key_;
+	Variant value_;
 
 private:
-	bool		inserted_;
+	bool inserted_;
 
 	friend class ReflectedCollectionInsertCommand;
 };
@@ -23,20 +23,20 @@ private:
 class ReflectedCollectionInsertCommand : public Command
 {
 public:
-	ReflectedCollectionInsertCommand( IDefinitionManager & definitionManager );
+	ReflectedCollectionInsertCommand(IDefinitionManager& definitionManager);
 	virtual ~ReflectedCollectionInsertCommand();
 
-	const char * getId() const override;
-	ObjectHandle execute(const ObjectHandle & arguments) const override;
+	const char* getId() const override;
+	ObjectHandle execute(const ObjectHandle& arguments) const override;
 	bool customUndo() const override;
-	bool undo( const ObjectHandle & arguments ) const override;
-	bool redo( const ObjectHandle & arguments ) const override;
+	bool undo(const ObjectHandle& arguments) const override;
+	bool redo(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
 
-	ObjectHandle getCommandDescription(const ObjectHandle & arguments) const override;
+	ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
 
 private:
-	IDefinitionManager & definitionManager_;
+	IDefinitionManager& definitionManager_;
 };
 } // end namespace wgt
 #endif // REFLECTED_COLLECTION_INSERT_COMMAND_HPP

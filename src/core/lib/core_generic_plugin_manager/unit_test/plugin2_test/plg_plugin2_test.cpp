@@ -10,47 +10,44 @@
 
 namespace wgt
 {
-class TestPlugin2
-	: public PluginMain
+class TestPlugin2 : public PluginMain
 {
 public:
-	TestPlugin2( IComponentContext & contextManager )
+	TestPlugin2(IComponentContext& contextManager)
 	{
 	}
 
-	bool PostLoad( IComponentContext & contextManager )
+	bool PostLoad(IComponentContext& contextManager)
 	{
-		IDefinitionManager* pDefinitionManager =
-			contextManager.queryInterface< IDefinitionManager >();
+		IDefinitionManager* pDefinitionManager = contextManager.queryInterface<IDefinitionManager>();
 		if (pDefinitionManager == nullptr)
 		{
 			return false;
 		}
 
 		IDefinitionManager& definitionManager = (*pDefinitionManager);
-		REGISTER_DEFINITION( TestPlugin2TestObject );
-		REGISTER_DEFINITION( TestPlugin2Interface );
+		REGISTER_DEFINITION(TestPlugin2TestObject);
+		REGISTER_DEFINITION(TestPlugin2Interface);
 
 		pInterface_ = definitionManager.create<TestPlugin2Interface>();
-		types_.push_back( 
-			contextManager.registerInterface( pInterface_.get(), false ) );
+		types_.push_back(contextManager.registerInterface(pInterface_.get(), false));
 
 		return (pInterface_ != nullptr);
 	}
 
-	void Unload( IComponentContext & contextManager )
+	void Unload(IComponentContext& contextManager)
 	{
-		for( auto type : types_ )
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 		pInterface_ = nullptr;
 	}
 
 private:
-	ObjectHandleT< TestPlugin2Interface > pInterface_;
-	std::vector< IInterface * > types_;
+	ObjectHandleT<TestPlugin2Interface> pInterface_;
+	std::vector<IInterface*> types_;
 };
 
-PLG_CALLBACK_FUNC( TestPlugin2 )
+PLG_CALLBACK_FUNC(TestPlugin2)
 } // end namespace wgt

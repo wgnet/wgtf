@@ -7,7 +7,6 @@
 #include <string.h>
 #include <memory>
 
-
 namespace wgt
 {
 // -----------------------------------------------------------------------------
@@ -20,8 +19,7 @@ namespace wgt
  *	subclasses of MultiProcTestCase to use in their test cases for spawning
  *	multiple child processes.
  */
-void MultiProcTestCase::runChildren( int num,
-		MultiProcTestCase::ChildProcessFactory * pFactory )
+void MultiProcTestCase::runChildren(int num, MultiProcTestCase::ChildProcessFactory* pFactory)
 {
 	int numCreated = 0;
 	while (numCreated < num)
@@ -29,23 +27,21 @@ void MultiProcTestCase::runChildren( int num,
 		++numCreated;
 
 		// This call is responsible for the new child process object
-		if (!this->runChild( pFactory->create() ))
+		if (!this->runChild(pFactory->create()))
 		{
 			return; // RIP OUT FACTORY CODE
 		}
 	}
 }
 
-
 /**
  *	This method runs the input ChildProcess object in a forked process. This
  *	method is responsible for deleting this child process object.
  */
-bool MultiProcTestCase::runChild( ChildProcess * pChildProcess )
+bool MultiProcTestCase::runChild(ChildProcess* pChildProcess)
 {
 	return false;
 }
-
 
 /**
  *  This method terminates all currently running children.
@@ -54,17 +50,15 @@ void MultiProcTestCase::killChildren()
 {
 }
 
-
 /**
  *	This method updates the child process map.
  *
  *	@param shouldBlock If set to true, this method will block on waitpid.
  */
-bool MultiProcTestCase::updateChildren( bool shouldBlock )
+bool MultiProcTestCase::updateChildren(bool shouldBlock)
 {
 	return false;
 }
-
 
 /**
  *	This method waits (blocks) for all pending child processes to exit. Call
@@ -84,10 +78,9 @@ void MultiProcTestCase::waitForAll()
 	// Wait till all children complete.
 	while (!pids_.empty())
 	{
-		this->updateChildren( /* shouldBlock: */ true );
+		this->updateChildren(/* shouldBlock: */ true);
 	}
 }
-
 
 /**
  *	This method returns whether there are any running child processes.
@@ -97,20 +90,18 @@ bool MultiProcTestCase::hasRunningChildren()
 	return this->numRunningChildren() != 0;
 }
 
-
 /**
  *	This method returns the number of running child processes.
  */
 int MultiProcTestCase::numRunningChildren()
 {
-	while (this->updateChildren( /* shouldBlock: */ false ))
+	while (this->updateChildren(/* shouldBlock: */ false))
 	{
 		// pass
 	}
 
-	return static_cast<int>( pids_.size() );
+	return static_cast<int>(pids_.size());
 }
-
 
 /**
  *	This method returns true if all children have passed. Call this only after
@@ -120,7 +111,7 @@ int MultiProcTestCase::numRunningChildren()
 bool MultiProcTestCase::checkAllChildrenPass()
 {
 	// Force failure on Win32 until this gets implemented.
-	this->fail( "Not implemented in Win32" );
+	this->fail("Not implemented in Win32");
 	return false;
 }
 } // end namespace wgt

@@ -11,11 +11,11 @@ class PropertyAccessorListener;
 class ReflectedList : public VariantList
 {
 public:
-	ReflectedList( IDefinitionManager* defManager );
+	ReflectedList(IDefinitionManager* defManager);
 	virtual ~ReflectedList();
 
 private:
-	std::shared_ptr< PropertyAccessorListener > listener_;
+	std::shared_ptr<PropertyAccessorListener> listener_;
 	IDefinitionManager* defManager_;
 };
 } // end namespace wgt

@@ -13,15 +13,16 @@ class TestReflectionFixture
 public:
 	TestReflectionFixture();
 	~TestReflectionFixture();
-	IObjectManager & getObjectManager() const;
-	IDefinitionManager & getDefinitionManager() const;
+	IObjectManager& getObjectManager() const;
+	IDefinitionManager& getDefinitionManager() const;
 
-	TestStructure & getTestStructure();
+	TestStructure& getTestStructure();
+
 private:
-	std::unique_ptr< ObjectManager > objectManager_;
-	std::unique_ptr< DefinitionManager > definitionManager_;
+	std::unique_ptr<ObjectManager> objectManager_;
+	std::unique_ptr<DefinitionManager> definitionManager_;
 
 	TestObjects testObjects_;
 };
 } // end namespace wgt
-#endif //TEST_REFLECTION_FIXTURE_HPP
+#endif // TEST_REFLECTION_FIXTURE_HPP

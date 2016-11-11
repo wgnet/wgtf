@@ -23,11 +23,16 @@ typedef std::vector<Attributes> AttributeResults;
 class IResult
 {
 public:
-	virtual ~IResult(){}
+	virtual ~IResult()
+	{
+	}
 	virtual const char* errors() const = 0;
 	virtual const char* output() const = 0;
 
-	virtual bool hasErrors() const { return errors() && *errors(); }
+	virtual bool hasErrors() const
+	{
+		return errors() && *errors();
+	}
 
 	// Overridden to provide grouped results of key value pairs when multiple results are possible
 	virtual const AttributeResults& results() const

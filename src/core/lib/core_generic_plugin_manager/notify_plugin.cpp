@@ -4,13 +4,11 @@
 
 namespace wgt
 {
-#define STR( X ) #X	
-#define PLUGIN_GET_PROC_ADDRESS( hPlugin, func ) \
-	::GetProcAddress( hPlugin, STR( func ) )
+#define STR(X) #X
+#define PLUGIN_GET_PROC_ADDRESS(hPlugin, func) ::GetProcAddress(hPlugin, STR(func))
 
-NotifyPlugin::NotifyPlugin(GenericPluginManager & pluginManager, GenericPluginLoadState loadState)
-	: pluginManager_(pluginManager)
-	, loadState_(loadState)
+NotifyPlugin::NotifyPlugin(GenericPluginManager& pluginManager, GenericPluginLoadState loadState)
+    : pluginManager_(pluginManager), loadState_(loadState)
 {
 }
 
@@ -20,25 +18,24 @@ bool NotifyPlugin::operator()(HMODULE hPlugin)
 	if (!pCallback)
 	{
 		std::string errorMsg;
-		if (FormatLastErrorMessage( errorMsg ))
+		if (FormatLastErrorMessage(errorMsg))
 		{
-			NGT_ERROR_MSG( "NotifyPlugin::GetPluginCallbackFunc: %s", errorMsg.c_str() );
+			NGT_ERROR_MSG("NotifyPlugin::GetPluginCallbackFunc: %s", errorMsg.c_str());
 		}
 		return false;
 	}
 
-	pCallback( loadState_ );
+	pCallback(loadState_);
 	return true;
 }
-
 
 CallbackFunc NotifyPlugin::GetPluginCallbackFunc(HMODULE hPlugin)
 {
 	return (CallbackFunc)PLUGIN_GET_PROC_ADDRESS(hPlugin, PLG_CALLBACK);
 }
 
-NotifyPluginPostLoad::NotifyPluginPostLoad(GenericPluginManager & pluginManager)
-	: NotifyPlugin(pluginManager, GenericPluginLoadState::PostLoad)
+NotifyPluginPostLoad::NotifyPluginPostLoad(GenericPluginManager& pluginManager)
+    : NotifyPlugin(pluginManager, GenericPluginLoadState::PostLoad)
 {
 }
 

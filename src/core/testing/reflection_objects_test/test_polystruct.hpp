@@ -15,24 +15,23 @@ class TestPolyStruct
 	DECLARE_REFLECTED
 public:
 	TestPolyStruct();
-	void init( const IDefinitionManager & definitionManager );
+	void init(const IDefinitionManager& definitionManager);
+
 private:
 	DEFINE_TEST_DATA_TYPES()
 	TestInheritedStruct structure_;
 };
 
-
-class TestInheritedPolyStruct
-	: public TestPolyStruct
+class TestInheritedPolyStruct : public TestPolyStruct
 {
 	DECLARE_REFLECTED
 
 public:
 	TestInheritedPolyStruct();
-	void init( const IDefinitionManager & definitionManager );
+	void init(const IDefinitionManager& definitionManager);
 
 private:
 	DEFINE_INHERITS_TEST_DATA_TYPES()
 };
 } // end namespace wgt
-#endif //TEST_POLYSTRUCTURE_HPP
+#endif // TEST_POLYSTRUCTURE_HPP

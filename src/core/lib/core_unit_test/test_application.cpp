@@ -5,10 +5,9 @@
 
 namespace wgt
 {
-TestApplication::TestApplication()
-	: exiting_( false )
+TestApplication::TestApplication() : exiting_(false)
 {
-	thread_ = std::thread( &TestApplication::startApplication, this );
+	thread_ = std::thread(&TestApplication::startApplication, this);
 }
 
 TestApplication::~TestApplication()
@@ -24,8 +23,8 @@ int TestApplication::startApplication()
 		// TODO: don't notifyUpdate in the unit tests as many systems such as
 		// the command manager require the application thread to be the main thread
 
-		//notifyUpdate();
-		std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+		// notifyUpdate();
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	return 0;

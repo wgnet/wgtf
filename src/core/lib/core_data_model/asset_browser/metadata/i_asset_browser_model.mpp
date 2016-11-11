@@ -1,5 +1,6 @@
 #include "../i_asset_browser_model.hpp"
 
+#include "core_data_model/abstract_item_model.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/function_property.hpp"
 #include "core_reflection/metadata/meta_types.hpp"

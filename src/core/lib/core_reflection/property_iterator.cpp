@@ -6,17 +6,14 @@
 namespace wgt
 {
 // =============================================================================
-PropertyIterator::PropertyIterator()
-	: strategy_(ITERATE_SELF_ONLY)
-	, currentDefinition_( nullptr )
+PropertyIterator::PropertyIterator() : strategy_(ITERATE_SELF_ONLY), currentDefinition_(nullptr)
 {
 }
 
 // =============================================================================
-PropertyIterator::PropertyIterator( IterateStrategy strategy, const IClassDefinition & definition  )
-	: strategy_( strategy )
-	, currentDefinition_( &definition )
-	, currentIterator_( definition.getDetails().getPropertyIterator() )
+PropertyIterator::PropertyIterator(IterateStrategy strategy, const IClassDefinition& definition)
+    : strategy_(strategy), currentDefinition_(&definition),
+      currentIterator_(definition.getDetails().getPropertyIterator())
 {
 	moveNext();
 }
@@ -40,14 +37,14 @@ IBasePropertyPtr PropertyIterator::operator->() const
 }
 
 // =============================================================================
-PropertyIterator & PropertyIterator::operator++()
+PropertyIterator& PropertyIterator::operator++()
 {
 	moveNext();
 	return *this;
 }
 
 // =============================================================================
-bool PropertyIterator::operator==( const PropertyIterator& other ) const
+bool PropertyIterator::operator==(const PropertyIterator& other) const
 {
 	if (currentDefinition_ != other.currentDefinition_)
 	{
@@ -71,9 +68,9 @@ bool PropertyIterator::operator==( const PropertyIterator& other ) const
 }
 
 // =============================================================================
-bool PropertyIterator::operator!=( const PropertyIterator& other ) const
+bool PropertyIterator::operator!=(const PropertyIterator& other) const
 {
-	return !operator==( other );
+	return !operator==(other);
 }
 
 // =============================================================================
@@ -102,16 +99,16 @@ void PropertyIterator::moveNext()
 }
 
 // =============================================================================
-PropertyIteratorRange::PropertyIteratorRange( PropertyIterator::IterateStrategy strategy, const IClassDefinition & definition )
-	: strategy_( strategy )
-	, definition_( definition )
+PropertyIteratorRange::PropertyIteratorRange(PropertyIterator::IterateStrategy strategy,
+                                             const IClassDefinition& definition)
+    : strategy_(strategy), definition_(definition)
 {
 }
 
 // =============================================================================
 PropertyIterator PropertyIteratorRange::begin() const
 {
-	return PropertyIterator( strategy_, definition_ );
+	return PropertyIterator(strategy_, definition_);
 }
 
 // =============================================================================

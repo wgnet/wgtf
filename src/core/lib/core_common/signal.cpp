@@ -6,18 +6,15 @@ Connection::Connection()
 {
 }
 
-Connection::Connection(SignalHolderPtr entry) :
-	entry_(entry)
+Connection::Connection(SignalHolderPtr entry) : entry_(entry)
 {
 }
 
-Connection::Connection(const Connection & other) : 
-	entry_(other.entry_)
+Connection::Connection(const Connection& other) : entry_(other.entry_)
 {
 }
 
-Connection::Connection(Connection && other) : 
-	entry_(std::move(other.entry_))
+Connection::Connection(Connection&& other) : entry_(std::move(other.entry_))
 {
 }
 
@@ -25,13 +22,13 @@ Connection::~Connection()
 {
 }
 
-Connection & Connection::operator=(const Connection & other)
+Connection& Connection::operator=(const Connection& other)
 {
 	entry_ = other.entry_;
 	return *this;
 }
 
-Connection & Connection::operator=(Connection && other)
+Connection& Connection::operator=(Connection&& other)
 {
 	entry_ = std::move(other.entry_);
 	return *this;
@@ -39,7 +36,7 @@ Connection & Connection::operator=(Connection && other)
 
 void Connection::enable()
 {
-	if( entry_ )
+	if (entry_)
 	{
 		entry_->enabled_ = true;
 	}
@@ -47,7 +44,7 @@ void Connection::enable()
 
 void Connection::disable()
 {
-	if( entry_ )
+	if (entry_)
 	{
 		entry_->enabled_ = false;
 	}
@@ -55,7 +52,7 @@ void Connection::disable()
 
 void Connection::disconnect()
 {
-	if( entry_ )
+	if (entry_)
 	{
 		entry_->expired_ = true;
 	}
@@ -63,7 +60,7 @@ void Connection::disconnect()
 
 bool Connection::enabled() const
 {
-	if( entry_ )
+	if (entry_)
 	{
 		return entry_->enabled_;
 	}
@@ -75,7 +72,7 @@ bool Connection::enabled() const
 
 bool Connection::connected() const
 {
-	if( entry_ )
+	if (entry_)
 	{
 		return !entry_->expired_;
 	}
@@ -87,7 +84,6 @@ bool Connection::connected() const
 
 ConnectionHolder::ConnectionHolder()
 {
-
 }
 
 ConnectionHolder::~ConnectionHolder()
@@ -97,20 +93,20 @@ ConnectionHolder::~ConnectionHolder()
 
 void ConnectionHolder::clear()
 {
-	for (auto & connection : connections_)
+	for (auto& connection : connections_)
 	{
 		connection.disconnect();
 	}
 	connections_.clear();
 }
 
-void ConnectionHolder::add( const Connection & connection )
+void ConnectionHolder::add(const Connection& connection)
 {
-	connections_.emplace_back( connection );
+	connections_.emplace_back(connection);
 }
 
-void ConnectionHolder::operator+=( const Connection & connection )
+void ConnectionHolder::operator+=(const Connection& connection)
 {
-	add( connection );
+	add(connection);
 }
 } // end namespace wgt

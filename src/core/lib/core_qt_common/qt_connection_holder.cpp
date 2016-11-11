@@ -8,7 +8,7 @@ QtConnectionHolder::QtConnectionHolder()
 {
 }
 
-QtConnectionHolder::QtConnectionHolder( QMetaObject::Connection& connection )
+QtConnectionHolder::QtConnectionHolder(QMetaObject::Connection& connection)
 {
 	*this += connection;
 }
@@ -22,15 +22,15 @@ void QtConnectionHolder::reset()
 {
 	for (auto connection : connections_)
 	{
-		QObject::disconnect( connection );
+		QObject::disconnect(connection);
 	}
-	connections_.resize( 0 );
+	connections_.resize(0);
 }
 
-QtConnectionHolder& QtConnectionHolder::operator+=( const QMetaObject::Connection& connection )
+QtConnectionHolder& QtConnectionHolder::operator+=(const QMetaObject::Connection& connection)
 {
-	assert( connection );
-	connections_.push_back( connection );
+	assert(connection);
+	connections_.push_back(connection);
 	return *this;
 }
 } // end namespace wgt

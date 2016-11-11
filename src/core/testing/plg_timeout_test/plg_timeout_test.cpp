@@ -8,8 +8,7 @@
 
 namespace wgt
 {
-class TimeoutTestPluginApplication
-: public Implements<IApplication>
+class TimeoutTestPluginApplication : public Implements<IApplication>
 {
 public:
 	int startApplication() override
@@ -35,8 +34,7 @@ public:
  *
  * @ingroup plugins
  */
-class TimeoutTestPluginTestPlugin
-: public PluginMain
+class TimeoutTestPluginTestPlugin : public PluginMain
 {
 public:
 	TimeoutTestPluginTestPlugin(IComponentContext& contextManager)

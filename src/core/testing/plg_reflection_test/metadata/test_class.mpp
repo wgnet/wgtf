@@ -8,23 +8,18 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( TestBase, MetaNone() )
-	EXPOSE( "Name", baseName_, MetaNone() )
+BEGIN_EXPOSE(TestBase, MetaNone())
+EXPOSE("Name", baseName_, MetaNone())
 END_EXPOSE()
-BEGIN_EXPOSE( TestClass, TestBase, MetaNone() )
-	EXPOSE( "Name", name_,
-		MetaGroup( L"TestClassGroupName" ) +
-		MetaDisplayName( L"TestClassDisplayName" ) )
-	EXPOSE( "String", string_, MetaNone() )
-	EXPOSE( "StringFunc", getString, setString, MetaNone() )
-	EXPOSE_CALLABLE(
-		"StringLambda",
-		[](SelfType* object){ return object->string_; },
-		[](SelfType* object, std::string value){ object->string_ = std::move(value); },
-		MetaNone() )
-	EXPOSE( "InnerClass", innerClass_, MetaNone() )
+BEGIN_EXPOSE(TestClass, TestBase, MetaNone())
+EXPOSE("Name", name_, MetaGroup(L"TestClassGroupName") + MetaDisplayName(L"TestClassDisplayName"))
+EXPOSE("String", string_, MetaNone())
+EXPOSE("StringFunc", getString, setString, MetaNone())
+EXPOSE_CALLABLE("StringLambda", [](SelfType* object) { return object->string_; },
+                [](SelfType* object, std::string value) { object->string_ = std::move(value); }, MetaNone())
+EXPOSE("InnerClass", innerClass_, MetaNone())
 END_EXPOSE()
-BEGIN_EXPOSE( TestClass::InnerClass, MetaNone() )
-	EXPOSE( "InnerName", innerName_, MetaNone() )
+BEGIN_EXPOSE(TestClass::InnerClass, MetaNone())
+EXPOSE("InnerName", innerName_, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

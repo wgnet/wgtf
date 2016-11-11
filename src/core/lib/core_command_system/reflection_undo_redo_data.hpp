@@ -16,7 +16,7 @@ class ReflectionUndoRedoData : public UndoRedoData
 public:
 	friend CommandInstance;
 
-	ReflectionUndoRedoData( CommandInstance & commandInstance );
+	ReflectionUndoRedoData(CommandInstance& commandInstance);
 
 	void connect();
 	void disconnect();
@@ -34,11 +34,11 @@ public:
 	const CommandInstance& getCommandInstance() const;
 
 private:
-	CommandInstance &			commandInstance_;
-	ResizingMemoryStream		undoData_;
-	ResizingMemoryStream		redoData_;
-	std::shared_ptr< PropertyAccessorListener > paListener_;
-	ReflectedPropertyUndoRedoUtility::UndoRedoHelperList	undoRedoHelperList_;
+	CommandInstance& commandInstance_;
+	ResizingMemoryStream undoData_;
+	ResizingMemoryStream redoData_;
+	std::shared_ptr<PropertyAccessorListener> paListener_;
+	ReflectedPropertyUndoRedoUtility::UndoRedoHelperList undoRedoHelperList_;
 };
 } // end namespace wgt
 #endif

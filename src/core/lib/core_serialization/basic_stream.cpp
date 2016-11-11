@@ -9,17 +9,9 @@
 namespace wgt
 {
 BasicStream::BasicStream(IDataStream& dataStream)
-    :
-    dataStream_(dataStream)
-    ,
-    state_(std::ios_base::goodbit)
-    ,
-    //readBuffer_(),
-    readPos_(readBuffer_)
-    ,
-    readEnd_(readBuffer_)
-    ,
-    ungetBufferSize_(1)
+    : dataStream_(dataStream), state_(std::ios_base::goodbit),
+      // readBuffer_(),
+      readPos_(readBuffer_), readEnd_(readBuffer_), ungetBufferSize_(1)
 {
 }
 
@@ -66,9 +58,7 @@ bool BasicStream::sync()
 
 std::streamsize BasicStream::setUngetBufferSize(std::streamsize v)
 {
-	ungetBufferSize_ = std::min<std::streamsize>(
-	std::max<std::streamsize>(v, 0),
-	sizeof(readBuffer_));
+	ungetBufferSize_ = std::min<std::streamsize>(std::max<std::streamsize>(v, 0), sizeof(readBuffer_));
 	return ungetBufferSize_;
 }
 
@@ -238,9 +228,7 @@ std::streamsize BasicStream::readHard(void* destination, std::streamsize size)
 
 	while (total < size)
 	{
-		auto r = read(
-		static_cast<char*>(destination) + total,
-		size - total);
+		auto r = read(static_cast<char*>(destination) + total, size - total);
 		if (r <= 0)
 		{
 			break;
@@ -258,9 +246,7 @@ std::streamsize BasicStream::writeHard(const void* source, std::streamsize size)
 
 	while (total < size)
 	{
-		auto r = write(
-		static_cast<const char*>(source) + total,
-		size - total);
+		auto r = write(static_cast<const char*>(source) + total, size - total);
 		if (r <= 0)
 		{
 			break;
@@ -343,9 +329,7 @@ std::streamsize BasicStream::copyTo(IDataStream& destination, std::streamsize am
 		std::streamsize wr = 0;
 		while (wr < rr)
 		{
-			auto r = destination.write(
-			buffer + wr,
-			rr - wr);
+			auto r = destination.write(buffer + wr, rr - wr);
 			if (r <= 0)
 			{
 				// failed to write all read data

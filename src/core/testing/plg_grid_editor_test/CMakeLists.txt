@@ -30,9 +30,7 @@ BW_ADD_TOOL_PLUGIN( plg_grid_editor_test SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_grid_editor_test PRIVATE
 	core_generic_plugin
-	core_qt_common
-	core_ui_framework
-    Qt5::Core
+	core_data_model
 )
 
 BW_PROJECT_CATEGORY( plg_grid_editor_test "Plugins" )

@@ -16,80 +16,67 @@
 
 #include "active_filters_test_view_model.hpp"
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
 /**
 * A plugin which creates an expanding list in a panel that can be filtered with multiple text choices
 *
 * @ingroup plugins
-* @image html plg_test_active_filters.png 
+* @image html plg_test_active_filters.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class TestActiveFiltersPlugin
-	: public PluginMain
-	, public Depends< IViewCreator >
+class TestActiveFiltersPlugin : public PluginMain, public Depends<IViewCreator>
 {
 public:
 	//==========================================================================
-	TestActiveFiltersPlugin( IComponentContext & contextManager )
-		: Depends( contextManager )
+	TestActiveFiltersPlugin(IComponentContext& contextManager) : Depends(contextManager)
 	{
 	}
 
 	//==========================================================================
-	void Initialise(IComponentContext & contextManager) override
+	void Initialise(IComponentContext& contextManager) override
 	{
-		auto defManager = contextManager.queryInterface< IDefinitionManager >();
+		auto defManager = contextManager.queryInterface<IDefinitionManager>();
 		if (defManager == nullptr)
 		{
 			return;
 		}
 
-		auto uiFramework = contextManager.queryInterface< IUIFramework >();
+		auto uiFramework = contextManager.queryInterface<IUIFramework>();
 		if (uiFramework == nullptr)
 		{
 			return;
 		}
 
-		defManager->registerDefinition< TypeClassDefinition< ActiveFiltersTestViewModel > >();
+		defManager->registerDefinition<TypeClassDefinition<ActiveFiltersTestViewModel>>();
 
-		auto testViewModel = defManager->create< ActiveFiltersTestViewModel >();
-		testViewModel->init( *defManager, *uiFramework );
+		auto testViewModel = defManager->create<ActiveFiltersTestViewModel>();
+		testViewModel->init(*defManager, *uiFramework);
 
-		auto viewCreator = get< IViewCreator >();
+		auto viewCreator = get<IViewCreator>();
 		if (viewCreator == nullptr)
 		{
 			return;
 		}
-		testView_ = viewCreator->createView( 
-			"TestActiveFilters/ActiveFiltersTestPanel.qml",
-			testViewModel );
 
-		testView2_ = viewCreator->createView( 
-			"TestActiveFilters/ActiveFiltersTestPanel20.qml",
-			testViewModel );
+		testView_ = viewCreator->createView("TestActiveFilters/ActiveFiltersTestPanel20.qml", testViewModel);
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
-		auto uiApplication = contextManager.queryInterface< IUIApplication >();
+		auto uiApplication = contextManager.queryInterface<IUIApplication>();
 		if (uiApplication == nullptr)
 		{
 			return true;
 		}
 
-		if (testView2_.valid())
-		{
-			auto view = testView2_.get();
-			uiApplication->removeView( *view );
-			view = nullptr;
-		}
-
 		if (testView_.valid())
 		{
-            auto view = testView_.get();
-			uiApplication->removeView( *view );
+			auto view = testView_.get();
+			uiApplication->removeView(*view);
 			view = nullptr;
 		}
 
@@ -97,9 +84,8 @@ public:
 	}
 
 private:
-	wg_future<std::unique_ptr< IView >> testView_;
-	wg_future<std::unique_ptr< IView >> testView2_;
+	wg_future<std::unique_ptr<IView>> testView_;
 };
 
-PLG_CALLBACK_FUNC( TestActiveFiltersPlugin )
+PLG_CALLBACK_FUNC(TestActiveFiltersPlugin)
 } // end namespace wgt

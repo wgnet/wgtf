@@ -5,19 +5,14 @@ Text {
     id: text
     objectName: "WGHistoryText"
     WGComponent { type: "WGHistoryText" }
-
-    // -- Begin Interface
     text: "Unknown"
-    property bool isCurrentItem: false
-    property bool isApplied: false
-    // -- End Interface
-
     clip: false
-    color: isCurrentItem ?
-        palette.textColor :
-        palette.neutralTextColor
-    font.bold: isCurrentItem
-    font.italic: !isApplied
-    opacity: isApplied ? 1 : 0.35
+    color: currentItem ? palette.textColor : palette.neutralTextColor
+    font.bold: currentItem
+    font.italic: !applied
+    opacity: applied ? 1 : 0.35
+
+    property bool currentItem: false
+    property bool applied: false
 }
 

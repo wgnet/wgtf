@@ -17,10 +17,10 @@ class Variant;
  */
 class IListModel
 {
-	typedef Signal< void( int, ItemRole::Id, const Variant & ) > SignalModelData;
-	typedef Signal< void( const IItem *, int, ItemRole::Id, const Variant & ) > SignalItemData;
-	typedef Signal< void( size_t, size_t ) > SignalCount;
-	typedef Signal< void( void ) > SignalVoid;
+	typedef Signal<void(int, ItemRole::Id, const Variant&)> SignalModelData;
+	typedef Signal<void(const IItem*, int, ItemRole::Id, const Variant&)> SignalItemData;
+	typedef Signal<void(size_t, size_t)> SignalCount;
+	typedef Signal<void(void)> SignalVoid;
 
 public:
 	virtual ~IListModel()
@@ -28,8 +28,8 @@ public:
 		signalDestructing();
 	}
 
-	virtual IItem * item( size_t index ) const = 0;
-	virtual size_t index( const IItem * item ) const = 0;
+	virtual IItem* item(size_t index) const = 0;
+	virtual size_t index(const IItem* item) const = 0;
 
 	virtual bool empty() const;
 	virtual size_t size() const = 0;
@@ -40,17 +40,22 @@ public:
 	 * Not all models can be cleared, some are static once they are created.
 	 * TODO: Remove this method in NGT-1783
 	 */
-	virtual bool canClear() const { return false; }
+	virtual bool canClear() const
+	{
+		return false;
+	}
 
 	/**
 	 * Try to clear the model.
 	 * Should only work if canClear() returns true.
 	 * TODO: Remove this method in NGT-1783
 	 */
-	virtual void clear() {}
+	virtual void clear()
+	{
+	}
 
-	virtual Variant getData( int column, ItemRole::Id roleId ) const;
-	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data );
+	virtual Variant getData(int column, ItemRole::Id roleId) const;
+	virtual bool setData(int column, ItemRole::Id roleId, const Variant& data);
 
 	SignalModelData signalModelDataChanged;
 	SignalItemData signalPreItemDataChanged;

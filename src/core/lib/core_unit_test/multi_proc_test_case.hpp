@@ -21,11 +21,11 @@ public:
 	/**
 	 *  This method indicates that this test case has failed.
 	 */
-	void fail( const std::string & message )
+	void fail(const std::string& message)
 	{
 		std::string messageWithNewline = message;
-		messageWithNewline.push_back( '\n' );
-		NGT_ERROR_MSG( messageWithNewline.c_str() );
+		messageWithNewline.push_back('\n');
+		NGT_ERROR_MSG(messageWithNewline.c_str());
 
 		failureMsg_ = message;
 	}
@@ -33,19 +33,22 @@ public:
 	/**
 	 *  This method returns true if this test case has failed.
 	 */
-	bool hasFailed() const { return !failureMsg_.empty(); }
-
+	bool hasFailed() const
+	{
+		return !failureMsg_.empty();
+	}
 
 	/**
 	 *  This method returns the failure message itself.
 	 */
-	const char * failureMsg() const { return failureMsg_.c_str(); }
-
+	const char* failureMsg() const
+	{
+		return failureMsg_.c_str();
+	}
 
 private:
 	std::string failureMsg_;
 };
-
 
 // -----------------------------------------------------------------------------
 // Section: MultiProcTestCase
@@ -60,14 +63,14 @@ class MultiProcTestCase : public TestCase
 public:
 	class ChildProcess;
 
-	MultiProcTestCase( ChildProcess & mainProcess ):
-		mainProcess_( mainProcess ),
-		statuses_(),
-		pids_(),
-		hasKilledChildren_( false )
-	{}
+	MultiProcTestCase(ChildProcess& mainProcess)
+	    : mainProcess_(mainProcess), statuses_(), pids_(), hasKilledChildren_(false)
+	{
+	}
 
-	virtual ~MultiProcTestCase() {}
+	virtual ~MultiProcTestCase()
+	{
+	}
 
 	/**
 	 *	This class contains a method run() which is invoked n the child
@@ -76,7 +79,9 @@ public:
 	class ChildProcess : public TestCase
 	{
 	public:
-		virtual ~ChildProcess() {}
+		virtual ~ChildProcess()
+		{
+		}
 
 		/**
 		 *	Run function.
@@ -85,19 +90,17 @@ public:
 		 */
 		virtual int run() = 0;
 
-
 		/**
 		 *  This method should cause run() to terminate.
 		 */
 		virtual void stop() = 0;
 
-
 		/**
 		 *  This method stops this child process due to failure.
 		 */
-		void fail( const char * message )
+		void fail(const char* message)
 		{
-			this->TestCase::fail( message );
+			this->TestCase::fail(message);
 			this->stop();
 		}
 	};
@@ -120,58 +123,55 @@ public:
 		 *
 		 *	@return child object
 		 */
-		virtual ChildProcess * create() = 0;
+		virtual ChildProcess* create() = 0;
 	};
 
 	bool hasRunningChildren();
 	int numRunningChildren();
 
-	void runChildren( int num,
-		MultiProcTestCase::ChildProcessFactory * pFactory );
+	void runChildren(int num, MultiProcTestCase::ChildProcessFactory* pFactory);
 
-	bool runChild( ChildProcess * pChild );
+	bool runChild(ChildProcess* pChild);
 	void killChildren();
 	bool checkAllChildrenPass();
 	void waitForAll();
-	bool updateChildren( bool shouldBlock );
+	bool updateChildren(bool shouldBlock);
 
-	const ChildProcess & mainProcess() const { return mainProcess_; }
+	const ChildProcess& mainProcess() const
+	{
+		return mainProcess_;
+	}
 
 protected:
 	/// This isn't strictly a child process.  This is the run()'able thing that
 	/// runs in the parent process.  It obeys the same interface as the child
 	/// processes.
-	ChildProcess & mainProcess_;
+	ChildProcess& mainProcess_;
 
-	typedef std::map<int,int> Statuses;
+	typedef std::map<int, int> Statuses;
 	Statuses statuses_; // map pids -> exit status values
 
 	typedef std::set<int> ProcessIDs;
-	ProcessIDs pids_;	// pids started by parent that are still outstanding
+	ProcessIDs pids_; // pids started by parent that are still outstanding
 
 	/// This is true if child processes were terminated early due to a failure
 	/// in the main process.
 	bool hasKilledChildren_;
 };
 
-
 /**
  *  This macro should be called from within a TEST() block.
  */
-#define MULTI_PROC_TEST_CASE_WAIT_FOR_CHILDREN( OBJ )						\
-	{																		\
-		OBJ.waitForAll();													\
-																			\
-		/* If the main process failed, display its failure message */		\
-		ASSERT_WITH_MESSAGE(												\
-			!OBJ.mainProcess().hasFailed(),									\
-			OBJ.mainProcess().failureMsg() );								\
-																			\
-		/* Check that all children have passed OK */						\
-		ASSERT_WITH_MESSAGE(												\
-			OBJ.checkAllChildrenPass(),										\
-			OBJ.failureMsg() );												\
-	}																		\
+#define MULTI_PROC_TEST_CASE_WAIT_FOR_CHILDREN(OBJ)                                          \
+	{                                                                                        \
+		OBJ.waitForAll();                                                                    \
+                                                                                             \
+		/* If the main process failed, display its failure message */                        \
+		ASSERT_WITH_MESSAGE(!OBJ.mainProcess().hasFailed(), OBJ.mainProcess().failureMsg()); \
+                                                                                             \
+		/* Check that all children have passed OK */                                         \
+		ASSERT_WITH_MESSAGE(OBJ.checkAllChildrenPass(), OBJ.failureMsg());                   \
+	}
 
 } // end namespace wgt
 #endif // __MULTIPROC_TEST_CASE_HPP__

@@ -2,57 +2,19 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
-import WGControls 1.0
-import WGControls.Views 1.0
-import WGControls.Layouts 1.0
+import WGControls 2.0
+import WGControls.Views 2.0
+import WGControls.Layouts 2.0
 
 // This component is for displaying the history panel
 WGPanel {
     id: root
     objectName: "WGHistoryView"
-    WGComponent { type: "WGHistoryView" }
-    
     color: palette.mainWindowColor
-
     title: "History"
     layoutHints: { 'history': 1.0 }
 
-    property alias historySelectionExtension: historyModelSelectionExtension
-
-    WGListModel {
-        id : historyModel
-        source : History
-
-        ValueExtension {}
-        ColumnExtension {}
-        SelectionExtension {
-            id: historyModelSelectionExtension
-            multiSelect: true
-            onSelectionChanged: {
-                historySelectionHelper.select( getSelection() );
-            }
-        }
-    }
-
-    WGSelectionHelper {
-        id: historySelectionHelper
-        source: SelectionHandlerSource
-        onSourceChanged: {
-            select( historyModelSelectionExtension.getSelection() );
-        }
-    }
-
-    WGDataChangeNotifier {
-        id: historySelection
-        source: CurrentIndexSource
-        // When the model changes, update the selection on the view
-        onSourceChanged: {
-            history.currentIndex = data
-        }
-        onDataChanged: {
-            history.currentIndex = data
-        }
-    }
+    WGComponent { type: "WGHistoryView" }
 
     WGFrame {
         id: mainFrame
@@ -76,11 +38,7 @@ WGPanel {
                     objectName: "clearButton"
                     visible: IsClearButtonVisible
                     text: "Clear"
-                    onClicked: {
-                        console.assert( historyModel.canClear(),
-                            "List is not modifiable" )
-                        historyModel.clear()
-                    }
+                    onClicked: clearHistory();
                 }
 
                 Rectangle {
@@ -107,26 +65,50 @@ WGPanel {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
 
-                // History list
-                WGListView {
-                    id: history
-                    objectName: "historyList"
-                    model: historyModel
+                WGScrollView {
                     anchors.fill: parent
                     anchors.margins: defaultSpacing.standardMargin
-                    selectionExtension: root.historySelectionExtension
-                    columnDelegates: [columnDelegate]
 
-                    Component {
-                        id: columnDelegate
+                    WGListView {
+                        id: historyList
+                        objectName: "historyList"
+                        model: historyListModel
+                        columnWidth: width
+                        columnDelegates: [historyItemComponent]
 
-                        Loader {
-                            source: "WGTimelineEntryDelegate.qml"
+                        property int currentCommandRow: 0
+
+                        property Component historyItemComponent: WGTimelineEntryDelegate {
+                            view: historyList
+                            historyItem: extractItemDetail(itemData.value)
+                            columnIndex: itemColumnIndex
+                            currentItem: itemRowIndex === historyList.currentCommandRow
+                            applied: itemRowIndex <= historyList.currentCommandRow
                         }
-                    }
 
-                    onRowDoubleClicked: {
-                        historySelection.data = historyModel.indexRow(modelIndex);
+                        onItemDoubleClicked: historySelection.data = rowIndex.row
+                        onSelectionChanged: historySelectionHelper.select(selectionModel.selectedIndexes)
+
+                        WGSelectionHelper {
+                            id: historySelectionHelper
+                            source: SelectionHandlerSource
+
+                            onSourceChanged: {
+                                if (typeof selectionModel === "undefined") {
+                                    return;
+                                }
+
+                                select(historyList.selectionModel.selectedIndexes);
+                            }
+                        }
+
+                        WGDataChangeNotifier {
+                            id: historySelection
+                            source: CurrentIndexSource
+
+                            onSourceChanged: historyList.currentCommandRow = data
+                            onDataChanged: historyList.currentCommandRow = data
+                        }
                     }
                 }
             }

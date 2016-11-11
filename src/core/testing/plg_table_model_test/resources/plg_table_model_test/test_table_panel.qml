@@ -34,7 +34,7 @@ WGPanel {
     property bool useCppModel: true
     property int topControlsHeight: 20
 
-    title: "TableModel Test 2.0"
+    title: "TableModel Test"
     layoutHints: { 'test': 0.1 }
     color: palette.mainWindowColor
 

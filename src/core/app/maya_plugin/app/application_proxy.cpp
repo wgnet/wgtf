@@ -15,9 +15,9 @@
 
 namespace wgt
 {
-static ApplicationProxy *currentApplicationProxy = nullptr;
+static ApplicationProxy* currentApplicationProxy = nullptr;
 
-bool myEventFilter( void *message )
+bool myEventFilter(void* message)
 {
 	if (currentApplicationProxy)
 	{
@@ -27,20 +27,18 @@ bool myEventFilter( void *message )
 	return false;
 }
 
-ApplicationProxy::ApplicationProxy( IUIApplication* application, QObject* parent) :
-	  application_( application )
-	, started_( false )
-	, visible_( false )
+ApplicationProxy::ApplicationProxy(IUIApplication* application, QObject* parent)
+    : application_(application), started_(false), visible_(false)
 {
-	IApplicationAdapter * adapter = dynamic_cast< IApplicationAdapter * >( application_ );
+	IApplicationAdapter* adapter = dynamic_cast<IApplicationAdapter*>(application_);
 
 	if (adapter)
 	{
-		adapter->addListener( this );
+		adapter->addListener(this);
 	}
 
 	auto eventDispatcher = QAbstractEventDispatcher::instance();
-	eventDispatcher->setEventFilter( myEventFilter );
+	eventDispatcher->setEventFilter(myEventFilter);
 	currentApplicationProxy = this;
 }
 
@@ -48,13 +46,12 @@ ApplicationProxy::~ApplicationProxy()
 {
 	currentApplicationProxy = nullptr;
 	auto eventDispatcher = QAbstractEventDispatcher::instance();
-	eventDispatcher->setEventFilter( nullptr );
+	eventDispatcher->setEventFilter(nullptr);
 	stop();
 }
 
 void ApplicationProxy::applicationStarted()
 {
-
 }
 
 void ApplicationProxy::applicationStopped()
@@ -62,19 +59,19 @@ void ApplicationProxy::applicationStopped()
 	stop();
 }
 
-void ApplicationProxy::windowShown( IWindowAdapter * window )
+void ApplicationProxy::windowShown(IWindowAdapter* window)
 {
-	auto iter = windows_.find( window );
-	
+	auto iter = windows_.find(window);
+
 	if (iter != windows_.end())
 	{
 		iter->second->show();
 	}
 }
 
-void ApplicationProxy::windowHidden( IWindowAdapter * window )
+void ApplicationProxy::windowHidden(IWindowAdapter* window)
 {
-	auto iter = windows_.find( window );
+	auto iter = windows_.find(window);
 
 	if (iter != windows_.end())
 	{
@@ -82,15 +79,15 @@ void ApplicationProxy::windowHidden( IWindowAdapter * window )
 	}
 }
 
-void ApplicationProxy::windowClosed( IWindowAdapter * window )
+void ApplicationProxy::windowClosed(IWindowAdapter* window)
 {
-	auto iter = windows_.find( window );
+	auto iter = windows_.find(window);
 
 	if (iter != windows_.end())
 	{
 		iter->second->hide();
 		iter->second->deleteLater();
-		windows_.erase( iter );
+		windows_.erase(iter);
 	}
 
 	if (windows_.empty())
@@ -98,7 +95,6 @@ void ApplicationProxy::windowClosed( IWindowAdapter * window )
 		stop();
 	}
 }
-
 
 bool ApplicationProxy::started() const
 {
@@ -117,12 +113,12 @@ void ApplicationProxy::processEvents()
 
 void ApplicationProxy::start()
 {
-	auto mw = qobject_cast< QMainWindow * >( MQtUtil::mainWindow() );
+	auto mw = qobject_cast<QMainWindow*>(MQtUtil::mainWindow());
 
-	for (auto & kv : application_->windows())
+	for (auto& kv : application_->windows())
 	{
 		auto win = kv.second;
-		IWindowAdapter * adapter = dynamic_cast< IWindowAdapter * >( win );
+		IWindowAdapter* adapter = dynamic_cast<IWindowAdapter*>(win);
 		if (!adapter)
 		{
 			continue;
@@ -131,18 +127,18 @@ void ApplicationProxy::start()
 		win->hide();
 		adapter->makeFramelessWindow();
 
-		auto qWidget = new QWinHost( mw );
+		auto qWidget = new QWinHost(mw);
 
-		HWND winId = reinterpret_cast< HWND >( adapter->nativeWindowId() );
-		qWidget->setWindow( winId );
-		qWidget->setWindowTitle( win->title() );
-		qWidget->setFeatures( QDockWidget::AllDockWidgetFeatures );
-		qWidget->setAllowedAreas( Qt::AllDockWidgetAreas );
-		mw->addDockWidget(Qt::RightDockWidgetArea, qWidget );
+		HWND winId = reinterpret_cast<HWND>(adapter->nativeWindowId());
+		qWidget->setWindow(winId);
+		qWidget->setWindowTitle(win->title());
+		qWidget->setFeatures(QDockWidget::AllDockWidgetFeatures);
+		qWidget->setAllowedAreas(Qt::AllDockWidgetAreas);
+		mw->addDockWidget(Qt::RightDockWidgetArea, qWidget);
 		win->show();
-		windows_.insert( std::make_pair( adapter, qWidget ) );
+		windows_.insert(std::make_pair(adapter, qWidget));
 
-		adapter->addListener( this );
+		adapter->addListener(this);
 	}
 	started_ = true;
 	visible_ = true;
@@ -152,7 +148,7 @@ void ApplicationProxy::stop()
 {
 	started_ = false;
 	visible_ = false;
-	
+
 	for (auto& kv : windows_)
 	{
 		kv.second->hide();

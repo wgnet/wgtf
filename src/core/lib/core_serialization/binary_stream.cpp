@@ -53,8 +53,7 @@ void BinaryStream::deserializeBuffer(IDataStream& destination, std::streamsize m
 		return;
 	}
 
-	if (maximumSize > 0 &&
-	    s > maximumSize)
+	if (maximumSize > 0 && s > maximumSize)
 	{
 		// size limit is exceeded
 		setState(std::ios_base::failbit);

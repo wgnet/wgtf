@@ -44,34 +44,16 @@ import WGControls.Private 1.0
 
 /*!
     \ingroup wgcontrols
-    \qmltype CheckBoxStyle
-    \inqmlmodule QtQuick.Controls.Styles
-    \since 5.1
-    \ingroup controlsstyling
-    \brief Provides custom styling for CheckBox
 
-    Example:
-    \qml
-    CheckBox {
-        text: "Check Box"
-        style: CheckBoxStyle {
-            indicator: Rectangle {
-                    implicitWidth: 16
-                    implicitHeight: 16
-                    radius: 3
-                    border.color: control.activeFocus ? "darkblue" : "gray"
-                    border.width: 1
-                    Rectangle {
-                        visible: control.checked
-                        color: "#555"
-                        border.color: "#333"
-                        radius: 1
-                        anchors.margins: 4
-                        anchors.fill: parent
-                    }
-            }
-        }
-    }
+    This is a re-write of the default QML CheckBoxStyle.
+
+    Because of a bug with checkboxes losing bindings, we need to have control be a WGCheckBase.
+    Most of the styling here is redundant and overwritten.
+
+    *** IMPORTANT ***
+
+    If you want to style WGCheckBox or WGRadioButton, style them in WGCheckStyle or WGRadioStyle.
+
     \endqml
 */
 Style {

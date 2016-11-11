@@ -5,9 +5,8 @@ namespace wgt
 {
 namespace ReflectionUtilities
 {
-
 // =============================================================================
-bool isPolyStruct( const PropertyAccessor & pa ) 
+bool isPolyStruct(const PropertyAccessor& pa)
 {
 	auto type = pa.getType();
 	if (!type.isPointer())
@@ -15,11 +14,11 @@ bool isPolyStruct( const PropertyAccessor & pa )
 		return false;
 	}
 
-	return pa.getDefinitionManager()->getDefinition( type.removePointer().getName() ) != nullptr;
+	return pa.getDefinitionManager()->getDefinition(type.removePointer().getName()) != nullptr;
 }
 
 // =============================================================================
-bool isStruct( const PropertyAccessor & pa ) 
+bool isStruct(const PropertyAccessor& pa)
 {
 	auto type = pa.getType();
 	if (type.isPointer())
@@ -29,41 +28,40 @@ bool isStruct( const PropertyAccessor & pa )
 
 	auto value = pa.getValue();
 	ObjectHandle handle;
-	if (!value.tryCast( handle ))
+	if (!value.tryCast(handle))
 	{
 		return false;
 	}
 
-	return handle.getDefinition( *pa.getDefinitionManager() ) != nullptr;
+	return handle.getDefinition(*pa.getDefinitionManager()) != nullptr;
 }
 
 // =============================================================================
-template<>
-Variant copy< Variant >( Variant & value )
+template <>
+Variant copy<Variant>(Variant& value)
 {
 	return value;
 }
 
 // =============================================================================
-template<>
-Variant copy< const Variant >( const Variant & value )
+template <>
+Variant copy<const Variant>(const Variant& value)
 {
 	return value;
 }
 
 // =============================================================================
-template<>
-Variant reference< Variant >( Variant & value )
+template <>
+Variant reference<Variant>(Variant& value)
 {
 	return value;
 }
 
 // =============================================================================
-template<>
-Variant reference< const Variant >( const Variant & value )
+template <>
+Variant reference<const Variant>(const Variant& value)
 {
 	return value;
 }
-
 }
 } // end namespace wgt

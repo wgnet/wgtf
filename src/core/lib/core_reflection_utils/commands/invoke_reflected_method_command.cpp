@@ -17,16 +17,11 @@ namespace wgt
 {
 struct ReflectedMethodCommandParameters::Implementation
 {
-	Implementation(
-		ReflectedMethodCommandParameters& self,
-		RefObjectId id = std::string(),
-		std::string path = "",
-		ReflectedMethodParameters parameters = ReflectedMethodParameters() )
-		: self_( self )
-		, id_( id )
-		, path_( path )
-		, parameters_( parameters )
-	{}
+	Implementation(ReflectedMethodCommandParameters& self, RefObjectId id = std::string(), std::string path = "",
+	               ReflectedMethodParameters parameters = ReflectedMethodParameters())
+	    : self_(self), id_(id), path_(path), parameters_(parameters)
+	{
+	}
 
 	ReflectedMethodCommandParameters& self_;
 	RefObjectId id_;
@@ -38,44 +33,36 @@ struct ReflectedMethodCommandParameters::Implementation
 	static const char* s_ParametersName;
 };
 
-
 const char* ReflectedMethodCommandParameters::Implementation::s_IdName = "MethodContextId";
 const char* ReflectedMethodCommandParameters::Implementation::s_PathName = "MethodPath";
 const char* ReflectedMethodCommandParameters::Implementation::s_ParametersName = "MethodParameters";
-
 
 const char* ReflectedMethodCommandParameters::idName()
 {
 	return Implementation::s_IdName;
 }
 
-
 const char* ReflectedMethodCommandParameters::pathName()
 {
 	return Implementation::s_PathName;
 }
-
 
 const char* ReflectedMethodCommandParameters::parametersName()
 {
 	return Implementation::s_ParametersName;
 }
 
-
-ReflectedMethodCommandParameters::ReflectedMethodCommandParameters()
-	: impl_( new Implementation( *this ) )
+ReflectedMethodCommandParameters::ReflectedMethodCommandParameters() : impl_(new Implementation(*this))
 {
 }
 
-
-ReflectedMethodCommandParameters::ReflectedMethodCommandParameters( const ReflectedMethodCommandParameters& rhs )
-	: impl_( new Implementation( *this, rhs.impl_->id_, rhs.impl_->path_, rhs.impl_->parameters_ ) )
+ReflectedMethodCommandParameters::ReflectedMethodCommandParameters(const ReflectedMethodCommandParameters& rhs)
+    : impl_(new Implementation(*this, rhs.impl_->id_, rhs.impl_->path_, rhs.impl_->parameters_))
 {
 }
-
 
 ReflectedMethodCommandParameters& ReflectedMethodCommandParameters::operator=(
-	const ReflectedMethodCommandParameters& rhs )
+const ReflectedMethodCommandParameters& rhs)
 {
 	if (this != &rhs)
 	{
@@ -87,23 +74,19 @@ ReflectedMethodCommandParameters& ReflectedMethodCommandParameters::operator=(
 	return *this;
 }
 
-
 ReflectedMethodCommandParameters::~ReflectedMethodCommandParameters()
 {
 }
-
 
 const RefObjectId& ReflectedMethodCommandParameters::getId() const
 {
 	return impl_->id_;
 }
 
-
 const char* ReflectedMethodCommandParameters::getPath() const
 {
 	return impl_->path_.c_str();
 }
-
 
 const ReflectedMethodParameters& ReflectedMethodCommandParameters::getParameters() const
 {
@@ -115,30 +98,27 @@ ReflectedMethodParameters& ReflectedMethodCommandParameters::getParametersRef() 
 	return impl_->parameters_;
 }
 
-void ReflectedMethodCommandParameters::setId( const RefObjectId& id )
+void ReflectedMethodCommandParameters::setId(const RefObjectId& id)
 {
 	impl_->id_ = id;
 }
 
-
-void ReflectedMethodCommandParameters::setPath( const char* path )
+void ReflectedMethodCommandParameters::setPath(const char* path)
 {
 	impl_->path_ = path;
 }
 
-
-void ReflectedMethodCommandParameters::setParameters( const ReflectedMethodParameters& parameters )
+void ReflectedMethodCommandParameters::setParameters(const ReflectedMethodParameters& parameters)
 {
 	impl_->parameters_ = parameters;
 }
 
-
 struct InvokeReflectedMethodCommand::Implementation
 {
 	Implementation(InvokeReflectedMethodCommand& self, IDefinitionManager& definitionManager)
-	    : self_(self)
-	    , definitionManager_(definitionManager)
-	{}
+	    : self_(self), definitionManager_(definitionManager)
+	{
+	}
 
 	IBasePropertyPtr getProperty(const ObjectHandle& arguments) const
 	{
@@ -165,24 +145,19 @@ InvokeReflectedMethodCommand::InvokeReflectedMethodCommand(IDefinitionManager& d
 {
 }
 
-
-InvokeReflectedMethodCommand::InvokeReflectedMethodCommand( const InvokeReflectedMethodCommand& rhs )
-	: impl_( new Implementation( *this, rhs.impl_->definitionManager_ ) )
+InvokeReflectedMethodCommand::InvokeReflectedMethodCommand(const InvokeReflectedMethodCommand& rhs)
+    : impl_(new Implementation(*this, rhs.impl_->definitionManager_))
 {
 }
 
-
-InvokeReflectedMethodCommand& InvokeReflectedMethodCommand::operator=(
-	const InvokeReflectedMethodCommand& rhs )
+InvokeReflectedMethodCommand& InvokeReflectedMethodCommand::operator=(const InvokeReflectedMethodCommand& rhs)
 {
 	return *this;
 }
 
-
 InvokeReflectedMethodCommand::~InvokeReflectedMethodCommand()
 {
 }
-
 
 const char* InvokeReflectedMethodCommand::getId() const
 {
@@ -190,52 +165,50 @@ const char* InvokeReflectedMethodCommand::getId() const
 	return s_Id;
 }
 
-bool InvokeReflectedMethodCommand::validateArguments(const ObjectHandle& arguments ) const 
+bool InvokeReflectedMethodCommand::validateArguments(const ObjectHandle& arguments) const
 {
 	auto objectManager = impl_->definitionManager_.getObjectManager();
-	if ( objectManager == nullptr ) 
+	if (objectManager == nullptr)
 	{
 		return false;
 	}
 
 	auto commandParameters = arguments.getBase<ReflectedMethodCommandParameters>();
-	if ( commandParameters == nullptr ) 
+	if (commandParameters == nullptr)
 	{
 		return false;
 	}
 
-	const ObjectHandle& object = objectManager->getObject( commandParameters->getId() );
-	if ( !object.isValid() )
+	const ObjectHandle& object = objectManager->getObject(commandParameters->getId());
+	if (!object.isValid())
 	{
 		return false;
 	}
 
-	auto defintion = object.getDefinition( impl_->definitionManager_ );
-	if ( defintion == nullptr ) 
+	auto defintion = object.getDefinition(impl_->definitionManager_);
+	if (defintion == nullptr)
 	{
 		return false;
 	}
 
-	PropertyAccessor methodAccessor = defintion->bindProperty( commandParameters->getPath(), object );
-	if ( !methodAccessor.isValid() ) 
+	PropertyAccessor methodAccessor = defintion->bindProperty(commandParameters->getPath(), object);
+	if (!methodAccessor.isValid())
 	{
 		return false;
 	}
-	
 
 	return true;
 }
 
-
-ObjectHandle InvokeReflectedMethodCommand::execute( const ObjectHandle& arguments ) const
+ObjectHandle InvokeReflectedMethodCommand::execute(const ObjectHandle& arguments) const
 {
 	auto objectManager = impl_->definitionManager_.getObjectManager();
-	assert( objectManager != nullptr );
+	assert(objectManager != nullptr);
 
 	auto commandParameters = arguments.getBase<ReflectedMethodCommandParameters>();
-	const ObjectHandle& object = objectManager->getObject( commandParameters->getId() );
-	auto defintion = object.getDefinition( impl_->definitionManager_ );
-	PropertyAccessor methodAccessor = defintion->bindProperty( commandParameters->getPath(), object );
+	const ObjectHandle& object = objectManager->getObject(commandParameters->getId());
+	auto defintion = object.getDefinition(impl_->definitionManager_);
+	PropertyAccessor methodAccessor = defintion->bindProperty(commandParameters->getPath(), object);
 
 	if (!methodAccessor.isValid())
 	{
@@ -243,10 +216,9 @@ ObjectHandle InvokeReflectedMethodCommand::execute( const ObjectHandle& argument
 	}
 
 	const ReflectedMethodParameters& parameters = commandParameters->getParameters();
-	Variant result = methodAccessor.invoke( parameters );
+	Variant result = methodAccessor.invoke(parameters);
 	return result;
 }
-
 
 CommandThreadAffinity InvokeReflectedMethodCommand::threadAffinity() const
 {
@@ -261,8 +233,8 @@ ObjectHandle InvokeReflectedMethodCommand::getCommandDescription(const ObjectHan
 	auto methodWithMetaData = dynamic_cast<BasePropertyWithMetaData*>(classMember.get());
 	if (methodWithMetaData != nullptr)
 	{
-		auto description = findFirstMetaData<MetaDescriptionObj>(
-		methodWithMetaData->getMetaData(), impl_->definitionManager_);
+		auto description =
+		findFirstMetaData<MetaDescriptionObj>(methodWithMetaData->getMetaData(), impl_->definitionManager_);
 
 		if (description != nullptr && description->getDescription() != nullptr)
 		{
@@ -282,7 +254,7 @@ bool InvokeReflectedMethodCommand::canUndo(const ObjectHandle& arguments) const
 	IBasePropertyPtr classMember = impl_->getProperty(arguments);
 
 	// Bad cast if classMember is a ReflectedPython::Property*
-	auto method = dynamic_cast<ReflectedMethod*>( classMember.get() );
+	auto method = dynamic_cast<ReflectedMethod*>(classMember.get());
 	if (method != nullptr)
 	{
 		return method->getUndoMethod() != nullptr;
