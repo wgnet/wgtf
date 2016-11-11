@@ -6,7 +6,6 @@
 #include "plugins/plg_node_editor/interfaces/i_node_editor.hpp"
 #include "implements/CustomGraph.h"
 
-
 namespace wgt
 {
 /**
@@ -14,25 +13,26 @@ namespace wgt
 * Nodes can be created and linked to each other by right mouse clicking.
 *
 * @ingroup plugins
-* @image html plg_node_editor.png 
+* @image html plg_node_editor_test.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 *       - NodeEditorPlugin
 */
-class NodeEditorTestPlugin
-    : public PluginMain
+class NodeEditorTestPlugin : public PluginMain
 {
 public:
-    NodeEditorTestPlugin(IComponentContext & contextManager) {}
+	NodeEditorTestPlugin(IComponentContext& contextManager)
+	{
+	}
 
-    void Initialise(IComponentContext & contextManager) override
-    {
-        auto nodeEditor = contextManager.queryInterface<INodeEditor>();
-        assert(nodeEditor != nullptr);
+	void Initialise(IComponentContext& contextManager) override
+	{
+		auto nodeEditor = contextManager.queryInterface<INodeEditor>();
+		assert(nodeEditor != nullptr);
 
-        std::shared_ptr<IGraph> graph(new CustomGraph());
-        nodeEditor->SetGraph(graph);
-    }
+		std::shared_ptr<IGraph> graph(new CustomGraph());
+		nodeEditor->SetGraph(graph);
+	}
 };
 
 PLG_CALLBACK_FUNC(NodeEditorTestPlugin)

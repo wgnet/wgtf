@@ -12,7 +12,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 SET( QML_FILES
 	resources/testing_ui_main/actions.xml
 	resources/testing_ui_main/test_property_tree_panel.qml
-	resources/testing_ui_main/test_reflected_tree_panel.qml
 )
 SOURCE_GROUP( "QML" FILES ${QML_FILES} )
 BW_QT_ADD_QRC(testing_ui_main resources/testing_ui_main)
@@ -61,12 +60,9 @@ ENDIF()
 
 BW_TARGET_LINK_LIBRARIES( plg_ui_main_test PRIVATE
 	core_generic_plugin
-	core_qt_common
+	core_data_model
 	core_reflection
 	reflection_objects_test
-	core_command_system
-	core_ui_framework
-    Qt5::Core
 	${PLATFORM_LIBRARIES}
 )
 

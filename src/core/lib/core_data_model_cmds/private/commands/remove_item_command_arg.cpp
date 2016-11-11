@@ -4,8 +4,7 @@
 
 namespace wgt
 {
-RemoveItemCommandArgument::RemoveItemCommandArgument()
-    : pModel_(nullptr)
+RemoveItemCommandArgument::RemoveItemCommandArgument() : pModel_(nullptr)
 {
 }
 

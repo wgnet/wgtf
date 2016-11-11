@@ -1,6 +1,4 @@
 #include "property_list_model.hpp"
-#include "core_reflection/metadata/meta_impl.hpp"
-#include "core_reflection/metadata/meta_utilities.hpp"
 
 namespace wgt
 {
@@ -20,55 +18,71 @@ std::unique_ptr<ReflectedTreeModel::Children> PropertyListModel::getChildren(con
 	auto children = new Children();
 	if (item == nullptr)
 	{
-		enumerateAllProperties(nullptr, *children);
+		std::vector<const ReflectedPropertyItem*> properties;
+		collectProperties(nullptr, properties);
+		for (auto& property : properties)
+		{
+			children->push_back(property);
+		}
 	}
 	return std::unique_ptr<Children>(children);
 }
 
-AbstractTreeModel::ItemIndex PropertyListModel::childHint(const ReflectedPropertyItem* item)
+AbstractTreeModel::ItemIndex PropertyListModel::childHint(const AbstractItem* item)
 {
 	return ItemIndex();
 }
 
-void PropertyListModel::enumerateAllProperties(const ReflectedPropertyItem* item, Children& children)
+void PropertyListModel::collectProperties(const ReflectedPropertyItem* item,
+                                          std::vector<const ReflectedPropertyItem*>& o_Properties)
 {
-	auto& properties = enumerateProperties(item);
+	auto& properties = getProperties(item);
 	for (auto& property : properties)
 	{
-		auto& object = property->getObject();
-		auto& path = property->getPath();
-
-		auto& definitionManager = *getDefinitionManager();
-		auto definition = object.getDefinition(definitionManager);
-		auto propertyAccessor = definition->bindProperty(path.c_str(), object);
-
-		bool isAction = findFirstMetaData<MetaActionObj>(propertyAccessor, definitionManager) != nullptr;
-		if (isAction)
+		auto filterResult = filterProperty(property.get());
+		switch (filterResult)
 		{
-			continue;
+		case INCLUDE:
+			o_Properties.push_back(property.get());
+
+		case INCLUDE_CHILDREN:
+			collectProperties(property.get(), o_Properties);
+
+		case IGNORE:
+		default:
+			break;
 		}
+	}
+}
 
-		bool isHidden = findFirstMetaData<MetaHiddenObj>(propertyAccessor, definitionManager) != nullptr;
-		bool isInPlace = findFirstMetaData<MetaInPlaceObj>(propertyAccessor, definitionManager) != nullptr;
-		if (!isHidden && !isInPlace && propertyAccessor.canGetValue())
+PropertyListModel::FilterResult PropertyListModel::filterProperty(const ReflectedPropertyItem* item) const
+{
+	auto& object = item->getObject();
+	auto& path = item->getPath();
+
+	auto& definitionManager = *getDefinitionManager();
+	auto definition = object.getDefinition(definitionManager);
+	if (definition == nullptr)
+	{
+		return IGNORE;
+	}
+	auto propertyAccessor = definition->bindProperty(path.c_str(), object);
+
+	if (propertyAccessor.canGetValue())
+	{
+		auto value = propertyAccessor.getValue();
+		if (!value.typeIs<ObjectHandle>())
 		{
-			auto value = propertyAccessor.getValue();
-			ObjectHandle handle;
-			if (!value.tryCast(handle))
+			if (!value.typeIs<Collection>())
 			{
-				Collection collection;
-				if (!value.tryCast(collection))
-				{
-					children.push_back(property.get());
-				}
+				return INCLUDE;
 			}
 		}
 
-		if (!isHidden || isInPlace)
-		{
-			enumerateAllProperties(property.get(), children);
-		}
+		return INCLUDE_CHILDREN;
 	}
+
+	return IGNORE;
 }
 }
 }

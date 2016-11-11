@@ -15,33 +15,32 @@ namespace wgt
 class IAction;
 class IComponentContext;
 
-class MainWindow
-	: public Depends< IViewCreator, IUIApplication, IUIFramework >
-{    
+class MainWindow : public Depends<IViewCreator, IUIApplication, IUIFramework>
+{
 public:
-    explicit MainWindow( IComponentContext & context );
-    ~MainWindow();
+	explicit MainWindow(IComponentContext& context);
+	~MainWindow();
 
 	void init();
 	void fini();
 
 private:
-	void createActions( IUIFramework & uiFramework );
+	void createActions(IUIFramework& uiFramework);
 	void destroyActions();
 
-	void close( IAction * action );
-	void showShortcutConfig( IAction* action );
-	void onTryClose( bool& shouldClose );
+	void close(IAction* action);
+	void showShortcutConfig(IAction* action);
+	void onTryClose(bool& shouldClose);
 	void onClose();
 
 	void onStartUp();
 
-	void addMenuBar( IUIApplication & uiApplication );
+	void addMenuBar(IUIApplication& uiApplication);
 
 private:
-	std::unique_ptr< IWindow > mainWindow_;
-	std::unique_ptr< IAction > testExit_;
-	std::unique_ptr< IAction > shortcutConfig_;
+	std::unique_ptr<IWindow> mainWindow_;
+	std::unique_ptr<IAction> testExit_;
+	std::unique_ptr<IAction> shortcutConfig_;
 	ConnectionHolder connections_;
 };
 } // end namespace wgt

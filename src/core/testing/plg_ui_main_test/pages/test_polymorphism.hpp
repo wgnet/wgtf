@@ -6,55 +6,55 @@
 
 namespace wgt
 {
-class TestPolyCheckBox
-	: public TestPolyStruct
+class TestPolyCheckBox : public TestPolyStruct
 {
 	DECLARE_REFLECTED
 public:
 	TestPolyCheckBox();
+
 private:
 	bool checked_;
 };
 
-class TestPolyTextField
-	: public TestPolyStruct
+class TestPolyTextField : public TestPolyStruct
 {
 	DECLARE_REFLECTED
 public:
 	TestPolyTextField();
-private:
-	void getText( std::string * text ) const;
-	void setText( const std::string & text );
 
-	void getNumber( int * num ) const;
-	void setNumber( const int & num );
+private:
+	void getText(std::string* text) const;
+	void setText(const std::string& text);
+
+	void getNumber(int* num) const;
+	void setNumber(const int& num);
 
 	std::string text_;
 	int num_;
 };
 
-class TestPolyComboBox
-	: public TestPolyStruct
+class TestPolyComboBox : public TestPolyStruct
 {
 	DECLARE_REFLECTED
 public:
 	TestPolyComboBox();
+
 private:
-	virtual void getSelected( int * select ) const;
-	virtual void setSelected( const int & select );
+	virtual void getSelected(int* select) const;
+	virtual void setSelected(const int& select);
 
 	int curSelected_;
 };
 
-class TestPolyColor3
-	: public TestPolyComboBox
+class TestPolyColor3 : public TestPolyComboBox
 {
 	DECLARE_REFLECTED
 public:
 	TestPolyColor3();
+
 private:
-	virtual void getSelected( int * select ) const;
-	virtual void setSelected( const int & select );
+	virtual void getSelected(int* select) const;
+	virtual void setSelected(const int& select);
 
 	int seletColor_;
 };

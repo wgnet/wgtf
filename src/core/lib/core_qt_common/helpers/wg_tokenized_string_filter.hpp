@@ -18,15 +18,9 @@ class WGTokenizedStringFilter : public WGFilter
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QString filterText
-				READ getFilterText
-				WRITE setFilterText
-				NOTIFY filterTextChanged )
+	Q_PROPERTY(QString filterText READ getFilterText WRITE setFilterText NOTIFY filterTextChanged)
 
-	Q_PROPERTY( QString splitterChar
-				READ getSplitterChar
-				WRITE setSplitterChar
-				NOTIFY splitterCharChanged )
+	Q_PROPERTY(QString splitterChar READ getSplitterChar WRITE setSplitterChar NOTIFY splitterCharChanged)
 
 	DECLARE_QT_MEMORY_HANDLER
 
@@ -34,17 +28,17 @@ public:
 	WGTokenizedStringFilter();
 	virtual ~WGTokenizedStringFilter();
 
-	virtual IItemFilter * getFilter() const override;
+	virtual IItemFilter* getFilter() const override;
 
 protected:
 	virtual void updateInternalItemRole() override;
 
-private:	
+private:
 	QString getFilterText() const;
-	void setFilterText( const QString & filterText );
+	void setFilterText(const QString& filterText);
 
 	QString getSplitterChar() const;
-	void setSplitterChar( const QString & splitter );
+	void setSplitterChar(const QString& splitter);
 
 signals:
 	void filterTextChanged();

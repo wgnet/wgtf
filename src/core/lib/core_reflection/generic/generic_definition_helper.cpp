@@ -5,14 +5,14 @@ namespace wgt
 {
 TypeId GenericDefinitionHelper::typeId() const
 {
-	static TypeId id = TypeId::getType< GenericObject >();
+	static TypeId id = TypeId::getType<GenericObject>();
 	return id;
 }
 
-IClassDefinition * GenericDefinitionHelper::getDefinition( const ObjectHandle & object ) const
+IClassDefinition* GenericDefinitionHelper::getDefinition(const ObjectHandle& object) const
 {
-	auto genericObject = object.getBase< GenericObject >();
-	assert( genericObject != nullptr );
+	auto genericObject = object.getBase<GenericObject>();
+	assert(genericObject != nullptr);
 	return genericObject->getDefinition();
 }
 } // end namespace wgt

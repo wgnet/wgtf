@@ -38,8 +38,6 @@ BW_TARGET_LINK_LIBRARIES( plg_progress_manager_test PRIVATE
 	core_command_system
 	core_reflection
 	core_generic_plugin
-	core_ui_framework
-    Qt5::Core
 )
 
 BW_PROJECT_CATEGORY( plg_progress_manager_test "Plugins" )

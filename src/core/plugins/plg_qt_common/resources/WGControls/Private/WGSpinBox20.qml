@@ -75,7 +75,6 @@ WGNumberBox {
     \qmltype SpinBox
     \inqmlmodule QtQuick.Controls
     \since 5.1
-    \ingroup controls
     \brief Provides a spin box control.
 
     SpinBox allows the user to choose a value by clicking the up or down buttons, or by
@@ -124,13 +123,13 @@ Control {
     /*! property indicates if the control should show a button for setting an infinite value */
     property bool showInfiniteButton: false
 
-    /*! property indicates if the control represetnts an infinite value */
+    /*! property indicates if the control represents an infinite value */
     property bool valueIsInfinite: false
 
     /*! property contains the string to be shown when valueIsInfinite is true*/
     property string __valueIsInfiniteString: "\u221E"
 
-    /*! property indicates if the control represetnts multiple data values */
+    /*! property indicates if the control represents multiple data values. multipleValues takes precedence over valueIsInfinite. */
     property bool multipleValues: false
 
     /*! property contains the string to be shown when multiple values are represented*/
@@ -306,15 +305,9 @@ Control {
         checkable: true
         checked: valueIsInfinite
 
-        onCheckedChanged: {
-            if (checked == true) {
-                valueIsInfinite = true
-                input.text = __valueIsInfiniteString
-            }
-            else {
-                valueIsInfinite = false
-                input.text = value
-            }
+        onClicked: {
+            valueIsInfinite = !valueIsInfinite
+            editingFinished()
         }
     }
 
@@ -379,17 +372,18 @@ Control {
 
         The corresponding handler is \c onEditingFinished.
     */
+
     signal editingFinished()
 
-    onEditingFinished: {
-        if (valueIsInfinite) {
-            input.text = __valueIsInfiniteString
-        }
+    onValueChanged: {
+        valueIsInfinite = false
+        multipleValues = false
     }
 
-    onValueChanged: {
-        if (valueIsInfinite) {
-            valueIsInfinite = false
+    onValueIsInfiniteChanged: {
+        if (valueIsInfinite)
+        {
+            multipleValues = false
         }
     }
 
@@ -401,6 +395,11 @@ Control {
         value += amount
         if (activeFocus)
             input.selectValue()
+    }
+
+    //selects the text inside the input box.
+    function selectValue() {
+        input.selectValue()
     }
 
     Keys.onUpPressed: {
@@ -466,8 +465,6 @@ Control {
     Accessible.name: input.text
     Accessible.role: Accessible.SpinBox
 
-    enabled: !readOnly
-
     Binding {
         id: dataBinding
     }
@@ -521,6 +518,33 @@ Control {
 
         style: textBoxStyle
 
+        states: [
+            State {
+                name: "NORMAL"
+                when: !valueIsInfinite && !multipleValues && useValidatorOnInputText
+                PropertyChanges {
+                    target: input
+                    text: validator.text
+                }
+            },
+            State {
+                name: "INFINITE"
+                when: valueIsInfinite && !multipleValues
+                PropertyChanges {
+                    target: input
+                    text: __valueIsInfiniteString
+                }
+            },
+            State {
+                name: "MULTIVALUE"
+                when: multipleValues
+                PropertyChanges {
+                    target: input
+                    text: __multipleValuesString
+                }
+            }
+        ]
+
         // sends through up/down input events
         Keys.forwardTo: [input, spinbox]
 
@@ -568,32 +592,12 @@ Control {
             {
                 if (ready && useValidatorOnInputText)
                 {
-                    if (valueIsInfinite) {
-                        input.text = __valueIsInfiniteString
-                    }
-                    else {
-                        input.text = validator.text
-                    }
+                    input.text = validator.text
                 }
             }
 
             Component.onCompleted:
             {
-                if (useValidatorOnInputText)
-                {
-                    if (multipleValues)
-                    {
-                        input.text = __multipleValuesString
-                    }
-                    else if (valueIsInfinite)
-                    {
-                        input.text = __valueIsInfiniteString
-                    }
-                    else
-                    {
-                        input.text = validator.text
-                    }
-                }
                 ready = true
             }
         }
@@ -601,24 +605,17 @@ Control {
         onAccepted: {
             if (useValidatorOnInputText)
             {
-                if (valueIsInfinite) {
-                    input.text = __valueIsInfiniteString
-                }
-                else {
-                    input.text = validator.text
-                }
+                input.text = validator.text
+                editingFinished()
             }
+        }
+
+        onEditAccepted: {
+            spinbox.editingFinished();
         }
 
         //This breaks Tab focus... but not sure if it does anything else useful. Leaving here for now.
         //Keys.forwardTo: spinbox
-
-        onEditAccepted: {
-            spinbox.editingFinished();
-            if (valueIsInfinite) {
-                input.text = __valueIsInfiniteString
-            }
-        }
 
         function selectValue() {
             select(prefix.length, text.length - suffix.length)
@@ -734,7 +731,6 @@ Control {
             anchors.right: parent.right
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            //anchors.horizontalCenter: parent.horizontalCenter
         }
     }
 

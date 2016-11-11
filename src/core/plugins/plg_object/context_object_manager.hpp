@@ -6,13 +6,13 @@
 
 namespace wgt
 {
-class ContextObjectManager : public Implements< IObjectManagerNew >
+class ContextObjectManager : public Implements<IObjectManagerNew>
 {
 public:
-	ContextObjectManager( IObjectManagerNew & parent, const wchar_t * contextName );
+	ContextObjectManager(IObjectManagerNew& parent, const wchar_t* contextName);
 
 private:
-	IObjectManagerNew & parent_;
+	IObjectManagerNew& parent_;
 };
 } // end namespace wgt
-#endif //CONTEXT_OBJECT_MANAGER_HPP
+#endif // CONTEXT_OBJECT_MANAGER_HPP

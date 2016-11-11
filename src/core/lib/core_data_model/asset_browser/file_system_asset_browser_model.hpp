@@ -29,12 +29,9 @@ typedef std::shared_ptr<IFileInfo> IFileInfoPtr;
 class FileSystemAssetBrowserModel : public IAssetBrowserModel
 {
 public:
-	FileSystemAssetBrowserModel(
-	const AssetPaths& assetPaths,
-	const CustomContentFilters& customContentFilters,
-	IFileSystem& fileSystem,
-	IDefinitionManager& definitionManager,
-	IAssetPresentationProvider& presentationProvider);
+	FileSystemAssetBrowserModel(const AssetPaths& assetPaths, const CustomContentFilters& customContentFilters,
+	                            IFileSystem& fileSystem, IDefinitionManager& definitionManager,
+	                            IAssetPresentationProvider& presentationProvider);
 	~FileSystemAssetBrowserModel();
 
 	void addAssetPath(const std::string& path);

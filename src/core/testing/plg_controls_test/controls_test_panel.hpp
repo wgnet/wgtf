@@ -14,17 +14,16 @@
 
 namespace wgt
 {
-class ControlsTestPanel
-	: Depends< IViewCreator, IUIApplication, IDefinitionManager >
+class ControlsTestPanel : Depends<IViewCreator, IUIApplication, IDefinitionManager>
 {
 public:
-	ControlsTestPanel( IComponentContext & context );
+	ControlsTestPanel(IComponentContext& context);
 
 	bool addPanel();
 	void removePanel();
 
 private:
-	wg_future<std::unique_ptr< IView >> controlsView_;
+	wg_future<std::unique_ptr<IView>> controlsView_;
 	ObjectHandle controlData_;
 };
 } // end namespace wgt

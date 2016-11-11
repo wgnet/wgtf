@@ -1,7 +1,6 @@
 #ifndef GENERIC_OBJECT_HPP
 #define GENERIC_OBJECT_HPP
 
-
 #include "base_generic_object.hpp"
 #include "core_reflection/reflection_dll.hpp"
 
@@ -28,20 +27,18 @@ public:
 	GenericObject()
 	{
 	}
-	static GenericObjectPtr create(
-		IDefinitionManager & definitionManager, 
-		const RefObjectId & id = RefObjectId::zero(), 
-		const char* classDefinitionName = nullptr );
+	static GenericObjectPtr create(IDefinitionManager& definitionManager, const RefObjectId& id = RefObjectId::zero(),
+	                               const char* classDefinitionName = nullptr);
 
 private:
-	GenericObject( const GenericObject & );
-	const GenericObject & operator == ( const GenericObject & );
+	GenericObject(const GenericObject&);
+	const GenericObject& operator==(const GenericObject&);
 
 	ObjectHandle getDerivedType() const override;
 	ObjectHandle getDerivedType() override;
 
-	mutable std::unordered_map< const GenericProperty *, Variant > properties_;
+	mutable std::unordered_map<const GenericProperty*, Variant> properties_;
 	friend class GenericProperty;
 };
 } // end namespace wgt
-#endif //GENERIC_OBJECT_HPP
+#endif // GENERIC_OBJECT_HPP

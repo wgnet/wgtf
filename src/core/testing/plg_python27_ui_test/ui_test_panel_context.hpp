@@ -13,17 +13,15 @@ class AbstractTreeModel;
 
 /**
  *	Stores variables that can be accessed by QML.
- */ 
+ */
 class PanelContext
 {
 public:
 	DECLARE_REFLECTED
 	PanelContext();
 
-	bool initialize(IComponentContext& context,
-	                const char* panelName,
-	                const ObjectHandle& pythonObject);
-	const std::string & panelName() const;
+	bool initialize(IComponentContext& context, const char* panelName, const ObjectHandle& pythonObject);
+	const std::string& panelName() const;
 	AbstractTreeModel* treeModel() const;
 	void updateValues();
 	void undoUpdateValues(const ObjectHandle&, Variant);

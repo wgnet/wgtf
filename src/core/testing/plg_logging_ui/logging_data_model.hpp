@@ -12,35 +12,34 @@ namespace wgt
 {
 class LoggingDataModel : public ILoggingModel
 {
-
 public:
 	LoggingDataModel();
 	~LoggingDataModel();
 
 	// ILoggingModel
 	virtual const std::string& getText() const override;
-	virtual void putText( const std::string& text ) override;
-	virtual void appendText( const std::string& text ) override;
+	virtual void putText(const std::string& text) override;
+	virtual void appendText(const std::string& text) override;
 	virtual void clear() override;
 
 private:
-	LoggingDataModel( const LoggingDataModel& );
-	LoggingDataModel& operator=( const LoggingDataModel& );
+	LoggingDataModel(const LoggingDataModel&);
+	LoggingDataModel& operator=(const LoggingDataModel&);
 
 	struct Implementation;
-	std::unique_ptr< Implementation > impl_;
+	std::unique_ptr<Implementation> impl_;
 };
 
 class Logger : public ILogger
 {
 public:
-	Logger( std::shared_ptr< ILoggingModel > loggingModel );
+	Logger(std::shared_ptr<ILoggingModel> loggingModel);
 
 private:
 	// ILogger
-	virtual void out( LogMessage* message ) override;
+	virtual void out(LogMessage* message) override;
 
-	std::shared_ptr< ILoggingModel > loggingModel_;
+	std::shared_ptr<ILoggingModel> loggingModel_;
 };
 
 #endif // LOGGING_DATA_MODEL_HPP

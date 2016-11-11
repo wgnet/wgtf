@@ -29,8 +29,7 @@ bool isValid(const RemoveItemCommandArgument* pCommandArgs)
 
 } // end namespace RemoveItemCommand_Detail
 
-RemoveItemCommand::RemoveItemCommand(IComponentContext& context)
-    : definitionManager_(context)
+RemoveItemCommand::RemoveItemCommand(IComponentContext& context) : definitionManager_(context)
 {
 }
 
@@ -83,8 +82,7 @@ bool RemoveItemCommand::redo(const ObjectHandle& arguments) const /* override */
 	return model.removeItem(key);
 }
 
-ObjectHandle RemoveItemCommand::getCommandDescription(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle RemoveItemCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
 	auto handle = GenericObject::create(*definitionManager_);
 	assert(handle.get() != nullptr);
@@ -119,15 +117,13 @@ const char* RemoveItemCommand::getId() const /* override */
 	return s_Id;
 }
 
-bool RemoveItemCommand::validateArguments(
-const ObjectHandle& arguments) const /* override */
+bool RemoveItemCommand::validateArguments(const ObjectHandle& arguments) const /* override */
 {
 	const auto pCommandArgs = arguments.getBase<RemoveItemCommandArgument>();
 	return RemoveItemCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle RemoveItemCommand::execute(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle RemoveItemCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<RemoveItemCommandArgument>();
 	if (!RemoveItemCommand_Detail::isValid(pCommandArgs))
@@ -142,9 +138,7 @@ const ObjectHandle& arguments) const /* override */
 
 	const auto result = model.removeItem(key);
 
-	const auto errorCode = result ?
-	CommandErrorCode::COMMAND_NO_ERROR :
-	CommandErrorCode::FAILED;
+	const auto errorCode = result ? CommandErrorCode::COMMAND_NO_ERROR : CommandErrorCode::FAILED;
 	return errorCode;
 }
 

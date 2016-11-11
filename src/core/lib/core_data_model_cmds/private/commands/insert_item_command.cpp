@@ -29,8 +29,7 @@ bool isValid(const InsertItemCommandArgument* pCommandArgs)
 
 } // end namespace InsertItemCommand_Detail
 
-InsertItemCommand::InsertItemCommand(IComponentContext& context)
-    : definitionManager_(context)
+InsertItemCommand::InsertItemCommand(IComponentContext& context) : definitionManager_(context)
 {
 }
 
@@ -83,8 +82,7 @@ bool InsertItemCommand::redo(const ObjectHandle& arguments) const /* override */
 	return model.insertItem(key, value);
 }
 
-ObjectHandle InsertItemCommand::getCommandDescription(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle InsertItemCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
 	auto handle = GenericObject::create(*definitionManager_);
 	assert(handle.get() != nullptr);
@@ -119,15 +117,13 @@ const char* InsertItemCommand::getId() const /* override */
 	return s_Id;
 }
 
-bool InsertItemCommand::validateArguments(
-const ObjectHandle& arguments) const /* override */
+bool InsertItemCommand::validateArguments(const ObjectHandle& arguments) const /* override */
 {
 	const auto pCommandArgs = arguments.getBase<InsertItemCommandArgument>();
 	return InsertItemCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle InsertItemCommand::execute(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle InsertItemCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<InsertItemCommandArgument>();
 	if (!InsertItemCommand_Detail::isValid(pCommandArgs))
@@ -141,9 +137,7 @@ const ObjectHandle& arguments) const /* override */
 
 	const auto result = model.insertItem(key, value);
 
-	const auto errorCode = result ?
-	CommandErrorCode::COMMAND_NO_ERROR :
-	CommandErrorCode::FAILED;
+	const auto errorCode = result ? CommandErrorCode::COMMAND_NO_ERROR : CommandErrorCode::FAILED;
 	return errorCode;
 }
 

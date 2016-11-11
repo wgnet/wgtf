@@ -3,9 +3,7 @@
 namespace wgt
 {
 //------------------------------------------------------------------------------
-ReflectedCollectionImpl::ReflectedCollectionImpl(
-const IBasePropertyPtr& baseProperty)
-    : baseProperty_(baseProperty)
+ReflectedCollectionImpl::ReflectedCollectionImpl(const IBasePropertyPtr& baseProperty) : baseProperty_(baseProperty)
 {
 }
 
@@ -15,9 +13,8 @@ const IBasePropertyPtr& baseProperty)
 }
 
 //------------------------------------------------------------------------------
-Collection ReflectedCollectionImpl::getCollection(
-const ObjectHandle& provider,
-const IDefinitionManager& definitionManager)
+Collection ReflectedCollectionImpl::getCollection(const ObjectHandle& provider,
+                                                  const IDefinitionManager& definitionManager)
 {
 	Variant value = baseProperty_->get(provider, definitionManager);
 	Collection collection;

@@ -2,9 +2,9 @@
 
 #include "controls_test_panel.hpp"
 
-
 #include <memory>
 
+WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
@@ -18,44 +18,38 @@ namespace wgt
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class ControlsTestUIPlugin
-	: public PluginMain
+class ControlsTestUIPlugin : public PluginMain
 {
 public:
-	ControlsTestUIPlugin( IComponentContext & componentContext )
+	ControlsTestUIPlugin(IComponentContext& componentContext)
 	{
 	}
 
-
-	bool PostLoad( IComponentContext & componentContext ) override
+	bool PostLoad(IComponentContext& componentContext) override
 	{
-		controlsTestPanel_.reset( new ControlsTestPanel( componentContext ) );
+		controlsTestPanel_.reset(new ControlsTestPanel(componentContext));
 		return true;
 	}
 
-
-	void Initialise( IComponentContext & componentContext ) override
+	void Initialise(IComponentContext& componentContext) override
 	{
 		controlsTestPanel_->addPanel();
 	}
 
-
-	bool Finalise( IComponentContext & componentContext ) override
+	bool Finalise(IComponentContext& componentContext) override
 	{
 		controlsTestPanel_->removePanel();
 		return true;
 	}
 
-
-	void Unload( IComponentContext & componentContext ) override
+	void Unload(IComponentContext& componentContext) override
 	{
 		controlsTestPanel_.reset();
 	}
 
 private:
-	std::unique_ptr< ControlsTestPanel > controlsTestPanel_;
+	std::unique_ptr<ControlsTestPanel> controlsTestPanel_;
 };
 
-
-PLG_CALLBACK_FUNC( ControlsTestUIPlugin )
+PLG_CALLBACK_FUNC(ControlsTestUIPlugin)
 } // end namespace wgt

@@ -10,8 +10,7 @@ BW_BEGIN_NAMESPACE
 
 class IRoleBinder;
 
-class ITreeItem
-	: public IListItem
+class ITreeItem : public IListItem
 {
 public:
 	enum Role
@@ -32,26 +31,27 @@ public:
 		ContextMenuRole
 	};
 
-	virtual ~ITreeItem() {}
+	virtual ~ITreeItem()
+	{
+	}
 
-	virtual const void * data(
-		const IRoleBinder * roleBinder, int role ) const = 0;
+	virtual const void* data(const IRoleBinder* roleBinder, int role) const = 0;
 
-	virtual void setData(
-		const IRoleBinder * roleBinder, int role, const void * data ) = 0;
+	virtual void setData(const IRoleBinder* roleBinder, int role, const void* data) = 0;
 
-	virtual TypeId type(
-		const IRoleBinder * roleBinder, int role ) const = 0;
-	virtual void setDataItem( void * dataItem ) = 0;
+	virtual TypeId type(const IRoleBinder* roleBinder, int role) const = 0;
+	virtual void setDataItem(void* dataItem) = 0;
 
 	virtual int getLevel() const = 0;
 
-	virtual bool equals( const BW::string & path ) = 0;
+	virtual bool equals(const BW::string& path) = 0;
 
-	virtual void emitSelected() const {}
-	virtual void emitContextMenuSelection(
-		void * selection,
-		const BW::vector< const ITreeItem * > & selectedItems ) const {}
+	virtual void emitSelected() const
+	{
+	}
+	virtual void emitContextMenuSelection(void* selection, const BW::vector<const ITreeItem*>& selectedItems) const
+	{
+	}
 };
 
 BW_END_NAMESPACE

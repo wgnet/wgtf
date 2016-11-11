@@ -10,22 +10,19 @@
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include <memory>
- 
+
 namespace wgt
 {
-class HelloPanel
-    : Depends< IUIFramework, IUIApplication, IDefinitionManager, IViewCreator >
+class HelloPanel : Depends<IUIFramework, IUIApplication, IDefinitionManager, IViewCreator>
 {
 public:
+	HelloPanel(IComponentContext& context);
 
-    HelloPanel( IComponentContext & context );
- 
-    bool addPanel();
-    void removePanel();
+	bool addPanel();
+	void removePanel();
 
 private:
-
-    wg_future<std::unique_ptr< IView >> helloView_;
+	wg_future<std::unique_ptr<IView>> helloView_;
 };
 } // end namespace wgt
 

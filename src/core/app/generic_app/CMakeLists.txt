@@ -6,12 +6,6 @@ INCLUDE( WGProjectUserFile )
 
 SET( APP_CODE_SRCS
 	app/main.cpp
-    app/command_line_parser.hpp
-    app/command_line_parser.cpp
-	app/plugin_memory_allocator.hpp
-	app/plugin_memory_allocator.cpp
-	app/memory_plugin_context_creator.hpp
-	app/memory_plugin_context_creator.cpp
 )
 SOURCE_GROUP( "App" FILES ${APP_CODE_SRCS} )
 
@@ -46,6 +40,7 @@ ELSEIF( BW_PLATFORM_MAC )
 ENDIF()
 
 BW_TARGET_LINK_LIBRARIES( generic_app PRIVATE
+	core_wgtf_app
 	core_generic_plugin_manager
 	wg_memory
 

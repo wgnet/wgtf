@@ -12,9 +12,7 @@
 
 namespace wgt
 {
-class Automation : public Implements<AutomationInterface>
-                   ,
-                   Depends<IUIApplication>
+class Automation : public Implements<AutomationInterface>, Depends<IUIApplication>
 {
 public:
 	// TODO make this configurable
@@ -40,9 +38,7 @@ public:
 /* static */ const std::chrono::seconds Automation::TIMEOUT_SECONDS(30);
 
 Automation::Automation(IComponentContext& context)
-    : Depends<IUIApplication>(context)
-    , startTime_(std::clock())
-    , loadingDone_(false)
+    : Depends<IUIApplication>(context), startTime_(std::clock()), loadingDone_(false)
 {
 	workerThread_ = std::thread(&Automation::threadFunc, this);
 }
@@ -70,12 +66,7 @@ void Automation::threadFunc()
 {
 	std::unique_lock<std::mutex> lock(workerMutex_);
 
-	workerWakeUp_.wait_for(lock,
-	                       std::chrono::seconds(TIMEOUT_SECONDS),
-	                       [this]
-	                       {
-		                       return loadingDone_.load();
-		                   });
+	workerWakeUp_.wait_for(lock, std::chrono::seconds(TIMEOUT_SECONDS), [this] { return loadingDone_.load(); });
 
 	auto pUIApplication = this->get<IUIApplication>();
 	if (pUIApplication != nullptr)
@@ -88,23 +79,21 @@ void Automation::threadFunc()
 * A plugin which automatically quits the application after an amount of time
 *
 * @ingroup plugins
-* @image html plg_automation.png 
+* @image html plg_automation.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class AutomationPlugin
-	: public PluginMain
+class AutomationPlugin : public PluginMain
 {
 public:
-	AutomationPlugin( IComponentContext & contextManager )
+	AutomationPlugin(IComponentContext& contextManager)
 	{
 	}
 
-	virtual bool PostLoad( IComponentContext & contextManager ) override
+	virtual bool PostLoad(IComponentContext& contextManager) override
 	{
 		automation_.reset(new Automation(contextManager));
-		pAutomationInterface_ = contextManager.registerInterface(automation_.get(),
-		                                                         false /* transferOwnership */);
+		pAutomationInterface_ = contextManager.registerInterface(automation_.get(), false /* transferOwnership */);
 
 		return true;
 	}
@@ -120,5 +109,5 @@ public:
 	IInterface* pAutomationInterface_;
 };
 
-PLG_CALLBACK_FUNC( AutomationPlugin )
+PLG_CALLBACK_FUNC(AutomationPlugin)
 } // end namespace wgt

@@ -8,20 +8,20 @@
 
 namespace wgt
 {
-class TestTreeItem: public AbstractTreeItem
+class TestTreeItem : public AbstractTreeItem
 {
 public:
 	explicit TestTreeItem(const std::string& name, const AbstractTreeItem* parent);
 	virtual ~TestTreeItem();
 
 	const AbstractTreeItem* getParent() const;
-	void setParent( AbstractTreeItem* parent);
+	void setParent(AbstractTreeItem* parent);
 
-	virtual Variant getData( int column, ItemRole::Id roleId ) const override;
-	virtual bool setData( int column, ItemRole::Id roleId, const Variant& data ) override;
+	virtual Variant getData(int column, ItemRole::Id roleId) const override;
+	virtual bool setData(int column, ItemRole::Id roleId, const Variant& data) override;
 
-	virtual Connection connectPreDataChanged( DataCallback callback ) override;
-	virtual Connection connectPostDataChanged( DataCallback callback ) override;
+	virtual Connection connectPreDataChanged(DataCallback callback) override;
+	virtual Connection connectPostDataChanged(DataCallback callback) override;
 
 private:
 	struct Implementation;

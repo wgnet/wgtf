@@ -16,10 +16,6 @@ ADD_DEFINITIONS(
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 SET( ALL_SRCS
-	test_tree_item.cpp
-	test_tree_item.hpp
-	test_tree_model.cpp
-	test_tree_model.hpp
 	plg_tree_model_test.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
@@ -35,10 +31,7 @@ BW_ADD_TOOL_PLUGIN( plg_tree_model_test SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_tree_model_test PRIVATE
 	core_generic_plugin
-	core_qt_common
-	core_ui_framework
 	data_model_test
-	Qt5::Core
 )
 
 BW_PROJECT_CATEGORY( plg_tree_model_test "Plugins" )

@@ -18,29 +18,28 @@ class IUIApplication;
 class IComponentContext;
 class QtWindow;
 
-class QtDockRegion : public IRegion
-				   , public Depends<IQtFramework, IUIApplication>
+class QtDockRegion : public IRegion, public Depends<IQtFramework, IUIApplication>
 {
 public:
-	QtDockRegion( IComponentContext & context, QtWindow & qtWindow, QDockWidget & qDockWidget );
+	QtDockRegion(IComponentContext& context, QtWindow& qtWindow, QDockWidget& qDockWidget);
 
-	const LayoutTags & tags() const override;
+	const LayoutTags& tags() const override;
 
-	void addView( IView & view ) override;
-	void removeView( IView & view ) override;
-    void restoreDockWidgets();
+	void addView(IView& view) override;
+	void removeView(IView& view) override;
+	void restoreDockWidgets();
 
 private:
-	void setDefaultPreferenceForDockWidget( QDockWidget * qDockWidget );
+	void setDefaultPreferenceForDockWidget(QDockWidget* qDockWidget);
 
-	QtWindow & qtWindow_;
-	QDockWidget & qDockWidget_;
+	QtWindow& qtWindow_;
+	QDockWidget& qDockWidget_;
 	LayoutTags tags_;
 	bool hidden_;
-	typedef std::pair< std::unique_ptr< QDockWidget >, std::unique_ptr< IAction > > DockData;
-	std::map< IView*, DockData > dockWidgetMap_;
-    typedef std::pair<QDockWidget*, IView*> DockPair;
-    std::vector<DockPair> needToRestorePreference_;
+	typedef std::pair<std::unique_ptr<QDockWidget>, std::unique_ptr<IAction>> DockData;
+	std::map<IView*, DockData> dockWidgetMap_;
+	typedef std::pair<QDockWidget*, IView*> DockPair;
+	std::vector<DockPair> needToRestorePreference_;
 };
 } // end namespace wgt
-#endif//QT_DOCK_REGION_HPP
+#endif // QT_DOCK_REGION_HPP

@@ -24,52 +24,51 @@ class QmlWindow : public QObject, public IWindow
 {
 	Q_OBJECT
 public:
-	QmlWindow( IComponentContext & context, QQmlEngine & qmlEngine );
+	QmlWindow(IComponentContext& context, QQmlEngine& qmlEngine);
 	virtual ~QmlWindow();
 
-	const char * id() const override;
-	const char * title() const override;
+	const char* id() const override;
+	const char* title() const override;
 	void update() override;
 	void close() override;
 
 	void setIcon(const char* path) override;
-	void show( bool wait = false ) override;
-	void showMaximized( bool wait = false ) override;
+	void show(bool wait = false) override;
+	void showMaximized(bool wait = false) override;
 	void showModal() override;
 	void hide() override;
 	void title(const char* title) override;
 
-	const Menus & menus() const override;
-	const Regions & regions() const override;
+	const Menus& menus() const override;
+	const Regions& regions() const override;
 	IStatusBar* statusBar() const override;
 
-	void setContextObject( QObject * object );
-	void setContextProperty( const QString & name, const QVariant & property );
+	void setContextObject(QObject* object);
+	void setContextProperty(const QString& name, const QVariant& property);
 
-	QQuickWidget * release();
-	QQuickWidget * window() const;
-	bool load( QUrl & qUrl, bool async,
-		std::function< void() > loadedHandler );
+	QQuickWidget* release();
+	QQuickWidget* window() const;
+	bool load(QUrl& qUrl, bool async, std::function<void()> loadedHandler);
 
-	bool eventFilter( QObject * object, QEvent * event ) override;
+	bool eventFilter(QObject* object, QEvent* event) override;
 
-	public Q_SLOTS:
-		void error( QQuickWindow::SceneGraphError error, const QString &message );
+public Q_SLOTS:
+	void error(QQuickWindow::SceneGraphError error, const QString& message);
 
-Q_SIGNALS: 
-		void windowClosed();
+Q_SIGNALS:
+	void windowClosed();
 
 private slots:
-    void onPrePreferencesChanged();
-    void onPostPreferencesChanged();
-    void onPrePreferencesSaved();
+	void onPrePreferencesChanged();
+	void onPostPreferencesChanged();
+	void onPrePreferencesSaved();
 
 private:
 	void waitForWindowExposed();
-    void savePreference();
+	void savePreference();
 
 	struct Impl;
-	std::unique_ptr< Impl > impl_;
+	std::unique_ptr<Impl> impl_;
 };
 } // end namespace wgt
-#endif//QML_WINDOW_HPP
+#endif // QML_WINDOW_HPP

@@ -10,46 +10,31 @@
 #include "interfaces/core_python_script/i_scripting_engine.hpp"
 #include "i_script_object_definition_registry.hpp"
 
-
 namespace wgt
 {
 namespace ReflectedPython
 {
-
-
 DefinedInstance::DefinedInstance()
-	: BaseGenericObject()
-	, pythonObject_( nullptr )
-	, pDefinition_( nullptr )
-	, context_( nullptr )
-	, parentHandle_( nullptr )
-	, pRoot_( this )
+    : BaseGenericObject(), pythonObject_(nullptr), pDefinition_(nullptr), context_(nullptr), parentHandle_(nullptr),
+      pRoot_(this)
 {
-	assert( false && "Always construct with a Python object" );
+	assert(false && "Always construct with a Python object");
 }
 
-
-DefinedInstance::DefinedInstance(
-	IComponentContext & context,
-	const PyScript::ScriptObject & pythonObject,
-	std::shared_ptr< IClassDefinition > & definition,
-	const ObjectHandle & parentHandle,
-	const std::string & childPath )
-	: BaseGenericObject()
-	, pythonObject_( pythonObject )
-	, pDefinition_( definition )
-	, context_( &context )
-	, parentHandle_( parentHandle )
-	, pRoot_( this )
+DefinedInstance::DefinedInstance(IComponentContext& context, const PyScript::ScriptObject& pythonObject,
+                                 std::shared_ptr<IClassDefinition>& definition, const ObjectHandle& parentHandle,
+                                 const std::string& childPath)
+    : BaseGenericObject(), pythonObject_(pythonObject), pDefinition_(definition), context_(&context),
+      parentHandle_(parentHandle), pRoot_(this)
 {
-	auto pParentInstance = parentHandle_.getBase< DefinedInstance >();
+	auto pParentInstance = parentHandle_.getBase<DefinedInstance>();
 
 	// parentHandle_ must be null or contain a DefinedInstance
-	assert( !parentHandle_.isValid() || (pParentInstance != nullptr) );
+	assert(!parentHandle_.isValid() || (pParentInstance != nullptr));
 	if (pParentInstance != nullptr)
 	{
 		// Detect cycles
-		assert( pParentInstance->pythonObject() != pythonObject_ );
+		assert(pParentInstance->pythonObject() != pythonObject_);
 
 		// Update root object
 		pRoot_ = &pParentInstance->root();
@@ -68,140 +53,127 @@ DefinedInstance::DefinedInstance(
 	// Add child path after parent path
 	fullPath_ += childPath;
 
-	setDefinition( pDefinition_.get() );
+	setDefinition(pDefinition_.get());
 }
-
 
 DefinedInstance::~DefinedInstance()
 {
 }
 
-
-/* static */ ObjectHandle DefinedInstance::findOrCreate( IComponentContext & context,
-	const PyScript::ScriptObject & pythonObject,
-	const ObjectHandle & parentHandle,
-	const std::string & childPath )
+/* static */ ObjectHandle DefinedInstance::findOrCreate(IComponentContext& context,
+                                                        const PyScript::ScriptObject& pythonObject,
+                                                        const ObjectHandle& parentHandle, const std::string& childPath)
 {
-	assert( pythonObject.exists() );
+	assert(pythonObject.exists());
 
 	// Get a definition that's the same for each ScriptObject instance
-	auto pRegistry = context.queryInterface< IScriptObjectDefinitionRegistry >();
-	assert( pRegistry != nullptr );
-	auto & registry = (*pRegistry);
+	auto pRegistry = context.queryInterface<IScriptObjectDefinitionRegistry>();
+	assert(pRegistry != nullptr);
+	auto& registry = (*pRegistry);
 
-	auto pDefinition = registry.findOrCreateDefinition( pythonObject );
-	assert( pDefinition != nullptr );
-	auto & definition = (*pDefinition);
+	auto pDefinition = registry.findOrCreateDefinition(pythonObject);
+	assert(pDefinition != nullptr);
+	auto& definition = (*pDefinition);
 
-	const auto & id = registry.getID( pythonObject );
+	const auto& id = registry.getID(pythonObject);
 
 	// Search for an existing object handle that's using that definition
-	auto pObjectManager = context.queryInterface< IObjectManager >();
-	assert( pObjectManager != nullptr );
-	auto & objectManager = (*pObjectManager);
-	auto handle = objectManager.getObject( id );
+	auto pObjectManager = context.queryInterface<IObjectManager>();
+	assert(pObjectManager != nullptr);
+	auto& objectManager = (*pObjectManager);
+	auto handle = objectManager.getObject(id);
 	if (handle.isValid())
 	{
 		return handle;
 	}
 
 	// Existing object handle not found, construct a new instance
-	auto pInstance = std::unique_ptr< ReflectedPython::DefinedInstance >(
-		new DefinedInstance( context, pythonObject, pDefinition, parentHandle, childPath ) );
-	ObjectHandleT< ReflectedPython::DefinedInstance > handleT(
-		std::move( pInstance ),
-		&definition );
+	auto pInstance = std::unique_ptr<ReflectedPython::DefinedInstance>(
+	new DefinedInstance(context, pythonObject, pDefinition, parentHandle, childPath));
+	ObjectHandleT<ReflectedPython::DefinedInstance> handleT(std::move(pInstance), &definition);
 	handle = handleT;
 
 	// Register with IObjectManager to generate an ID
 	// IObjectManager should take a weak reference
-	handle = objectManager.registerObject( handle, id );
-	assert( handle.isValid() );
+	handle = objectManager.registerObject(handle, id);
+	assert(handle.isValid());
 
 	// Registered reference
 	return handle;
 }
 
-
-/* static */ ObjectHandle DefinedInstance::find( IComponentContext & context,
-	const PyScript::ScriptObject & pythonObject )
+/* static */ ObjectHandle DefinedInstance::find(IComponentContext& context, const PyScript::ScriptObject& pythonObject)
 {
-	assert( pythonObject.exists() );
+	assert(pythonObject.exists());
 
 	// Get a definition that's the same for each ScriptObject instance
-	auto pRegistry = context.queryInterface< IScriptObjectDefinitionRegistry >();
-	assert( pRegistry != nullptr );
-	auto & registry = (*pRegistry);
+	auto pRegistry = context.queryInterface<IScriptObjectDefinitionRegistry>();
+	assert(pRegistry != nullptr);
+	auto& registry = (*pRegistry);
 
-	auto pDefinition = registry.findDefinition( pythonObject );
+	auto pDefinition = registry.findDefinition(pythonObject);
 	if (pDefinition == nullptr)
 	{
 		return nullptr;
 	}
-	auto & definition = (*pDefinition);
+	auto& definition = (*pDefinition);
 
-	const auto & id = registry.getID( pythonObject );
+	const auto& id = registry.getID(pythonObject);
 
 	// Search for an existing object handle that's using that definition
-	auto pObjectManager = context.queryInterface< IObjectManager >();
-	assert( pObjectManager != nullptr );
-	auto & objectManager = (*pObjectManager);
-	return objectManager.getObject( id );
+	auto pObjectManager = context.queryInterface<IObjectManager>();
+	assert(pObjectManager != nullptr);
+	auto& objectManager = (*pObjectManager);
+	return objectManager.getObject(id);
 }
 
-
-const PyScript::ScriptObject & DefinedInstance::pythonObject() const
+const PyScript::ScriptObject& DefinedInstance::pythonObject() const
 {
 	return pythonObject_;
 }
 
-
-const DefinedInstance & DefinedInstance::root() const
+const DefinedInstance& DefinedInstance::root() const
 {
-	assert( pRoot_ != nullptr );
+	assert(pRoot_ != nullptr);
 	return (*pRoot_);
 }
 
-
-const std::string & DefinedInstance::fullPath() const
+const std::string& DefinedInstance::fullPath() const
 {
 	return fullPath_;
 }
 
-
 ObjectHandle DefinedInstance::getDerivedType() const
 {
-	auto pRegistry = context_->queryInterface< IScriptObjectDefinitionRegistry >();
-	assert( pRegistry != nullptr );
-	auto & registry = (*pRegistry);
+	auto pRegistry = context_->queryInterface<IScriptObjectDefinitionRegistry>();
+	assert(pRegistry != nullptr);
+	auto& registry = (*pRegistry);
 
-	auto pObjectManager = context_->queryInterface< IObjectManager >();
-	assert( pObjectManager != nullptr );
-	auto & objectManager = (*pObjectManager);
+	auto pObjectManager = context_->queryInterface<IObjectManager>();
+	assert(pObjectManager != nullptr);
+	auto& objectManager = (*pObjectManager);
 
-	const auto & id = registry.getID( pythonObject_ );
-	return objectManager.getObject( id );
+	const auto& id = registry.getID(pythonObject_);
+	return objectManager.getObject(id);
 }
-
 
 ObjectHandle DefinedInstance::getDerivedType()
 {
-	auto pRegistry = context_->queryInterface< IScriptObjectDefinitionRegistry >();
-	assert( pRegistry != nullptr );
-	auto & registry = (*pRegistry);
+	auto pRegistry = context_->queryInterface<IScriptObjectDefinitionRegistry>();
+	assert(pRegistry != nullptr);
+	auto& registry = (*pRegistry);
 
-	auto pObjectManager = context_->queryInterface< IObjectManager >();
-	assert( pObjectManager != nullptr );
-	auto & objectManager = (*pObjectManager);
+	auto pObjectManager = context_->queryInterface<IObjectManager>();
+	assert(pObjectManager != nullptr);
+	auto& objectManager = (*pObjectManager);
 
-	const auto & id = registry.getID( pythonObject_ );
-	return objectManager.getObject( id );
+	const auto& id = registry.getID(pythonObject_);
+	return objectManager.getObject(id);
 }
 
-
-TextStream& operator<<( TextStream& stream, const DefinedInstance& value )
+TextStream& operator<<(TextStream& stream, const DefinedInstance& value)
 {
-	if(auto definition = value.getDefinition())
+	if (auto definition = value.getDefinition())
 	{
 		stream << definition->getName();
 	}
@@ -213,12 +185,9 @@ TextStream& operator<<( TextStream& stream, const DefinedInstance& value )
 	return stream;
 }
 
-
 } // namespace ReflectedPython
 
-
-MetaTypeImpl<ReflectedPython::DefinedInstance>::MetaTypeImpl():
-	base("DefinedInstance", data< value_type >())
+MetaTypeImpl<ReflectedPython::DefinedInstance>::MetaTypeImpl() : base("DefinedInstance", data<value_type>())
 {
 }
 
@@ -257,18 +226,17 @@ void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamOut(TextStream& strea
 
 void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamIn(TextStream& stream, void* value) const
 {
-	stream.setState( std::ios_base::failbit );
+	stream.setState(std::ios_base::failbit);
 }
 
 void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamOut(BinaryStream& stream, const void* value) const
 {
-	stream.setState( std::ios_base::failbit );
+	stream.setState(std::ios_base::failbit);
 }
 
 void MetaTypeImpl<ReflectedPython::DefinedInstance>::streamIn(BinaryStream& stream, void* value) const
 {
-	stream.setState( std::ios_base::failbit );
+	stream.setState(std::ios_base::failbit);
 }
-
 
 } // end namespace wgt

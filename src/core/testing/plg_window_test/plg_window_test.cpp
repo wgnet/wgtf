@@ -7,6 +7,7 @@
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_window.hpp"
 
+WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
@@ -19,46 +20,41 @@ namespace wgt
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class TestWindowPlugin
-	: public PluginMain
+class TestWindowPlugin : public PluginMain
 {
 private:
 	MainWindow mainWindow_;
 
 public:
 	//==========================================================================
-	TestWindowPlugin(IComponentContext & contextManager )
-		: mainWindow_( contextManager )
+	TestWindowPlugin(IComponentContext& contextManager) : mainWindow_(contextManager)
 	{
-
 	}
 
 	//==========================================================================
-	bool PostLoad( IComponentContext & contextManager )
+	bool PostLoad(IComponentContext& contextManager)
 	{
 		return true;
 	}
 
 	//==========================================================================
-	void Initialise( IComponentContext & contextManager )
+	void Initialise(IComponentContext& contextManager)
 	{
 		mainWindow_.init();
 	}
 
 	//==========================================================================
-	bool Finalise( IComponentContext & contextManager )
+	bool Finalise(IComponentContext& contextManager)
 	{
 		mainWindow_.fini();
 		return true;
 	}
 
 	//==========================================================================
-	void Unload( IComponentContext & contextManager )
+	void Unload(IComponentContext& contextManager)
 	{
 	}
-
 };
-
 
 PLG_CALLBACK_FUNC(TestWindowPlugin)
 } // end namespace wgt

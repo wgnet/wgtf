@@ -13,11 +13,13 @@ class ReflectedTreeModel;
 class ReflectedPropertyItem : public AbstractTreeItem
 {
 public:
-	ReflectedPropertyItem(const ReflectedTreeModel& model, const ObjectHandle& object, const std::string& path);
+	ReflectedPropertyItem(const ReflectedTreeModel& model, const ObjectHandle& object, const std::string& path,
+	                      const std::string& fullpath);
 	virtual ~ReflectedPropertyItem();
 
 	const ObjectHandle& getObject() const;
 	const std::string& getPath() const;
+	const std::string& getFullPath() const;
 
 	void setPath(const std::string& path);
 
@@ -34,8 +36,9 @@ private:
 	const ReflectedTreeModel& model_;
 	ObjectHandle object_;
 	std::string path_;
+	std::string fullPath_;
 };
 }
 }
 
-#endif //PROTO_REFLECTED_PROPERTY_ITEM_HPP
+#endif // PROTO_REFLECTED_PROPERTY_ITEM_HPP

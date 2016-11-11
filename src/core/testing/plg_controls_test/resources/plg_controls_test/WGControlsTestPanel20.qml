@@ -1,6 +1,7 @@
 import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
+import QtGraphicalEffects 1.0
 
 import WGControls 2.0
 import WGControls.Private 2.0
@@ -1551,6 +1552,93 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         enabled: true
                         readOnly: false
                         multipleValues: true
+
+                        value: 75
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+
+                    WGNumberBox {
+                        enabled: true
+                        readOnly: false
+
+                        valueIsInfinite: false
+                        showInfiniteButton: true
+
+                        value: 25
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+
+
+                    WGNumberBox {
+                        enabled: true
+                        readOnly: false
+
+                        valueIsInfinite: true
+                        showInfiniteButton: true
+
+                        value: 25
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+
+                    WGNumberBox {
+                        enabled: true
+                        readOnly: false
+                        multipleValues: true
+                        showInfiniteButton: true
+
+                        value: 75
+                        minimumValue: 0
+                        maximumValue: 100
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGTimeBox"
+                    }
+                    WGTimeBox {
+                        enabled: true
+                        readOnly: false
+
+                        time: 1024
+                    }
+                    WGTimeBox {
+                        enabled: true
+                        readOnly: true
+
+                        time: 1024
+                    }
+                    WGTimeBox {
+                        enabled: false
+                        readOnly: false
+
+                        time: 1024
+                    }
+                    WGTimeBox {
+                        enabled: false
+                        readOnly: true
+
+                        time: 1024
+                    }
+
+                    WGSeparator {
+                        vertical: true
+                    }
+
+                    WGTimeBox {
+                        enabled: true
+                        readOnly: false
+                        multipleValues: true
+
+                        time: 1024
                     }
 
                     Item {
@@ -1615,6 +1703,388 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         stepSize: 1
                         value: 40
 
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                }
+
+
+                WGExpandingRowLayout {
+                    WGMultiLineText {
+                        text: "WGDial20"
+                    }
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 0
+                        snapToClick: false
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        enabled: false
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 0
+                        snapToClick: false
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 0
+
+
+                        minimumValue: -180
+                        maximumValue: 180
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 180
+
+                        loopAtBounds: false
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        showValue: true
+                        clockwise: false
+                        zeroValue: 0
+                        snapToClick: false
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 0
+                        loopAtBounds: false
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        multipleValues: true
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 0
+                        snapToClick: false
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        snapToClick: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 10
+                        minorTickInterval: 0
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        minimumValue: 0
+                        maximumValue: Math.PI * 2
+
+                        decimals: 3
+
+                        unitString: "rad"
+
+                        value: Math.PI
+
+                        showValue: true
+
+                        tickInterval: 0
+                        minorTickInterval: 0
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        minimumValue: 0
+                        maximumValue: Math.PI * 2
+
+                        value: Math.PI
+
+                        loopAtBounds: false
+
+                        decimals: 3
+
+                        showValue: true
+                        unitString: "rad"
+
+                        tickInterval: 0
+                        minorTickInterval: 0
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+
+                        minimumValue: -90
+                        maximumValue: 270
+
+                        showValue: true
+                        clockwise: true
+
+                        loopAtBounds: false
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        WGDial {
+                            id: tapDial
+                            height: defaultSpacing.minimumRowHeight * 3
+                            width: defaultSpacing.minimumRowHeight * 3
+
+                            value: 5
+
+
+                            minimumValue: 0
+                            maximumValue: 11
+
+                            showValue: true
+                            clockwise: true
+                            unitString: ""
+
+                            zeroValue: 0
+
+                            loopAtBounds: false
+
+                            decimals: 0
+                            stepSize: 1
+
+                            tickInterval: 36
+                            minorTickInterval: 0
+                        }
+
+                        Colorize {
+                            id: spinalTap
+                            anchors.fill: tapDial
+                            source: tapDial
+                            hue: 0.0
+                            saturation: 1
+                            lightness: 0
+                            visible: tapDial.value == 11
+                        }
+
+                        Timer {
+                            interval: 10
+                            repeat: true
+                            running: tapDial.value == 11
+                            onTriggered: {
+                                spinalTap.hue += 0.01
+                                if (spinalTap.hue > 1) spinalTap.hue = 0
+                            }
+                        }
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 0
+
+                        minimumValue: -180
+                        maximumValue: 180
+
+                        showValue: true
+                        zeroValue: 180
+
+                        clockwise: false
+
+                        loopAtBounds: false
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 0
+
+                        minimumValue: -180
+                        maximumValue: 180
+
+                        showValue: true
+                        zeroValue: 270
+
+                        loopAtBounds: false
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 180
+                        snapToClick: false
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 270
+                        snapToClick: false
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        showValue: true
+                        clockwise: false
+                        zeroValue: 180
+                        snapToClick: false
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        value: 180
+
+                        showValue: true
+                        clockwise: false
+                        zeroValue: 270
+                        snapToClick: false
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
                     }
 
                     Item {

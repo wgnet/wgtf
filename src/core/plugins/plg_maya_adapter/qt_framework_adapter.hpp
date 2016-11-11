@@ -1,18 +1,16 @@
 #ifndef QT_FRAMEWORK_ADAPTER_HPP
 #define QT_FRAMEWORK_ADAPTER_HPP
 
-#include "qt_framework.hpp"
-
+#include "core_qt_common/qt_framework.hpp"
 
 namespace wgt
 {
-class QtFrameworkAdapter
-	: public QtFramework
+class QtFrameworkAdapter : public QtFramework
 {
 public:
-	QtFrameworkAdapter( IComponentContext & contextManager );
+	QtFrameworkAdapter(IComponentContext& contextManager);
 	virtual ~QtFrameworkAdapter();
-	virtual QtWindow * createQtWindow( QIODevice & source ) override;
+	virtual QtWindow* createQtWindow(QIODevice& source) override;
 };
 } // end namespace wgt
 #endif

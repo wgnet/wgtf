@@ -7,44 +7,41 @@
 
 namespace wgt
 {
-ReflectedCollectionInsertCommand::ReflectedCollectionInsertCommand( IDefinitionManager & definitionManager )
-	: definitionManager_( definitionManager )
+ReflectedCollectionInsertCommand::ReflectedCollectionInsertCommand(IDefinitionManager& definitionManager)
+    : definitionManager_(definitionManager)
 {
-
 }
 
 ReflectedCollectionInsertCommand::~ReflectedCollectionInsertCommand()
 {
-
 }
 
-const char * ReflectedCollectionInsertCommand::getId() const
+const char* ReflectedCollectionInsertCommand::getId() const
 {
-	static const char * s_Id = getClassIdentifier<ReflectedCollectionInsertCommand>();
+	static const char* s_Id = getClassIdentifier<ReflectedCollectionInsertCommand>();
 	return s_Id;
 }
 
-ObjectHandle ReflectedCollectionInsertCommand::execute(const ObjectHandle & arguments) const
+ObjectHandle ReflectedCollectionInsertCommand::execute(const ObjectHandle& arguments) const
 {
-	ReflectedCollectionInsertCommandParameters * commandArgs =
-		arguments.getBase< ReflectedCollectionInsertCommandParameters >();
+	ReflectedCollectionInsertCommandParameters* commandArgs =
+	arguments.getBase<ReflectedCollectionInsertCommandParameters>();
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert( objManager != nullptr );
-	auto object = objManager->getObject( commandArgs->id_ );
+	assert(objManager != nullptr);
+	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 
-	auto property = object.getDefinition( definitionManager_ )->bindProperty( 
-		commandArgs->path_.c_str(), object );
+	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 
-	commandArgs->inserted_ = property.insert( commandArgs->key_, commandArgs->value_ );
+	commandArgs->inserted_ = property.insert(commandArgs->key_, commandArgs->value_);
 	if (!commandArgs->inserted_)
 	{
 		return CommandErrorCode::INVALID_VALUE;
@@ -58,42 +55,41 @@ bool ReflectedCollectionInsertCommand::customUndo() const
 	return true;
 }
 
-bool ReflectedCollectionInsertCommand::undo( const ObjectHandle & arguments ) const
+bool ReflectedCollectionInsertCommand::undo(const ObjectHandle& arguments) const
 {
-	auto commandArgs = arguments.getBase< ReflectedCollectionInsertCommandParameters >();
+	auto commandArgs = arguments.getBase<ReflectedCollectionInsertCommandParameters>();
 	if (!commandArgs->inserted_)
 	{
 		return true;
 	}
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert( objManager != nullptr );
-	auto object = objManager->getObject( commandArgs->id_ );
+	assert(objManager != nullptr);
+	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return false;
 	}
 
-	auto property = object.getDefinition( definitionManager_ )->bindProperty( 
-		commandArgs->path_.c_str(), object );
+	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return false;
 	}
 
-	return property.erase( commandArgs->key_ );
+	return property.erase(commandArgs->key_);
 }
 
-bool ReflectedCollectionInsertCommand::redo( const ObjectHandle & arguments ) const
+bool ReflectedCollectionInsertCommand::redo(const ObjectHandle& arguments) const
 {
-	execute( arguments );
+	execute(arguments);
 	return true;
 }
 
-ObjectHandle ReflectedCollectionInsertCommand::getCommandDescription(const ObjectHandle & arguments) const
+ObjectHandle ReflectedCollectionInsertCommand::getCommandDescription(const ObjectHandle& arguments) const
 {
-	auto object = GenericObject::create( definitionManager_ );
-	assert( object != nullptr );
+	auto object = GenericObject::create(definitionManager_);
+	assert(object != nullptr);
 	object->set("Name", "Insert");
 	object->set("Type", "Unknown");
 	return object;

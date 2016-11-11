@@ -18,27 +18,23 @@ class AlertPageModel;
 class IAction;
 class IComponentContext;
 
-class PopupAlertPresenter
-	: public IAlertPresenter
-	, public Depends< IViewCreator >
+class PopupAlertPresenter : public IAlertPresenter, public Depends<IViewCreator>
 {
 public:
-
-	explicit PopupAlertPresenter( IComponentContext & contextManager );
+	explicit PopupAlertPresenter(IComponentContext& contextManager);
 	virtual ~PopupAlertPresenter();
 
-	virtual void show( const char* text );
+	virtual void show(const char* text);
 
-	void addTestAlert( IAction * action );
+	void addTestAlert(IAction* action);
 
 private:
-	
 	mutable IComponentContext* contextManager_;
-	wg_future<std::unique_ptr< IView >> alertWindow_;
-	ObjectHandleT< AlertPageModel > alertPageModel_;
+	wg_future<std::unique_ptr<IView>> alertWindow_;
+	ObjectHandleT<AlertPageModel> alertPageModel_;
 
-	std::unique_ptr< IAction > testAddAlert_;
+	std::unique_ptr<IAction> testAddAlert_;
 	int alertCounter_;
- };
+};
 } // end namespace wgt
 #endif // POPUP_ALERT_PRESENTER_HPP

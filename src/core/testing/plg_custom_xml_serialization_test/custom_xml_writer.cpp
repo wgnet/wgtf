@@ -9,82 +9,72 @@
 
 namespace wgt
 {
-CustomXmlDataWriter::CustomXmlDataWriter( TextStream& stream )
-	:stream_( stream )
-	, indent_( 0 )
-	, tagOpening_( false )
-	, hasChildElements_( false )
+CustomXmlDataWriter::CustomXmlDataWriter(TextStream& stream)
+    : stream_(stream), indent_(0), tagOpening_(false), hasChildElements_(false)
 {
 }
 
-
-bool CustomXmlDataWriter::write( const Variant& value )
+bool CustomXmlDataWriter::write(const Variant& value)
 {
-	beginOpenTag( value.type()->name() );
-	writeValue( value);
-	closeTag( value.type()->name() );
+	beginOpenTag(value.type()->name());
+	writeValue(value);
+	closeTag(value.type()->name());
 
 	return !fail();
 }
 
-
-void CustomXmlDataWriter::writeValue( const Variant& value )
+void CustomXmlDataWriter::writeValue(const Variant& value)
 {
 	CustomXmlData data;
-	bool isOk = value.tryCast( data );
-	assert( isOk );
-	if( !isOk )
+	bool isOk = value.tryCast(data);
+	assert(isOk);
+	if (!isOk)
 	{
-		stream_.setState( std::ios_base::failbit );
+		stream_.setState(std::ios_base::failbit);
 		return;
 	}
-	beginOpenTag( "name" );
+	beginOpenTag("name");
 	endOpenTag();
-	stream_ << quoted( data.name_ );
-	closeTag( "name" );
+	stream_ << quoted(data.name_);
+	closeTag("name");
 
-	beginOpenTag( "filename" );
+	beginOpenTag("filename");
 	endOpenTag();
-	stream_ << quoted( data.filename_ );
-	closeTag( "filename" );
+	stream_ << quoted(data.filename_);
+	closeTag("filename");
 
-	beginOpenTag( "createdBy" );
+	beginOpenTag("createdBy");
 	endOpenTag();
-	stream_ << quoted( data.createdBy_ );
-	closeTag( "createdBy" );
+	stream_ << quoted(data.createdBy_);
+	closeTag("createdBy");
 
-	beginOpenTag( "visibility" );
+	beginOpenTag("visibility");
 	endOpenTag();
 	stream_ << data.visibility_;
-	closeTag( "visibility" );
+	closeTag("visibility");
 
-	beginOpenTag( "position" );
+	beginOpenTag("position");
 	endOpenTag();
 	stream_ << data.position_;
-	closeTag( "position" );
-
+	closeTag("position");
 }
-
-
 
 void CustomXmlDataWriter::writeIndent()
 {
-	for( unsigned i = 0; i < indent_; i++ )
+	for (unsigned i = 0; i < indent_; i++)
 	{
 		stream_ << "\t";
 	}
 }
-
 
 void CustomXmlDataWriter::writeNewline()
 {
 	stream_ << "\n";
 }
 
-
-void CustomXmlDataWriter::beginOpenTag( const char* tag )
+void CustomXmlDataWriter::beginOpenTag(const char* tag)
 {
-	if( tagOpening_ )
+	if (tagOpening_)
 	{
 		stream_ << ">";
 		writeNewline();
@@ -97,10 +87,9 @@ void CustomXmlDataWriter::beginOpenTag( const char* tag )
 	indent_ += 1;
 }
 
-
 void CustomXmlDataWriter::endOpenTag()
 {
-	if( !tagOpening_ )
+	if (!tagOpening_)
 	{
 		return;
 	}
@@ -109,19 +98,18 @@ void CustomXmlDataWriter::endOpenTag()
 	tagOpening_ = false;
 }
 
-
-void CustomXmlDataWriter::closeTag( const char* tag )
+void CustomXmlDataWriter::closeTag(const char* tag)
 {
 	indent_ -= 1;
 
-	if( tagOpening_ )
+	if (tagOpening_)
 	{
 		stream_ << "/>";
 		tagOpening_ = false;
 	}
 	else
 	{
-		if( hasChildElements_ )
+		if (hasChildElements_)
 		{
 			writeIndent();
 		}

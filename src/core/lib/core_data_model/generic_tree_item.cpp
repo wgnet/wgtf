@@ -2,9 +2,7 @@
 
 namespace wgt
 {
-GenericTreeItem::GenericTreeItem()
-	: model_( nullptr )
-	, hidden_( false )
+GenericTreeItem::GenericTreeItem() : model_(nullptr), hidden_(false)
 {
 }
 

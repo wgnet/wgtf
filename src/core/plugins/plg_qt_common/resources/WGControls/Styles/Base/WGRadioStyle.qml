@@ -55,6 +55,12 @@ WGCheckBoxStyle {
                 PropertyChanges {target: radioFrame; border.color: palette.darkerShade}
             },
             State {
+                name: "HOVERED"
+                when: !control.checked && control.enabled && control.hovered
+                PropertyChanges {target: radioStyle; __textColor: palette.textColor}
+                PropertyChanges {target: radioFrame; color: palette.lightShade}
+            },
+            State {
                 name: "CHECKED"
                 when: control.checked && control.enabled
                 PropertyChanges {target: dotContainer; visible: true}

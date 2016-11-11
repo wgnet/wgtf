@@ -19,10 +19,10 @@
 
 namespace wgt
 {
-#pragma warning (push)
-#pragma warning (disable: 4275) // * non dll-interface class '*' used as base for dll-interface class '*'
+#pragma warning(push)
+#pragma warning(disable : 4275) // * non dll-interface class '*' used as base for dll-interface class '*'
 
-class SERIALIZATION_DLL FileSystem : public Implements < IFileSystem >
+class SERIALIZATION_DLL FileSystem : public Implements<IFileSystem>
 {
 public:
 	virtual bool copy(const char* path, const char* new_path) override;
@@ -36,6 +36,6 @@ public:
 	virtual bool writeFile(const char* path, const void* data, size_t len, std::ios::openmode mode) override;
 };
 
-#pragma warning (pop)
+#pragma warning(pop)
 } // end namespace wgt
 #endif // FILE_SYSTEM_H_

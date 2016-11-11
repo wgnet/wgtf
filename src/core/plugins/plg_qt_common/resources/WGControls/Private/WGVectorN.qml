@@ -78,6 +78,7 @@ WGExpandingRowLayout {
 
             WGNumberBox {
                 id: numboxN
+                objectName: mainLayout.objectName + "_numbox_" + index
                 anchors.left: labelN.right
                 anchors.right: parent.right
                 height: parent.height

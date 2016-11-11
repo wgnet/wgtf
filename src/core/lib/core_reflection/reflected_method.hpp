@@ -6,20 +6,17 @@
 
 namespace wgt
 {
-class ReflectedMethod
-	: public BaseProperty
+class ReflectedMethod : public BaseProperty
 {
-public:	
-	explicit ReflectedMethod( const char * name )
-		: BaseProperty( name, TypeId( "" ) )
-	{}
-
+public:
+	explicit ReflectedMethod(const char* name) : BaseProperty(name, TypeId(""))
+	{
+	}
 
 	bool isMethod() const
 	{
 		return true;
 	}
-
 
 	virtual ReflectedMethod* getUndoMethod()
 	{
@@ -30,7 +27,6 @@ public:
 	{
 		return nullptr;
 	}
-
 
 	typedef ReflectedMethod SelfType;
 };

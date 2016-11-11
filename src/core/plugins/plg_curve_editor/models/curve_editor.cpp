@@ -18,11 +18,11 @@ namespace wgt
 ICurvePtr CurveEditor::createCurve(CurveTypes::CurveType curveType, bool add)
 {
 	auto definitionManager = Context::queryInterface<IDefinitionManager>();
-	if(definitionManager)
+	if (definitionManager)
 	{
 		// This method of creating a curve requires a default constructor
-		//auto curveDef = definitionManager->getDefinition<ICurve>();
-		//if(curveDef)
+		// auto curveDef = definitionManager->getDefinition<ICurve>();
+		// if(curveDef)
 		//{
 		//	auto curve = TypeClassDefinition<Curve>::create(*curveDef, definitionManager);
 		//	curves_.emplace_back(curve);
@@ -32,7 +32,7 @@ ICurvePtr CurveEditor::createCurve(CurveTypes::CurveType curveType, bool add)
 		// Create a curve and pass it by reference to our exposed model for variants
 		ICurvePtr pCurve = std::make_shared<Curve>(createInterpolator(curveType), definitionManager);
 
-		if( add )
+		if (add)
 		{
 			storage_.emplace_back(pCurve);
 			curves_.emplace_back(storage_.back().get());
@@ -45,10 +45,10 @@ ICurvePtr CurveEditor::createCurve(CurveTypes::CurveType curveType, bool add)
 
 bool CurveEditor::addCurve(ICurvePtr curve)
 {
-	for( auto iter = storage_.begin(); iter != storage_.end(); ++iter )
+	for (auto iter = storage_.begin(); iter != storage_.end(); ++iter)
 	{
 		ICurvePtr current = *iter;
-		if( current.get() == curve.get() )
+		if (current.get() == curve.get())
 			return false;
 	}
 
@@ -61,10 +61,10 @@ bool CurveEditor::addCurve(ICurvePtr curve)
 bool CurveEditor::removeCurve(ICurvePtr curve)
 {
 	auto storeIter = storage_.begin();
-	for(auto iter = curves_.begin(); iter != curves_.end(); ++iter, ++ storeIter)
+	for (auto iter = curves_.begin(); iter != curves_.end(); ++iter, ++storeIter)
 	{
 		auto current = &*storeIter->get();
-		if(current == curve.get())
+		if (current == curve.get())
 		{
 			curves_.erase(iter);
 			storage_.erase(storeIter);
@@ -91,7 +91,7 @@ void CurveEditor::putSubTitle(const std::string& subTitle)
 }
 
 void CurveEditor::putXScale(const float& xScale)
-{ 
+{
 	xScale_ = xScale;
 
 	ScaleChangeData newScale;
@@ -101,8 +101,8 @@ void CurveEditor::putXScale(const float& xScale)
 }
 
 void CurveEditor::putYScale(const float& yScale)
-{ 
-	yScale_ = yScale; 
+{
+	yScale_ = yScale;
 
 	ScaleChangeData newScale;
 	newScale.xScale = xScale_;

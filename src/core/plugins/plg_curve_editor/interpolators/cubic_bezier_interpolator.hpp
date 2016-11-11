@@ -23,7 +23,6 @@ public:
 	virtual float timeAtX(float x, const BezierPoint& p1, const BezierPoint& p2) override;
 
 	virtual void updateControlPoints(BezierPoint& point, BezierPoint* prevPoint, BezierPoint* nextPoint) override;
-
 };
 } // end namespace wgt
 #endif // CUBIC_BEZIER_INTERPOLATOR_H_

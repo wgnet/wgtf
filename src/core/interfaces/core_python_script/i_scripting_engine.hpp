@@ -12,6 +12,6 @@ namespace wgt
  *	Interface for calling into the Python interpreter.
  *	Can have different implementations for each version of Python.
  */
-DECLARE_LATEST_VERSION( IPythonScriptingEngine, 0, 0 )
+DECLARE_LATEST_VERSION(IPythonScriptingEngine, 0, 0)
 } // end namespace wgt
 #endif // I_PYTHON_SCRIPTING_ENGINE_HPP

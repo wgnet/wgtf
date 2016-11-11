@@ -21,30 +21,35 @@ class WGFilter : public QObject
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QString itemRole
-				READ getItemRole
-				WRITE setItemRole
-				NOTIFY itemRoleChanged )
+	Q_PROPERTY(QString itemRole READ getItemRole WRITE setItemRole NOTIFY itemRoleChanged)
 
 	DECLARE_QT_MEMORY_HANDLER
 
 public:
-	WGFilter() : roleId_( 0 ) {};
-	virtual ~WGFilter() {};
-	
-	virtual IItemFilter * getFilter() const { return nullptr; }
-	
-	QString getItemRole() const { return roleName_; }
-	void setItemRole( const QString & itemRole ) 
+	WGFilter() : roleId_(0){};
+	virtual ~WGFilter(){};
+
+	virtual IItemFilter* getFilter() const
+	{
+		return nullptr;
+	}
+
+	QString getItemRole() const
+	{
+		return roleName_;
+	}
+	void setItemRole(const QString& itemRole)
 	{
 		roleName_ = itemRole;
-		roleId_ = ItemRole::compute( itemRole.toUtf8().constData() ); 
+		roleId_ = ItemRole::compute(itemRole.toUtf8().constData());
 		updateInternalItemRole();
 		emit itemRoleChanged();
 	}
 
 protected:
-	virtual void updateInternalItemRole() {}
+	virtual void updateInternalItemRole()
+	{
+	}
 
 signals:
 	void itemRoleChanged();
@@ -55,5 +60,5 @@ protected:
 };
 } // end namespace wgt
 
-QML_DECLARE_TYPE( wgt::WGFilter )
+QML_DECLARE_TYPE(wgt::WGFilter)
 #endif // WG_FILTER_HPP

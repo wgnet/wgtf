@@ -8,13 +8,13 @@ namespace wgt
 class TestObjects
 {
 public:
-	void initDefs( IDefinitionManager & definitionManager );
-	void finiDefs( IDefinitionManager & definitionManager );
+	void initDefs(IDefinitionManager& definitionManager);
+	void finiDefs(IDefinitionManager& definitionManager);
 
-	TestStructure & getTestStructure();
+	TestStructure& getTestStructure();
 
 private:
 	TestStructure structure_;
 };
 } // end namespace wgt
-#endif //TEST_OBJECTS_HPP
+#endif // TEST_OBJECTS_HPP

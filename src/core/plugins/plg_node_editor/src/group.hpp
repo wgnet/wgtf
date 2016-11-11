@@ -15,9 +15,7 @@ class Group : public Implements<IGroup>
 	DECLARE_REFLECTED
 public:
 	Group();
-	Group(const Vector4& rectangle,
-	      const std::string& name,
-	      const Vector4& color);
+	Group(const Vector4& rectangle, const std::string& name, const Vector4& color);
 	virtual ~Group();
 
 	virtual const Vector4& getRectangle() const override;

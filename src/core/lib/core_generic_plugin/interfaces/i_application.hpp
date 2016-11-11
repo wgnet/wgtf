@@ -10,7 +10,9 @@ class IApplication
 	typedef Signal<void(void)> SignalVoid;
 
 public:
-	virtual ~IApplication() {}
+	virtual ~IApplication()
+	{
+	}
 
 	virtual int startApplication() = 0;
 	virtual void quitApplication() = 0;
@@ -19,4 +21,4 @@ public:
 	SignalVoid signalUpdate;
 };
 } // end namespace wgt
-#endif //I_APPLICATION_HPP
+#endif // I_APPLICATION_HPP

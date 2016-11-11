@@ -10,7 +10,7 @@ class IDataStream;
 class CommandManager;
 namespace
 {
-	class CommandManagerImpl;
+class CommandManagerImpl;
 }
 
 enum class BatchCommandStage : uint8_t
@@ -20,18 +20,17 @@ enum class BatchCommandStage : uint8_t
 	Abort = 2,
 };
 
-class BatchCommand
-    : public Command
+class BatchCommand : public Command
 {
 public:
-    const char * getId() const override;
-    ObjectHandle execute( const ObjectHandle & arguments ) const override;
+	const char* getId() const override;
+	ObjectHandle execute(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
 
 private:
 	friend CommandManagerImpl;
-	BatchCommand( CommandManager * pCommandManager );
-    CommandManager * pCommandManager_;
+	BatchCommand(CommandManager* pCommandManager);
+	CommandManager* pCommandManager_;
 };
 } // end namespace wgt
-#endif//BATCH_COMMAND_HPP
+#endif // BATCH_COMMAND_HPP

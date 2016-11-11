@@ -8,80 +8,45 @@
 
 #include "python27_unit_test.hpp"
 
+WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
 /**
- *	Runs unit tests.
+ *	Runs python unit tests.
  */
-class MainApplication
-	: public Implements< IApplication >
+class Python27UnitTestPlugin : public PluginMain
 {
 public:
-	MainApplication( IComponentContext& contextManager )
-		: contextManager_( contextManager )
+	Python27UnitTestPlugin(IComponentContext& contextManager)
 	{
 	}
 
+	bool PostLoad(IComponentContext& contextManager) override
+	{
+		return true;
+	}
 
-	int startApplication() override
+	void Initialise(IComponentContext& contextManager) override
 	{
 		// Pass reference to unit tests
-		g_contextManager = &contextManager_;
+		g_contextManager = &contextManager;
 
-		auto clp = contextManager_.queryInterface< ICommandLineParser >();
-		assert( clp != nullptr );
+		auto clp = contextManager.queryInterface<ICommandLineParser>();
+		assert(clp != nullptr);
 
-		return BWUnitTest::runTest( "python27_unit_test",
-			clp->argc(),
-			clp->argv() );
+		BWUnitTest::runTest("python27_unit_test", clp->argc(), clp->argv());
 	}
 
-	void quitApplication() override
-	{
-		g_contextManager = nullptr;
-	}
-
-private:
-	IComponentContext & contextManager_;
-};
-
-
-/**
- *	Start up main application.
- */
-class Python27UnitTestPlugin
-	: public PluginMain
-{
-public:
-	Python27UnitTestPlugin( IComponentContext & contextManager )
-	{
-	}
-
-
-	bool PostLoad( IComponentContext & contextManager ) override
-	{
-		contextManager.registerInterface(
-			new MainApplication( contextManager ) );
-		return true;
-	}
-
-
-	void Initialise( IComponentContext & contextManager ) override
-	{
-	}
-
-
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
 		return true;
 	}
 
-
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
 	}
 };
 
-PLG_CALLBACK_FUNC( Python27UnitTestPlugin )
+PLG_CALLBACK_FUNC(Python27UnitTestPlugin)
 } // end namespace wgt

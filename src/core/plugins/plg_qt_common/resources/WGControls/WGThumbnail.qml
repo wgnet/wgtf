@@ -15,8 +15,7 @@ Where a thumbnail of an asset is to be displayed.
 
 \code{.js}
 WGThumbnail{
-    parentControl: (id_of_parent_control)
-    parentControlsMouseOverInfo: (id_of_parent_control).mouseOverInfo
+    source: "path/example.png"
 }
 \endcode
 */
@@ -31,14 +30,18 @@ Rectangle {
     */
     property url source: ""
 
-    /*! This property holds the default text string that will be displayed if /c source_ is not defined.
-        The default value is \c "Image not found"
-    */
-    property string __notFoundString: "Image not found"
+    /*! This value indicates if the control represents multipleValues
+      */
 
+    /*! This value indicates if the control represents multipleValues
+      */
     property bool multipleValues: false
 
+    /*! This property holds the default text string that will be displayed if multipleValues is true.
+    */
     property string __multipleValuesString: "Multiple Values"
+
+    property alias icon: icon
 
     color: palette.lightShade
 
@@ -78,7 +81,7 @@ Rectangle {
 
     Item {
         anchors.fill: parent
-        Image {
+        WGImage {
             id: icon
             anchors.centerIn: parent
             height: sourceSize.height < parent.height ? sourceSize.height : parent.height
@@ -89,18 +92,6 @@ Rectangle {
             fillMode: Image.PreserveAspectFit
         }
         WGLabel{
-            objectName: "Label"
-            id: missingText
-            anchors.centerIn: parent
-            width: (parent.width - (defaultSpacing.leftMargin + defaultSpacing.rightMargin))
-            horizontalAlignment: "AlignHCenter"
-            verticalAlignment: "AlignVCenter"
-            text: __notFoundString
-            font.pointSize: thumbnail.height <= defaultSpacing.minimumRowHeight ? 5 : 9
-            visible: thumbnail.source == "" && !multipleValues
-            wrapMode: "WordWrap"
-        }
-        WGLabel{
             objectName: "MultiValuesText"
             id: multipleValuesText
             anchors.centerIn: parent
@@ -108,8 +99,9 @@ Rectangle {
             horizontalAlignment: "AlignHCenter"
             verticalAlignment: "AlignVCenter"
             text: __multipleValuesString
+            font.pointSize: thumbnail.height <= 32 ? 5 : 9
             visible: multipleValues
-            wrapMode: "Wrap"
+            wrapMode: "WordWrap"
         }
     }
 

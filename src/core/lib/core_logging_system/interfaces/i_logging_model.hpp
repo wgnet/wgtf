@@ -19,27 +19,24 @@ class ILoggingModel
 	DECLARE_REFLECTED
 
 private:
-
-#define SET_REFLECTED_PROPERTY(prop) \
+#define SET_REFLECTED_PROPERTY(prop)                                                                 \
 	auto definition = Context::queryInterface<IDefinitionManager>()->getDefinition<ILoggingModel>(); \
-	auto handle = ObjectHandleT<ILoggingModel>(this, definition); \
-	PropertyAccessor pa = definition->bindProperty(#prop, handle); \
+	auto handle = ObjectHandleT<ILoggingModel>(this, definition);                                    \
+	PropertyAccessor pa = definition->bindProperty(#prop, handle);                                   \
 	pa.setValue(prop);
-	
-public:
-
-	virtual const std::string& getText() const = 0;
-	virtual void appendText( const std::string& text ) = 0;
-	virtual void clear() = 0;
-
-
-	void setText( const std::string& text )
-	{
-		SET_REFLECTED_PROPERTY( text );
-	}
 
 	// for reflection ONLY!  do not call from code or the signal to update will not get fired
-	virtual void putText( const std::string& text ) = 0;
+	virtual void putText(const std::string& text) = 0;
+
+public:
+	virtual const std::string& getText() const = 0;
+	virtual void appendText(const std::string& text) = 0;
+	virtual void clear() = 0;
+
+	void setText(const std::string& text)
+	{
+		SET_REFLECTED_PROPERTY(text);
+	}
 };
 } // end namespace wgt
 

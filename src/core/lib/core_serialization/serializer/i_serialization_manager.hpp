@@ -13,44 +13,45 @@ namespace wgt
 class IDataStream;
 class DEPRECATED SERIALIZATION_DLL ISerializationManager
 {
-
 public:
-	virtual ~ISerializationManager(){}
-	virtual bool registerSerializer( const char * typeName, ISerializer * serializer ) = 0;
-	virtual void deregisterSerializer( const char * typeName ) = 0;
+	virtual ~ISerializationManager()
+	{
+	}
+	virtual bool registerSerializer(const char* typeName, ISerializer* serializer) = 0;
+	virtual void deregisterSerializer(const char* typeName) = 0;
 
-	bool serialize( IDataStream & dataStream, const Variant & variant )
+	bool serialize(IDataStream& dataStream, const Variant& variant)
 	{
 		bool br = false;
-		ISerializer * serializer = getSerializer( variant.type()->name() );
+		ISerializer* serializer = getSerializer(variant.type()->name());
 		if (serializer)
 		{
-			br = serializer->write( &dataStream, variant );
+			br = serializer->write(&dataStream, variant);
 		}
 		else
 		{
-			br = dataStream.write( variant );
+			br = dataStream.write(variant);
 		}
 		return br;
 	}
 
-	bool deserialize( IDataStream & dataStream , Variant & variant )
+	bool deserialize(IDataStream& dataStream, Variant& variant)
 	{
 		bool br = false;
-		ISerializer * serializer = getSerializer( variant.type()->name() );
+		ISerializer* serializer = getSerializer(variant.type()->name());
 		if (serializer)
 		{
-			br = serializer->read( &dataStream, variant );
+			br = serializer->read(&dataStream, variant);
 		}
 		else
 		{
-			br = dataStream.read( variant );
+			br = dataStream.read(variant);
 		}
 		return br;
 	}
 
 private:
-	virtual ISerializer * getSerializer( const TypeId & typeId ) = 0;
+	virtual ISerializer* getSerializer(const TypeId& typeId) = 0;
 };
 } // end namespace wgt
 #endif // I_SERIALIZATION_MANAGER_HPP

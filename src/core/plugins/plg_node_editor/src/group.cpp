@@ -2,19 +2,12 @@
 
 namespace wgt
 {
-Group::Group()
-    : m_rectangle(0.0f, 0.0f, 100.0f, 100.0f)
-    , m_name("New Group")
-    , m_color(1.0f, 1.0f, 1.0f, 1.0f)
+Group::Group() : m_rectangle(0.0f, 0.0f, 100.0f, 100.0f), m_name("New Group"), m_color(1.0f, 1.0f, 1.0f, 1.0f)
 {
 }
 
-Group::Group(const Vector4& rectangle,
-             const std::string& name,
-             const Vector4& color)
-    : m_rectangle(rectangle)
-    , m_name(name)
-    , m_color(color)
+Group::Group(const Vector4& rectangle, const std::string& name, const Vector4& color)
+    : m_rectangle(rectangle), m_name(name), m_color(color)
 {
 }
 

@@ -17,13 +17,13 @@ class IComponentContext;
 class QtTabRegion : public IRegion, public Depends<IQtFramework>, public IViewEventListener
 {
 public:
-	QtTabRegion( IComponentContext & context, QTabWidget & qTabWidget );
+	QtTabRegion(IComponentContext& context, QTabWidget& qTabWidget);
 	~QtTabRegion();
 
-	const LayoutTags & tags() const override;
+	const LayoutTags& tags() const override;
 
-	void addView( IView & view ) override;
-	void removeView( IView & view ) override;
+	void addView(IView& view) override;
+	void removeView(IView& view) override;
 
 private:
 	typedef std::vector<std::pair<QWidget*, IView*>> Tabs;
@@ -33,20 +33,20 @@ private:
 	virtual void onLoaded(IView* view) override;
 
 	/**
-    * Finds the tab from the view or end if not found
-    */
+	* Finds the tab from the view or end if not found
+	*/
 	Tabs::iterator findTabFromView(IView& view);
 
 	/**
-    * Sets the tab title text
-    */
+	* Sets the tab title text
+	*/
 	void setTabTitle(int index, const char* text);
 
-	QTabWidget & qTabWidget_;
+	QTabWidget& qTabWidget_;
 	LayoutTags tags_;
 	Tabs tabs_;
 	QMetaObject::Connection m_connection;
 	QWidget* current_;
 };
 } // end namespace wgt
-#endif//QT_DOCK_REGION_HPP
+#endif // QT_DOCK_REGION_HPP

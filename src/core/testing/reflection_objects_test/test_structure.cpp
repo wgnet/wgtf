@@ -4,30 +4,25 @@
 namespace wgt
 {
 //==============================================================================
-TestStructure::TestStructure()
-	INIT_DATA()
+TestStructure::TestStructure() INIT_DATA()
 {
 }
 
-
 //==============================================================================
-void TestStructure::init( const IDefinitionManager & defManager )
+void TestStructure::init(const IDefinitionManager& defManager)
 {
-	INIT_COL_PRE( defManager )
+	INIT_COL_PRE(defManager)
 }
 
-
 //==============================================================================
-TestInheritedStruct::TestInheritedStruct()
-	INIT_DATA_INHERITS()
+TestInheritedStruct::TestInheritedStruct() INIT_DATA_INHERITS()
 {
 }
 
-
 //==============================================================================
-void TestInheritedStruct::init( const IDefinitionManager & defManager )
+void TestInheritedStruct::init(const IDefinitionManager& defManager)
 {
-	TestStructure::init( defManager );
-	INIT_COL_PRE_DERIVED( defManager )
+	TestStructure::init(defManager);
+	INIT_COL_PRE_DERIVED(defManager)
 }
 } // end namespace wgt

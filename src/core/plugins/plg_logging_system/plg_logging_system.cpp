@@ -5,40 +5,37 @@
 #include <vector>
 #include <memory>
 
-
 namespace wgt
 {
 /**
-* A plugin used to expose the core logging system for NGT. 
+* A plugin used to expose the core logging system for NGT.
 * Requires an ILogger to be registered for logging to occur.
 *
 * @ingroup plugins
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class LoggingSystemPlugin
-	: public PluginMain
+class LoggingSystemPlugin : public PluginMain
 {
 public:
-
-	LoggingSystemPlugin( IComponentContext & contextManager )
+	LoggingSystemPlugin(IComponentContext& contextManager)
 	{
 	}
 
-	bool PostLoad( IComponentContext & contextManager ) override
-	{		
-		auto definitionManager = contextManager.queryInterface< IDefinitionManager >();
-		loggingSystem_ = new LoggingSystem( DIRef< IDefinitionManager >(contextManager) );
-		contextManager.registerInterface( loggingSystem_ );
+	bool PostLoad(IComponentContext& contextManager) override
+	{
+		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
+		loggingSystem_ = new LoggingSystem(DIRef<IDefinitionManager>(contextManager));
+		contextManager.registerInterface(loggingSystem_);
 
 		return true;
 	}
 
-	void Initialise( IComponentContext & contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
 		if (loggingSystem_ != nullptr)
 		{
@@ -48,19 +45,18 @@ public:
 		return true;
 	}
 
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for ( auto type: types_ )
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
 
 private:
-
-	std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 	LoggingSystem* loggingSystem_;
 };
 
-PLG_CALLBACK_FUNC( LoggingSystemPlugin )
+PLG_CALLBACK_FUNC(LoggingSystemPlugin)
 } // end namespace wgt

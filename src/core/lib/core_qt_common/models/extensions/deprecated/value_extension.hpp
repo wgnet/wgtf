@@ -12,40 +12,27 @@ class ValueExtension : public IModelExtensionOld
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QQmlListProperty< QString > roles
-		READ getRoles )
+	Q_PROPERTY(QQmlListProperty<QString> roles READ getRoles)
 
-	Q_CLASSINFO( "DefaultProperty", "roles" )
+	Q_CLASSINFO("DefaultProperty", "roles")
 public:
 	ValueExtension();
 	virtual ~ValueExtension();
 
-	QHash< int, QByteArray > roleNames() const override;
-	QVariant data( const QModelIndex &index, int role ) const override;
-	bool setData( const QModelIndex &index,
-		const QVariant &value,
-		int role ) override;
+	QHash<int, QByteArray> roleNames() const override;
+	QVariant data(const QModelIndex& index, int role) const override;
+	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
-	void onDataAboutToBeChanged( const QModelIndex &index,
-		int role,
-		const QVariant &value ) override;
-	void onDataChanged( const QModelIndex &index,
-		int role,
-		const QVariant &value ) override;
+	void onDataAboutToBeChanged(const QModelIndex& index, int role, const QVariant& value) override;
+	void onDataChanged(const QModelIndex& index, int role, const QVariant& value) override;
 
 private:
-	QQmlListProperty< QString > getRoles() const;
+	QQmlListProperty<QString> getRoles() const;
 
-	static void appendRole( 
-		QQmlListProperty< QString > * property, 
-		QString * value );
-	static QString * roleAt( 
-		QQmlListProperty< QString > * property, 
-		int index );
-	static void clearRoles( 
-		QQmlListProperty< QString > * property );
-	static int countRoles( 
-		QQmlListProperty< QString > * property );
+	static void appendRole(QQmlListProperty<QString>* property, QString* value);
+	static QString* roleAt(QQmlListProperty<QString>* property, int index);
+	static void clearRoles(QQmlListProperty<QString>* property);
+	static int countRoles(QQmlListProperty<QString>* property);
 
 	QStringList roles_;
 };

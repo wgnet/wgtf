@@ -8,41 +8,34 @@ namespace wgt
 {
 namespace
 {
-
-void callMethod( Variant & object,
-	IDefinitionManager & definitionManager,
-	const char * name )
+void callMethod(Variant& object, IDefinitionManager& definitionManager, const char* name)
 {
-	ObjectHandle handle = object.cast< ObjectHandle >();
+	ObjectHandle handle = object.cast<ObjectHandle>();
 	if (!handle.isValid())
 	{
-		NGT_ERROR_MSG( "Failed to call method\n" );
+		NGT_ERROR_MSG("Failed to call method\n");
 		return;
 	}
 
-	auto definition = handle.getDefinition( definitionManager );
-	auto property = definition->findProperty( name );
+	auto definition = handle.getDefinition(definitionManager);
+	auto property = definition->findProperty(name);
 	if (property == nullptr)
 	{
-		NGT_ERROR_MSG( "Failed to call method\n" );
+		NGT_ERROR_MSG("Failed to call method\n");
 		return;
 	}
 
 	ReflectedMethodParameters parameters;
-	property->invoke( handle, definitionManager, parameters );
+	property->invoke(handle, definitionManager, parameters);
 }
 
 } // namespace
 
-PanelContext::PanelContext()
-    :
-    testScriptDescription_("<---- Click Me!")
+PanelContext::PanelContext() : testScriptDescription_("<---- Click Me!")
 {
 }
 
-bool PanelContext::initialize(IComponentContext& context,
-                              const char* panelName,
-                              const ObjectHandle& pythonObject)
+bool PanelContext::initialize(IComponentContext& context, const char* panelName, const ObjectHandle& pythonObject)
 {
 	context_ = &context;
 	panelName_ = panelName;
@@ -52,7 +45,7 @@ bool PanelContext::initialize(IComponentContext& context,
 	return true;
 }
 
-const std::string & PanelContext::panelName() const
+const std::string& PanelContext::panelName() const
 {
 	return panelName_;
 }
@@ -72,23 +65,23 @@ void PanelContext::updateValues()
 	auto pDefinitionManager = context_->queryInterface<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
-		NGT_ERROR_MSG( "Failed to find IDefinitionManager\n" );
+		NGT_ERROR_MSG("Failed to find IDefinitionManager\n");
 		return;
 	}
-	auto & definitionManager = (*pDefinitionManager);
+	auto& definitionManager = (*pDefinitionManager);
 
 	const char* methodName = "updateValues";
 
-	auto moduleDefinition = pythonObject_.getDefinition( definitionManager );
+	auto moduleDefinition = pythonObject_.getDefinition(definitionManager);
 
-	auto property = moduleDefinition->findProperty( "oldStyleObject" );
-	auto oldStylePythonObject_ = property->get( pythonObject_, definitionManager );
+	auto property = moduleDefinition->findProperty("oldStyleObject");
+	auto oldStylePythonObject_ = property->get(pythonObject_, definitionManager);
 
-	property = moduleDefinition->findProperty( "newStyleObject" );
-	auto newStylePythonObject_ = property->get( pythonObject_, definitionManager );
-	
-	callMethod( oldStylePythonObject_, definitionManager, methodName );
-	callMethod( newStylePythonObject_, definitionManager, methodName );
+	property = moduleDefinition->findProperty("newStyleObject");
+	auto newStylePythonObject_ = property->get(pythonObject_, definitionManager);
+
+	callMethod(oldStylePythonObject_, definitionManager, methodName);
+	callMethod(newStylePythonObject_, definitionManager, methodName);
 
 	testScriptDescription_ = "Update Values Finished";
 }

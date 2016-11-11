@@ -6,110 +6,97 @@ namespace wgt
 //==========================================================================
 namespace
 {
-	struct ScopedMemoryContext
+struct ScopedMemoryContext
+{
+	ScopedMemoryContext(void* memoryContext)
 	{
-		ScopedMemoryContext( void * memoryContext )
+		memoryContext_ = memoryContext;
+		if (memoryContext_ == nullptr)
 		{
-			memoryContext_ = memoryContext;
-			if (memoryContext_ == nullptr)
-			{
-				return;
-			}
-			NGTAllocator::pushMemoryContext( memoryContext_ );
+			return;
 		}
+		NGTAllocator::pushMemoryContext(memoryContext_);
+	}
 
-		~ScopedMemoryContext()
+	~ScopedMemoryContext()
+	{
+		if (memoryContext_ == nullptr)
 		{
-			if (memoryContext_ == nullptr)
-			{
-				return;
-			}
-			NGTAllocator::popMemoryContext();
-		};
-
-		void * memoryContext_;
+			return;
+		}
+		NGTAllocator::popMemoryContext();
 	};
+
+	void* memoryContext_;
+};
 }
 
 //==============================================================================
-PluginMemoryAllocator::PluginMemoryAllocator( const wchar_t * name )
-	: memoryContext_( NGTAllocator::createMemoryContext( name ) )
+PluginMemoryAllocator::PluginMemoryAllocator(const wchar_t* name)
+    : memoryContext_(NGTAllocator::createMemoryContext(name))
 {
 }
-
 
 //==============================================================================
 PluginMemoryAllocator::~PluginMemoryAllocator()
 {
-	NGTAllocator::cleanupContext( memoryContext_ );
-	NGTAllocator::destroyMemoryContext( memoryContext_ );
+	NGTAllocator::cleanupContext(memoryContext_);
+	NGTAllocator::destroyMemoryContext(memoryContext_);
 }
 
-
 //==============================================================================
-void * PluginMemoryAllocator::mem_new( size_t size )
+void* PluginMemoryAllocator::mem_new(size_t size)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	return NGTAllocator::allocate( size );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	return NGTAllocator::allocate(size);
 }
 
-
 //==============================================================================
-void * PluginMemoryAllocator::mem_new(
-	size_t size, const std::nothrow_t & throwable )
+void* PluginMemoryAllocator::mem_new(size_t size, const std::nothrow_t& throwable)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	return NGTAllocator::allocate( size );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	return NGTAllocator::allocate(size);
 }
 
-
 //==============================================================================
-void * PluginMemoryAllocator::mem_new_array( size_t size )
+void* PluginMemoryAllocator::mem_new_array(size_t size)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	return NGTAllocator::allocate( size );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	return NGTAllocator::allocate(size);
 }
 
-
 //==============================================================================
-void * PluginMemoryAllocator::mem_new_array(
-	size_t size, const std::nothrow_t & throwable )
+void* PluginMemoryAllocator::mem_new_array(size_t size, const std::nothrow_t& throwable)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	return NGTAllocator::allocate( size );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	return NGTAllocator::allocate(size);
 }
 
-
 //==============================================================================
-void PluginMemoryAllocator::mem_delete( void* ptr )
+void PluginMemoryAllocator::mem_delete(void* ptr)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	NGTAllocator::deallocate( ptr );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	NGTAllocator::deallocate(ptr);
 }
 
-
 //==============================================================================
-void PluginMemoryAllocator::mem_delete(
-	void* ptr, const std::nothrow_t & throwable )
+void PluginMemoryAllocator::mem_delete(void* ptr, const std::nothrow_t& throwable)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	NGTAllocator::deallocate( ptr );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	NGTAllocator::deallocate(ptr);
 }
 
-
 //==============================================================================
-void PluginMemoryAllocator::mem_delete_array( void* ptr )
+void PluginMemoryAllocator::mem_delete_array(void* ptr)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	NGTAllocator::deallocate( ptr );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	NGTAllocator::deallocate(ptr);
 }
 
-
 //==============================================================================
-void PluginMemoryAllocator::mem_delete_array(
-	void* ptr, const std::nothrow_t & throwable )
+void PluginMemoryAllocator::mem_delete_array(void* ptr, const std::nothrow_t& throwable)
 {
-	ScopedMemoryContext memoryContext( memoryContext_ );
-	NGTAllocator::deallocate( ptr );
+	ScopedMemoryContext memoryContext(memoryContext_);
+	NGTAllocator::deallocate(ptr);
 }
 } // end namespace wgt

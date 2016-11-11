@@ -39,8 +39,7 @@ bool isValid(const InsertRowsCommandArgument* pCommandArgs)
 
 } // end namespace InsertRowsCommand_Detail
 
-InsertRowsCommand::InsertRowsCommand(IComponentContext& context)
-    : definitionManager_(context)
+InsertRowsCommand::InsertRowsCommand(IComponentContext& context) : definitionManager_(context)
 {
 }
 
@@ -106,8 +105,7 @@ bool InsertRowsCommand::redo(const ObjectHandle& arguments) const /* override */
 	return model.insertColumns(startPos, count, pParent);
 }
 
-ObjectHandle InsertRowsCommand::getCommandDescription(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle InsertRowsCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
 	auto handle = GenericObject::create(*definitionManager_);
 	assert(handle.get() != nullptr);
@@ -140,15 +138,13 @@ const char* InsertRowsCommand::getId() const /* override */
 	return s_Id;
 }
 
-bool InsertRowsCommand::validateArguments(
-const ObjectHandle& arguments) const /* override */
+bool InsertRowsCommand::validateArguments(const ObjectHandle& arguments) const /* override */
 {
 	const auto pCommandArgs = arguments.getBase<InsertRowsCommandArgument>();
 	return InsertRowsCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle InsertRowsCommand::execute(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle InsertRowsCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<InsertRowsCommandArgument>();
 	if (!InsertRowsCommand_Detail::isValid(pCommandArgs))
@@ -172,9 +168,7 @@ const ObjectHandle& arguments) const /* override */
 		result = model.insertColumns(startPos, count, pParent);
 	}
 
-	const auto errorCode = result ?
-	CommandErrorCode::COMMAND_NO_ERROR :
-	CommandErrorCode::FAILED;
+	const auto errorCode = result ? CommandErrorCode::COMMAND_NO_ERROR : CommandErrorCode::FAILED;
 	return errorCode;
 }
 

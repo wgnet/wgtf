@@ -15,31 +15,29 @@ namespace wgt
 class ObjectPlugin : public PluginMain
 {
 public:
-	ObjectPlugin( IComponentContext & context )
+	ObjectPlugin(IComponentContext& context)
 	{
-
 	}
 
-	bool PostLoad( IComponentContext & context ) override
+	bool PostLoad(IComponentContext& context) override
 	{
 		context.registerInterface(new ObjectManagerCreator(context));
-		return true; 
+		return true;
 	}
-	
-	void Initialise( IComponentContext & context ) override
+
+	void Initialise(IComponentContext& context) override
 	{
-
 	}
 
-	bool Finalise( IComponentContext & context ) override
+	bool Finalise(IComponentContext& context) override
 	{
-		return true; 
+		return true;
 	}
 
-	void Unload( IComponentContext & context ) override
+	void Unload(IComponentContext& context) override
 	{
 	}
 };
 
-PLG_CALLBACK_FUNC( ObjectPlugin )
+PLG_CALLBACK_FUNC(ObjectPlugin)
 } // end namespace wgt

@@ -4,54 +4,47 @@
 #include <cstdio>
 #include "core_common/ngt_windows.hpp"
 
-
 namespace wgt
 {
-int logMessage( const char* format, ... )
+int logMessage(const char* format, ...)
 {
 	const size_t bufferSize = 4095;
-	char buffer[ bufferSize ];
+	char buffer[bufferSize];
 
 	va_list args;
-	va_start( args, format );
+	va_start(args, format);
 
-	const int result = vsnprintf( buffer,
-		sizeof( buffer ) - 1,
-		format,
-		args );
-	buffer[ sizeof( buffer ) - 1 ] = '\0';
+	const int result = vsnprintf(buffer, sizeof(buffer) - 1, format, args);
+	buffer[sizeof(buffer) - 1] = '\0';
 
-	va_end( args );
+	va_end(args);
 
-	OutputDebugStringA( buffer );
+	OutputDebugStringA(buffer);
 
 	return result;
 }
 
 int logMessageNewline(const char* format, ...)
 {
-    const size_t bufferSize = 4095;
-    char buffer[bufferSize];
+	const size_t bufferSize = 4095;
+	char buffer[bufferSize];
 
-    va_list args;
-    va_start( args, format );
+	va_list args;
+	va_start(args, format);
 
-    const int result = vsnprintf( buffer,
-        sizeof(buffer) - 1,
-        format,
-        args );
-    buffer[sizeof( buffer ) - 1] = '\0';
+	const int result = vsnprintf(buffer, sizeof(buffer) - 1, format, args);
+	buffer[sizeof(buffer) - 1] = '\0';
 
-    va_end( args );
+	va_end(args);
 
-    OutputDebugStringA( buffer );
+	OutputDebugStringA(buffer);
 
-    if ( strrchr( buffer, '\n' ) == nullptr )
-    {
-        OutputDebugStringA( "\n" );
-    }
+	if (strrchr(buffer, '\n') == nullptr)
+	{
+		OutputDebugStringA("\n");
+	}
 
-    return result;
+	return result;
 }
 
 void flushMessage()

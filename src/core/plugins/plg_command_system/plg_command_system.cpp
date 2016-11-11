@@ -21,93 +21,92 @@
 namespace wgt
 {
 /**
-* A plugin which registers ICommandManager and IEnvManager interfaces to allow other plugins to queue and register commands. 
-* It maintains and processes a command queue and tracks the history of all executed commands coordinating undo/redo operations.
+* A plugin which registers ICommandManager and IEnvManager interfaces to allow other plugins to queue and register
+* commands.
+* It maintains and processes a command queue and tracks the history of all executed commands coordinating undo/redo
+* operations.
 *
 * @ingroup plugins
 * @ingroup coreplugins
-* @note The command queue is important for concurrency. The command manager will perform all data modifications on the same thread.
-*       All data changes should be wrapped in a command and executed via the command manager to guarantee there are no data races.
+* @note The command queue is important for concurrency. The command manager will perform all data modifications on the
+* same thread.
+*       All data changes should be wrapped in a command and executed via the command manager to guarantee there are no
+* data races.
 *       Requires Plugins:
 *       - @ref coreplugins
 */
-class CommandSystemPlugin
-	: public PluginMain
+class CommandSystemPlugin : public PluginMain
 {
 private:
-	std::unique_ptr< CommandManager >						commandManager_;
-	std::unique_ptr< EnvManager >								envManager_;
+	std::unique_ptr<CommandManager> commandManager_;
+	std::unique_ptr<EnvManager> envManager_;
 
 public:
-	CommandSystemPlugin( IComponentContext & contextManager )
-		: commandManager_( nullptr )
+	CommandSystemPlugin(IComponentContext& contextManager) : commandManager_(nullptr)
 	{
 	}
 
-	bool PostLoad( IComponentContext & contextManager ) override
+	bool PostLoad(IComponentContext& contextManager) override
 	{
-		IDefinitionManager * defManager = contextManager.queryInterface< IDefinitionManager >();
+		IDefinitionManager* defManager = contextManager.queryInterface<IDefinitionManager>();
 		if (defManager == nullptr)
 		{
 			return false;
 		}
-		CommandSystem::initReflectedTypes( *defManager );
+		CommandSystem::initReflectedTypes(*defManager);
 
-		commandManager_.reset( new CommandManager( *defManager ) );
-		assert( commandManager_ != NULL);
+		commandManager_.reset(new CommandManager(*defManager));
+		assert(commandManager_ != NULL);
 		if (commandManager_ == NULL)
 		{
 			return false;
 		}
-		types_.push_back(
-			contextManager.registerInterface( commandManager_.get(), false ) );
+		types_.push_back(contextManager.registerInterface(commandManager_.get(), false));
 
-		envManager_.reset( new EnvManager() );
-		assert( envManager_ != NULL);
+		envManager_.reset(new EnvManager());
+		assert(envManager_ != NULL);
 		if (envManager_ == NULL)
 		{
 			return false;
 		}
-		types_.push_back(
-			contextManager.registerInterface( envManager_.get(), false ) );
+		types_.push_back(contextManager.registerInterface(envManager_.get(), false));
 
 		return true;
 	}
 
-	void Initialise( IComponentContext & contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
-		IApplication * application = contextManager.queryInterface< IApplication >();
-		assert( application != nullptr );
-		IEnvManager * envManager = contextManager.queryInterface< IEnvManager >();
-		assert( envManager != nullptr );
-		IFileSystem * fileSystem = contextManager.queryInterface< IFileSystem >();
+		IApplication* application = contextManager.queryInterface<IApplication>();
+		assert(application != nullptr);
+		IEnvManager* envManager = contextManager.queryInterface<IEnvManager>();
+		assert(envManager != nullptr);
+		IFileSystem* fileSystem = contextManager.queryInterface<IFileSystem>();
 		assert(fileSystem != nullptr);
-		IReflectionController * controller = contextManager.queryInterface< IReflectionController >();
+		IReflectionController* controller = contextManager.queryInterface<IReflectionController>();
 		assert(controller != nullptr);
-		commandManager_->init( *application, *envManager, fileSystem, controller );
+		commandManager_->init(*application, *envManager, fileSystem, controller);
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
-		if(commandManager_ != nullptr)
+		if (commandManager_ != nullptr)
 		{
 			commandManager_->fini();
 		}
 		return true;
 	}
 
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for ( auto type : types_ )
+		for (auto type : types_)
 		{
-			 contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 		commandManager_ = nullptr;
 	}
 
-	std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 };
 
-
-PLG_CALLBACK_FUNC( CommandSystemPlugin )
+PLG_CALLBACK_FUNC(CommandSystemPlugin)
 } // end namespace wgt

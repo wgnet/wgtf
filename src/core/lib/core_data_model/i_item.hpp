@@ -7,7 +7,7 @@
 
 namespace wgt
 {
-typedef std::shared_ptr< BinaryBlock > ThumbnailData;
+typedef std::shared_ptr<BinaryBlock> ThumbnailData;
 
 /**
  *	Concept of an item within one of our data models.
@@ -18,15 +18,17 @@ typedef std::shared_ptr< BinaryBlock > ThumbnailData;
 class IItem
 {
 public:
-	virtual ~IItem() {}
+	virtual ~IItem()
+	{
+	}
 
 	/// TODO display text will become "data"?
-	virtual const char * getDisplayText( int column ) const = 0;
+	virtual const char* getDisplayText(int column) const = 0;
 
 	/// TODO thumbnails will become "data"
-	virtual ThumbnailData getThumbnail( int column ) const = 0;
-	virtual Variant getData( int column, ItemRole::Id roleId ) const = 0;
-	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data ) = 0;
+	virtual ThumbnailData getThumbnail(int column) const = 0;
+	virtual Variant getData(int column, ItemRole::Id roleId) const = 0;
+	virtual bool setData(int column, ItemRole::Id roleId, const Variant& data) = 0;
 };
 } // end namespace wgt
 #endif // I_ITEM_HPP

@@ -10,6 +10,10 @@ import QtQuick.Layouts 1.3
 Button {
     objectName: "WGAbstractButton"
 
+    // Take focus away from TextBoxes before running onClicked
+    // This is important to prevent NGT-2907
+    activeFocusOnPress: true
+
     property bool buttonChecked: checked
 
     /*! property determines if the control represents multiple values */

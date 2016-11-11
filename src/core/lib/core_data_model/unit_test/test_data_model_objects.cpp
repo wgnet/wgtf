@@ -12,9 +12,9 @@ namespace wgt
 // Test Fixture Class
 //---------------------------------------------------------------------------
 
-void TestFixture::initialise( TestStringData::State state )
+void TestFixture::initialise(TestStringData::State state)
 {
-	testStringData_.initialise( state );
+	testStringData_.initialise(state);
 }
 
 //---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ void TestFixture::initialise( TestStringData::State state )
 
 struct UnitTestTreeItem::Implementation
 {
-	Implementation( UnitTestTreeItem& main, const char* name, const IItem* parent );
+	Implementation(UnitTestTreeItem& main, const char* name, const IItem* parent);
 	~Implementation();
 
 	UnitTestTreeItem& main_;
@@ -31,11 +31,8 @@ struct UnitTestTreeItem::Implementation
 	const IItem* parent_;
 };
 
-UnitTestTreeItem::Implementation::Implementation(
-	UnitTestTreeItem& main, const char* name, const IItem* parent )
-	: main_( main )
-	, name_( name )
-	, parent_( parent )
+UnitTestTreeItem::Implementation::Implementation(UnitTestTreeItem& main, const char* name, const IItem* parent)
+    : main_(main), name_(name), parent_(parent)
 {
 }
 
@@ -44,14 +41,13 @@ UnitTestTreeItem::Implementation::~Implementation()
 	delete[] name_;
 }
 
-
-UnitTestTreeItem::UnitTestTreeItem( const char* name, const IItem* parent )
-	: impl_( new Implementation( *this, name, parent ) )
+UnitTestTreeItem::UnitTestTreeItem(const char* name, const IItem* parent)
+    : impl_(new Implementation(*this, name, parent))
 {
 }
 
-UnitTestTreeItem::UnitTestTreeItem( const UnitTestTreeItem& rhs )
-	: impl_( new Implementation( *this, rhs.impl_->name_, rhs.impl_->parent_ ) )
+UnitTestTreeItem::UnitTestTreeItem(const UnitTestTreeItem& rhs)
+    : impl_(new Implementation(*this, rhs.impl_->name_, rhs.impl_->parent_))
 {
 }
 
@@ -59,12 +55,11 @@ UnitTestTreeItem::~UnitTestTreeItem()
 {
 }
 
-UnitTestTreeItem& UnitTestTreeItem::operator=( const UnitTestTreeItem& rhs )
+UnitTestTreeItem& UnitTestTreeItem::operator=(const UnitTestTreeItem& rhs)
 {
 	if (this != &rhs)
 	{
-		impl_.reset( new Implementation(
-			*this, rhs.impl_->name_, rhs.impl_->parent_ ) );
+		impl_.reset(new Implementation(*this, rhs.impl_->name_, rhs.impl_->parent_));
 	}
 
 	return *this;
@@ -75,17 +70,17 @@ const IItem* UnitTestTreeItem::getParent() const
 	return impl_->parent_;
 }
 
-const char* UnitTestTreeItem::getDisplayText( int column ) const
+const char* UnitTestTreeItem::getDisplayText(int column) const
 {
 	return impl_->name_;
 }
 
-ThumbnailData UnitTestTreeItem::getThumbnail( int column ) const
+ThumbnailData UnitTestTreeItem::getThumbnail(int column) const
 {
 	return nullptr;
 }
 
-void UnitTestTreeItem::setName( const char * name )
+void UnitTestTreeItem::setName(const char* name)
 {
 	if (impl_->name_ != nullptr)
 	{
@@ -95,26 +90,26 @@ void UnitTestTreeItem::setName( const char * name )
 	impl_->name_ = name;
 }
 
-Variant UnitTestTreeItem::getData( int column, ItemRole::Id roleId ) const
+Variant UnitTestTreeItem::getData(int column, ItemRole::Id roleId) const
 {
 	return Variant();
 }
 
-bool UnitTestTreeItem::setData( int column, ItemRole::Id roleId, const Variant& data )
+bool UnitTestTreeItem::setData(int column, ItemRole::Id roleId, const Variant& data)
 {
 	return true;
 }
 
 struct UnitTestTreeModel::Implementation
 {
-	Implementation( UnitTestTreeModel& main );
+	Implementation(UnitTestTreeModel& main);
 	~Implementation();
 
-	void initialise( TestStringData * dataSource );
+	void initialise(TestStringData* dataSource);
 
-	std::vector<UnitTestTreeItem*> getSection( const UnitTestTreeItem* parent );
-	char* copyString( const std::string& s ) const;
-	void generateData( const UnitTestTreeItem* parent, size_t level );
+	std::vector<UnitTestTreeItem*> getSection(const UnitTestTreeItem* parent);
+	char* copyString(const std::string& s) const;
+	void generateData(const UnitTestTreeItem* parent, size_t level);
 
 	UnitTestTreeModel& model_;
 	std::unordered_map<const UnitTestTreeItem*, std::vector<UnitTestTreeItem*>> data_;
@@ -124,16 +119,14 @@ struct UnitTestTreeModel::Implementation
 	static const size_t NUMBER_OF_LEVELS = 2;
 };
 
-UnitTestTreeModel::Implementation::Implementation( UnitTestTreeModel& model )
-	: model_( model )
-	, dataSource_( nullptr )
+UnitTestTreeModel::Implementation::Implementation(UnitTestTreeModel& model) : model_(model), dataSource_(nullptr)
 {
 }
 
-void UnitTestTreeModel::Implementation::initialise( TestStringData * dataSource )
+void UnitTestTreeModel::Implementation::initialise(TestStringData* dataSource)
 {
 	dataSource_ = dataSource;
-	generateData( nullptr, 0 );
+	generateData(nullptr, 0);
 }
 
 UnitTestTreeModel::Implementation::~Implementation()
@@ -152,46 +145,43 @@ UnitTestTreeModel::Implementation::~Implementation()
 	data_.clear();
 }
 
-std::vector<UnitTestTreeItem*> UnitTestTreeModel::Implementation::getSection( 
-	const UnitTestTreeItem* parent )
+std::vector<UnitTestTreeItem*> UnitTestTreeModel::Implementation::getSection(const UnitTestTreeItem* parent)
 {
-	auto itr = data_.find( parent );
-	assert( itr != data_.end() );
+	auto itr = data_.find(parent);
+	assert(itr != data_.end());
 	return itr->second;
 }
 
-char* UnitTestTreeModel::Implementation::copyString( const std::string& s ) const
+char* UnitTestTreeModel::Implementation::copyString(const std::string& s) const
 {
 	char* itemData = new char[s.length() + 1];
-	memcpy( itemData, s.data(), s.length() );
+	memcpy(itemData, s.data(), s.length());
 	itemData[s.length()] = 0;
 	return itemData;
 }
 
-void UnitTestTreeModel::Implementation::generateData( const UnitTestTreeItem* parent, size_t level )
+void UnitTestTreeModel::Implementation::generateData(const UnitTestTreeItem* parent, size_t level)
 {
 	for (size_t i = 0; i < NUMBER_OF_GROUPS; ++i)
 	{
 		std::string dataString = dataSource_->getNextString();
-		UnitTestTreeItem* item = new UnitTestTreeItem( copyString( dataString ), parent );
-		data_[parent].push_back( item );
+		UnitTestTreeItem* item = new UnitTestTreeItem(copyString(dataString), parent);
+		data_[parent].push_back(item);
 
 		if (level < NUMBER_OF_LEVELS)
 		{
-			generateData( item, level + 1 );
+			generateData(item, level + 1);
 		}
 
 		data_[item];
 	}
 }
 
-UnitTestTreeModel::UnitTestTreeModel()
-	: impl_( new Implementation( *this ) )
+UnitTestTreeModel::UnitTestTreeModel() : impl_(new Implementation(*this))
 {
 }
 
-UnitTestTreeModel::UnitTestTreeModel( const UnitTestTreeModel& rhs )
-	: impl_( new Implementation( *this ) )
+UnitTestTreeModel::UnitTestTreeModel(const UnitTestTreeModel& rhs) : impl_(new Implementation(*this))
 {
 }
 
@@ -199,56 +189,56 @@ UnitTestTreeModel::~UnitTestTreeModel()
 {
 }
 
-UnitTestTreeModel& UnitTestTreeModel::operator=( const UnitTestTreeModel& rhs )
+UnitTestTreeModel& UnitTestTreeModel::operator=(const UnitTestTreeModel& rhs)
 {
 	if (this != &rhs)
 	{
-		impl_.reset( new Implementation( *this ) );
+		impl_.reset(new Implementation(*this));
 	}
 
 	return *this;
 }
 
-void UnitTestTreeModel::initialise( TestStringData * dataSource )
+void UnitTestTreeModel::initialise(TestStringData* dataSource)
 {
-	impl_->initialise( dataSource );
+	impl_->initialise(dataSource);
 }
 
-IItem* UnitTestTreeModel::item( size_t index, const IItem* parent ) const
+IItem* UnitTestTreeModel::item(size_t index, const IItem* parent) const
 {
-	auto temp = static_cast<const UnitTestTreeItem*>( parent );
-	if ( size( parent ) > 0 )
+	auto temp = static_cast<const UnitTestTreeItem*>(parent);
+	if (size(parent) > 0)
 	{
-		return impl_->getSection( temp )[index];
+		return impl_->getSection(temp)[index];
 	}
 
 	return nullptr;
 }
 
-ITreeModel::ItemIndex UnitTestTreeModel::index( const IItem* item ) const
+ITreeModel::ItemIndex UnitTestTreeModel::index(const IItem* item) const
 {
-	auto temp = static_cast<const UnitTestTreeItem*>( item );
-	temp = static_cast<const UnitTestTreeItem*>( temp->getParent() );
-	ItemIndex index( 0, temp );
+	auto temp = static_cast<const UnitTestTreeItem*>(item);
+	temp = static_cast<const UnitTestTreeItem*>(temp->getParent());
+	ItemIndex index(0, temp);
 
-	auto items = impl_->getSection( temp );
-	auto itr = std::find( items.begin(), items.end(), item );
-	assert( itr != items.end() );
+	auto items = impl_->getSection(temp);
+	auto itr = std::find(items.begin(), items.end(), item);
+	assert(itr != items.end());
 
 	index.first = itr - items.begin();
 	return index;
 }
 
-bool UnitTestTreeModel::empty( const IItem* parent ) const
+bool UnitTestTreeModel::empty(const IItem* parent) const
 {
-	const auto temp = static_cast< const UnitTestTreeItem* >( parent );
-	return impl_->getSection( temp ).empty();
+	const auto temp = static_cast<const UnitTestTreeItem*>(parent);
+	return impl_->getSection(temp).empty();
 }
 
-size_t UnitTestTreeModel::size( const IItem* parent ) const
+size_t UnitTestTreeModel::size(const IItem* parent) const
 {
-	auto temp = static_cast<const UnitTestTreeItem*>( parent );
-	return impl_->getSection( temp ).size();
+	auto temp = static_cast<const UnitTestTreeItem*>(parent);
+	return impl_->getSection(temp).size();
 }
 
 int UnitTestTreeModel::columnCount() const
@@ -256,68 +246,67 @@ int UnitTestTreeModel::columnCount() const
 	return 1;
 }
 
-UnitTestTreeItem * UnitTestTreeModel::insert( const UnitTestTreeItem * parent, std::string & data, InsertAt where )
+UnitTestTreeItem* UnitTestTreeModel::insert(const UnitTestTreeItem* parent, std::string& data, InsertAt where)
 {
-	size_t index = where == InsertAt::BACK ? size( parent ) : 0;
-	signalPreItemsInserted( parent, index, 1 );
-	
-	UnitTestTreeItem* item = new UnitTestTreeItem( impl_->copyString( data ), parent );
-	impl_->data_.emplace( item, std::vector< UnitTestTreeItem * >() );
+	size_t index = where == InsertAt::BACK ? size(parent) : 0;
+	signalPreItemsInserted(parent, index, 1);
+
+	UnitTestTreeItem* item = new UnitTestTreeItem(impl_->copyString(data), parent);
+	impl_->data_.emplace(item, std::vector<UnitTestTreeItem*>());
 
 	if (where == InsertAt::FRONT)
 	{
 		auto& items = impl_->data_[parent];
-		items.insert( items.begin(), item );
+		items.insert(items.begin(), item);
 	}
 	else
 	{
-		impl_->data_[parent].push_back( item );
+		impl_->data_[parent].push_back(item);
 	}
 
-	signalPostItemsInserted( parent, index, 1 );
+	signalPostItemsInserted(parent, index, 1);
 	return item;
 }
 
-void UnitTestTreeModel::erase( size_t index, const UnitTestTreeItem * parent )
+void UnitTestTreeModel::erase(size_t index, const UnitTestTreeItem* parent)
 {
-	signalPreItemsRemoved( parent, index, 1 );
+	signalPreItemsRemoved(parent, index, 1);
 
 	// Remove this item's children first
-	auto subItem = item( index, parent );
-	unsigned int children = static_cast< unsigned int >( size( subItem ) );
+	auto subItem = item(index, parent);
+	unsigned int children = static_cast<unsigned int>(size(subItem));
 	for (unsigned int i = 0; i < children; ++i)
-	{		
-		impl_->data_.erase( impl_->data_[impl_->data_[parent][index]][i] );
+	{
+		impl_->data_.erase(impl_->data_[impl_->data_[parent][index]][i]);
 	}
 
 	// Now remove the item
-	impl_->data_.erase( impl_->data_[parent][index] );
-	impl_->data_[parent].erase( impl_->data_[parent].begin() + index );
+	impl_->data_.erase(impl_->data_[parent][index]);
+	impl_->data_[parent].erase(impl_->data_[parent].begin() + index);
 
-	signalPostItemsRemoved( parent, index, 1 );
+	signalPostItemsRemoved(parent, index, 1);
 }
 
-void UnitTestTreeModel::update( size_t index, const UnitTestTreeItem * parent, std::string & data )
+void UnitTestTreeModel::update(size_t index, const UnitTestTreeItem* parent, std::string& data)
 {
-	auto treeItem = item( index, parent );
+	auto treeItem = item(index, parent);
 	if (treeItem == nullptr)
 	{
 		return;
 	}
 
-	auto unitTestTreeItem = dynamic_cast< UnitTestTreeItem * >( treeItem );
+	auto unitTestTreeItem = dynamic_cast<UnitTestTreeItem*>(treeItem);
 	if (unitTestTreeItem == nullptr)
 	{
 		return;
 	}
 
-	signalPreItemDataChanged( treeItem, 0, ValueRole::roleId_, data );
+	signalPreItemDataChanged(treeItem, 0, ValueRole::roleId_, data);
 
-	unitTestTreeItem->setName( impl_->copyString( data ) );
-	
-	signalPostItemDataChanged( treeItem, 0, ValueRole::roleId_, data );
+	unitTestTreeItem->setName(impl_->copyString(data));
+
+	signalPostItemDataChanged(treeItem, 0, ValueRole::roleId_, data);
 }
-
 
 //---------------------------------------------------------------------------
 // List Model Helper Functions
@@ -326,47 +315,46 @@ void UnitTestTreeModel::update( size_t index, const UnitTestTreeItem * parent, s
 void TestFixture::echoListData()
 {
 	// Debug output for engineers verifying list contents
-	const VariantList & list = testStringData_.getVariantList();
+	const VariantList& list = testStringData_.getVariantList();
 	std::string value;
-	for (unsigned int i = 0; i < static_cast< unsigned int >( list.size() ); ++i)
+	for (unsigned int i = 0; i < static_cast<unsigned int>(list.size()); ++i)
 	{
 		auto variant = list[i];
-		if (!variant.typeIs< const char * >() && !variant.typeIs< std::string >())
+		if (!variant.typeIs<const char*>() && !variant.typeIs<std::string>())
 		{
 			continue;
 		}
 
 		value = "";
-		if (variant.tryCast( value ))
+		if (variant.tryCast(value))
 		{
-			BWUnitTest::unitTestInfo( "List Item %s\n", value.c_str() );
+			BWUnitTest::unitTestInfo("List Item %s\n", value.c_str());
 		}
 	}
 }
 
-bool TestFixture::findItemInFilteredList( const char * term, bool exactMatch )
+bool TestFixture::findItemInFilteredList(const char* term, bool exactMatch)
 {
 	if (term == nullptr)
 	{
 		return false;
 	}
-		
+
 	std::string value;
-	for (unsigned int i = 0; i < static_cast< unsigned int >( filteredTestList_.size() ); ++i)
+	for (unsigned int i = 0; i < static_cast<unsigned int>(filteredTestList_.size()); ++i)
 	{
-		auto item = filteredTestList_.item( i );
+		auto item = filteredTestList_.item(i);
 		assert(item);
-		Variant variant = item->getData( 0, ValueRole::roleId_ );
-		if (!variant.typeIs< const char * >() && !variant.typeIs< std::string >())
+		Variant variant = item->getData(0, ValueRole::roleId_);
+		if (!variant.typeIs<const char*>() && !variant.typeIs<std::string>())
 		{
 			return false;
 		}
 
 		value = "";
-		if (variant.tryCast( value ))
+		if (variant.tryCast(value))
 		{
-			if ( (exactMatch && value.compare( term ) == 0) || 
-				 (!exactMatch && value.find( term ) != std::string::npos) )
+			if ((exactMatch && value.compare(term) == 0) || (!exactMatch && value.find(term) != std::string::npos))
 			{
 				return true;
 			}
@@ -376,24 +364,24 @@ bool TestFixture::findItemInFilteredList( const char * term, bool exactMatch )
 	return false;
 }
 
-bool TestFixture::verifyListItemPosition( unsigned int index, const char * value )
+bool TestFixture::verifyListItemPosition(unsigned int index, const char* value)
 {
 	if (value == nullptr)
 	{
 		return false;
 	}
 
-	const VariantList & list = testStringData_.getVariantList();
-		
+	const VariantList& list = testStringData_.getVariantList();
+
 	std::string itemValue;
-	auto item = list.item( index );
-	auto variant = item->getData( 0, ValueRole::roleId_ );
-	if (!variant.typeIs< const char * >() && !variant.typeIs< std::string >())
+	auto item = list.item(index);
+	auto variant = item->getData(0, ValueRole::roleId_);
+	if (!variant.typeIs<const char*>() && !variant.typeIs<std::string>())
 	{
 		return false;
 	}
 
-	if (variant.tryCast( itemValue ) && itemValue.find( value ) != std::string::npos)
+	if (variant.tryCast(itemValue) && itemValue.find(value) != std::string::npos)
 	{
 		return true;
 	}
@@ -401,16 +389,16 @@ bool TestFixture::verifyListItemPosition( unsigned int index, const char * value
 	return false;
 }
 
-void TestFixture::insertIntoListAtIndex( unsigned int index, const char * value )
-{	
+void TestFixture::insertIntoListAtIndex(unsigned int index, const char* value)
+{
 	unsigned int tracker = 0;
-	VariantList & list = testStringData_.getVariantList();
+	VariantList& list = testStringData_.getVariantList();
 
 	for (auto it = list.begin(); it != list.end(); ++it)
 	{
 		if (tracker == index)
 		{
-			list.insert( it, value );
+			list.insert(it, value);
 			return;
 		}
 
@@ -418,16 +406,16 @@ void TestFixture::insertIntoListAtIndex( unsigned int index, const char * value 
 	}
 }
 
-void TestFixture::removeFromListAtIndex( unsigned int index )
+void TestFixture::removeFromListAtIndex(unsigned int index)
 {
 	unsigned int tracker = 0;
-	VariantList & list = testStringData_.getVariantList();
+	VariantList& list = testStringData_.getVariantList();
 
 	for (auto it = list.begin(); it != list.end(); ++it)
 	{
 		if (tracker == index)
 		{
-			list.erase( it );
+			list.erase(it);
 			return;
 		}
 
@@ -435,52 +423,51 @@ void TestFixture::removeFromListAtIndex( unsigned int index )
 	}
 }
 
-void TestFixture::getListItemValueAtIndex( unsigned int index, std::string & value )
+void TestFixture::getListItemValueAtIndex(unsigned int index, std::string& value)
 {
-	const VariantList & list = testStringData_.getVariantList();
-		
-	auto item = list.item( index );
-	assert( item );
+	const VariantList& list = testStringData_.getVariantList();
 
-	auto variant = item->getData( 0, ValueRole::roleId_ );
-	if (!variant.typeIs< const char * >() && !variant.typeIs< std::string >())
+	auto item = list.item(index);
+	assert(item);
+
+	auto variant = item->getData(0, ValueRole::roleId_);
+	if (!variant.typeIs<const char*>() && !variant.typeIs<std::string>())
 	{
 		value = "";
 		return;
 	}
 
-	variant.tryCast( value );
+	variant.tryCast(value);
 }
 
-void TestFixture::updateListItemAtIndex( unsigned int index, const char * value )
+void TestFixture::updateListItemAtIndex(unsigned int index, const char* value)
 {
-	VariantList & list = testStringData_.getVariantList();
-	
-	auto item = list.item( index );
-	assert( item );
+	VariantList& list = testStringData_.getVariantList();
 
-	list.signalPreItemDataChanged( item, 0, ValueRole::roleId_, value );
+	auto item = list.item(index);
+	assert(item);
 
-	item->setData( 0, ValueRole::roleId_, value );
+	list.signalPreItemDataChanged(item, 0, ValueRole::roleId_, value);
 
-	list.signalPostItemDataChanged( item, 0, ValueRole::roleId_, value );
+	item->setData(0, ValueRole::roleId_, value);
+
+	list.signalPostItemDataChanged(item, 0, ValueRole::roleId_, value);
 }
-
 
 //---------------------------------------------------------------------------
 // Tree Model Helper Functions
 //---------------------------------------------------------------------------
 
-bool TestFixture::verifyTreeItemMatch( IItem * item, const char * value, bool exactMatch )
+bool TestFixture::verifyTreeItemMatch(IItem* item, const char* value, bool exactMatch)
 {
 	if (item == nullptr || value == nullptr)
 	{
 		return false;
 	}
 
-	std::string displayText = item->getDisplayText( 0 );
-	if ( (exactMatch && displayText.compare( value ) == 0) ||
-		 (!exactMatch && displayText.find( value ) != std::string::npos) )
+	std::string displayText = item->getDisplayText(0);
+	if ((exactMatch && displayText.compare(value) == 0) ||
+	    (!exactMatch && displayText.find(value) != std::string::npos))
 	{
 		return true;
 	}

@@ -28,19 +28,23 @@ public:
 	static const ChangeListId kDefaultChangelist = 0;
 	static const Revision kHeadRevion = -1;
 
-	virtual ~IDepotView(){}
-	virtual IResultPtr add		(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
-	virtual IResultPtr remove	(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
-	virtual IResultPtr checkout	(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
-	virtual IResultPtr rename	(const FilePairs& filePairs, ChangeListId changeListId = kDefaultChangelist) = 0;
-	virtual IResultPtr move		(const char* srcFile, const char* dstFile, ChangeListId changeListId = kDefaultChangelist) = 0;
-	virtual IResultPtr revert	(const PathList& filePaths) = 0;
-	virtual IResultPtr get		(const PathList& filePaths, Revision revision = kHeadRevion) = 0;
+	virtual ~IDepotView()
+	{
+	}
+	virtual IResultPtr add(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
+	virtual IResultPtr remove(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
+	virtual IResultPtr checkout(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
+	virtual IResultPtr rename(const FilePairs& filePairs, ChangeListId changeListId = kDefaultChangelist) = 0;
+	virtual IResultPtr move(const char* srcFile, const char* dstFile,
+	                        ChangeListId changeListId = kDefaultChangelist) = 0;
+	virtual IResultPtr revert(const PathList& filePaths) = 0;
+	virtual IResultPtr get(const PathList& filePaths, Revision revision = kHeadRevion) = 0;
 	virtual IResultPtr getLatest(const PathList& filePaths) = 0;
-	virtual IResultPtr status	(const PathList& filePaths) = 0;
-	virtual IResultPtr submit	(const PathList& filePaths, const char* description = "", bool bKeepCheckedOut = false) = 0;
-	virtual IResultPtr submit	(int changelistId, bool bKeepCheckedOut = false) = 0;
-	virtual IResultPtr reopen	(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
+	virtual IResultPtr status(const PathList& filePaths) = 0;
+	virtual IResultPtr submit(const PathList& filePaths, const char* description = "",
+	                          bool bKeepCheckedOut = false) = 0;
+	virtual IResultPtr submit(int changelistId, bool bKeepCheckedOut = false) = 0;
+	virtual IResultPtr reopen(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
 	virtual IResultPtr createChangeList(const char* description, ChangeListId& rChangeListId) = 0;
 	virtual IResultPtr deleteEmptyChangeList(ChangeListId changeListId) = 0;
 

@@ -12,18 +12,14 @@ public:
 	ColumnExtension();
 	virtual ~ColumnExtension();
 
-	QVariant data( const QModelIndex &index, ItemRole::Id roleId ) const override;
+	QVariant data(const QModelIndex& index, ItemRole::Id roleId) const override;
 
-	void onLayoutAboutToBeChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint ) override;
-	void onLayoutChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint ) override;
-	void onRowsAboutToBeRemoved(
-		const QModelIndex& parent, int first, int last ) override;
-	void onRowsRemoved( 
-		const QModelIndex & parent, int first, int last ) override;
+	void onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+	                              QAbstractItemModel::LayoutChangeHint hint) override;
+	void onLayoutChanged(const QList<QPersistentModelIndex>& parents,
+	                     QAbstractItemModel::LayoutChangeHint hint) override;
+	void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last) override;
+	void onRowsRemoved(const QModelIndex& parent, int first, int last) override;
 
 private:
 	struct Implementation;

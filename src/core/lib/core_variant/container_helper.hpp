@@ -5,7 +5,7 @@
 
 namespace wgt
 {
-template< typename Container >
+template <typename Container>
 struct ContainerHelper
 {
 	typedef void FirstArgType;
@@ -14,8 +14,8 @@ struct ContainerHelper
 	typedef void ForthArgType;
 };
 
-template< template <typename> class Container, typename A1 >
-struct ContainerHelper< Container< A1 > >
+template <template <typename> class Container, typename A1>
+struct ContainerHelper<Container<A1>>
 {
 	typedef A1 FirstArgType;
 	typedef void SecondArgType;
@@ -23,36 +23,33 @@ struct ContainerHelper< Container< A1 > >
 	typedef void ForthArgType;
 };
 
-
-template< template <typename, typename > class Container, typename A1, typename A2 >
-struct ContainerHelper< Container< A1, A2 > >
+template <template <typename, typename> class Container, typename A1, typename A2>
+struct ContainerHelper<Container<A1, A2>>
 {
-	template< typename TypeToCheck, bool isBase >
+	template <typename TypeToCheck, bool isBase>
 	struct ContainerType
 	{
 		typedef void type;
 	};
 
-	template< typename TypeToCheck >
-	struct ContainerType< TypeToCheck, true >
+	template <typename TypeToCheck>
+	struct ContainerType<TypeToCheck, true>
 	{
-		typedef Container<
-			typename ContainerHelper< TypeToCheck >::FirstArgType,
-			typename ContainerHelper< TypeToCheck >::SecondArgType > type;
+		typedef Container<typename ContainerHelper<TypeToCheck>::FirstArgType,
+		                  typename ContainerHelper<TypeToCheck>::SecondArgType>
+		type;
 	};
 
-	template< typename TypeToCheck >
+	template <typename TypeToCheck>
 	struct BaseTypeExtractor
 	{
-		typedef Container<
-			typename ContainerHelper< TypeToCheck >::FirstArgType,
-			typename ContainerHelper< TypeToCheck >::SecondArgType > potentialType;
+		typedef Container<typename ContainerHelper<TypeToCheck>::FirstArgType,
+		                  typename ContainerHelper<TypeToCheck>::SecondArgType>
+		potentialType;
 
-		typedef typename ContainerType<
-			TypeToCheck,
-			std::is_base_of< potentialType, TypeToCheck >::value >::type type;
+		typedef typename ContainerType<TypeToCheck, std::is_base_of<potentialType, TypeToCheck>::value>::type type;
 
-		static const bool isBase = std::is_base_of< potentialType, TypeToCheck >::value;
+		static const bool isBase = std::is_base_of<potentialType, TypeToCheck>::value;
 	};
 
 	typedef A1 FirstArgType;
@@ -61,9 +58,8 @@ struct ContainerHelper< Container< A1, A2 > >
 	typedef void ForthArgType;
 };
 
-
-template< template <typename, typename, typename > class Container, typename A1, typename A2, typename A3 >
-struct ContainerHelper< Container< A1, A2, A3 > >
+template <template <typename, typename, typename> class Container, typename A1, typename A2, typename A3>
+struct ContainerHelper<Container<A1, A2, A3>>
 {
 	typedef A1 FirstArgType;
 	typedef A2 SecondArgType;
@@ -71,41 +67,36 @@ struct ContainerHelper< Container< A1, A2, A3 > >
 	typedef void ForthArgType;
 };
 
-
-template< template <typename, typename, typename, typename> class Container, typename A1, typename A2, typename A3, typename A4 >
-struct ContainerHelper< Container< A1, A2, A3, A4 > >
+template <template <typename, typename, typename, typename> class Container, typename A1, typename A2, typename A3,
+          typename A4>
+struct ContainerHelper<Container<A1, A2, A3, A4>>
 {
-	template< typename TypeToCheck, bool isBase >
+	template <typename TypeToCheck, bool isBase>
 	struct ContainerType
 	{
 		typedef void type;
 	};
 
-	template< typename TypeToCheck >
-	struct ContainerType< TypeToCheck, true >
+	template <typename TypeToCheck>
+	struct ContainerType<TypeToCheck, true>
 	{
 		typedef Container<
-			typename ContainerHelper< TypeToCheck >::FirstArgType,
-			typename ContainerHelper< TypeToCheck >::SecondArgType,
-			typename ContainerHelper< TypeToCheck >::ThirdArgType,
-			typename ContainerHelper< TypeToCheck >::ForthArgType > type;
+		typename ContainerHelper<TypeToCheck>::FirstArgType, typename ContainerHelper<TypeToCheck>::SecondArgType,
+		typename ContainerHelper<TypeToCheck>::ThirdArgType, typename ContainerHelper<TypeToCheck>::ForthArgType>
+		type;
 	};
 
-
-	template< typename TypeToCheck >
+	template <typename TypeToCheck>
 	struct BaseTypeExtractor
 	{
 		typedef Container<
-			typename ContainerHelper< TypeToCheck >::FirstArgType,
-			typename ContainerHelper< TypeToCheck >::SecondArgType,
-			typename ContainerHelper< TypeToCheck >::ThirdArgType,
-			typename ContainerHelper< TypeToCheck >::ForthArgType > potentialType;
+		typename ContainerHelper<TypeToCheck>::FirstArgType, typename ContainerHelper<TypeToCheck>::SecondArgType,
+		typename ContainerHelper<TypeToCheck>::ThirdArgType, typename ContainerHelper<TypeToCheck>::ForthArgType>
+		potentialType;
 
-		typedef typename ContainerType<
-			TypeToCheck,
-			std::is_base_of< potentialType, TypeToCheck >::value >::type type;
+		typedef typename ContainerType<TypeToCheck, std::is_base_of<potentialType, TypeToCheck>::value>::type type;
 
-		static const bool isBase = std::is_base_of< potentialType, TypeToCheck >::value;
+		static const bool isBase = std::is_base_of<potentialType, TypeToCheck>::value;
 	};
 
 	typedef A1 FirstArgType;
@@ -114,4 +105,4 @@ struct ContainerHelper< Container< A1, A2, A3, A4 > >
 	typedef A4 ForthArgType;
 };
 } // end namespace wgt
-#endif //CONTAINER_HELPER_HPP
+#endif // CONTAINER_HELPER_HPP

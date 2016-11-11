@@ -12,37 +12,34 @@
 #include <cstdio>
 #include <cassert>
 
-
 namespace wgt
 {
 namespace
 {
-
-	bool wtoutf8( const wchar_t * wsrc, std::string& output )
+bool wtoutf8(const wchar_t* wsrc, std::string& output)
+{
+	if (wsrc == nullptr)
 	{
-		if (wsrc == nullptr)
-		{
-			output.clear();
-			return true;
-		}
+		output.clear();
+		return true;
+	}
 
-	    output = StringUtils::to_string(wsrc);
-	    return true;
-    }
-
-    bool utf8tow( const char * src, std::wstring& output )
-	{
-		if (src == nullptr)
-		{
-			output.clear();
-			return true;
-		}
-
-	    output = StringUtils::to_wstring(src);
-	    return true;
-    }
+	output = StringUtils::to_string(wsrc);
+	return true;
 }
 
+bool utf8tow(const char* src, std::wstring& output)
+{
+	if (src == nullptr)
+	{
+		output.clear();
+		return true;
+	}
+
+	output = StringUtils::to_wstring(src);
+	return true;
+}
+}
 
 std::string upcast(const char* v)
 {
@@ -52,29 +49,28 @@ std::string upcast(const char* v)
 std::string upcast(const std::wstring& v)
 {
 	std::string str;
-	wtoutf8( v.c_str(), str );
+	wtoutf8(v.c_str(), str);
 	return str;
 }
 
 std::string upcast(const wchar_t* v)
 {
 	std::string str;
-	wtoutf8( v, str );
-	return str;;
+	wtoutf8(v, str);
+	return str;
+	;
 }
 
 bool downcast(std::wstring* v, const std::string& storage)
 {
-	if(v)
+	if (v)
 	{
-		utf8tow( storage.c_str(), *v );
+		utf8tow(storage.c_str(), *v);
 	}
 	return true;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
-
 
 Variant::COWData* Variant::COWData::allocate(size_t payloadSize)
 {
@@ -82,10 +78,9 @@ Variant::COWData* Variant::COWData::allocate(size_t payloadSize)
 	return new (data) COWData();
 }
 
-
 void Variant::COWData::decRef(const MetaType* type)
 {
-	if (refs_.fetch_sub( 1 ) == 0)
+	if (refs_.fetch_sub(1) == 0)
 	{
 		assert(type);
 		type->destroy(payload());
@@ -94,85 +89,77 @@ void Variant::COWData::decRef(const MetaType* type)
 	}
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
-
 
 Variant::Variant()
 {
 	initVoid();
 }
 
-
 Variant::Variant(const Variant& value)
 {
 	init(value);
 }
-
 
 Variant::Variant(Variant&& value)
 {
 	init(std::move(value));
 }
 
-
-Variant::Variant( const MetaType* type )
+Variant::Variant(const MetaType* type)
 {
-	assert( type );
+	assert(type);
 
-	auto qualifiedType = type->qualified( 0 );
+	auto qualifiedType = type->qualified(0);
 	void* p;
-	if( isInline( type ) )
+	if (isInline(type))
 	{
-		setTypeInternal( qualifiedType, Inline );
+		setTypeInternal(qualifiedType, Inline);
 		p = data_.inline_;
 	}
 	else
 	{
-		setTypeInternal( qualifiedType, COW );
-		data_.cow_ = COWData::allocate( type->size() );
+		setTypeInternal(qualifiedType, COW);
+		data_.cow_ = COWData::allocate(type->size());
 		p = data_.cow()->payload();
 	}
 
 	type->init(p);
 }
 
-
 Variant::Variant(const MetaType* type, const Variant& value)
 {
-	if( !convertInit( type, value ) )
+	if (!convertInit(type, value))
 	{
 		castError();
 	}
 }
 
-
 Variant::Variant(const MetaType* type, const Variant& value, bool* succeeded)
 {
-	bool r = convertInit( type, value );
-	if( !r )
+	bool r = convertInit(type, value);
+	if (!r)
 	{
 		initVoid();
 	}
 
-	if( succeeded )
+	if (succeeded)
 	{
 		*succeeded = r;
 	}
 }
 
-
-Variant& Variant::operator=( const Variant& value )
+Variant& Variant::operator=(const Variant& value)
 {
-	if( this == &value )
+	if (this == &value)
 	{
 		return *this;
 	}
 
-	if( type_ == value.type_ )
+	if (type_ == value.type_)
 	{
 		// both types and storages match
-		switch(storageKind())
+		switch (storageKind())
 		{
 		case Inline:
 			type()->copy(data_.inline_, value.data_.inline_);
@@ -187,7 +174,7 @@ Variant& Variant::operator=( const Variant& value )
 			break;
 
 		case COW:
-			if(data_.cow_ != value.data_.cow_)
+			if (data_.cow_ != value.data_.cow_)
 			{
 				data_.cow_->decRef(type());
 				data_.cow_ = value.data_.cow_;
@@ -204,24 +191,23 @@ Variant& Variant::operator=( const Variant& value )
 	{
 		// common case
 		destroy();
-		init( value );
+		init(value);
 	}
 
 	return *this;
 }
 
-
-Variant& Variant::operator=( Variant&& value )
+Variant& Variant::operator=(Variant&& value)
 {
-	if( this == &value )
+	if (this == &value)
 	{
 		return *this;
 	}
 
-	if( type_ == value.type_ )
+	if (type_ == value.type_)
 	{
 		// both types and storages match
-		switch(storageKind())
+		switch (storageKind())
 		{
 		case Inline:
 			type()->move(data_.inline_, value.data_.inline_);
@@ -232,11 +218,11 @@ Variant& Variant::operator=( Variant&& value )
 			break;
 
 		case SharedPointer:
-			data_.sharedPointer() = std::move( value.data_.sharedPointer() );
+			data_.sharedPointer() = std::move(value.data_.sharedPointer());
 			break;
 
 		case COW:
-			if(data_.cow_ != value.data_.cow_)
+			if (data_.cow_ != value.data_.cow_)
 			{
 				data_.cow_->decRef(type());
 				data_.cow_ = value.data_.cow_;
@@ -253,16 +239,15 @@ Variant& Variant::operator=( Variant&& value )
 	{
 		// common case
 		destroy();
-		init( std::move( value ) );
+		init(std::move(value));
 	}
 
 	return *this;
 }
 
-
 bool Variant::operator==(const Variant& that) const
 {
-	if( this == &that )
+	if (this == &that)
 	{
 		return true;
 	}
@@ -270,59 +255,54 @@ bool Variant::operator==(const Variant& that) const
 	auto thisType = type();
 	auto thatType = that.type();
 
-	if(thisType == thatType)
+	if (thisType == thatType)
 	{
-		auto lp = value< const void* >();
-		auto rp = that.value< const void* >();
+		auto lp = value<const void*>();
+		auto rp = that.value<const void*>();
 
-		return
-			lp == rp ||
-			thisType->equal(lp, rp);
+		return lp == rp || thisType->equal(lp, rp);
 	}
 
 	bool succeeded = false;
 	Variant tmp = that.convert(thisType, &succeeded);
-	if(!succeeded)
+	if (!succeeded)
 	{
 		return false;
 	}
 
-	auto lp = value< const void* >();
-	auto rp = tmp.value< const void* >();
+	auto lp = value<const void*>();
+	auto rp = tmp.value<const void*>();
 
 	return thisType->equal(lp, rp);
 }
 
-
-bool Variant::setType( const MetaType* type )
+bool Variant::setType(const MetaType* type)
 {
-	if( type == this->type() )
+	if (type == this->type())
 	{
 		return true;
 	}
 
 	bool succeeded = false;
-	Variant tmp( type, *this, &succeeded );
-	if( !succeeded )
+	Variant tmp(type, *this, &succeeded);
+	if (!succeeded)
 	{
 		return false;
 	}
 
-	*this = std::move( tmp );
+	*this = std::move(tmp);
 
 	return true;
 }
-
 
 bool Variant::isVoid() const
 {
 	return typeIs<void>() && !isPointer();
 }
 
-
 bool Variant::isPointer() const
 {
-	switch( storageKind() )
+	switch (storageKind())
 	{
 	case RawPointer:
 	case SharedPointer:
@@ -333,15 +313,14 @@ bool Variant::isPointer() const
 		return false;
 
 	default:
-		assert( false );
+		assert(false);
 		return false;
 	};
 }
 
-
 bool Variant::isNullPointer() const
 {
-	switch( storageKind() )
+	switch (storageKind())
 	{
 	case RawPointer:
 		return data_.rawPointer_ == nullptr;
@@ -354,19 +333,17 @@ bool Variant::isNullPointer() const
 		return false;
 
 	default:
-		assert( false );
+		assert(false);
 		return false;
 	};
 }
 
-
 void Variant::initVoid()
 {
-	setTypeInternal( getQualifiedType< void >(), Inline );
+	setTypeInternal(getQualifiedType<void>(), Inline);
 
 	// no payload initialization
 }
-
 
 /**
 Initialize variant.
@@ -379,22 +356,22 @@ void Variant::init(const Variant& value)
 	type_ = value.type_;
 	assert(type_);
 
-	switch(storageKind())
+	switch (storageKind())
 	{
 	case Inline:
-		{
-			auto thisType = type();
-			thisType->init(data_.inline_);
-			thisType->copy(data_.inline_, value.data_.inline_);
-		}
-		break;
+	{
+		auto thisType = type();
+		thisType->init(data_.inline_);
+		thisType->copy(data_.inline_, value.data_.inline_);
+	}
+	break;
 
 	case RawPointer:
 		data_.rawPointer_ = value.data_.rawPointer_;
 		break;
 
 	case SharedPointer:
-		new (data_.sharedPointer_) std::shared_ptr< void >( value.data_.sharedPointer() );
+		new (data_.sharedPointer_) std::shared_ptr<void>(value.data_.sharedPointer());
 		break;
 
 	case COW:
@@ -403,29 +380,28 @@ void Variant::init(const Variant& value)
 		break;
 	}
 }
-
 
 void Variant::init(Variant&& value)
 {
 	type_ = value.type_;
 	assert(type_);
 
-	switch(storageKind())
+	switch (storageKind())
 	{
 	case Inline:
-		{
-			auto thisType = type();
-			thisType->init(data_.inline_);
-			thisType->move(data_.inline_, value.data_.inline_);
-		}
-		break;
+	{
+		auto thisType = type();
+		thisType->init(data_.inline_);
+		thisType->move(data_.inline_, value.data_.inline_);
+	}
+	break;
 
 	case RawPointer:
 		data_.rawPointer_ = value.data_.rawPointer_;
 		break;
 
 	case SharedPointer:
-		new (data_.sharedPointer_) std::shared_ptr< void >( std::move( value.data_.sharedPointer() ) );
+		new (data_.sharedPointer_) std::shared_ptr<void>(std::move(value.data_.sharedPointer()));
 		break;
 
 	case COW:
@@ -435,38 +411,37 @@ void Variant::init(Variant&& value)
 	}
 }
 
-
-bool Variant::convertInit( const MetaType* type, const Variant& that )
+bool Variant::convertInit(const MetaType* type, const Variant& that)
 {
-	if( !type )
+	if (!type)
 	{
 		return false;
 	}
 
-	if( type == that.type() )
+	if (type == that.type())
 	{
-		init( that );
+		init(that);
 		return true;
 	}
 
-	auto qualifiedType = type->qualified( 0 );
+	auto qualifiedType = type->qualified(0);
 
 	void* p;
-	if( isInline( type ) )
+	if (isInline(type))
 	{
-		setTypeInternal( qualifiedType, Inline );
+		setTypeInternal(qualifiedType, Inline);
 		p = data_.inline_;
 	}
 	else
 	{
-		setTypeInternal( qualifiedType, COW );
-		data_.cow_ = COWData::allocate( type->size() );
+		setTypeInternal(qualifiedType, COW);
+		data_.cow_ = COWData::allocate(type->size());
 		p = data_.cow()->payload();
 	}
 
 	type->init(p);
 
-	if( !type->convertFrom( p, that.type(), that.value< const void* >() ) )
+	if (!type->convertFrom(p, that.type(), that.value<const void*>()))
 	{
 		destroy();
 		return false;
@@ -474,7 +449,6 @@ bool Variant::convertInit( const MetaType* type, const Variant& that )
 
 	return true;
 }
-
 
 /**
 Destroy currently held value and free all external resources used by it.
@@ -484,10 +458,10 @@ breaks invariants, so it should be used with care.
 */
 void Variant::destroy()
 {
-	switch(storageKind())
+	switch (storageKind())
 	{
 	case Inline:
-		type()->destroy( data_.inline_ );
+		type()->destroy(data_.inline_);
 		break;
 
 	case RawPointer:
@@ -499,11 +473,10 @@ void Variant::destroy()
 		break;
 
 	case COW:
-		data_.cow_->decRef( type() );
+		data_.cow_->decRef(type());
 		break;
 	}
 }
-
 
 /**
 Ensure we hold an exclusive payload instance.
@@ -511,33 +484,32 @@ Ensure we hold an exclusive payload instance.
 If actual detach happens then @a copy parameter specifies whether old value
 should be copied to a new one. Otherwise new value is left default-initialized.
 */
-void Variant::detach( bool copy )
+void Variant::detach(bool copy)
 {
-	assert( storageKind() == COW );
-	if( data_.cow_->isExclusive() )
+	assert(storageKind() == COW);
+	if (data_.cow_->isExclusive())
 	{
 		return;
 	}
 
 	// allocate and initialize new payload copy
 	auto thisType = type();
-	COWData* newCow = COWData::allocate( thisType->size() );
-	thisType->init( newCow->payload() );
-	if( copy )
+	COWData* newCow = COWData::allocate(thisType->size());
+	thisType->init(newCow->payload());
+	if (copy)
 	{
-		thisType->copy( newCow->payload(), data_.cow()->payload() );
+		thisType->copy(newCow->payload(), data_.cow()->payload());
 	}
 
 	// substitute payload with the new one (which is obviously exclusive)
-	data_.cow_->decRef( thisType );
+	data_.cow_->decRef(thisType);
 	data_.cow_ = newCow;
 }
-
 
 void Variant::castError()
 {
 #ifdef _WIN32
-#if ( _MSC_VER >= 1900 )
+#if (_MSC_VER >= 1900)
 	throw std::bad_cast::__construct_from_string_literal("Variant cast failed");
 #else
 	throw std::bad_cast("Variant cast failed");
@@ -547,25 +519,22 @@ void Variant::castError()
 #endif
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 
-
-TextStream& operator<<(TextStream& stream, StrongType< const Variant& > value)
+TextStream& operator<<(TextStream& stream, StrongType<const Variant&> value)
 {
-	value.value().type()->streamOut(stream, value.value().value< const void* >());
+	value.value().type()->streamOut(stream, value.value().value<const void*>());
 	return stream;
 }
 
-
 TextStream& operator>>(TextStream& stream, Variant& value)
 {
-	if(!stream.beginReadField())
+	if (!stream.beginReadField())
 	{
 		return stream;
 	}
 
-	if(!value.isVoid())
+	if (!value.isVoid())
 	{
 		if (auto ptr = value.value<const void*>())
 		{
@@ -601,13 +570,13 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 	double doubleValue = 0.0;
 	double doubleFactor = 1.0;
 
-	while(stream.good())
+	while (stream.good())
 	{
 		const int c = stream.get();
-		switch(state)
+		switch (state)
 		{
 		case UnknownType:
-			switch(c)
+			switch (c)
 			{
 			case EOF:
 				// unexpected end of stream
@@ -615,39 +584,39 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 				return stream;
 
 			case '"': // string
+			{
+				stream.unget();
+				auto stringType = MetaType::get<std::string>();
+				assert(stringType);
+				Variant tmp(stringType);
+				auto ptr = tmp.value<void*>();
+				assert(ptr);
+				stringType->streamIn(stream, ptr);
+				if (!stream.fail())
 				{
-					stream.unget();
-					auto stringType = MetaType::get< std::string >();
-					assert( stringType );
-					Variant tmp( stringType );
-					auto ptr = tmp.value< void* >();
-					assert( ptr );
-					stringType->streamIn( stream, ptr );
-					if( !stream.fail() )
-					{
-						value = std::move( tmp );
-					}
+					value = std::move(tmp);
 				}
-				//calling peek here is trying to set eofbit
+			}
+				// calling peek here is trying to set eofbit
 				// if next value in stream reaches EOF
 				stream.peek();
 				return stream;
 
 			case 'v':
+			{
+				stream.unget();
+				auto voidType = MetaType::get<void>();
+				assert(voidType);
+				Variant tmp(voidType);
+				auto ptr = tmp.value<void*>();
+				assert(ptr);
+				voidType->streamIn(stream, ptr);
+				if (!stream.fail())
 				{
-					stream.unget();
-					auto voidType = MetaType::get< void >();
-					assert( voidType );
-					Variant tmp( voidType );
-					auto ptr = tmp.value< void* >();
-					assert( ptr );
-					voidType->streamIn( stream, ptr );
-					if( !stream.fail() )
-					{
-						value = std::move( tmp );
-					}
+					value = std::move(tmp);
 				}
-				//calling peek here is trying to set eofbit
+			}
+				// calling peek here is trying to set eofbit
 				// if next value in stream reaches EOF
 				stream.peek();
 				return stream;
@@ -686,7 +655,7 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			continue;
 
 		case LeadingZero:
-			switch(tolower(c))
+			switch (tolower(c))
 			{
 			case 'x': // hex
 				intBase = 16;
@@ -722,7 +691,7 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 
 			case EOF:
 			default:
-				if(c != EOF)
+				if (c != EOF)
 				{
 					stream.unget();
 				}
@@ -733,205 +702,50 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 
 		case Int:
 		case DoubleExponent:
+		{
+			int l = tolower(c);
+			int digit;
+			switch (l)
 			{
-				int l = tolower(c);
-				int digit;
-				switch(l)
+			case '-':
+			case '+':
+				if (!hadSign && digits == 0)
 				{
-				case '-':
-				case '+':
-					if(!hadSign && digits == 0)
+					hadSign = true;
+					if (l == '-')
 					{
-						hadSign = true;
-						if(l == '-')
-						{
-							sign = -1;
-						}
-						continue;
+						sign = -1;
 					}
-					else
-					{
-						// invalid digit
-						digit = intBase;
-						break;
-					}
-
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
-					digit = l - '0';
-					digits += 1;
-					break;
-
-				case 'e':
-					// scientific notation
-					if(intBase == 10)
-					{
-						if(state == Int)
-						{
-							if(sign > 0)
-							{
-								doubleValue = static_cast<double>(uintValue);
-							}
-							else
-							{
-								doubleValue = static_cast<double>(intValue);
-							}
-						}
-						else
-						{
-							// invalid digit
-							digit = intBase;
-							break;
-						}
-
-						state = DoubleExponent;
-
-						// reset int state
-						sign = 1;
-						hadSign = false;
-						uintValue = 0;
-						intValue = 0;
-						intBase = 10;
-						digits = 0;
-
-						continue;
-					}
-					// no break
-
-				case 'a':
-				case 'b':
-				case 'c':
-				case 'd':
-				case 'f':
-					digit = l - 'a' + 10;
-					digits += 1;
-					break;
-
-				case '.':
-				case ',':
-					// fractional separator
-					if(intBase == 10)
-					{
-						if(state == Int)
-						{
-							if(sign > 0)
-							{
-								doubleValue = static_cast<double>(uintValue);
-							}
-							else
-							{
-								doubleValue = static_cast<double>(intValue);
-							}
-						}
-						else
-						{
-							// invalid digit
-							digit = intBase;
-							break;
-						}
-						state = DoubleFractional;
-					}
-					else
-					{
-						// invalid digit
-						digit = intBase;
-						break;
-					}
-
 					continue;
-
-				case EOF:
-				default:
-					if(c != EOF)
-					{
-						stream.unget();
-					}
-					// invalid digit
-					digit = intBase;
-					break;
-
-				}
-
-				if(digit >= intBase)
-				{
-					// invalid digit
-					if(digits == 0)
-					{
-						stream.setState(std::ios_base::failbit);
-					}
-					else
-					{
-						if(state == Int)
-						{
-							if(sign > 0)
-							{
-								value = uintValue;
-							}
-							else
-							{
-								value = intValue;
-							}
-						}
-						else // if(state == DoubleExponent)
-						{
-							if(sign > 0)
-							{
-								value = doubleValue * pow(10.0, uintValue);
-							}
-							else
-							{
-								value = doubleValue * pow(10.0, intValue);
-							}
-						}
-					}
-					return stream;
-				}
-
-				bool overflow = false;
-				if(sign > 0)
-				{
-					uint64_t v = uintValue * intBase + digit;
-					if(v >= uintValue || intBase != 10)
-					{
-						uintValue = v;
-					}
-					else
-					{
-						overflow = true;
-					}
 				}
 				else
 				{
-					int64_t v = intValue * intBase - digit;
-					if(v <= intValue || intBase != 10)
-					{
-						intValue = v;
-					}
-					else
-					{
-						overflow = true;
-					}
+					// invalid digit
+					digit = intBase;
+					break;
 				}
 
-				if(overflow)
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				digit = l - '0';
+				digits += 1;
+				break;
+
+			case 'e':
+				// scientific notation
+				if (intBase == 10)
 				{
-					// number is too large
-					if(state == Int)
+					if (state == Int)
 					{
-						// fallback to double
-						if(c != EOF)
-						{
-							stream.unget();
-						}
-						if(sign > 0)
+						if (sign > 0)
 						{
 							doubleValue = static_cast<double>(uintValue);
 						}
@@ -939,20 +753,174 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 						{
 							doubleValue = static_cast<double>(intValue);
 						}
-						state = Double;
-						continue;
+					}
+					else
+					{
+						// invalid digit
+						digit = intBase;
+						break;
+					}
+
+					state = DoubleExponent;
+
+					// reset int state
+					sign = 1;
+					hadSign = false;
+					uintValue = 0;
+					intValue = 0;
+					intBase = 10;
+					digits = 0;
+
+					continue;
+				}
+			// no break
+
+			case 'a':
+			case 'b':
+			case 'c':
+			case 'd':
+			case 'f':
+				digit = l - 'a' + 10;
+				digits += 1;
+				break;
+
+			case '.':
+			case ',':
+				// fractional separator
+				if (intBase == 10)
+				{
+					if (state == Int)
+					{
+						if (sign > 0)
+						{
+							doubleValue = static_cast<double>(uintValue);
+						}
+						else
+						{
+							doubleValue = static_cast<double>(intValue);
+						}
+					}
+					else
+					{
+						// invalid digit
+						digit = intBase;
+						break;
+					}
+					state = DoubleFractional;
+				}
+				else
+				{
+					// invalid digit
+					digit = intBase;
+					break;
+				}
+
+				continue;
+
+			case EOF:
+			default:
+				if (c != EOF)
+				{
+					stream.unget();
+				}
+				// invalid digit
+				digit = intBase;
+				break;
+			}
+
+			if (digit >= intBase)
+			{
+				// invalid digit
+				if (digits == 0)
+				{
+					stream.setState(std::ios_base::failbit);
+				}
+				else
+				{
+					if (state == Int)
+					{
+						if (sign > 0)
+						{
+							value = uintValue;
+						}
+						else
+						{
+							value = intValue;
+						}
 					}
 					else // if(state == DoubleExponent)
 					{
-						stream.setState(std::ios_base::failbit);
-						return stream;
+						if (sign > 0)
+						{
+							value = doubleValue * pow(10.0, uintValue);
+						}
+						else
+						{
+							value = doubleValue * pow(10.0, intValue);
+						}
 					}
 				}
+				return stream;
 			}
+
+			bool overflow = false;
+			if (sign > 0)
+			{
+				uint64_t v = uintValue * intBase + digit;
+				if (v >= uintValue || intBase != 10)
+				{
+					uintValue = v;
+				}
+				else
+				{
+					overflow = true;
+				}
+			}
+			else
+			{
+				int64_t v = intValue * intBase - digit;
+				if (v <= intValue || intBase != 10)
+				{
+					intValue = v;
+				}
+				else
+				{
+					overflow = true;
+				}
+			}
+
+			if (overflow)
+			{
+				// number is too large
+				if (state == Int)
+				{
+					// fallback to double
+					if (c != EOF)
+					{
+						stream.unget();
+					}
+					if (sign > 0)
+					{
+						doubleValue = static_cast<double>(uintValue);
+					}
+					else
+					{
+						doubleValue = static_cast<double>(intValue);
+					}
+					state = Double;
+					continue;
+				}
+				else // if(state == DoubleExponent)
+				{
+					stream.setState(std::ios_base::failbit);
+					return stream;
+				}
+			}
+		}
 			continue;
 
 		case Double:
-			switch(c)
+			switch (c)
 			{
 			case '0':
 			case '1':
@@ -964,11 +932,11 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			case '7':
 			case '8':
 			case '9':
-				{
-					int digit = c - '0';
-					digits += 1;
-					doubleValue = doubleValue * 10.0 + static_cast<double>(digit * sign);
-				}
+			{
+				int digit = c - '0';
+				digits += 1;
+				doubleValue = doubleValue * 10.0 + static_cast<double>(digit * sign);
+			}
 				continue;
 
 			case 'e':
@@ -994,25 +962,24 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			case EOF:
 			default:
 				// invalid digit
-				if(digits == 0)
+				if (digits == 0)
 				{
 					stream.setState(std::ios_base::failbit);
 				}
 				else
 				{
-					if(c != EOF)
+					if (c != EOF)
 					{
 						stream.unget();
 					}
 					value = doubleValue;
 				}
 				return stream;
-
 			}
 			continue;
 
 		case DoubleFractional:
-			switch(c)
+			switch (c)
 			{
 			case '0':
 			case '1':
@@ -1024,13 +991,13 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			case '7':
 			case '8':
 			case '9':
-				{
-					int digit = c - '0';
-					digits += 1;
-					doubleFactor /= 10.0;
-					doubleValue += static_cast<double>(digit * sign) * doubleFactor;
-				}
-				break;
+			{
+				int digit = c - '0';
+				digits += 1;
+				doubleFactor /= 10.0;
+				doubleValue += static_cast<double>(digit * sign) * doubleFactor;
+			}
+			break;
 
 			case 'e':
 			case 'E':
@@ -1049,20 +1016,19 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			case EOF:
 			default:
 				// invalid digit
-				if(digits == 0)
+				if (digits == 0)
 				{
 					stream.setState(std::ios_base::failbit);
 				}
 				else
 				{
-					if(c != EOF)
+					if (c != EOF)
 					{
 						stream.unget();
 					}
 					value = doubleValue;
 				}
 				return stream;
-
 			}
 			break;
 		}
@@ -1071,46 +1037,41 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 	return stream;
 }
 
-
-BinaryStream& operator<<( BinaryStream& stream, StrongType< const Variant& > value )
+BinaryStream& operator<<(BinaryStream& stream, StrongType<const Variant&> value)
 {
-	value.value().type()->streamOut( stream, value.value().value< const void* >() );
+	value.value().type()->streamOut(stream, value.value().value<const void*>());
 	return stream;
 }
 
-
-BinaryStream& operator>>( BinaryStream& stream, Variant& value )
+BinaryStream& operator>>(BinaryStream& stream, Variant& value)
 {
-	if( auto ptr = value.value< void* >() )
+	if (auto ptr = value.value<void*>())
 	{
-		value.type()->streamIn( stream, ptr );
+		value.type()->streamIn(stream, ptr);
 	}
 	else
 	{
 		// cant' modify value (is it const?)
-		stream.setState( std::ios_base::failbit );
+		stream.setState(std::ios_base::failbit);
 	}
 	return stream;
 }
 
-
-std::ostream& operator<<( std::ostream& stream, StrongType< const Variant& > value )
+std::ostream& operator<<(std::ostream& stream, StrongType<const Variant&> value)
 {
-	StdDataStream dataStream( stream.rdbuf() );
-	TextStream textStream( dataStream );
+	StdDataStream dataStream(stream.rdbuf());
+	TextStream textStream(dataStream);
 	textStream << value.value();
-	stream.setstate( textStream.state() );
+	stream.setstate(textStream.state());
 	return stream;
 }
 
-
-std::istream& operator>>( std::istream& stream, Variant& value )
+std::istream& operator>>(std::istream& stream, Variant& value)
 {
-	StdDataStream dataStream( stream.rdbuf() );
-	TextStream textStream( dataStream );
+	StdDataStream dataStream(stream.rdbuf());
+	TextStream textStream(dataStream);
 	textStream >> value;
-	stream.setstate( textStream.state() );
+	stream.setstate(textStream.state());
 	return stream;
 }
 } // end namespace wgt
-

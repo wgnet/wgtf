@@ -6,7 +6,7 @@
 
 namespace wgt
 {
-bool ImageQtTypeConverter::toVariant( const QVariant & qVariant, Variant & o_variant ) const
+bool ImageQtTypeConverter::toVariant(const QVariant& qVariant, Variant& o_variant) const
 {
 	if (!qVariant.canConvert<QImage>())
 	{
@@ -14,12 +14,12 @@ bool ImageQtTypeConverter::toVariant( const QVariant & qVariant, Variant & o_var
 	}
 
 	auto image = qVariant.value<QImage>();
-	std::shared_ptr< BinaryBlock > data( new BinaryBlock( image.bits(), image.byteCount(), false ) );
-	o_variant = ObjectHandle( data );
+	std::shared_ptr<BinaryBlock> data(new BinaryBlock(image.bits(), image.byteCount(), false));
+	o_variant = ObjectHandle(data);
 	return true;
 }
 
-bool ImageQtTypeConverter::toQVariant( const Variant & variant, QVariant & o_qVariant, QObject* parent ) const
+bool ImageQtTypeConverter::toQVariant(const Variant& variant, QVariant& o_qVariant, QObject* parent) const
 {
 	BinaryBlock* data = nullptr;
 
@@ -43,7 +43,7 @@ bool ImageQtTypeConverter::toQVariant( const Variant & variant, QVariant & o_qVa
 	}
 
 	QImage image;
-	image.loadFromData( reinterpret_cast<uchar*>( data->cdata() ), static_cast<uint>( data->length() ) );
+	image.loadFromData(reinterpret_cast<uchar*>(data->cdata()), static_cast<uint>(data->length()));
 	o_qVariant = image;
 	return true;
 }

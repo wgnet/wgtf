@@ -34,16 +34,18 @@ public:
 		Archive
 	};
 
-	virtual ~IFileSystem(){}
-	virtual bool			copy(const char* path, const char* new_path) = 0;
-	virtual bool			remove(const char* path) = 0;
-	virtual bool			exists(const char* path) const = 0;
-	virtual void			enumerate(const char* dir, EnumerateCallback callback) const = 0;
-	virtual FileType		getFileType(const char* path) const = 0;
-	virtual IFileInfoPtr	getFileInfo(const char* path) const = 0;
-	virtual bool			move(const char* path, const char* new_path) = 0;
-	virtual IStreamPtr		readFile(const char* path, std::ios::openmode mode) const = 0;
-	virtual bool			writeFile(const char* path, const void* data, size_t len, std::ios::openmode mode) = 0;
+	virtual ~IFileSystem()
+	{
+	}
+	virtual bool copy(const char* path, const char* new_path) = 0;
+	virtual bool remove(const char* path) = 0;
+	virtual bool exists(const char* path) const = 0;
+	virtual void enumerate(const char* dir, EnumerateCallback callback) const = 0;
+	virtual FileType getFileType(const char* path) const = 0;
+	virtual IFileInfoPtr getFileInfo(const char* path) const = 0;
+	virtual bool move(const char* path, const char* new_path) = 0;
+	virtual IStreamPtr readFile(const char* path, std::ios::openmode mode) const = 0;
+	virtual bool writeFile(const char* path, const void* data, size_t len, std::ios::openmode mode) = 0;
 };
 } // end namespace wgt
 #endif // I_FILE_SYSTEM_HPP_

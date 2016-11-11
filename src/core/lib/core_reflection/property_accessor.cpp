@@ -18,36 +18,26 @@
 namespace wgt
 {
 //==============================================================================
-PropertyAccessor::PropertyAccessor( PropertyAccessor && other )
-	: parentAccessor_( std::move(other.parentAccessor_) )
-    , object_( other.object_ )
-    , property_( std::move( other.property_ ) )
-    , rootObject_( other.rootObject_ )
-    , path_( std::move( other.path_ ) )
-    , definitionManager_( other.definitionManager_ )
+PropertyAccessor::PropertyAccessor(PropertyAccessor&& other)
+    : parentAccessor_(std::move(other.parentAccessor_)), object_(other.object_), property_(std::move(other.property_)),
+      rootObject_(other.rootObject_), path_(std::move(other.path_)), definitionManager_(other.definitionManager_)
 {
 }
 
 //==============================================================================
-PropertyAccessor::PropertyAccessor( const PropertyAccessor & other )
-    : parentAccessor_( other.parentAccessor_ )
-    , object_( other.object_ )
-    , property_( other.property_ )
-    , rootObject_( other.rootObject_ )
-    , path_( other.path_ )
-    , definitionManager_( other.definitionManager_ )
+PropertyAccessor::PropertyAccessor(const PropertyAccessor& other)
+    : parentAccessor_(other.parentAccessor_), object_(other.object_), property_(other.property_),
+      rootObject_(other.rootObject_), path_(other.path_), definitionManager_(other.definitionManager_)
 {
 }
 
 //==============================================================================
-PropertyAccessor::PropertyAccessor()
-	: property_( nullptr )
-	, definitionManager_( nullptr )
+PropertyAccessor::PropertyAccessor() : property_(nullptr), definitionManager_(nullptr)
 {
 }
 
 //==============================================================================
-PropertyAccessor& PropertyAccessor::operator = (const PropertyAccessor & other)
+PropertyAccessor& PropertyAccessor::operator=(const PropertyAccessor& other)
 {
 	if (this == &other)
 	{
@@ -64,29 +54,23 @@ PropertyAccessor& PropertyAccessor::operator = (const PropertyAccessor & other)
 }
 
 //==============================================================================
-PropertyAccessor& PropertyAccessor::operator = (PropertyAccessor&& other)
+PropertyAccessor& PropertyAccessor::operator=(PropertyAccessor&& other)
 {
 	object_ = other.object_;
-	property_ = std::move( other.property_ );
+	property_ = std::move(other.property_);
 	rootObject_ = other.rootObject_;
-	path_ = std::move( other.path_ );
+	path_ = std::move(other.path_);
 	definitionManager_ = other.definitionManager_;
 	parentAccessor_ = other.parentAccessor_;
 	return *this;
 }
 
-
 //==============================================================================
-PropertyAccessor::PropertyAccessor(
-	const IDefinitionManager * definitionManager,
-	const ObjectHandle & rootObject, const char * path )
-	:property_( nullptr )
-	, rootObject_( rootObject )
-	, path_( path )
-	, definitionManager_( definitionManager )
+PropertyAccessor::PropertyAccessor(const IDefinitionManager* definitionManager, const ObjectHandle& rootObject,
+                                   const char* path)
+    : property_(nullptr), rootObject_(rootObject), path_(path), definitionManager_(definitionManager)
 {
 }
-
 
 //==============================================================================
 bool PropertyAccessor::isValid() const
@@ -94,43 +78,39 @@ bool PropertyAccessor::isValid() const
 	return object_ != ObjectHandle() && getProperty() != nullptr;
 }
 
-
 //==============================================================================
-const TypeId & PropertyAccessor::getType() const
+const TypeId& PropertyAccessor::getType() const
 {
 	if (!isValid())
 	{
-		static auto s_voidType = TypeId::getType< void >();
+		static auto s_voidType = TypeId::getType<void>();
 		return s_voidType;
 	}
 	return getProperty()->getType();
 }
 
-
 //==============================================================================
 PropertyAccessor PropertyAccessor::getParent() const
 {
-	if (path_.length() == 0||
-		definitionManager_ == nullptr)
+	if (path_.length() == 0 || definitionManager_ == nullptr)
 	{
 		return PropertyAccessor();
 	}
-	auto definition = rootObject_.getDefinition( *definitionManager_ );
+	auto definition = rootObject_.getDefinition(*definitionManager_);
 	if (definition == nullptr)
 	{
 		return PropertyAccessor();
 	}
 	// This is the member operator '.', the arrow operator '->', and array operator '['
-	size_t parentMarkerPos = path_.find_last_of( ".[" );
+	size_t parentMarkerPos = path_.find_last_of(".[");
 	if (parentMarkerPos == std::string::npos)
 	{
-		return definition->bindProperty( "", rootObject_ );
+		return definition->bindProperty("", rootObject_);
 	}
 	std::string parentPath;
-	parentPath.append( path_.c_str(), parentMarkerPos );
-	return definition->bindProperty( parentPath.c_str(), rootObject_ );
+	parentPath.append(path_.c_str(), parentMarkerPos);
+	return definition->bindProperty(parentPath.c_str(), rootObject_);
 }
-
 
 //==============================================================================
 bool PropertyAccessor::canSetValue() const
@@ -148,9 +128,8 @@ bool PropertyAccessor::canSetValue() const
 	return !this->getProperty()->readOnly();
 }
 
-
 //==============================================================================
-bool PropertyAccessor::setValue( const Variant & value ) const 
+bool PropertyAccessor::setValue(const Variant& value) const
 {
 	if (!this->canSetValue())
 	{
@@ -162,17 +141,17 @@ bool PropertyAccessor::setValue( const Variant & value ) const
 	auto& listeners = definitionManager_->getPropertyAccessorListeners();
 	auto itBegin = listeners.cbegin();
 	auto itEnd = listeners.cend();
-	for( auto it = itBegin; it != itEnd; ++it )
+	for (auto it = itBegin; it != itEnd; ++it)
 	{
 		auto listener = it->lock();
-		assert( listener != nullptr );
-		listener->preSetValue( *this, value );
+		assert(listener != nullptr);
+		listener->preSetValue(*this, value);
 	}
-	bool ret = getProperty()->set( object_, value, *definitionManager_ );
+	bool ret = getProperty()->set(object_, value, *definitionManager_);
 	// Set the parent object to support properties returned by value
-	if( parentAccessor_ )
+	if (parentAccessor_)
 	{
-		parentAccessor_->setValue( object_ );
+		parentAccessor_->setValue(object_);
 	}
 	// Call the property changed callback if it exists
 	auto metaPropertyChanged = findFirstMetaData<MetaOnPropertyChangedObj>(*getProperty(), *definitionManager_);
@@ -180,18 +159,17 @@ bool PropertyAccessor::setValue( const Variant & value ) const
 	{
 		metaPropertyChanged->onPropertyChanged(object_);
 	}
-	for( auto it = itBegin; it != itEnd; ++it )
+	for (auto it = itBegin; it != itEnd; ++it)
 	{
 		auto listener = it->lock();
-		assert( listener != nullptr );
-		listener->postSetValue( *this, value );
+		assert(listener != nullptr);
+		listener->postSetValue(*this, value);
 	}
 	return ret;
 }
 
-
 //==============================================================================
-bool PropertyAccessor::setValueWithoutNotification( const Variant & value ) const 
+bool PropertyAccessor::setValueWithoutNotification(const Variant& value) const
 {
 	if (!isValid())
 	{
@@ -202,9 +180,8 @@ bool PropertyAccessor::setValueWithoutNotification( const Variant & value ) cons
 		return false;
 	}
 
-	return getProperty()->set( object_, value, *definitionManager_ );
+	return getProperty()->set(object_, value, *definitionManager_);
 }
-
 
 //==============================================================================
 bool PropertyAccessor::canInvoke() const
@@ -222,9 +199,8 @@ bool PropertyAccessor::canInvoke() const
 	return this->getProperty()->isMethod();
 }
 
-
 //==============================================================================
-Variant PropertyAccessor::invoke( const ReflectedMethodParameters & parameters ) const
+Variant PropertyAccessor::invoke(const ReflectedMethodParameters& parameters) const
 {
 	Variant result;
 
@@ -238,25 +214,24 @@ Variant PropertyAccessor::invoke( const ReflectedMethodParameters & parameters )
 	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
 	{
 		auto listener = itr->lock();
-		assert( listener != nullptr );
-		listener->preInvoke( *this, parameters, false );
+		assert(listener != nullptr);
+		listener->preInvoke(*this, parameters, false);
 	}
 
-	result = getProperty()->invoke( object_, *definitionManager_, parameters );
+	result = getProperty()->invoke(object_, *definitionManager_, parameters);
 
 	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
 	{
 		auto listener = itr->lock();
-		assert( listener != nullptr );
-		listener->postInvoke( *this, result, false );
+		assert(listener != nullptr);
+		listener->postInvoke(*this, result, false);
 	}
 
 	return result;
 }
 
-
 //==============================================================================
-void PropertyAccessor::invokeUndoRedo( const ReflectedMethodParameters & parameters, Variant result, bool undo ) const
+void PropertyAccessor::invokeUndoRedo(const ReflectedMethodParameters& parameters, Variant result, bool undo) const
 {
 	if (!this->canInvoke())
 	{
@@ -287,32 +262,31 @@ void PropertyAccessor::invokeUndoRedo( const ReflectedMethodParameters & paramet
 		auto listener = itr->lock();
 		// What does this assertion mean? Isn't this to be expected sometimes?
 		// I encountered this assertion during shutdown. @m_martin
-		assert( listener != nullptr );
-		listener->preInvoke( *this, parameters, undo );
+		assert(listener != nullptr);
+		listener->preInvoke(*this, parameters, undo);
 	}
 
 	method = undo ? method->getUndoMethod() : method->getRedoMethod();
-	assert( method != nullptr );
+	assert(method != nullptr);
 	ReflectedMethodParameters paramsUndoRedo;
-	paramsUndoRedo.push_back( ObjectHandle(parameters) );
-	paramsUndoRedo.push_back( result );
-	method->invoke( object_, *definitionManager_, paramsUndoRedo );
+	paramsUndoRedo.push_back(ObjectHandle(parameters));
+	paramsUndoRedo.push_back(result);
+	method->invoke(object_, *definitionManager_, paramsUndoRedo);
 
 	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
 	{
 		auto listener = itr->lock();
-		assert( listener != nullptr );
-		listener->postInvoke( *this, result, undo );
+		assert(listener != nullptr);
+		listener->postInvoke(*this, result, undo);
 	}
 }
-
 
 //==============================================================================
 bool PropertyAccessor::canInsert() const
 {
 	Collection collection;
 	auto thisValue = getValue();
-	if (!thisValue.tryCast( collection ))
+	if (!thisValue.tryCast(collection))
 	{
 		return false;
 	}
@@ -320,13 +294,12 @@ bool PropertyAccessor::canInsert() const
 	return collection.canResize();
 }
 
-
 //==============================================================================
-bool PropertyAccessor::insert( const Variant & key, const Variant & value ) const
+bool PropertyAccessor::insert(const Variant& key, const Variant& value) const
 {
 	Collection collection;
 	auto thisValue = getValue();
-	if (!thisValue.tryCast( collection ))
+	if (!thisValue.tryCast(collection))
 	{
 		return false;
 	}
@@ -342,42 +315,39 @@ bool PropertyAccessor::insert( const Variant & key, const Variant & value ) cons
 	auto itBegin = listeners.cbegin();
 	auto itEnd = listeners.cend();
 
-	auto preInsert = collection.connectPreInsert( [&]( Collection::Iterator pos, size_t count)
-	{
-		auto index = std::distance( collection.begin(), pos );
-		for( auto it = itBegin; it != itEnd; ++it )
+	auto preInsert = collection.connectPreInsert([&](Collection::Iterator pos, size_t count) {
+		auto index = std::distance(collection.begin(), pos);
+		for (auto it = itBegin; it != itEnd; ++it)
 		{
 			auto listener = it->lock();
-			assert( listener != nullptr );
-			listener->preInsert( *this, index, count );
+			assert(listener != nullptr);
+			listener->preInsert(*this, index, count);
 		}
-	} );
-	auto postInserted = collection.connectPostInserted( [&]( Collection::Iterator pos, size_t count)
-	{
-		auto index = std::distance( collection.begin(), pos );
-		for( auto it = itBegin; it != itEnd; ++it )
+	});
+	auto postInserted = collection.connectPostInserted([&](Collection::Iterator pos, size_t count) {
+		auto index = std::distance(collection.begin(), pos);
+		for (auto it = itBegin; it != itEnd; ++it)
 		{
 			auto listener = it->lock();
-			assert( listener != nullptr );
-			listener->postInserted( *this, index, count );
+			assert(listener != nullptr);
+			listener->postInserted(*this, index, count);
 		}
-	} );
+	});
 
 	auto it = collection.insertValue(key, value);
 
 	preInsert.disconnect();
 	postInserted.disconnect();
-	
+
 	return it != collection.end();
 }
-
 
 //==============================================================================
 bool PropertyAccessor::canErase() const
 {
 	Collection collection;
 	auto thisValue = getValue();
-	if (!thisValue.tryCast( collection ))
+	if (!thisValue.tryCast(collection))
 	{
 		return false;
 	}
@@ -385,13 +355,12 @@ bool PropertyAccessor::canErase() const
 	return collection.canResize();
 }
 
-
 //==============================================================================
-bool PropertyAccessor::erase( const Variant & key ) const
+bool PropertyAccessor::erase(const Variant& key) const
 {
 	Collection collection;
 	auto thisValue = getValue();
-	if (!thisValue.tryCast( collection ))
+	if (!thisValue.tryCast(collection))
 	{
 		return false;
 	}
@@ -407,28 +376,26 @@ bool PropertyAccessor::erase( const Variant & key ) const
 	auto itBegin = listeners.cbegin();
 	auto itEnd = listeners.cend();
 
-	auto preErase = collection.connectPreErase( [&]( Collection::Iterator pos, size_t count)
-	{
-		auto index = std::distance( collection.begin(), pos );
-		for( auto it = itBegin; it != itEnd; ++it )
+	auto preErase = collection.connectPreErase([&](Collection::Iterator pos, size_t count) {
+		auto index = std::distance(collection.begin(), pos);
+		for (auto it = itBegin; it != itEnd; ++it)
 		{
 			auto listener = it->lock();
-			assert( listener != nullptr );
-			listener->preErase( *this, index, count );
+			assert(listener != nullptr);
+			listener->preErase(*this, index, count);
 		}
-	} );
-	auto postErased = collection.connectPostErased( [&]( Collection::Iterator pos, size_t count)
-	{
-		auto index = std::distance( collection.begin(), pos );
-		for( auto it = itBegin; it != itEnd; ++it )
+	});
+	auto postErased = collection.connectPostErased([&](Collection::Iterator pos, size_t count) {
+		auto index = std::distance(collection.begin(), pos);
+		for (auto it = itBegin; it != itEnd; ++it)
 		{
 			auto listener = it->lock();
-			assert( listener != nullptr );
-			listener->postErased( *this, index, count );
+			assert(listener != nullptr);
+			listener->postErased(*this, index, count);
 		}
-	} );
+	});
 
-	auto count = collection.eraseKey( key );
+	auto count = collection.eraseKey(key);
 
 	preErase.disconnect();
 	postErased.disconnect();
@@ -436,22 +403,20 @@ bool PropertyAccessor::erase( const Variant & key ) const
 	return count > 0;
 }
 
-
 //==============================================================================
-const char * PropertyAccessor::getName() const
+const char* PropertyAccessor::getName() const
 {
-	if(!isValid())
+	if (!isValid())
 	{
 		return nullptr;
 	}
 	return getProperty()->getName();
 }
 
-
 //==============================================================================
-const IClassDefinition * PropertyAccessor::getStructDefinition() const
+const IClassDefinition* PropertyAccessor::getStructDefinition() const
 {
-	if(!isValid())
+	if (!isValid())
 	{
 		return nullptr;
 	}
@@ -460,18 +425,13 @@ const IClassDefinition * PropertyAccessor::getStructDefinition() const
 		return nullptr;
 	}
 	Collection collection;
-	bool isCollection = getValue().tryCast( collection );
+	bool isCollection = getValue().tryCast(collection);
 	if (isCollection)
 	{
-		return 
-			definitionManager_->getDefinition(
-			collection.valueType().getName()
-		);
+		return definitionManager_->getDefinition(collection.valueType().getName());
 	}
-	return definitionManager_->getDefinition(
-		getProperty()->getType().getName() );
+	return definitionManager_->getDefinition(getProperty()->getType().getName());
 }
-
 
 bool PropertyAccessor::canGetValue() const
 {
@@ -488,7 +448,6 @@ bool PropertyAccessor::canGetValue() const
 	return this->getProperty()->isValue();
 }
 
-
 //==============================================================================
 Variant PropertyAccessor::getValue() const
 {
@@ -503,10 +462,9 @@ Variant PropertyAccessor::getValue() const
 		return this->getRootObject();
 	}
 
-	assert( this->canGetValue() );
-	return getProperty()->get( object_, *definitionManager_ );
+	assert(this->canGetValue());
+	return getProperty()->get(object_, *definitionManager_);
 }
-
 
 //==============================================================================
 MetaHandle PropertyAccessor::getMetaData() const
@@ -518,16 +476,14 @@ MetaHandle PropertyAccessor::getMetaData() const
 	return getProperty()->getMetaData();
 }
 
-
 //==============================================================================
-void PropertyAccessor::setObject( const ObjectHandle & object )
+void PropertyAccessor::setObject(const ObjectHandle& object)
 {
 	object_ = object;
 }
 
-
 //==============================================================================
-void PropertyAccessor::setBaseProperty( const IBasePropertyPtr & property )
+void PropertyAccessor::setBaseProperty(const IBasePropertyPtr& property)
 {
 	property_ = property;
 }
@@ -538,21 +494,19 @@ void PropertyAccessor::setParent(const PropertyAccessor& parent)
 }
 
 //==============================================================================
-const ObjectHandle & PropertyAccessor::getRootObject() const
+const ObjectHandle& PropertyAccessor::getRootObject() const
 {
 	return rootObject_;
 }
 
-
 //==============================================================================
-const char * PropertyAccessor::getFullPath() const
+const char* PropertyAccessor::getFullPath() const
 {
 	return path_.c_str();
 }
 
-
 //==============================================================================
-const IDefinitionManager * PropertyAccessor::getDefinitionManager() const
+const IDefinitionManager* PropertyAccessor::getDefinitionManager() const
 {
 	return definitionManager_;
 }

@@ -12,27 +12,27 @@ class FilteredTreeModel : public ITreeModel
 {
 public:
 	FilteredTreeModel();
-	FilteredTreeModel( const FilteredTreeModel& rhs );
+	FilteredTreeModel(const FilteredTreeModel& rhs);
 	virtual ~FilteredTreeModel();
 
-	FilteredTreeModel& operator=( const FilteredTreeModel& rhs );
+	FilteredTreeModel& operator=(const FilteredTreeModel& rhs);
 
-	virtual IItem* item( size_t index, const IItem* parent ) const override;
-	virtual ItemIndex index( const IItem* item ) const override;
-	virtual bool empty( const IItem* item ) const override;
-	virtual size_t size( const IItem* item ) const override;
+	virtual IItem* item(size_t index, const IItem* parent) const override;
+	virtual ItemIndex index(const IItem* item) const override;
+	virtual bool empty(const IItem* item) const override;
+	virtual size_t size(const IItem* item) const override;
 	virtual int columnCount() const override;
 
-	virtual Variant getData( int column, ItemRole::Id roleId ) const override;
-	virtual bool setData( int column, ItemRole::Id roleId, const Variant & data ) override;
+	virtual Variant getData(int column, ItemRole::Id roleId) const override;
+	virtual bool setData(int column, ItemRole::Id roleId, const Variant& data) override;
 
-	void setSource( ITreeModel * source );
-	void setFilter( IItemFilter * filter );
+	void setSource(ITreeModel* source);
+	void setFilter(IItemFilter* filter);
 
 	ITreeModel* getSource();
 	const ITreeModel* getSource() const;
 
-	void refresh( bool wait = false );
+	void refresh(bool wait = false);
 
 private:
 	struct Implementation;

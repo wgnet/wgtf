@@ -28,7 +28,6 @@ struct PointUpdateData
 	BezierPointData point;
 };
 
-
 /*!
  * \class ICurve
  *
@@ -43,7 +42,9 @@ class ICurve
 	DECLARE_REFLECTED;
 
 public:
-	virtual ~ICurve(){}
+	virtual ~ICurve()
+	{
+	}
 
 	typedef std::function<void(PointUpdateData)> PointCallback;
 	typedef std::function<void(PointUpdateData, PointUpdateData)> ModifiedPointCallback;
@@ -53,12 +54,12 @@ public:
 	virtual void add(const BezierPointData&, bool triggerCallback = true) = 0;
 
 	/*! Adds a new point at the specified time
-		@param time the exact point in time between 0.0 and 1.0 at which to add a point
+	    @param time the exact point in time between 0.0 and 1.0 at which to add a point
 	*/
 	virtual void addAt(float /*time*/, bool triggerCallback) = 0;
 
 	/*! Gets the value on the curve at the specified time
-		@param time the exact point in time between 0.0 and 1.0 at which calculate the value
+	    @param time the exact point in time between 0.0 and 1.0 at which calculate the value
 	*/
 	virtual float at(const float& /*time*/) = 0;
 
@@ -67,13 +68,13 @@ public:
 	virtual BezierPointData at(unsigned int /*index*/) = 0;
 
 	/*! Removes the point at the specified time
-		@param time an exact time between 0.0 and 1.0 at which to remove a point
+	    @param time an exact time between 0.0 and 1.0 at which to remove a point
 	*/
 	virtual void removeAt(float /*time*/, bool triggerCallback) = 0;
 
 	/*! Modifies the point at the specified index to be the given data
-		@param index The index of the point to modify
-		@param data The point data which will be set at the specified index
+	    @param index The index of the point to modify
+	    @param data The point data which will be set at the specified index
 	*/
 	virtual void modify(unsigned int /*index*/, const BezierPointData& data) = 0;
 
@@ -84,11 +85,11 @@ public:
 	/*! Registers a callback for when new points are added to the curve
 	*/
 	virtual void connectOnAdded(PointCallback) = 0;
-		
+
 	/*! Registers a callback for when points are removed from the curve
 	*/
 	virtual void connectOnRemoved(PointCallback) = 0;
-		
+
 	/*! Registers a callback for when points are modified
 	*/
 	virtual void connectOnModified(ModifiedPointCallback) = 0;
@@ -104,7 +105,7 @@ public:
 	virtual unsigned int getNumPoints() = 0;
 
 	virtual ObjectHandleT<IValueChangeNotifier> curveDirty() const = 0;
-	
+
 	/*! Redoes the last modification
 	*/
 	virtual void redo(const ObjectHandle& handle, Variant variant) = 0;
@@ -117,20 +118,23 @@ protected:
 	/*! Gets the collection of bezier points exposed through reflection
 	*/
 	virtual const IListModel* getPoints() const = 0;
-private:
 
+private:
 	/*! Calls at() to get the value on the curve at the specified time.
-		(Can't expose overloaded functions to QML)
+	    (Can't expose overloaded functions to QML)
 	*/
-	float atTime(float time) { return at(time); }
+	float atTime(float time)
+	{
+		return at(time);
+	}
 
 	/*! Calls at() to get the value on the curve at the specified index.
-		(Can't expose overloaded functions to QML)
+	    (Can't expose overloaded functions to QML)
 	*/
 	Vector2 atIndex(unsigned int index)
 	{
 		auto data = at(index);
-		return Vector2(data.pos.x, data.pos.y );
+		return Vector2(data.pos.x, data.pos.y);
 	}
 };
 } // end namespace wgt

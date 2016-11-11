@@ -3,13 +3,13 @@
 
 namespace wgt
 {
-static std::set< void * > * s_QtInPlaceNewed = nullptr;
+static std::set<void*>* s_QtInPlaceNewed = nullptr;
 
-std::set< void * > & getQtInPlaceNewCollection()
+std::set<void*>& getQtInPlaceNewCollection()
 {
 	if (s_QtInPlaceNewed == nullptr)
 	{
-		s_QtInPlaceNewed = new std::set< void * >;
+		s_QtInPlaceNewed = new std::set<void*>;
 	}
 	return *s_QtInPlaceNewed;
 }

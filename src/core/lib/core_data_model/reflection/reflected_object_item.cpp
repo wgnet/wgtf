@@ -12,25 +12,22 @@
 
 namespace wgt
 {
-bool CompareWStrings(const wchar_t * a, const wchar_t * b)
+bool CompareWStrings(const wchar_t* a, const wchar_t* b)
 {
 	return wcscmp(a, b) < 0;
 }
 
-ReflectedObjectItem::ReflectedObjectItem( const ObjectHandle & object, ReflectedItem * parent )
-	: ReflectedItem( parent, parent ? parent->getPath() + "." : "" )
-	, object_( object )
-	, groups_(CompareWStrings)
+ReflectedObjectItem::ReflectedObjectItem(const ObjectHandle& object, ReflectedItem* parent)
+    : ReflectedItem(parent, parent ? parent->getPath() + "." : ""), object_(object), groups_(CompareWStrings)
 {
 }
 
-const IClassDefinition * ReflectedObjectItem::getDefinition() const 
-{ 
-	return object_.getDefinition( *getDefinitionManager() );
+const IClassDefinition* ReflectedObjectItem::getDefinition() const
+{
+	return object_.getDefinition(*getDefinitionManager());
 }
 
-
-const char * ReflectedObjectItem::getDisplayText( int column ) const
+const char* ReflectedObjectItem::getDisplayText(int column) const
 {
 	if (displayName_.empty())
 	{
@@ -39,26 +36,25 @@ const char * ReflectedObjectItem::getDisplayText( int column ) const
 		{
 			return "";
 		}
-		const MetaDisplayNameObj * displayName =
-			findFirstMetaData< MetaDisplayNameObj >( *definition, *getDefinitionManager() );
+		const MetaDisplayNameObj* displayName =
+		findFirstMetaData<MetaDisplayNameObj>(*definition, *getDefinitionManager());
 		if (displayName == nullptr)
 		{
 			displayName_ = definition->getName();
 		}
 		else
 		{
-			std::wstring_convert< Utf16to8Facet > conversion( Utf16to8Facet::create() );
-			displayName_ = conversion.to_bytes( displayName->getDisplayName() );
+			std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
+			displayName_ = conversion.to_bytes(displayName->getDisplayName(object_));
 		}
 	}
 	return displayName_.c_str();
 }
 
-
-Variant ReflectedObjectItem::getData( int column, ItemRole::Id roleId ) const
+Variant ReflectedObjectItem::getData(int column, ItemRole::Id roleId) const
 {
 	// Only works for root items?
-	assert( parent_ == nullptr );
+	assert(parent_ == nullptr);
 	if (roleId == ValueRole::roleId_)
 	{
 		return object_;
@@ -68,47 +64,48 @@ Variant ReflectedObjectItem::getData( int column, ItemRole::Id roleId ) const
 	{
 		return this->getPath();
 	}
-    else if (roleId == ObjectRole::roleId_)
-    {
-        return getObject();;
-    }
-    else if (roleId == RootObjectRole::roleId_)
-    {
-        return getRootObject();
-    }
+	else if (roleId == ObjectRole::roleId_)
+	{
+		return getObject();
+		;
+	}
+	else if (roleId == RootObjectRole::roleId_)
+	{
+		return getRootObject();
+	}
 
 	return Variant();
 }
 
-bool ReflectedObjectItem::setData(int column, ItemRole::Id roleId, const Variant & data)
+bool ReflectedObjectItem::setData(int column, ItemRole::Id roleId, const Variant& data)
 {
-	if(roleId == ValueRole::roleId_)
+	if (roleId == ValueRole::roleId_)
 	{
 		ObjectHandle other;
-		if(!data.tryCast(other))
+		if (!data.tryCast(other))
 			return false;
 
 		auto definitionManager = getDefinitionManager();
-		if(definitionManager == nullptr)
+		if (definitionManager == nullptr)
 			return false;
 
 		auto obj = getRootObject();
 		auto definition = obj.getDefinition(*definitionManager);
 		auto otherDef = other.getDefinition(*definitionManager);
-		if(definition != otherDef)
+		if (definition != otherDef)
 			return false;
 
-		for(auto prop : definition->allProperties())
+		for (auto prop : definition->allProperties())
 		{
 			auto accessor = definition->bindProperty(prop->getName(), obj);
 			auto otherAccessor = definition->bindProperty(prop->getName(), other);
-			if(accessor.canSetValue())
+			if (accessor.canSetValue())
 			{
 				assert(otherAccessor.canGetValue());
 				accessor.setValue(otherAccessor.getValue());
 			}
 		}
-		if(getParent())
+		if (getParent())
 		{
 			return getParent()->setData(column, roleId, obj);
 		}
@@ -117,18 +114,15 @@ bool ReflectedObjectItem::setData(int column, ItemRole::Id roleId, const Variant
 	return false;
 }
 
-
-GenericTreeItem * ReflectedObjectItem::getChild( size_t index ) const
+GenericTreeItem* ReflectedObjectItem::getChild(size_t index) const
 {
-	if(children_.size() > index)
+	if (children_.size() > index)
 		return children_[index].get();
 
 	size_t currentIndex = 0;
-	EnumerateChildren([&currentIndex, index](ReflectedItem& item){
-		return (currentIndex++ == index);
-	});
+	EnumerateChildren([&currentIndex, index](ReflectedItem& item) { return (currentIndex++ == index); });
 
-	if(currentIndex > 0)
+	if (currentIndex > 0)
 		return children_[--currentIndex].get();
 	return nullptr;
 }
@@ -136,7 +130,7 @@ GenericTreeItem * ReflectedObjectItem::getChild( size_t index ) const
 bool ReflectedObjectItem::empty() const
 {
 	bool isEmpty = true;
-	EnumerateChildren([&isEmpty](ReflectedItem&){
+	EnumerateChildren([&isEmpty](ReflectedItem&) {
 		isEmpty = false;
 		return false;
 	});
@@ -147,7 +141,7 @@ size_t ReflectedObjectItem::size() const
 {
 	size_t count = 0;
 
-	EnumerateChildren([&count](ReflectedItem&){
+	EnumerateChildren([&count](ReflectedItem&) {
 		++count;
 		return true;
 	});
@@ -156,8 +150,7 @@ size_t ReflectedObjectItem::size() const
 }
 
 //==============================================================================
-bool ReflectedObjectItem::preSetValue(
-	const PropertyAccessor & accessor, const Variant & value )
+bool ReflectedObjectItem::preSetValue(const PropertyAccessor& accessor, const Variant& value)
 {
 	for (auto it = children_.begin(); it != children_.end(); ++it)
 	{
@@ -166,7 +159,7 @@ bool ReflectedObjectItem::preSetValue(
 			continue;
 		}
 
-		if ((*it)->preSetValue( accessor, value ))
+		if ((*it)->preSetValue(accessor, value))
 		{
 			return true;
 		}
@@ -174,10 +167,8 @@ bool ReflectedObjectItem::preSetValue(
 	return false;
 }
 
-
 //==============================================================================
-bool ReflectedObjectItem::postSetValue(
-	const PropertyAccessor & accessor, const Variant & value )
+bool ReflectedObjectItem::postSetValue(const PropertyAccessor& accessor, const Variant& value)
 {
 	for (auto it = children_.begin(); it != children_.end(); ++it)
 	{
@@ -186,7 +177,7 @@ bool ReflectedObjectItem::postSetValue(
 			continue;
 		}
 
-		if ((*it)->postSetValue( accessor, value ))
+		if ((*it)->postSetValue(accessor, value))
 		{
 			return true;
 		}
@@ -200,22 +191,21 @@ void ReflectedObjectItem::EnumerateChildren(const ReflectedItemCallback& callbac
 	const auto& groups = GetGroups();
 
 	// This will iterate all the groups and any cached children
-	for(auto& child : children_)
+	for (auto& child : children_)
 	{
-		if(!callback(*child.get()))
+		if (!callback(*child.get()))
 			return;
 	}
 
 	// ReflectedGroupItem children handle grouped items
 	int skipChildCount = static_cast<int>(children_.size() - groups.size());
 	auto parent = const_cast<ReflectedObjectItem*>(this);
-	EnumerateVisibleProperties([&](IBasePropertyPtr property, const std::string & inplacePath)
-	{
-		bool isGrouped = findFirstMetaData< MetaGroupObj >(*property, *getDefinitionManager()) != nullptr;
-		if ( !isGrouped )
+	EnumerateVisibleProperties([&](IBasePropertyPtr property, const std::string& inplacePath) {
+		bool isGrouped = findFirstMetaData<MetaGroupObj>(*property, *getDefinitionManager()) != nullptr;
+		if (!isGrouped)
 		{
 			// Skip already iterated children
-			if ( --skipChildCount < 0 )
+			if (--skipChildCount < 0)
 			{
 				children_.emplace_back(new ReflectedPropertyItem(property, parent, inplacePath));
 				return callback(*children_.back().get());
@@ -229,17 +219,17 @@ void ReflectedObjectItem::EnumerateChildren(const ReflectedItemCallback& callbac
 ReflectedObjectItem::Groups& ReflectedObjectItem::GetGroups() const
 {
 	auto definition = getDefinition();
-	if ( !groups_.empty() || definition == nullptr)
+	if (!groups_.empty() || definition == nullptr)
 	{
 		return groups_;
 	}
 
-	auto parent = const_cast<ReflectedObjectItem *>( this );
-	EnumerateVisibleProperties([this, parent](IBasePropertyPtr property, const std::string & inplacePath){
-		const MetaGroupObj * groupObj = findFirstMetaData< MetaGroupObj >(*property, *getDefinitionManager());
-		if ( groupObj != nullptr && groups_.insert(groupObj->getGroupName()).second )
+	auto parent = const_cast<ReflectedObjectItem*>(this);
+	EnumerateVisibleProperties([this, parent](IBasePropertyPtr property, const std::string& inplacePath) {
+		const MetaGroupObj* groupObj = findFirstMetaData<MetaGroupObj>(*property, *getDefinitionManager());
+		if (groupObj != nullptr && groups_.insert(groupObj->getGroupName()).second)
 		{
-			children_.emplace_back( new ReflectedGroupItem( groupObj, parent, inplacePath ) );
+			children_.emplace_back(new ReflectedGroupItem(groupObj, parent, inplacePath));
 		}
 		return true;
 	});

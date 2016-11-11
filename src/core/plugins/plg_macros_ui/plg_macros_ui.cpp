@@ -19,91 +19,85 @@
 
 #include "core_dependency_system/depends.hpp"
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
 /**
-* A plugin that creates a panel that allow actions to be recorded and played back. 
+* A plugin that creates a panel that allow actions to be recorded and played back.
 *
 * @ingroup plugins
-* @image html plg_macros_ui.png 
+* @image html plg_macros_ui.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class MacrosUIPlugin
-	: public PluginMain
-	, public Depends< IViewCreator >
+class MacrosUIPlugin : public PluginMain, public Depends<IViewCreator>
 {
 public:
-	MacrosUIPlugin( IComponentContext& contextManager )
-		: Depends( contextManager )
+	MacrosUIPlugin(IComponentContext& contextManager) : Depends(contextManager)
 	{
 	}
 
-	bool PostLoad( IComponentContext& contextManager ) override
+	bool PostLoad(IComponentContext& contextManager) override
 	{
 		return true;
 	}
 
-	void Initialise( IComponentContext& contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
-		auto qtFramework = Context::queryInterface< IQtFramework >();
+		auto qtFramework = Context::queryInterface<IQtFramework>();
 		if (qtFramework == nullptr)
 		{
 			return;
 		}
 
-		auto pDefinitionManager =
-			contextManager.queryInterface< IDefinitionManager >();
+		auto pDefinitionManager = contextManager.queryInterface<IDefinitionManager>();
 		if (pDefinitionManager == nullptr)
 		{
 			return;
 		}
 		auto& definitionManager = *pDefinitionManager;
-		REGISTER_DEFINITION( MacrosObject )
+		REGISTER_DEFINITION(MacrosObject)
 
-		ICommandManager* pCommandSystemProvider =
-			Context::queryInterface< ICommandManager >();
+		ICommandManager* pCommandSystemProvider = Context::queryInterface<ICommandManager>();
 		if (pCommandSystemProvider == nullptr)
 		{
 			return;
 		}
 
-		auto pMacroDefinition = pDefinitionManager->getDefinition(
-			getClassIdentifier< MacrosObject >() );
-		assert( pMacroDefinition != nullptr );
+		auto pMacroDefinition = pDefinitionManager->getDefinition(getClassIdentifier<MacrosObject>());
+		assert(pMacroDefinition != nullptr);
 		macros_ = pMacroDefinition->create();
-		macros_.getBase< MacrosObject >()->init( *pCommandSystemProvider );
+		macros_.getBase<MacrosObject>()->init(*pCommandSystemProvider);
 
-		auto viewCreator = get< IViewCreator >();
+		auto viewCreator = get<IViewCreator>();
 		if (viewCreator)
 		{
-			panel_ = viewCreator->createView(
-				"WGMacros/WGMacroView.qml",
-				macros_ );
+			panel_ = viewCreator->createView("WGMacros/WGMacroView.qml", macros_);
 		}
 	}
 
-	bool Finalise( IComponentContext& contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
-		auto uiApplication = Context::queryInterface< IUIApplication >();
+		auto uiApplication = Context::queryInterface<IUIApplication>();
 		if (uiApplication == nullptr)
 		{
 			return true;
 		}
 		if (panel_.valid())
 		{
-            auto view = panel_.get();
-			uiApplication->removeView( *view );
-            view = nullptr;
+			auto view = panel_.get();
+			uiApplication->removeView(*view);
+			view = nullptr;
 		}
 
 		return true;
 	}
 
 private:
-	wg_future<std::unique_ptr< IView >> panel_;
+	wg_future<std::unique_ptr<IView>> panel_;
 	ObjectHandle macros_;
 };
 
-PLG_CALLBACK_FUNC( MacrosUIPlugin )
+PLG_CALLBACK_FUNC(MacrosUIPlugin)
 } // end namespace wgt

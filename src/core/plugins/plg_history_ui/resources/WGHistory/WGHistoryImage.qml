@@ -5,14 +5,13 @@ Image {
     id: thumbnail
     objectName: "WGHistoryImage"
     WGComponent { type: "WGHistoryImage" }
+    opacity: applied ? 1 : 0.35
 
-    // -- Begin Interface
     property string type: undefined
-    property bool isApplied: false
-    // -- End Interface
+    property bool applied: false
 
     source: {
-        if (typeof type == 'undefined') {
+        if (typeof type == "undefined") {
             return "icons/16/unknown_16x16.png";
         }
         if (type == "Batch") {
@@ -20,6 +19,5 @@ Image {
         }
         return "icons/16/edit_16x16.png";
     }
-    opacity: isApplied ? 1 : 0.35
 }
 

@@ -3,7 +3,6 @@
 #include "testing/reflection_objects_test/test_objects.hpp"
 #include <vector>
 
-
 namespace wgt
 {
 /**
@@ -13,45 +12,41 @@ namespace wgt
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class ReflectionObjectTestPlugin
-	: public PluginMain
+class ReflectionObjectTestPlugin : public PluginMain
 {
 private:
-
 public:
 	//==========================================================================
-	ReflectionObjectTestPlugin(IComponentContext & contextManager )
+	ReflectionObjectTestPlugin(IComponentContext& contextManager)
 	{
 	}
 
 	//==========================================================================
-	bool PostLoad( IComponentContext & contextManager )
+	bool PostLoad(IComponentContext& contextManager)
 	{
 		return true;
 	}
 
 	//==========================================================================
-	void Initialise( IComponentContext & contextManager )
+	void Initialise(IComponentContext& contextManager)
 	{
 		// register reflected type definition
-		IDefinitionManager* defManager =
-			contextManager.queryInterface< IDefinitionManager >();
+		IDefinitionManager* defManager = contextManager.queryInterface<IDefinitionManager>();
 		assert(defManager != nullptr);
 
 		TestObjects testObjects;
-		testObjects.initDefs( *defManager );
+		testObjects.initDefs(*defManager);
 	}
 	//==========================================================================
-	bool Finalise( IComponentContext & contextManager )
+	bool Finalise(IComponentContext& contextManager)
 	{
 		return true;
 	}
 	//==========================================================================
-	void Unload( IComponentContext & contextManager )
+	void Unload(IComponentContext& contextManager)
 	{
 	}
 };
 
-
-PLG_CALLBACK_FUNC( ReflectionObjectTestPlugin )
+PLG_CALLBACK_FUNC(ReflectionObjectTestPlugin)
 } // end namespace wgt

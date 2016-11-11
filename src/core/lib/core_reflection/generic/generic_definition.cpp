@@ -11,28 +11,24 @@
 
 namespace wgt
 {
-const char * GenericDefinition::getName() const
+const char* GenericDefinition::getName() const
 {
 	return name_.c_str();
 }
 
 //------------------------------------------------------------------------------
-GenericDefinition::GenericDefinition( const char* name )
-	:name_( name == nullptr
-				? RefObjectId::generate().toString()
-				: name )
+GenericDefinition::GenericDefinition(const char* name)
+    : name_(name == nullptr ? RefObjectId::generate().toString() : name)
 {
 }
-
 
 //------------------------------------------------------------------------------
-ObjectHandle GenericDefinition::create( const IClassDefinition & definition ) const
+ObjectHandle GenericDefinition::create(const IClassDefinition& definition) const
 {
-	auto pInst = std::unique_ptr< GenericObject >( new GenericObject() );
-	pInst->setDefinition( const_cast< IClassDefinition * >( &definition ) );
-	return ObjectHandle( std::move( pInst ), &definition );
+	auto pInst = std::unique_ptr<GenericObject>(new GenericObject());
+	pInst->setDefinition(const_cast<IClassDefinition*>(&definition));
+	return ObjectHandle(std::move(pInst), &definition);
 }
-
 
 //------------------------------------------------------------------------------
 PropertyIteratorImplPtr GenericDefinition::getPropertyIterator() const
@@ -40,16 +36,15 @@ PropertyIteratorImplPtr GenericDefinition::getPropertyIterator() const
 	return properties_.getIterator();
 }
 
-
 //------------------------------------------------------------------------------
-IBasePropertyPtr GenericDefinition::addProperty( const char * name, const TypeId & typeId, MetaHandle metaData )
+IBasePropertyPtr GenericDefinition::addProperty(const char* name, const TypeId& typeId, MetaHandle metaData)
 {
-	IBasePropertyPtr property = std::make_shared< GenericProperty >( name, typeId );
+	IBasePropertyPtr property = std::make_shared<GenericProperty>(name, typeId);
 	if (metaData != nullptr)
 	{
-		property = std::make_shared< BasePropertyWithMetaData >( property, metaData );
+		property = std::make_shared<BasePropertyWithMetaData>(property, metaData);
 	}
-	properties_.addProperty( property );
+	properties_.addProperty(property);
 	return property;
 }
 } // end namespace wgt

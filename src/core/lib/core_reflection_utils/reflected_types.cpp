@@ -5,19 +5,16 @@
 #include "commands/metadata/reflected_collection_erase_command.mpp"
 #include "core_reflection/i_definition_manager.hpp"
 
-
 namespace wgt
 {
 namespace Reflection_Utils
 {
-
-void initReflectedTypes( IDefinitionManager & definitionManager )
+void initReflectedTypes(IDefinitionManager& definitionManager)
 {
-	REGISTER_DEFINITION( ReflectedPropertyCommandArgument );
-	REGISTER_DEFINITION( ReflectedMethodCommandParameters );
-	REGISTER_DEFINITION( ReflectedCollectionInsertCommandParameters );
-	REGISTER_DEFINITION( ReflectedCollectionEraseCommandParameters );
+	REGISTER_DEFINITION(ReflectedPropertyCommandArgument);
+	REGISTER_DEFINITION(ReflectedMethodCommandParameters);
+	REGISTER_DEFINITION(ReflectedCollectionInsertCommandParameters);
+	REGISTER_DEFINITION(ReflectedCollectionEraseCommandParameters);
 }
-
 }
 } // end namespace wgt

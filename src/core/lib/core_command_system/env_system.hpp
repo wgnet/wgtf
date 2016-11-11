@@ -12,12 +12,17 @@ class EnvState : public IEnvState
 {
 public:
 	EnvState(const char* description, int id);
-	virtual ~EnvState() {}
+	virtual ~EnvState()
+	{
+	}
 
-	virtual void add( IEnvComponentPtr ec ) override;
-	virtual IEnvComponentPtr remove( const ECGUID& guid ) override;
-	virtual IEnvComponent* query( const ECGUID& guid ) const override;
-	virtual const char* description() const override { return description_.c_str(); }
+	virtual void add(IEnvComponentPtr ec) override;
+	virtual IEnvComponentPtr remove(const ECGUID& guid) override;
+	virtual IEnvComponent* query(const ECGUID& guid) const override;
+	virtual const char* description() const override
+	{
+		return description_.c_str();
+	}
 	virtual int id() const override;
 
 private:
@@ -27,21 +32,23 @@ private:
 	int id_;
 };
 
-class EnvManager : public Implements< IEnvManager >
+class EnvManager : public Implements<IEnvManager>
 {
 public:
 	EnvManager();
-	virtual ~EnvManager() {}
+	virtual ~EnvManager()
+	{
+	}
 
-	virtual void registerListener( IEnvEventListener* listener ) override;
-	virtual void deregisterListener( IEnvEventListener* listener ) override;
+	virtual void registerListener(IEnvEventListener* listener) override;
+	virtual void deregisterListener(IEnvEventListener* listener) override;
 
-	virtual int addEnv( const char* description ) override;
-	virtual void removeEnv( int id ) override;
-	virtual void selectEnv( int id ) override;
+	virtual int addEnv(const char* description) override;
+	virtual void removeEnv(int id) override;
+	virtual void selectEnv(int id) override;
 	virtual void deSelectEnv(int id) override;
 	virtual void saveEnvState(int id) override;
-	virtual void loadEnvState( int id ) override;
+	virtual void loadEnvState(int id) override;
 
 private:
 	typedef std::unique_ptr<IEnvState> IEnvStatePtr;

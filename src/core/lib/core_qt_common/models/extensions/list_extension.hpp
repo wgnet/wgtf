@@ -21,23 +21,29 @@ public:
 	 *	@param last end of selected area. End can be before begin.
 	 *	@return area covered inbetween first and last.
 	 */
-	Q_INVOKABLE QItemSelection itemSelection( const QModelIndex & first, const QModelIndex & last ) const;
+	Q_INVOKABLE QItemSelection itemSelection(const QModelIndex& first, const QModelIndex& last) const;
 
 	/**
 	 *	Move index down one row in the list.
 	 *	Index will not be moved past the end of the list.
 	 *	@param index to be moved.
-	 *	@return new position or the original index on error.
+	 *	@param pModel to be used if index is invalid.
+	 *	@return new position or
+	 *		the first index in the model if nothing was selected or
+	 *		the original index on error.
 	 */
-	Q_INVOKABLE QModelIndex getNextIndex( const QModelIndex & index ) const;
+	Q_INVOKABLE QModelIndex getNextIndex(const QModelIndex& index, QAbstractItemModel* pModel) const;
 
 	/**
 	 *	Move index up one row in the list.
 	 *	Index will not be moved past the start of the list.
 	 *	@param index to be moved.
-	 *	@return new position or the original index on error.
+	 *	@param pModel to be used if index is invalid.
+	 *	@return new position or
+	 *		the first index in the model if nothing was selected or
+	 *		the original index on error.
 	 */
-	Q_INVOKABLE QModelIndex getPreviousIndex( const QModelIndex & index ) const;
+	Q_INVOKABLE QModelIndex getPreviousIndex(const QModelIndex& index, QAbstractItemModel* pModel) const;
 };
 } // end namespace wgt
 #endif // LIST_EXTENSION_HPP

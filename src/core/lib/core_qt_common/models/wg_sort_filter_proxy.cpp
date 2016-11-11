@@ -8,9 +8,7 @@ namespace wgt
 {
 struct WGSortFilterProxy::Impl
 {
-	Impl()
-	    : sortObject_(nullptr)
-	    , filterObject_(nullptr)
+	Impl() : sortObject_(nullptr), filterObject_(nullptr)
 	{
 	}
 
@@ -24,8 +22,7 @@ struct WGSortFilterProxy::Impl
 	QtConnectionHolder connections_;
 };
 
-WGSortFilterProxy::WGSortFilterProxy()
-    : impl_(new Impl)
+WGSortFilterProxy::WGSortFilterProxy() : impl_(new Impl)
 {
 	setDynamicSortFilter(false);
 
@@ -36,6 +33,16 @@ WGSortFilterProxy::WGSortFilterProxy()
 
 WGSortFilterProxy::~WGSortFilterProxy()
 {
+}
+
+QModelIndex WGSortFilterProxy::mapToSource(const QModelIndex& proxyIndex) const
+{
+	return QSortFilterProxyModel::mapToSource(proxyIndex);
+}
+
+QModelIndex WGSortFilterProxy::mapFromSource(const QModelIndex& sourceIndex) const
+{
+	return QSortFilterProxyModel::mapFromSource(sourceIndex);
 }
 
 void WGSortFilterProxy::sort(int column, Qt::SortOrder order)
@@ -86,8 +93,9 @@ void WGSortFilterProxy::onSourceModelChanged()
 	impl_->connections_.reset();
 	if (model != nullptr)
 	{
-		impl_->connections_ += QObject::connect(model, &QAbstractItemModel::modelReset,
-		                                        [this, model] { impl_->metaObject_ = QtItemData::getMetaObject(*model); });
+		impl_->connections_ += QObject::connect(model, &QAbstractItemModel::modelReset, [this, model] {
+			impl_->metaObject_ = QtItemData::getMetaObject(*model);
+		});
 	}
 	impl_->metaObject_ = model != nullptr ? QtItemData::getMetaObject(*model) : nullptr;
 }
@@ -141,8 +149,7 @@ bool WGSortFilterProxy::filterAcceptsRowNonRecursive(int source_row, const QMode
 		auto index = sourceModel()->index(source_row, 0, source_parent);
 		QVariant ret;
 		auto item = std::unique_ptr<QObject>(new QtItemData(index, impl_->metaObject_));
-		if (impl_->filterAcceptsRow_.invoke(impl_->filterObject_,
-		                                    Q_RETURN_ARG(QVariant, ret),
+		if (impl_->filterAcceptsRow_.invoke(impl_->filterObject_, Q_RETURN_ARG(QVariant, ret),
 		                                    Q_ARG(QVariant, QVariant::fromValue(item.get()))))
 		{
 			return ret.toBool();
@@ -158,8 +165,7 @@ bool WGSortFilterProxy::filterAcceptsRowNonRecursive(int source_row, const QMode
 			auto index = sourceModel()->index(source_row, column, source_parent);
 			QVariant ret;
 			auto item = std::unique_ptr<QObject>(new QtItemData(index, impl_->metaObject_));
-			if (impl_->filterAcceptsItem_.invoke(impl_->filterObject_,
-			                                     Q_RETURN_ARG(QVariant, ret),
+			if (impl_->filterAcceptsItem_.invoke(impl_->filterObject_, Q_RETURN_ARG(QVariant, ret),
 			                                     Q_ARG(QVariant, QVariant::fromValue(item.get()))))
 			{
 				invoked = true;
@@ -185,8 +191,7 @@ bool WGSortFilterProxy::filterAcceptsColumnNonRecursive(int source_column, const
 		auto index = sourceModel()->index(0, source_column, source_parent);
 		QVariant ret;
 		auto item = std::unique_ptr<QObject>(new QtItemData(index, impl_->metaObject_));
-		if (impl_->filterAcceptsColumn_.invoke(impl_->filterObject_,
-		                                       Q_RETURN_ARG(QVariant, ret),
+		if (impl_->filterAcceptsColumn_.invoke(impl_->filterObject_, Q_RETURN_ARG(QVariant, ret),
 		                                       Q_ARG(QVariant, QVariant::fromValue(item.get()))))
 		{
 			return ret.toBool();
@@ -202,8 +207,7 @@ bool WGSortFilterProxy::filterAcceptsColumnNonRecursive(int source_column, const
 			auto index = sourceModel()->index(row, source_column, source_parent);
 			QVariant ret;
 			auto item = std::unique_ptr<QObject>(new QtItemData(index, impl_->metaObject_));
-			if (impl_->filterAcceptsItem_.invoke(impl_->filterObject_,
-			                                     Q_RETURN_ARG(QVariant, ret),
+			if (impl_->filterAcceptsItem_.invoke(impl_->filterObject_, Q_RETURN_ARG(QVariant, ret),
 			                                     Q_ARG(QVariant, QVariant::fromValue(item.get()))))
 			{
 				invoked = true;
@@ -258,13 +262,17 @@ bool WGSortFilterProxy::filterAcceptsColumn(int source_column, const QModelIndex
 	for (auto row = 0; row < rowCount; ++row)
 	{
 		auto index = model->index(row, 0, source_parent);
-		if (filterAcceptsColumn(source_column, index))
-		    {
+		auto columnCount = model->columnCount(index);
+		if (source_column < columnCount)
+		{
+			if (filterAcceptsColumn(source_column, index))
+			{
 				return true;
 			}
 		}
+	}
 
-	    return false;
+	return false;
 }
 
 bool WGSortFilterProxy::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
@@ -274,8 +282,7 @@ bool WGSortFilterProxy::lessThan(const QModelIndex& source_left, const QModelInd
 		QVariant ret;
 		auto left = std::unique_ptr<QObject>(new QtItemData(source_left, impl_->metaObject_));
 		auto right = std::unique_ptr<QObject>(new QtItemData(source_right, impl_->metaObject_));
-		if (impl_->lessThan_.invoke(impl_->sortObject_,
-		                            Q_RETURN_ARG(QVariant, ret),
+		if (impl_->lessThan_.invoke(impl_->sortObject_, Q_RETURN_ARG(QVariant, ret),
 		                            Q_ARG(QVariant, QVariant::fromValue(left.get())),
 		                            Q_ARG(QVariant, QVariant::fromValue(right.get()))))
 		{
@@ -286,6 +293,6 @@ bool WGSortFilterProxy::lessThan(const QModelIndex& source_left, const QModelInd
 	return QSortFilterProxyModel::lessThan(source_left, source_right);
 }
 
-//TODO(aidan): We're currently forcing users to pick between drag and drop and filter proxy.
+// TODO(aidan): We're currently forcing users to pick between drag and drop and filter proxy.
 //			   We need to implement a reasonable moveRows that modifies the mapping to reflect drags
 }

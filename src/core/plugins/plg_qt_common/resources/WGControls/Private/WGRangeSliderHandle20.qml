@@ -31,16 +31,16 @@ WGSliderHandle {
         This can be any Item based component.
     */
     property Component handleStyle: Item {
-        implicitWidth: defaultSpacing.minimumRowHeight - defaultSpacing.rowSpacing * 2
-        implicitHeight: defaultSpacing.minimumRowHeight - defaultSpacing.rowSpacing * 2
+        implicitWidth: Math.round(defaultSpacing.minimumRowHeight * 0.75)
+        implicitHeight: Math.round(defaultSpacing.minimumRowHeight * 0.75)
 
         WGButtonFrame{
             color: parentSlider.enabled ? handleColor : palette.mainWindowColor
             borderColor: parentSlider.enabled ? palette.darkerShade : palette.darkShade
             highlightColor: parentSlider.hoveredHandle === handleIndex ? palette.lighterShade : "transparent"
             innerBorderColor: parentSlider.__activeHandle === handleIndex && parentSlider.activeFocus ? palette.highlightShade : "transparent"
-            implicitWidth: defaultSpacing.minimumRowHeight - defaultSpacing.rowSpacing * 2
-            implicitHeight: defaultSpacing.minimumRowHeight - defaultSpacing.rowSpacing * 2
+            implicitWidth: parent.width
+            implicitHeight: parent.height
 
             Behavior on height{
                 NumberAnimation {

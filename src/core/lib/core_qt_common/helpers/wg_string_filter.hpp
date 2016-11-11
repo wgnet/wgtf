@@ -18,10 +18,7 @@ class WGStringFilter : public WGFilter
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QString filterText
-				READ getFilterText
-				WRITE setFilterText
-				NOTIFY filterTextChanged )
+	Q_PROPERTY(QString filterText READ getFilterText WRITE setFilterText NOTIFY filterTextChanged)
 
 	DECLARE_QT_MEMORY_HANDLER
 
@@ -29,14 +26,14 @@ public:
 	WGStringFilter();
 	virtual ~WGStringFilter();
 
-	virtual IItemFilter * getFilter() const override;
+	virtual IItemFilter* getFilter() const override;
 
 protected:
 	virtual void updateInternalItemRole() override;
-	
-private:	
+
+private:
 	QString getFilterText() const;
-	void setFilterText( const QString & filterText );
+	void setFilterText(const QString& filterText);
 
 signals:
 	void filterTextChanged();

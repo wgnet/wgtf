@@ -5,12 +5,11 @@
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 #include "core_reflection/reflected_method_parameters.hpp"
 
-
 namespace wgt
 {
-BEGIN_EXPOSE( ReflectedMethodCommandParameters, MetaNoSerialization() )
-	EXPOSE( ReflectedMethodCommandParameters::idName(), getId, MetaNone() )
-	EXPOSE( ReflectedMethodCommandParameters::pathName(), getPath, MetaNone() )
+BEGIN_EXPOSE(ReflectedMethodCommandParameters, MetaNoSerialization())
+EXPOSE(ReflectedMethodCommandParameters::idName(), getId, MetaNone())
+EXPOSE(ReflectedMethodCommandParameters::pathName(), getPath, MetaNone())
 // TODO: Add ability to show parameters on the history panel.
 //	EXPOSE( ReflectedMethodCommandParameters::parametersName(), getParameterList, MetaNone() )
 END_EXPOSE()

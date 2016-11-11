@@ -12,10 +12,7 @@ class WGFilteredTreeModel : public WGTreeModel
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QObject* filter
-				READ getFilter
-				WRITE setFilter
-				NOTIFY filterChanged )
+	Q_PROPERTY(QObject* filter READ getFilter WRITE setFilter NOTIFY filterChanged)
 
 	DECLARE_QT_MEMORY_HANDLER
 
@@ -24,12 +21,12 @@ public:
 	virtual ~WGFilteredTreeModel();
 
 protected:
-	virtual ITreeModel * getModel() const override;
+	virtual ITreeModel* getModel() const override;
 
 private:
-    void onSourceChanged();
-	QObject * getFilter() const;
-	void setFilter( QObject * filter );
+	void onSourceChanged();
+	QObject* getFilter() const;
+	void setFilter(QObject* filter);
 
 signals:
 	void filterChanged();

@@ -17,25 +17,23 @@
 #include <vector>
 #include <unordered_map>
 
-
 namespace wgt
 {
 //------------------------------------------------------------------------------
 struct TestStructure2
 {
-	bool operator==( const TestStructure2& tps ) const
+	bool operator==(const TestStructure2& tps) const
 	{
 		return name_ == tps.name_;
 	}
 
-	bool operator!=( const TestStructure2& tps ) const
+	bool operator!=(const TestStructure2& tps) const
 	{
-		return !operator==( tps );
+		return !operator==(tps);
 	}
 
 	std::string name_;
 };
-
 
 //------------------------------------------------------------------------------
 class TestPolyStruct2
@@ -43,19 +41,18 @@ class TestPolyStruct2
 	DECLARE_REFLECTED
 
 public:
-	bool operator==( const TestPolyStruct2& tps ) const
+	bool operator==(const TestPolyStruct2& tps) const
 	{
 		return name_ == tps.name_;
 	}
 
-	bool operator!=( const TestPolyStruct2& tps ) const
+	bool operator!=(const TestPolyStruct2& tps) const
 	{
-		return !operator==( tps );
+		return !operator==(tps);
 	}
 
 	std::string name_;
 };
-
 
 //------------------------------------------------------------------------------
 class TestDefinitionObject
@@ -63,23 +60,50 @@ class TestDefinitionObject
 	DECLARE_REFLECTED
 
 public:
-	void setCounter( const int & value ) { counter_ = value; }
-	void getCounter( int * value ) const { *value = counter_; }
+	void setCounter(const int& value)
+	{
+		counter_ = value;
+	}
+	void getCounter(int* value) const
+	{
+		*value = counter_;
+	}
 
-	void setText( const std::string & value ) { text_ = value; }
-	const std::string & getText() const { return text_; }
-	
-	void setInts( const std::vector< int32_t >& value ) { int32s_ = value; }
-	const std::vector< int32_t >& getInts() const { return int32s_; }	
+	void setText(const std::string& value)
+	{
+		text_ = value;
+	}
+	const std::string& getText() const
+	{
+		return text_;
+	}
 
-	const char* getString() const { return "test_string"; }
+	void setInts(const std::vector<int32_t>& value)
+	{
+		int32s_ = value;
+	}
+	const std::vector<int32_t>& getInts() const
+	{
+		return int32s_;
+	}
 
-	void setLink( const ObjectHandleT< TestPolyStruct2 > & link ) { exposedObject_ = link; }
-	const ObjectHandleT< TestPolyStruct2 >& getLink() const { return exposedObject_; }
+	const char* getString() const
+	{
+		return "test_string";
+	}
+
+	void setLink(const ObjectHandleT<TestPolyStruct2>& link)
+	{
+		exposedObject_ = link;
+	}
+	const ObjectHandleT<TestPolyStruct2>& getLink() const
+	{
+		return exposedObject_;
+	}
 
 	TestDefinitionObject();
-	bool operator==( const TestDefinitionObject& tdo ) const;
-	bool operator!=( const TestDefinitionObject& tdo ) const;
+	bool operator==(const TestDefinitionObject& tdo) const;
+	bool operator!=(const TestDefinitionObject& tdo) const;
 
 public:
 	int counter_;
@@ -87,69 +111,65 @@ public:
 	std::string text_;
 
 	// PropertyType::Raw_String
-	const char * raw_string_;
+	const char* raw_string_;
 
 	// PropertyType::String
 	std::string string_;
-	std::vector< std::string > strings_;
+	std::vector<std::string> strings_;
 
 	// PropertyType::Raw_WString
-	const wchar_t * raw_wstring_;
+	const wchar_t* raw_wstring_;
 
 	// PropertyType::WString
 	std::wstring wstring_;
-	std::vector< std::wstring > wstrings_;
+	std::vector<std::wstring> wstrings_;
 
 	// PropertyType::ExposedStruct
 	TestStructure2 exposedStruct_;
-	std::vector< TestStructure2 > exposedStructs_;
+	std::vector<TestStructure2> exposedStructs_;
 
 	// PropertyType::Link
-	ObjectHandleT< TestPolyStruct2 > exposedObject_;
-	std::vector< ObjectHandleT< TestPolyStruct2 > > exposedObjects_;
+	ObjectHandleT<TestPolyStruct2> exposedObject_;
+	std::vector<ObjectHandleT<TestPolyStruct2>> exposedObjects_;
 
 	// PropertyType::Boolean
 	bool boolean_;
-	std::vector< bool > booleans_;
+	std::vector<bool> booleans_;
 
 	// PropertyType::UInt32
 	uint32_t uint32_;
-	std::vector< uint32_t > uint32s_;
+	std::vector<uint32_t> uint32s_;
 
 	// PropertyType::Int32
 	int32_t int32_;
-	std::vector< int32_t > int32s_;
+	std::vector<int32_t> int32s_;
 
 	// PropertyType::UInt64
 	uint64_t uint64_;
-	std::vector< uint64_t > uint64s_;
+	std::vector<uint64_t> uint64s_;
 
 	// PropertyType::Float
 	float float_;
-	std::vector< float > floats_;
+	std::vector<float> floats_;
 
 	// PropertyType::Enum
 	//! TODO?
-	
+
 	// PropertyType::Vector3_Type
 	Vector3 vector3_;
-	std::vector< Vector3 > vector3s_;
+	std::vector<Vector3> vector3s_;
 
 	// PropertyType::Vector4_Type
 	Vector4 vector4_;
-	std::vector< Vector4 > vector4s_;
+	std::vector<Vector4> vector4s_;
 
 	// PropertyType::Raw_Data,
-	std::shared_ptr< BinaryBlock > binary_;
-	std::vector< std::shared_ptr< BinaryBlock > > binaries_;
+	std::shared_ptr<BinaryBlock> binary_;
+	std::vector<std::shared_ptr<BinaryBlock>> binaries_;
 
 	// multidimensional container
-	std::unordered_map<
-		std::string,
-		std::vector< ObjectHandleT< TestStructure2 > >
-	> multidimensional_;
+	std::unordered_map<std::string, std::vector<ObjectHandleT<TestStructure2>>> multidimensional_;
 };
-
 
 //------------------------------------------------------------------------------
 class TestDefinitionDerivedObject : public TestDefinitionObject
@@ -157,16 +177,14 @@ class TestDefinitionDerivedObject : public TestDefinitionObject
 	DECLARE_REFLECTED
 
 public:
-	bool operator==( const TestDefinitionDerivedObject & tdo ) const
+	bool operator==(const TestDefinitionDerivedObject& tdo) const
 	{
-		return 
-			someInteger_ == tdo.someInteger_ &&
-			fabsf( someFloat_ - tdo.someFloat_ ) < 0.0004f &&
-			TestDefinitionObject::operator==( tdo );
+		return someInteger_ == tdo.someInteger_ && fabsf(someFloat_ - tdo.someFloat_) < 0.0004f &&
+		TestDefinitionObject::operator==(tdo);
 	}
-	bool operator!=( const TestDefinitionDerivedObject & tdo ) const
+	bool operator!=(const TestDefinitionDerivedObject& tdo) const
 	{
-		return !operator==( tdo );
+		return !operator==(tdo);
 	}
 
 public:
@@ -175,10 +193,8 @@ public:
 	float someFloat_;
 };
 
-
 //------------------------------------------------------------------------------
-class TestDefinitionFixture
-	: public TestReflectionFixture
+class TestDefinitionFixture : public TestReflectionFixture
 {
 public:
 	TestDefinitionFixture();
@@ -197,8 +213,8 @@ public:
 	}
 
 public:
-	IClassDefinition * klass_;
-	IClassDefinition * derived_klass_;
+	IClassDefinition* klass_;
+	IClassDefinition* derived_klass_;
 };
 } // end namespace wgt
-#endif //TEST_OBJECTS2_HPP
+#endif // TEST_OBJECTS2_HPP

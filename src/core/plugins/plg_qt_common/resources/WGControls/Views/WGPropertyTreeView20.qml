@@ -1,6 +1,7 @@
 import QtQuick 2.5
 import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.2
+import QtQuick.Controls.Private 1.0
 
 import WGControls 2.0
 import WGControls.Views 2.0
@@ -19,6 +20,7 @@ WGTreeView {
     extensions: [componentExtension]
 
     property Component propertyDelegate: Loader {
+        id: delegateLoader
         width: parent.width
         height: typeof itemData.component != 'undefined' ? (item.height > 0 ? item.height : defaultSpacing.minimumRowHeight)
                                                          : defaultSpacing.minimumRowHeight
@@ -28,15 +30,15 @@ WGTreeView {
     columnDelegates: [columnDelegate, propertyDelegate]
     columnSpacing: 1
 
-	property var proxyModel: WGColumnLayoutProxy {
-		id: columnLayoutProxy
-		columnSequence: [0, 0]
-	}
+    property var proxyModel: WGColumnLayoutProxy {
+        id: columnLayoutProxy
+        columnSequence: [0, 0]
+    }
 
-	property alias propertyModel: propertyTreeView.model
-	property alias model: columnLayoutProxy.sourceModel
+    property alias propertyModel: propertyTreeView.model
+    property alias model: columnLayoutProxy.sourceModel
 
-	propertyModel: proxyModel
+    propertyModel: proxyModel
 
     Dialog {
         id: keyDialog

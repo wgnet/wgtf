@@ -6,15 +6,18 @@
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
+#include "core_reflection/utilities/reflection_method_utilities.hpp"
 
 namespace wgt
 {
-BEGIN_EXPOSE( HistoryObject, MetaNoSerialization() )
-	EXPOSE( "History", getHistory, MetaNone() )
-	EXPOSE( "CurrentIndexSource", currentIndexSource, MetaNone() )
-	EXPOSE( "CreateMacro", createMacro, MetaNone() )
-	EXPOSE( "SelectionHandlerSource", selectionHandlerSource, MetaNone() )
-    EXPOSE( "IsClearButtonVisible", isClearButtonVisible, setClearButtonVisible, MetaNone())
-    EXPOSE( "IsMakeMacroButtonVisible", isMakeMacroButtonVisible, setMakeMacroButtonVisible, MetaNone())
+BEGIN_EXPOSE(HistoryObject, MetaNoSerialization())
+EXPOSE("historyListModel", getHistory, MetaNone())
+EXPOSE("CurrentIndexSource", currentIndexSource, MetaNone())
+EXPOSE("CreateMacro", createMacro, MetaNone())
+EXPOSE("SelectionHandlerSource", selectionHandlerSource, MetaNone())
+EXPOSE("IsClearButtonVisible", isClearButtonVisible, setClearButtonVisible, MetaNone())
+EXPOSE("IsMakeMacroButtonVisible", isMakeMacroButtonVisible, setMakeMacroButtonVisible, MetaNone())
+EXPOSE_METHOD("extractItemDetail", extractItemDetail, MetaDirectInvoke())
+EXPOSE_METHOD("clearHistory", clearHistory, MetaDirectInvoke())
 END_EXPOSE()
 } // end namespace wgt

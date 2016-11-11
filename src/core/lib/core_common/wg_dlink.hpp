@@ -1,7 +1,6 @@
 #ifndef WG_DLINK_HPP_INCLUDED
 #define WG_DLINK_HPP_INCLUDED
 
-
 #include <cstddef>
 
 /**
@@ -25,11 +24,11 @@ Holder* deducedHolder = dlink_holder(Holder, second, list.next());
 assert(deducedHolder == &holder);
 @endcode
 */
-#define dlink_holder(HolderType, member, link) reinterpret_cast<HolderType*>(reinterpret_cast<char*>(link) - offsetof(HolderType, member))
+#define dlink_holder(HolderType, member, link) \
+	reinterpret_cast<HolderType*>(reinterpret_cast<char*>(link) - offsetof(HolderType, member))
 
 namespace wgt
 {
-
 /**
 Utility class to link objects into lists.
 
@@ -79,10 +78,7 @@ public:
 private:
 	DLink* next_;
 	DLink* prev_;
-
 };
-
 }
 
 #endif
-

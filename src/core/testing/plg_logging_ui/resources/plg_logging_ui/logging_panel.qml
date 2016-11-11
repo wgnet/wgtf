@@ -6,4 +6,6 @@ import WGControls 1.0
 WGLoggingPanel {
 	text: loggingModel.text
 	layoutHints: { 'bottom': 0.1 }
+
+	onClearText: loggingModel.clearText();
 }

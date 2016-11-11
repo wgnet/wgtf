@@ -58,8 +58,12 @@ WGContextMenu {
     }
 
     function activate() {
-        for (var action in actions) {
-            actions[action].active = true;
+        for (var actionKey in actions) {
+			var action = actions[actionKey];
+			if (action == null) {
+				continue;
+			}
+            action.active = true;
         }
 
         for (var i=0; i<items.length; i++) {
@@ -70,8 +74,12 @@ WGContextMenu {
     }
 
     function deactivate() {
-        for (var action in actions) {
-            actions[action].active = false;
+        for (var actionKey in actions) {
+			var action = actions[actionKey];
+			if (action == null) {
+				continue;
+			}
+            action.active = false;
         }
 
         for (var i=0; i<items.length; i++) {
@@ -117,6 +125,8 @@ WGContextMenu {
             var qmlString = "import QtQuick 2.5; import QtQuick.Controls 1.4; import WGControls 1.0; WGAction {}";
             var action = Qt.createQmlObject( qmlString, menu );
             action.actionId = Qt.binding( function() { return menu.fullPath + "." + object.text; } );
+			action.actionText = Qt.binding( function() { return object.text; } );
+			action.actionPath = Qt.binding( function() { return menu.fullPath; } );
             action.checkable = Qt.binding( function() { return object.checkable; } );
             action.checked = Qt.binding( function() { return object.checked; } );
             action.enabled = Qt.binding( function() { return object.enabled; } );

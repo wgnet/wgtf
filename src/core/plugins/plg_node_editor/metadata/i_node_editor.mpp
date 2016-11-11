@@ -7,11 +7,11 @@
 namespace wgt
 {
 BEGIN_EXPOSE(INodeEditor, MetaNone())
-	EXPOSE("graphModel", GetGraphModel, MetaNone())
-    EXPOSE_METHOD("createNode", onCreateNode)
-    EXPOSE_METHOD("deleteNode", onDeleteNode)
-    EXPOSE_METHOD("createConnection", onCreateConnection)
-    EXPOSE_METHOD("deleteConnection", onDeleteConnection)
-    EXPOSE_METHOD("createGroup", CreateGroup, MetaNone())
+EXPOSE("graphModel", GetGraphModel, MetaNone())
+EXPOSE_METHOD("createNode", onCreateNode)
+EXPOSE_METHOD("deleteNode", onDeleteNode)
+EXPOSE_METHOD("createConnection", onCreateConnection)
+EXPOSE_METHOD("deleteConnection", onDeleteConnection)
+EXPOSE_METHOD("createGroup", CreateGroup, MetaNone())
 END_EXPOSE()
 }

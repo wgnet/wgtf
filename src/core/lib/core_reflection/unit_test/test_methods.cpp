@@ -13,11 +13,9 @@
 #include "core/testing/reflection_objects_test/test_objects.hpp"
 #include "core/testing/reflection_objects_test/test_methods_object.hpp"
 
-
 namespace wgt
 {
-struct TestMethodsFixture
-	: public TestReflectionFixture
+struct TestMethodsFixture : public TestReflectionFixture
 {
 	TestMethodsFixture()
 	{
@@ -25,8 +23,7 @@ struct TestMethodsFixture
 		klass_ = definitionManager.getDefinition<TestMethodsObject>();
 	}
 
-
-	IBasePropertyPtr findProperty( PropertyIterator& itr, const std::string& name )
+	IBasePropertyPtr findProperty(PropertyIterator& itr, const std::string& name)
 	{
 		IBasePropertyPtr property = *itr;
 		std::string propertyName = property == nullptr ? "" : property->getName();
@@ -41,74 +38,72 @@ struct TestMethodsFixture
 		return propertyName == name ? property : nullptr;
 	}
 
-
 public:
 	IClassDefinition* klass_;
 };
 
-
-TEST_F( TestMethodsFixture, methods )
+TEST_F(TestMethodsFixture, methods)
 {
 	ObjectHandle object = klass_->createManagedObject();
 	ReflectedMethodParameters parameters;
 
-	auto pa = klass_->bindProperty( "TestMethod1", object );
-	CHECK( pa.isValid() );
-	Variant result = pa.invoke( parameters );
+	auto pa = klass_->bindProperty("TestMethod1", object);
+	CHECK(pa.isValid());
+	Variant result = pa.invoke(parameters);
 
-	pa = klass_->bindProperty( "TestMethod2", object );
-	CHECK( pa.isValid() );
-	result = pa.invoke( parameters );
+	pa = klass_->bindProperty("TestMethod2", object);
+	CHECK(pa.isValid());
+	result = pa.invoke(parameters);
 
-	pa = klass_->bindProperty( "TestMethod3", object );
-	CHECK( pa.isValid() );
-	parameters.push_back( int( 5 ) );
-	result = pa.invoke( parameters );
+	pa = klass_->bindProperty("TestMethod3", object);
+	CHECK(pa.isValid());
+	parameters.push_back(int(5));
+	result = pa.invoke(parameters);
 	std::string testResult;
-	result.tryCast( testResult );
-	CHECK( testResult == "test3" );
+	result.tryCast(testResult);
+	CHECK(testResult == "test3");
 
-	pa = klass_->bindProperty( "TestMethod4", object );
-	CHECK( pa.isValid() );
+	pa = klass_->bindProperty("TestMethod4", object);
+	CHECK(pa.isValid());
 	std::string parameterString = "test";
 	ObjectHandle parameter1 = &parameterString;
-	parameters = Variant( parameter1 ), Variant( 5 );
-	result = pa.invoke( parameters );
+	parameters = Variant(parameter1), Variant(5);
+	result = pa.invoke(parameters);
 	ObjectHandle checkHandle = parameters[0].cast<ObjectHandle>();
 	testResult = *checkHandle.getBase<std::string>();
-	CHECK( testResult == "test" );
-	CHECK( parameterString == "test" );
+	CHECK(testResult == "test");
+	CHECK(parameterString == "test");
 
-	pa = klass_->bindProperty( "TestMethod5", object );
-	CHECK( pa.isValid() );
-	parameters = Variant( parameter1 );
-	result = pa.invoke( parameters );
+	pa = klass_->bindProperty("TestMethod5", object);
+	CHECK(pa.isValid());
+	parameters = Variant(parameter1);
+	result = pa.invoke(parameters);
 	checkHandle = parameters[0].cast<ObjectHandle>();
 	testResult = *checkHandle.getBase<std::string>();
-	CHECK( testResult == "test5" );
-	CHECK( parameterString == "test5" );
+	CHECK(testResult == "test5");
+	CHECK(parameterString == "test5");
 
-	pa = klass_->bindProperty( "TestMethod6", object );
-	CHECK( pa.isValid() );
-	parameters = Variant( &parameterString );
-	pa.invoke( parameters );
+	pa = klass_->bindProperty("TestMethod6", object);
+	CHECK(pa.isValid());
+	parameters = Variant(&parameterString);
+	pa.invoke(parameters);
 	testResult = *parameters[0].cast<std::string*>();
-	CHECK( testResult == "test6" );
-	CHECK( parameterString == "test6" );
+	CHECK(testResult == "test6");
+	CHECK(parameterString == "test6");
 
 	parameters.clear();
 
-	pa = klass_->bindProperty( "TestMethod7", object );
-	CHECK( pa.isValid() );
-	result = pa.invoke( Variant( double( 4.4 ) ) );
+	pa = klass_->bindProperty("TestMethod7", object);
+	CHECK(pa.isValid());
+	result = pa.invoke(Variant(double(4.4)));
 	int testIntResult = result.value<int>();
-	CHECK( testIntResult == 4 );
+	CHECK(testIntResult == 4);
 
-	pa = klass_->bindProperty( "TestMethod8", object );
-	CHECK( pa.isValid() );
-	result = pa.invoke( Variant( int( 5 ) ) );
+	pa = klass_->bindProperty("TestMethod8", object);
+	CHECK(pa.isValid());
+	result = pa.invoke(Variant(int(5)));
 	double testDoubleResult = result.value<double>();
-	CHECK( testDoubleResult == 5.0 );
+	CHECK(testDoubleResult == 5.0);
 
 	pa = klass_->bindProperty("TestMethod9", object);
 	CHECK(pa.isValid());

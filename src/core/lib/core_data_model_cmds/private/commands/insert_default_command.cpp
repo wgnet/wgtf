@@ -29,8 +29,7 @@ bool isValid(const InsertDefaultCommandArgument* pCommandArgs)
 
 } // end namespace InsertDefaultCommand_Detail
 
-InsertDefaultCommand::InsertDefaultCommand(IComponentContext& context)
-    : definitionManager_(context)
+InsertDefaultCommand::InsertDefaultCommand(IComponentContext& context) : definitionManager_(context)
 {
 }
 
@@ -82,8 +81,7 @@ bool InsertDefaultCommand::redo(const ObjectHandle& arguments) const /* override
 	return model.insertItem(key);
 }
 
-ObjectHandle InsertDefaultCommand::getCommandDescription(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle InsertDefaultCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
 	auto handle = GenericObject::create(*definitionManager_);
 	assert(handle.get() != nullptr);
@@ -117,15 +115,13 @@ const char* InsertDefaultCommand::getId() const /* override */
 	return s_Id;
 }
 
-bool InsertDefaultCommand::validateArguments(
-const ObjectHandle& arguments) const /* override */
+bool InsertDefaultCommand::validateArguments(const ObjectHandle& arguments) const /* override */
 {
 	const auto pCommandArgs = arguments.getBase<InsertDefaultCommandArgument>();
 	return InsertDefaultCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle InsertDefaultCommand::execute(
-const ObjectHandle& arguments) const /* override */
+ObjectHandle InsertDefaultCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<InsertDefaultCommandArgument>();
 	if (!InsertDefaultCommand_Detail::isValid(pCommandArgs))
@@ -138,9 +134,7 @@ const ObjectHandle& arguments) const /* override */
 
 	const auto result = model.insertItem(key);
 
-	const auto errorCode = result ?
-	CommandErrorCode::COMMAND_NO_ERROR :
-	CommandErrorCode::FAILED;
+	const auto errorCode = result ? CommandErrorCode::COMMAND_NO_ERROR : CommandErrorCode::FAILED;
 	return errorCode;
 }
 

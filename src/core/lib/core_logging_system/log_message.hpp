@@ -10,11 +10,12 @@ namespace wgt
 class LogMessage
 {
 public:
-
-	LogMessage( LogLevel level, const char* format, ... );
-	LogMessage( LogLevel level, const char* format, va_list arguments );
-	LogMessage( LogLevel level, std::string message );
-	virtual ~LogMessage() {}
+	LogMessage(LogLevel level, const char* format, ...);
+	LogMessage(LogLevel level, const char* format, va_list arguments);
+	LogMessage(LogLevel level, std::string message);
+	virtual ~LogMessage()
+	{
+	}
 
 	const char* c_str();
 	const std::string& str();
@@ -22,16 +23,14 @@ public:
 	LogLevel getLevel();
 	const char* getLevelString();
 
-	bool addTag( std::string tag );
-	bool hasTag( const char* needle );
+	bool addTag(std::string tag);
+	bool hasTag(const char* needle);
 
 private:
-
 	LogMessage();
-	void initMessageFromArguments( const char* format, va_list arguments );
+	void initMessageFromArguments(const char* format, va_list arguments);
 
 private:
-
 	// Cached value of the original log message after it has had variable
 	// arguments printed to it.
 	//
@@ -46,9 +45,9 @@ private:
 
 	// Tags
 	// A list of tags associated with this message.
-	// ILogger implementations can use tags for additional filtering that isn't 
+	// ILogger implementations can use tags for additional filtering that isn't
 	// satisfied by existing LogLevel options.
-	std::vector< std::string > tags_;
+	std::vector<std::string> tags_;
 };
 } // end namespace wgt
 #endif // LOG_MESSAGE_HPP

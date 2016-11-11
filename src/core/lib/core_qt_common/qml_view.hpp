@@ -30,32 +30,31 @@ class QmlView : public QObject, public IQtView
 	Q_PROPERTY(bool needsToLoad READ getNeedsToLoad NOTIFY needsToLoadChanged)
 	DECLARE_QT_MEMORY_HANDLER
 public:
-	QmlView( const char * id, IQtFramework & qtFramework, QQmlEngine & qmlEngine );
+	QmlView(const char* id, IQtFramework& qtFramework, QQmlEngine& qmlEngine);
 	virtual ~QmlView();
 
-	const char * id() const override;
-	const char * title() const override;
-	const char * windowId() const override;
+	const char* id() const override;
+	const char* title() const override;
+	const char* windowId() const override;
 	const LayoutHint& hint() const override;
 	void update() override;
 
-	QWidget * releaseView() override;
+	QWidget* releaseView() override;
 	void retainView() override;
-	QWidget * view() const override;
+	QWidget* view() const override;
 	const std::set<QString>& componentTypes() const;
 
-	void setContextObject( QObject * object );
-	void setContextProperty( const QString & name, const QVariant & property );
+	void setContextObject(QObject* object);
+	void setContextProperty(const QString& name, const QVariant& property);
 
-	bool load(const QUrl & qUrl, 
-		std::function< void() > loadedHandler = [] {}, 
-        std::function< void() > errorHandler = [] {}, bool async = true );
+	bool load(const QUrl& qUrl, std::function<void()> loadedHandler = [] {}, std::function<void()> errorHandler = [] {},
+	          bool async = true);
 
 	virtual void focusInEvent() override;
 	virtual void focusOutEvent() override;
 
-	virtual void registerListener( IViewEventListener* listener ) override;
-	virtual void deregisterListener( IViewEventListener* listener ) override;
+	virtual void registerListener(IViewEventListener* listener) override;
+	virtual void deregisterListener(IViewEventListener* listener) override;
 
 	void setNeedsToLoad(bool load);
 	bool getNeedsToLoad() const;
@@ -64,13 +63,13 @@ signals:
 	void needsToLoadChanged();
 
 public slots:
-	void error( QQuickWindow::SceneGraphError error, const QString &message );
+	void error(QQuickWindow::SceneGraphError error, const QString& message);
 	void reload(const QString& url);
 
 private:
 	struct Impl;
-	std::unique_ptr< Impl > impl_;
+	std::unique_ptr<Impl> impl_;
 	bool needLoad_;
 };
 } // end namespace wgt
-#endif//QML_VIEW_HPP
+#endif // QML_VIEW_HPP

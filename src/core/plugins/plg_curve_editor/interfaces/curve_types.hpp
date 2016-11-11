@@ -15,11 +15,11 @@ namespace wgt
 {
 namespace CurveTypes
 {
-	enum CurveType
-	{
-		Linear,
-		CubicBezier
-	};
+enum CurveType
+{
+	Linear,
+	CubicBezier
+};
 }
 } // end namespace wgt
 #endif // CURVE_TYPES_H_

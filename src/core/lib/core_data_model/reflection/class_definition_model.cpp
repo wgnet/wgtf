@@ -11,56 +11,55 @@ namespace wgt
 {
 namespace
 {
-	class ClassDefinitionItem : public IItem
+class ClassDefinitionItem : public IItem
+{
+public:
+	ClassDefinitionItem(const IClassDefinition* definition) : definition_(definition)
 	{
-	public:
-		ClassDefinitionItem( const IClassDefinition * definition ) 
-			: definition_( definition )
-		{}
+	}
 
-		const char * getDisplayText( int column ) const 
-		{ 
-			return definition_->getName(); 
-		}
+	const char* getDisplayText(int column) const
+	{
+		return definition_->getName();
+	}
 
-		ThumbnailData getThumbnail( int column ) const
+	ThumbnailData getThumbnail(int column) const
+	{
+		return nullptr;
+	}
+
+	Variant getData(int column, ItemRole::Id roleId) const
+	{
+		if (roleId == ValueRole::roleId_)
 		{
-			return nullptr;
+			return ObjectHandle(const_cast<IClassDefinition*>(definition_));
 		}
-
-		Variant getData( int column, ItemRole::Id roleId ) const
-		{ 
-			if (roleId == ValueRole::roleId_)
-			{
-				return ObjectHandle( 
-					const_cast< IClassDefinition * >( definition_ ) );
-			}
-			else if (roleId == IndexPathRole::roleId_)
-			{
-				return definition_->getName();
-			}
-			return Variant();
-		}	
-		
-		bool setData( int column, ItemRole::Id roleId, const Variant & data )
-		{ 
-			return false; 
+		else if (roleId == IndexPathRole::roleId_)
+		{
+			return definition_->getName();
 		}
+		return Variant();
+	}
 
-	private:
-		const IClassDefinition * definition_;
-	};
+	bool setData(int column, ItemRole::Id roleId, const Variant& data)
+	{
+		return false;
+	}
+
+private:
+	const IClassDefinition* definition_;
+};
 }
 
-ClassDefinitionModel::ClassDefinitionModel( const IClassDefinition * definition, const IDefinitionManager & definitionManager )
+ClassDefinitionModel::ClassDefinitionModel(const IClassDefinition* definition,
+                                           const IDefinitionManager& definitionManager)
 {
-	std::vector< IClassDefinition * > definitions;
-	definitionManager.getDefinitionsOfType(
-		definition, definitions );
+	std::vector<IClassDefinition*> definitions;
+	definitionManager.getDefinitionsOfType(definition, definitions);
 
-	for( auto it = definitions.begin(); it != definitions.end(); ++it )
+	for (auto it = definitions.begin(); it != definitions.end(); ++it)
 	{
-		items_.push_back( new ClassDefinitionItem( *it ) );
+		items_.push_back(new ClassDefinitionItem(*it));
 	}
 }
 
@@ -72,31 +71,28 @@ ClassDefinitionModel::~ClassDefinitionModel()
 	}
 }
 
-IItem * ClassDefinitionModel::item( size_t index ) const
+IItem* ClassDefinitionModel::item(size_t index) const
 {
-	assert( index < items_.size() );
-	return items_[ index ];
+	assert(index < items_.size());
+	return items_[index];
 }
 
-size_t ClassDefinitionModel::index( const IItem * item ) const
+size_t ClassDefinitionModel::index(const IItem* item) const
 {
-	auto it = std::find( items_.begin(), items_.end(), item );
-	assert( it != items_.end() );
+	auto it = std::find(items_.begin(), items_.end(), item);
+	assert(it != items_.end());
 	return it - items_.begin();
 }
-
 
 bool ClassDefinitionModel::empty() const
 {
 	return items_.empty();
 }
 
-
 size_t ClassDefinitionModel::size() const
 {
 	return items_.size();
 }
-
 
 int ClassDefinitionModel::columnCount() const
 {

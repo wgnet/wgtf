@@ -3,9 +3,10 @@
 #include "hello_interface_impl.hpp"
 #include <memory>
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
-
 /**
 * This plugin creates an interface for a panel which can be imported into a project via the
 * ComponentContext. It will be responsible for creating a new instance of the
@@ -13,48 +14,44 @@ namespace wgt
 * functionality at startup and shutdown.
 *
 * @ingroup plugins
-* @image html plg_hello_world_interface.png 
+* @image html plg_hello_world_interface.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class HelloInterfacePlugin
-    : public PluginMain
+class HelloInterfacePlugin : public PluginMain
 {
 public:
+	HelloInterfacePlugin(IComponentContext& componentContext)
+	{
+	}
 
-    HelloInterfacePlugin( IComponentContext & componentContext )
-    {
-    }
+	bool PostLoad(IComponentContext& componentContext) override
+	{
+		// Create the panel
+		types_.push_back(componentContext.registerInterface(new HelloInterfaceImpl(componentContext)));
+		return true;
+	}
 
-    bool PostLoad( IComponentContext & componentContext ) override
-    {
-        // Create the panel
-        types_.push_back( componentContext.registerInterface( new HelloInterfaceImpl( componentContext ) ) );
-        return true;
-    }
+	void Initialise(IComponentContext& componentContext) override
+	{
+	}
 
-    void Initialise( IComponentContext & componentContext ) override
-    {
-    }
+	bool Finalise(IComponentContext& componentContext) override
+	{
+		return true;
+	}
 
-    bool Finalise( IComponentContext & componentContext ) override
-    {
-        return true;
-    }
-
-    void Unload( IComponentContext & componentContext ) override
-    {
-        for ( auto type: types_ )
-        {
-            componentContext.deregisterInterface( type );
-        }
-    }
+	void Unload(IComponentContext& componentContext) override
+	{
+		for (auto type : types_)
+		{
+			componentContext.deregisterInterface(type);
+		}
+	}
 
 private:
-
-    std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 };
- 
-PLG_CALLBACK_FUNC( HelloInterfacePlugin )
 
+PLG_CALLBACK_FUNC(HelloInterfacePlugin)
 }

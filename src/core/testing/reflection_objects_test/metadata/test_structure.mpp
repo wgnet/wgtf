@@ -7,14 +7,14 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( TestStructure, MetaNone() )
-	DEFINE_TEST_DATA_TYPES_METADATA()
+BEGIN_EXPOSE(TestStructure, MetaNone())
+DEFINE_TEST_DATA_TYPES_METADATA()
 END_EXPOSE()
 
-BEGIN_EXPOSE( TestInheritedStruct, TestStructure, MetaNone() )
-	DEFINE_TEST_INHERITED_DATA_TYPES_METADATA()
+BEGIN_EXPOSE(TestInheritedStruct, TestStructure, MetaNone())
+DEFINE_TEST_INHERITED_DATA_TYPES_METADATA()
 END_EXPOSE()
 
-BEGIN_EXPOSE( TestEmptyStructure, MetaNone() )
+BEGIN_EXPOSE(TestEmptyStructure, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

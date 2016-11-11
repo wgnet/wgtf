@@ -29,7 +29,6 @@ BW_TARGET_LINK_LIBRARIES( plg_macros_ui PRIVATE
 	core_command_system
 	core_reflection
 	core_generic_plugin
-    Qt5::Core
 )
 
 BW_PROJECT_CATEGORY( plg_macros_ui "Plugins" )

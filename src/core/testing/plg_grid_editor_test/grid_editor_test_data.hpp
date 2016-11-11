@@ -53,10 +53,11 @@ class GridEditorTestModel
 
 public:
 	void init(IComponentContext& context);
+	void fini();
 
 private:
 	std::vector<ObjectHandleT<AbstractTreeModel>> objects_;
 };
 }
 
-#endif //GRID_EDITOR_TEST_DATA_HPP
+#endif // GRID_EDITOR_TEST_DATA_HPP

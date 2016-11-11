@@ -12,7 +12,7 @@ const char FilePath::kNativeAltDirectorySeparator;
 const char FilePath::kAltDirectorySeparator;
 const char FilePath::kDirectorySeparator;
 
-TEST( combineCleanPaths )
+TEST(combineCleanPaths)
 {
 	auto part1 = "test";
 	auto part2 = "path";
@@ -35,23 +35,28 @@ TEST( combineCleanPaths )
 	CHECK(FilePath::combine(path, "") == path);
 }
 
-
-TEST( combineDirtyPaths )
+TEST(combineDirtyPaths)
 {
 	auto str1 = std::string("test");
 	auto str2 = std::string("path");
-	const char dirSep[2] = {FilePath::kDirectorySeparator, '\0'};
-	const char altDirSep[2] = {FilePath::kAltDirectorySeparator, '\0'};
+	const char dirSep[2] = { FilePath::kDirectorySeparator, '\0' };
+	const char altDirSep[2] = { FilePath::kAltDirectorySeparator, '\0' };
 	auto sep1 = std::string(dirSep);
 	auto sep2 = std::string(altDirSep);
 
 	// Paths have separators and separator is specified
-	CHECK(FilePath::combine(str1 + '\\', str2, FilePath::kDirectorySeparator) == str1 + FilePath::kDirectorySeparator + str2);
-	CHECK(FilePath::combine(str1 + '/', str2, FilePath::kDirectorySeparator) == str1 + FilePath::kDirectorySeparator + str2);
-	CHECK(FilePath::combine(str1 + '\\', str2, FilePath::kAltDirectorySeparator) == str1 + FilePath::kAltDirectorySeparator + str2);
-	CHECK(FilePath::combine(str1 + '/', str2, FilePath::kAltDirectorySeparator) == str1 + FilePath::kAltDirectorySeparator + str2);
-	CHECK(FilePath::combine(str1, sep1 + str2, FilePath::kDirectorySeparator) == str1 + FilePath::kDirectorySeparator + str2);
-	CHECK(FilePath::combine(str1, sep2 + str2, FilePath::kDirectorySeparator) == str1 + FilePath::kDirectorySeparator + str2);
+	CHECK(FilePath::combine(str1 + '\\', str2, FilePath::kDirectorySeparator) ==
+	      str1 + FilePath::kDirectorySeparator + str2);
+	CHECK(FilePath::combine(str1 + '/', str2, FilePath::kDirectorySeparator) ==
+	      str1 + FilePath::kDirectorySeparator + str2);
+	CHECK(FilePath::combine(str1 + '\\', str2, FilePath::kAltDirectorySeparator) ==
+	      str1 + FilePath::kAltDirectorySeparator + str2);
+	CHECK(FilePath::combine(str1 + '/', str2, FilePath::kAltDirectorySeparator) ==
+	      str1 + FilePath::kAltDirectorySeparator + str2);
+	CHECK(FilePath::combine(str1, sep1 + str2, FilePath::kDirectorySeparator) ==
+	      str1 + FilePath::kDirectorySeparator + str2);
+	CHECK(FilePath::combine(str1, sep2 + str2, FilePath::kDirectorySeparator) ==
+	      str1 + FilePath::kDirectorySeparator + str2);
 
 	CHECK(FilePath::combine(str1 + '\\', sep1 + str2) == str1 + FilePath::kNativeDirectorySeparator + str2);
 	CHECK(FilePath::combine(str1 + '\\', sep2 + str2) == str1 + FilePath::kNativeDirectorySeparator + str2);
@@ -59,7 +64,7 @@ TEST( combineDirtyPaths )
 	CHECK(FilePath::combine(str1 + '/', sep2 + str2) == str1 + FilePath::kNativeDirectorySeparator + str2);
 }
 
-TEST( filePathMembers )
+TEST(filePathMembers)
 {
 	auto part1 = std::string("test");
 	auto part2 = std::string("path");
@@ -73,13 +78,15 @@ TEST( filePathMembers )
 	CHECK(path.getExtension() == "");
 
 	FilePath dirPath = FilePath::combine(path.str(), "/");
-	CHECK(dirPath.getFolder() == part1 + FilePath::kNativeDirectorySeparator + part2 + FilePath::kNativeDirectorySeparator);
+	CHECK(dirPath.getFolder() ==
+	      part1 + FilePath::kNativeDirectorySeparator + part2 + FilePath::kNativeDirectorySeparator);
 	CHECK(dirPath.getFileNoExtension() == "");
 	CHECK(dirPath.getFileWithExtension() == "");
 	CHECK(dirPath.getExtension() == "");
 
 	FilePath fullPath = FilePath::combine(path.str(), file + FilePath::kExtensionSeparator + ext);
-	CHECK(fullPath.getFolder() == part1 + FilePath::kNativeDirectorySeparator + part2 + FilePath::kNativeDirectorySeparator);
+	CHECK(fullPath.getFolder() ==
+	      part1 + FilePath::kNativeDirectorySeparator + part2 + FilePath::kNativeDirectorySeparator);
 	CHECK(fullPath.getFileNoExtension() == file);
 	CHECK(fullPath.getFileWithExtension() == file + FilePath::kExtensionSeparator + ext);
 	CHECK(fullPath.getExtension() == ext);

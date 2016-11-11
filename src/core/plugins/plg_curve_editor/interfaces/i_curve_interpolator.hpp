@@ -21,17 +21,19 @@ class BezierPoint;
 class ICurveInterpolator
 {
 public:
-	virtual ~ICurveInterpolator() {}
+	virtual ~ICurveInterpolator()
+	{
+	}
 
 	/*! Finds the point on the curve between the specified points at the specified time
-		@param time a value between 0.0 and 1.0 where 0.0 would be p1 and 1.0 would be p2
-		@param p1 the starting point at time 0.0
-		@param p2 the end point at time 1.0
+	    @param time a value between 0.0 and 1.0 where 0.0 would be p1 and 1.0 would be p2
+	    @param p1 the starting point at time 0.0
+	    @param p2 the end point at time 1.0
 	*/
 	virtual BezierPointData interpolate(float time, const BezierPoint& p1, const BezierPoint& p2) = 0;
 
 	/*! Finds the time between 0.0 and 1.0 along the curve given the specified value x.
-		Can iterate until the value is within an acceptable error threshold.
+	    Can iterate until the value is within an acceptable error threshold.
 	*/
 	virtual float timeAtX(float x, const BezierPoint& p1, const BezierPoint& p2) = 0;
 

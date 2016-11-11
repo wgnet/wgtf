@@ -13,10 +13,10 @@ public:
 	ComponentExtension();
 	virtual ~ComponentExtension();
 
-	QVariant data( const QModelIndex &index, ItemRole::Id roleId ) const override;
+	QVariant data(const QModelIndex& index, ItemRole::Id roleId) const override;
 
 private:
-	IQtFramework * qtFramework_;
+	IQtFramework* qtFramework_;
 };
 } // end namespace wgt
 #endif // COMPONENT_EXTENSION_HPP

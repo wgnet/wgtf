@@ -11,37 +11,32 @@ namespace wgt
 {
 class RTTIHelper;
 
-class DefaultComponentContext
-	: public IComponentContext
+class DefaultComponentContext : public IComponentContext
 {
 public:
-	explicit DefaultComponentContext( IComponentContext * parentContext = NULL );
+	explicit DefaultComponentContext(IComponentContext* parentContext = NULL);
 	~DefaultComponentContext();
 
-	IInterface * registerInterfaceImpl(
-		const TypeId &, IInterface * pImpl,
-		ContextRegState regState ) override;
+	IInterface* registerInterfaceImpl(const TypeId&, IInterface* pImpl, ContextRegState regState) override;
 
-	bool deregisterInterface( IInterface * typeId ) override;
+	bool deregisterInterface(IInterface* typeId) override;
 
-	void * queryInterface( const TypeId & ) override;
+	void* queryInterface(const TypeId&) override;
 
-	void queryInterface(
-		const TypeId &,
-		std::vector< void * > & o_Impls ) override;
+	void queryInterface(const TypeId&, std::vector<void*>& o_Impls) override;
 
-	void registerListener( IComponentContextListener & listener ) override;
-	void deregisterListener( IComponentContextListener & listener ) override;
+	void registerListener(IComponentContextListener& listener) override;
+	void deregisterListener(IComponentContextListener& listener) override;
 
 private:
-	virtual void onInterfaceRegistered( InterfaceCaster & ) override;
-	virtual void onInterfaceDeregistered( InterfaceCaster & ) override;
+	virtual void onInterfaceRegistered(InterfaceCaster&) override;
+	virtual void onInterfaceDeregistered(InterfaceCaster&) override;
 
-	typedef std::multimap< const TypeId, RTTIHelper * > InterfaceMap;
-	InterfaceMap										interfaces_;
-	std::set< IInterface * >							registeredInterfaces_;
-	IComponentContext *									parentContext_;
-	std::vector< IComponentContextListener * >			listeners_;
+	typedef std::multimap<const TypeId, RTTIHelper*> InterfaceMap;
+	InterfaceMap interfaces_;
+	std::set<IInterface*> registeredInterfaces_;
+	IComponentContext* parentContext_;
+	std::vector<IComponentContextListener*> listeners_;
 };
 } // end namespace wgt
 #endif

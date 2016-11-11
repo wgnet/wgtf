@@ -9,18 +9,18 @@ namespace wgt
 {
 class IComponentContext;
 
-class ObjectManagerCreator : public Implements< IComponentContextCreator >
+class ObjectManagerCreator : public Implements<IComponentContextCreator>
 {
 public:
-	ObjectManagerCreator( IComponentContext & context );
+	ObjectManagerCreator(IComponentContext& context);
 	virtual ~ObjectManagerCreator();
 
-	const char * getType() const override;
-	IInterface * createContext( const wchar_t * contextId ) override;
+	const char* getType() const override;
+	IInterface* createContext(const wchar_t* contextId) override;
 
 private:
 	class Impl;
-	std::unique_ptr< Impl > impl_;
+	std::unique_ptr<Impl> impl_;
 };
 } // end namespace wgt
-#endif //OBJECT_MANAGER_CREATOR_HPP
+#endif // OBJECT_MANAGER_CREATOR_HPP

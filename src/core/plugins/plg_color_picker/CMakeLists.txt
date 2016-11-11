@@ -6,11 +6,8 @@ INCLUDE( WGToolsCoreProject )
 FIND_PACKAGE( QT5 )
 
 SET( ALL_SRCS
-	metadata/color_picker_context.mpp
 	color_picker.hpp
 	color_picker.cpp
-	color_picker_context.hpp
-	color_picker_context.cpp
 	plg_color_picker_main.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
@@ -30,11 +27,6 @@ BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_generic_plugin
-	core_qt_common
-	core_ui_framework
-	Qt5::Core
-	Qt5::Gui
-	Qt5::QuickWidgets
 )
 
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Plugins" )

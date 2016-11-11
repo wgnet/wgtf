@@ -14,36 +14,36 @@ namespace wgt
 {
 struct WGFilteredListModel::Implementation
 {
-	Implementation( WGFilteredListModel & self );
+	Implementation(WGFilteredListModel& self);
 	~Implementation();
 
-	void setFilter( WGFilter * filter );
+	void setFilter(WGFilter* filter);
 	void onFilterChanged();
 	void onFilteringBegin();
 	void onFilteringEnd();
 
-	WGFilteredListModel & self_;
-	WGFilter * filter_;
+	WGFilteredListModel& self_;
+	WGFilter* filter_;
 	FilteredListModel filteredModel_;
 	QtConnectionHolder qtConnections_;
 	ConnectionHolder connections_;
 	Connection filterChangedConnection_;
 };
 
-WGFilteredListModel::Implementation::Implementation( WGFilteredListModel & self )
-	: self_( self )
-	, filter_( nullptr )
+WGFilteredListModel::Implementation::Implementation(WGFilteredListModel& self) : self_(self), filter_(nullptr)
 {
-	connections_ += filteredModel_.onFilteringBegin.connect( std::bind( &WGFilteredListModel::Implementation::onFilteringBegin, this ) );
-	connections_ += filteredModel_.onFilteringEnd.connect( std::bind( &WGFilteredListModel::Implementation::onFilteringEnd, this ) );
+	connections_ +=
+	filteredModel_.onFilteringBegin.connect(std::bind(&WGFilteredListModel::Implementation::onFilteringBegin, this));
+	connections_ +=
+	filteredModel_.onFilteringEnd.connect(std::bind(&WGFilteredListModel::Implementation::onFilteringEnd, this));
 }
 
 WGFilteredListModel::Implementation::~Implementation()
 {
-	setFilter( nullptr );
+	setFilter(nullptr);
 }
 
-void WGFilteredListModel::Implementation::setFilter( WGFilter * filter )
+void WGFilteredListModel::Implementation::setFilter(WGFilter* filter)
 {
 	if (filter_ == filter)
 	{
@@ -56,10 +56,11 @@ void WGFilteredListModel::Implementation::setFilter( WGFilter * filter )
 
 	if (current != nullptr)
 	{
-		filterChangedConnection_ = current->signalFilterChanged.connect( std::bind( &WGFilteredListModel::Implementation::onFilterChanged, this ) );
+		filterChangedConnection_ =
+		current->signalFilterChanged.connect(std::bind(&WGFilteredListModel::Implementation::onFilterChanged, this));
 	}
 
-	filteredModel_.setFilter( current );
+	filteredModel_.setFilter(current);
 	emit self_.filterChanged();
 }
 
@@ -78,42 +79,40 @@ void WGFilteredListModel::Implementation::onFilteringEnd()
 	emit self_.filteringEnd();
 }
 
-WGFilteredListModel::WGFilteredListModel()
-	: impl_( new Implementation( *this ) )
+WGFilteredListModel::WGFilteredListModel() : impl_(new Implementation(*this))
 {
-	impl_->qtConnections_ += QObject::connect( 
-		this, &WGListModel::sourceChanged, 
-		this, &WGFilteredListModel::onSourceChanged ); 
+	impl_->qtConnections_ +=
+	QObject::connect(this, &WGListModel::sourceChanged, this, &WGFilteredListModel::onSourceChanged);
 }
 
 WGFilteredListModel::~WGFilteredListModel()
 {
-	setSource( QVariant() );
+	setSource(QVariant());
 
 	impl_->qtConnections_.reset();
 
 	// Temporary hack to circumvent threading deadlock
 	// JIRA: NGT-227
-	impl_->filteredModel_.setSource( nullptr );
+	impl_->filteredModel_.setSource(nullptr);
 	// End temporary hack
 
-	impl_->setFilter( nullptr );
+	impl_->setFilter(nullptr);
 
 	// evgenys: reseting impl_ to null first to avoid pure virtual func call in filteredModel_ destructor
 	delete impl_.release();
 }
 
-IListModel * WGFilteredListModel::getModel() const 
+IListModel* WGFilteredListModel::getModel() const
 {
 	// This component will return the filtered source, not the original source.
-	return  impl_ ? &impl_->filteredModel_ : nullptr;
+	return impl_ ? &impl_->filteredModel_ : nullptr;
 }
 
 void WGFilteredListModel::onSourceChanged()
 {
-	IListModel * source = nullptr;
+	IListModel* source = nullptr;
 
-	Variant variant = QtHelpers::toVariant( getSource() );
+	Variant variant = QtHelpers::toVariant(getSource());
 	if (variant.typeIs<IListModel>())
 	{
 		source = const_cast<IListModel*>(variant.cast<const IListModel*>());
@@ -122,24 +121,24 @@ void WGFilteredListModel::onSourceChanged()
 	{
 		NGT_WARNING_MSG("Double wrapping found, please wrap IListModel pointer as Variant directly.\n");
 		ObjectHandle provider;
-		if (variant.tryCast( provider ))
+		if (variant.tryCast(provider))
 		{
-			source = provider.getBase< IListModel >();
+			source = provider.getBase<IListModel>();
 		}
 	}
 
-	impl_->filteredModel_.setSource( source );
+	impl_->filteredModel_.setSource(source);
 }
 
-QObject * WGFilteredListModel::getFilter() const
+QObject* WGFilteredListModel::getFilter() const
 {
 	return impl_->filter_;
 }
 
-void WGFilteredListModel::setFilter( QObject * filter )
+void WGFilteredListModel::setFilter(QObject* filter)
 {
-	auto wgFilter = qobject_cast< WGFilter * >( filter );
-	impl_->setFilter( wgFilter );
+	auto wgFilter = qobject_cast<WGFilter*>(filter);
+	impl_->setFilter(wgFilter);
 }
 
 bool WGFilteredListModel::getIsFiltering() const

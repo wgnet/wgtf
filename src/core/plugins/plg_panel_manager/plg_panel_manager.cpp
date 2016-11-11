@@ -8,6 +8,8 @@
 #include "core_variant/variant.hpp"
 #include <vector>
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
 /**
@@ -17,53 +19,47 @@ namespace wgt
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class PanelManagerPlugin
-	: public PluginMain
+class PanelManagerPlugin : public PluginMain
 {
 public:
-
-	PanelManagerPlugin( IComponentContext & contextManager )
-		: panelManager_( nullptr )
+	PanelManagerPlugin(IComponentContext& contextManager) : panelManager_(nullptr)
 	{
 	}
 
-	bool PostLoad( IComponentContext & contextManager ) override
-	{		
-		auto definitionManager = 
-			contextManager.queryInterface<IDefinitionManager>();
-		assert( definitionManager != nullptr );
+	bool PostLoad(IComponentContext& contextManager) override
+	{
+		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
+		assert(definitionManager != nullptr);
 
 		panelManager_ = new PanelManager(contextManager);
 
 		// Let the context manager handle the lifetime of these instances
-		types_.push_back( contextManager.registerInterface( 
-			panelManager_ ) );
+		types_.push_back(contextManager.registerInterface(panelManager_));
 
 		return true;
 	}
 
-	void Initialise( IComponentContext & contextManager ) override
-	{		
+	void Initialise(IComponentContext& contextManager) override
+	{
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
 		return true;
 	}
 
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for ( auto type: types_ )
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
 
 private:
-
-	std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 	PanelManager* panelManager_;
 };
 
-PLG_CALLBACK_FUNC( PanelManagerPlugin )
+PLG_CALLBACK_FUNC(PanelManagerPlugin)
 } // end namespace wgt

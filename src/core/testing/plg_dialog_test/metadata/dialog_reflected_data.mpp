@@ -15,9 +15,9 @@ EXPOSE("Vector", getVector, setVector, MetaNone())
 // NGT-3043 Re-enable the colour property once this issue is fixed
 // EXPOSE("Color", getColor, setColor, MetaColor())
 
-EXPOSE("Slide", getSlideData, setSlideData, MetaSlider() +
-       MetaMinMax(static_cast<float>(DialogReflectedData::getSlideMinData()),
-                  static_cast<float>(DialogReflectedData::getSlideMaxData())))
+EXPOSE("Slide", getSlideData, setSlideData,
+       MetaSlider() + MetaMinMax(static_cast<float>(DialogReflectedData::getSlideMinData()),
+                                 static_cast<float>(DialogReflectedData::getSlideMaxData())))
 
 END_EXPOSE()
 } // end namespace wgt

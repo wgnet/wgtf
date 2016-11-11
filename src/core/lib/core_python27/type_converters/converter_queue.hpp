@@ -15,20 +15,16 @@
 #include <stack>
 #include <string>
 
-
 namespace wgt
 {
 namespace PythonType
 {
-
-
 /**
  *	Converts the name of a Python type to a C++ type.
  *	@param scriptObject script object from which to get the type.
  *	@return equivalent C++ type name, if supported by type converters.
  */
-const TypeId & scriptTypeToTypeId( const PyScript::ScriptObject & scriptObject );
-
+const TypeId& scriptTypeToTypeId(const PyScript::ScriptObject& scriptObject);
 
 /**
  *	Queue for converting ScriptObject<->Variant.
@@ -36,13 +32,13 @@ const TypeId & scriptTypeToTypeId( const PyScript::ScriptObject & scriptObject )
 class ConverterQueue
 {
 public:
-	ConverterQueue( IComponentContext & context );
+	ConverterQueue(IComponentContext& context);
 
 	void init();
 	void fini();
 
 private:
-	IComponentContext & context_;
+	IComponentContext& context_;
 
 	BasicTypeConverters basicTypeConverters_;
 	ParentTypeConverters parentTypeConverters_;
@@ -50,16 +46,16 @@ private:
 	Converters allConverters_;
 
 	NoneConverter noneTypeConverter_;
-	PrimitiveConverter< int > intTypeConverter_;
-	PrimitiveConverter< digit > longTypeConverter_;
-	PrimitiveConverter< double > floatTypeConverter_;
-	PrimitiveConverter< std::string > strTypeConverter_;
-	PrimitiveConverter< std::wstring > unicodeTypeConverter_;
+	PrimitiveConverter<int> intTypeConverter_;
+	PrimitiveConverter<digit> longTypeConverter_;
+	PrimitiveConverter<double> floatTypeConverter_;
+	PrimitiveConverter<std::string> strTypeConverter_;
+	PrimitiveConverter<std::wstring> unicodeTypeConverter_;
 	ListConverter listTypeConverter_;
 	TupleConverter tupleTypeConverter_;
 	DictConverter dictTypeConverter_;
 
-	IInterface * pTypeConvertersInterface_;
+	IInterface* pTypeConvertersInterface_;
 };
 
 } // namespace PythonType

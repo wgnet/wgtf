@@ -7,7 +7,7 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( MetaBase, MetaNone() )
+BEGIN_EXPOSE(MetaBase, MetaNone())
 END_EXPOSE()
 
 //==============================================================================
@@ -15,15 +15,13 @@ MetaBase::MetaBase()
 {
 }
 
-
 //==============================================================================
-/*virtual */MetaBase::~MetaBase()
+/*virtual */ MetaBase::~MetaBase()
 {
 }
 
-
 //==============================================================================
-const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & right )
+const MetaHandle& operator+(const MetaHandle& left, const MetaHandle& right)
 {
 	if (left == nullptr)
 	{
@@ -33,15 +31,15 @@ const MetaHandle & operator + ( const MetaHandle & left, const MetaHandle & righ
 	// traverse to the end of the linked list
 	auto next = left->next();
 	auto last = left;
-	while( next != nullptr )
+	while (next != nullptr)
 	{
 		last = next;
 		next = next->next();
 	};
 
 	// hook into the end
-	last->setNext( right );
+	last->setNext(right);
 
-	return left; 
+	return left;
 }
 } // end namespace wgt

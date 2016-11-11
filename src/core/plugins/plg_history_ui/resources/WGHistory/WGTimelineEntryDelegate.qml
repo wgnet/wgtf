@@ -5,26 +5,25 @@ import QtQuick.Layouts 1.0
 import WGControls 2.0
 import WGControls.Layouts 2.0
 
-// Component for dislaying an entry in the history timeline
+
 Item {
     id: timelineEntry
     objectName: "WGTimelineEntryDelegate"
     WGComponent { type: "WGTimelineEntryDelegate" }
-
-    // Only access DisplayObject once because it is generated every time in C++
-    property variant displayObject: itemData.value.DisplayObject
-    property int parentColumnIndex: columnIndex
-    property bool isCurrentItem: history.currentIndex == rowIndex
-
-    // Width set by parent
-    // Height determined by the batch command
+    // Width set by parent, height determined by the batch command
     height: expandingTimelineRow.height
+    width: parent.width
+
+    property var view
+    property var historyItem
+    property int columnIndex
+    property bool currentItem
+    property bool applied
 
     // Keep timeline arrow a fixed size
     Row {
         id: fixedTimelineRow
         objectName: "timelineArrow"
-
         anchors.left: parent.left
         anchors.top: expandingTimelineRow.top
         anchors.bottom: expandingTimelineRow.bottom
@@ -32,7 +31,6 @@ Item {
         //Current item column & arrow
         Item {
             id: timeline
-
             width: defaultSpacing.minimumRowHeight
             anchors.top: parent.top
             anchors.bottom: parent.bottom
@@ -42,8 +40,8 @@ Item {
                 objectName: "arrowImage"
                 anchors.centerIn: parent
                 source: "icons/16/marker_right_16x16.png"
-                visible: isCurrentItem || arrowButton.containsMouse
-                opacity: arrowButton.containsMouse && !isCurrentItem ? 0.3 : 1
+                visible: currentItem || arrowButton.containsMouse
+                opacity: !currentItem && arrowButton.containsMouse ? 0.3 : 1
             }
 
             MouseArea {
@@ -53,10 +51,7 @@ Item {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
 
-                onClicked: {
-                    var modelIndex = history.model.index(rowIndex);
-                    history.rowDoubleClicked(mouse, modelIndex);
-                }
+                onClicked: view.itemDoubleClicked(mouse, itemModelIndex, itemModelIndex)
             }
         }
 
@@ -72,20 +67,17 @@ Item {
         id: expandingTimelineRow
         objectName: "expandingTimelineRow"
         anchors.left: fixedTimelineRow.right
-        anchors.right: parent.right
-
-        property bool isApplied: rowIndex <= history.currentIndex
+        anchors.right: timelineEntry.right
+        height: timelineCommand.height
 
         WGBatchCommand {
             id: timelineCommand
-
             Layout.fillWidth: true
             Layout.preferredHeight: height
-
-            displayObject: timelineEntry.displayObject
-            isCurrentItem: timelineEntry.isCurrentItem
-            isApplied: expandingTimelineRow.isApplied
-            columnIndex: parentColumnIndex
+            historyItem: timelineEntry.historyItem
+            currentItem: timelineEntry.currentItem
+            applied: timelineEntry.applied
+            columnIndex: timelineEntry.columnIndex
         }
     }
 }

@@ -55,15 +55,10 @@ QVariant AssetItemExtension::data(const QModelIndex& index, int role) const
 
 	auto column = index.column();
 
-	if (roleId == TypeIconRole::roleId_ ||
-	    roleId == SizeRole::roleId_ ||
-	    roleId == CreatedTimeRole::roleId_ ||
-	    roleId == ModifiedTimeRole::roleId_ ||
-	    roleId == AccessedTimeRole::roleId_ ||
-	    roleId == IsDirectoryRole::roleId_ ||
-	    roleId == IsReadOnlyRole::roleId_ ||
-	    roleId == IsCompressedRole::roleId_ ||
-	    roleId == ItemRole::itemIdId)
+	if (roleId == TypeIconRole::roleId_ || roleId == SizeRole::roleId_ || roleId == CreatedTimeRole::roleId_ ||
+	    roleId == ModifiedTimeRole::roleId_ || roleId == AccessedTimeRole::roleId_ ||
+	    roleId == IsDirectoryRole::roleId_ || roleId == IsReadOnlyRole::roleId_ ||
+	    roleId == IsCompressedRole::roleId_ || roleId == ItemRole::itemIdId)
 	{
 		return QtHelpers::toQVariant(item->getData(column, roleId), const_cast<QAbstractItemModel*>(index.model()));
 	}
@@ -104,15 +99,10 @@ void AssetItemExtension::onDataChanged(const QModelIndex& index, int role, const
 		return;
 	}
 
-	if (roleId == StatusIconRole::roleId_ ||
-	    roleId == TypeIconRole::roleId_ ||
-	    roleId == SizeRole::roleId_ ||
-	    roleId == CreatedTimeRole::roleId_ ||
-	    roleId == ModifiedTimeRole::roleId_ ||
-	    roleId == AccessedTimeRole::roleId_ ||
-	    roleId == IsDirectoryRole::roleId_ ||
-	    roleId == IsReadOnlyRole::roleId_ ||
-	    roleId == IsCompressedRole::roleId_)
+	if (roleId == StatusIconRole::roleId_ || roleId == TypeIconRole::roleId_ || roleId == SizeRole::roleId_ ||
+	    roleId == CreatedTimeRole::roleId_ || roleId == ModifiedTimeRole::roleId_ ||
+	    roleId == AccessedTimeRole::roleId_ || roleId == IsDirectoryRole::roleId_ ||
+	    roleId == IsReadOnlyRole::roleId_ || roleId == IsCompressedRole::roleId_)
 	{
 		QVector<int> roles;
 		roles.append(role);

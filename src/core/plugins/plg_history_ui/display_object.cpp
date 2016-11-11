@@ -10,16 +10,15 @@
 namespace wgt
 {
 //==============================================================================
-DisplayObject::DisplayObject()
-	: data_( nullptr )
+DisplayObject::DisplayObject() : data_(nullptr)
 {
 }
 
 //==============================================================================
-void DisplayObject::init( IDefinitionManager & defManager, const CommandInstancePtr & instance )
+void DisplayObject::init(IDefinitionManager& defManager, const CommandInstancePtr& instance)
 {
-    assert(instance != nullptr);
-    data_ = instance->getCommandDescription();
+	assert(instance != nullptr);
+	data_ = instance->getCommandDescription();
 }
 
 //==============================================================================

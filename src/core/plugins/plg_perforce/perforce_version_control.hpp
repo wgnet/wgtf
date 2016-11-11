@@ -22,7 +22,8 @@ public:
 	PerforceVersionControl();
 
 private:
-	virtual IResultPtr initialize(const char* depot, const char* port, const char* user, const char* client, const char * password) override;
+	virtual IResultPtr initialize(const char* depot, const char* port, const char* user, const char* client,
+	                              const char* password) override;
 
 	virtual std::unique_ptr<IDepotView> createDepotView(const char* depotPath, const char* clientPath) override;
 

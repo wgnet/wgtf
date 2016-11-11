@@ -12,18 +12,20 @@ class IFileSystem;
 class FileSystemModel : public AbstractTreeModel
 {
 public:
-	FileSystemModel( IFileSystem & fileSystem, const char * rootDirectory );
+	FileSystemModel(IFileSystem& fileSystem, const char* rootDirectory);
 	~FileSystemModel();
 
-	AbstractItem * item( const ItemIndex & index ) const override;
-	ItemIndex index( const AbstractItem * item ) const override;
+	AbstractItem* item(const ItemIndex& index) const override;
+	ItemIndex index(const AbstractItem* item) const override;
 
-	int rowCount( const AbstractItem * item ) const override;
+	int rowCount(const AbstractItem* item) const override;
 	int columnCount() const override;
+
+	virtual std::vector<std::string> roles() const override;
 
 private:
 	struct Impl;
-	std::unique_ptr< Impl > impl_;
+	std::unique_ptr<Impl> impl_;
 };
 } // end namespace wgt
-#endif//FILE_SYSTEM_MODEL_HPP
+#endif // FILE_SYSTEM_MODEL_HPP

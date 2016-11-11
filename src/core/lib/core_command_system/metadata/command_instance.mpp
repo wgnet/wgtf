@@ -6,9 +6,9 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( CommandInstance, MetaInPlace( "CommandId" ) )
-	EXPOSE( "CommandId", commandId_, MetaHidden() )
-	EXPOSE( "Children", children_, MetaHidden() )
-	EXPOSE( "CommandArguments", arguments_, MetaHidden() )
+BEGIN_EXPOSE(CommandInstance, MetaInPlace("CommandId"))
+EXPOSE("CommandId", commandId_, MetaHidden())
+EXPOSE("Children", children_, MetaHidden())
+EXPOSE("CommandArguments", arguments_, MetaHidden())
 END_EXPOSE()
 } // end namespace wgt

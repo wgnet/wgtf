@@ -14,32 +14,48 @@ class IDefinitionManager;
 /**
  *	GenericDefinition
  */
-class GenericDefinition
-	: public IClassDefinitionDetails
-	, public IClassDefinitionModifier
+class GenericDefinition : public IClassDefinitionDetails, public IClassDefinitionModifier
 {
 private:
 	friend class DefinitionManager;
-	GenericDefinition( const char* name );
+	GenericDefinition(const char* name);
+
 public:
+	ObjectHandle create(const IClassDefinition& definition) const override;
+	bool isAbstract() const override
+	{
+		return false;
+	}
+	bool isGeneric() const override
+	{
+		return true;
+	}
+	MetaHandle getMetaData() const override
+	{
+		return nullptr;
+	}
+	const char* getParentName() const override
+	{
+		return nullptr;
+	}
+	const char* getName() const override;
 
-	ObjectHandle create( const IClassDefinition & definition ) const override;
-	bool isAbstract() const override { return false; }
-	bool isGeneric() const override { return true; }
-	MetaHandle getMetaData() const override { return nullptr; }
-	const char * getParentName() const override { return nullptr; }
-	const char * getName() const override;
-
-	void * upCast( void * object ) const override { return nullptr; }
+	void* upCast(void* object) const override
+	{
+		return nullptr;
+	}
 
 	PropertyIteratorImplPtr getPropertyIterator() const override;
-	IClassDefinitionModifier * getDefinitionModifier() const override { return const_cast< GenericDefinition * >( this ); }
+	IClassDefinitionModifier* getDefinitionModifier() const override
+	{
+		return const_cast<GenericDefinition*>(this);
+	}
 
-	IBasePropertyPtr addProperty( const char * name, const TypeId & typeId, MetaHandle metaData ) override;
+	IBasePropertyPtr addProperty(const char* name, const TypeId& typeId, MetaHandle metaData) override;
 
 private:
 	const std::string name_;
 	PropertyStorage properties_;
 };
 } // end namespace wgt
-#endif //GENERIC_DEFINITION_HPP
+#endif // GENERIC_DEFINITION_HPP

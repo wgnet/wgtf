@@ -11,19 +11,16 @@ class LogMessage;
 class BasicAlertLogger : public ILogger
 {
 public:
-
 	static const unsigned int sAlertMaxLength = 150;
 
 public:
-
-	BasicAlertLogger( AlertManager& alertManager );
+	BasicAlertLogger(AlertManager& alertManager);
 
 	virtual ~BasicAlertLogger();
 
-	virtual void out( LogMessage* message );
+	virtual void out(LogMessage* message);
 
 private:
-
 	AlertManager& alertManager_;
 };
 } // end namespace wgt

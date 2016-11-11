@@ -12,28 +12,24 @@ namespace wgt
 class ObjectManagerCreator::Impl
 {
 public:
-	Impl( IComponentContext & componentContext )
-		: componentContext_( componentContext )
-		, interface_( nullptr )
+	Impl(IComponentContext& componentContext) : componentContext_(componentContext), interface_(nullptr)
 	{
-		interface_ = componentContext.registerInterface( 
-			&objectManager_, false );
+		interface_ = componentContext.registerInterface(&objectManager_, false);
 	}
 
 	~Impl()
 	{
-		componentContext_.deregisterInterface( interface_ );
+		componentContext_.deregisterInterface(interface_);
 	}
 
 	ObjectManager objectManager_;
 
 private:
-	IComponentContext & componentContext_;
-	IInterface * interface_;
+	IComponentContext& componentContext_;
+	IInterface* interface_;
 };
 
-ObjectManagerCreator::ObjectManagerCreator( IComponentContext & componentContext )
-	: impl_( new Impl( componentContext ) )
+ObjectManagerCreator::ObjectManagerCreator(IComponentContext& componentContext) : impl_(new Impl(componentContext))
 {
 }
 
@@ -41,14 +37,14 @@ ObjectManagerCreator::~ObjectManagerCreator()
 {
 }
 
-const char * ObjectManagerCreator::getType() const
+const char* ObjectManagerCreator::getType() const
 {
-	return typeid( ContextObjectManager ).name();
+	return typeid(ContextObjectManager).name();
 }
 
-IInterface * ObjectManagerCreator::createContext( const wchar_t * contextId )
+IInterface* ObjectManagerCreator::createContext(const wchar_t* contextId)
 {
-	auto context = new ContextObjectManager( impl_->objectManager_, contextId );
-	return new InterfaceHolder< ContextObjectManager >( context, true );
+	auto context = new ContextObjectManager(impl_->objectManager_, contextId);
+	return new InterfaceHolder<ContextObjectManager>(context, true);
 }
 } // end namespace wgt

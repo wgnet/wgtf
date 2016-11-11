@@ -8,9 +8,9 @@ namespace wgt
 class PropertyStorageIterator : public PropertyIteratorImplBase
 {
 public:
-	PropertyStorageIterator( const PropertyStorage & storage );
+	PropertyStorageIterator(const PropertyStorage& storage);
 
-	virtual std::shared_ptr< IBaseProperty > current() const override;
+	virtual std::shared_ptr<IBaseProperty> current() const override;
 
 	virtual bool next() override;
 
@@ -22,42 +22,31 @@ private:
 
 PropertyStorage::PropertyStorage()
 {
-
 }
-
 
 PropertyStorage::~PropertyStorage()
 {
-
 }
 
-
-void PropertyStorage::addProperty( const IBasePropertyPtr & property )
+void PropertyStorage::addProperty(const IBasePropertyPtr& property)
 {
-	properties_.emplace_back( property );
+	properties_.emplace_back(property);
 }
-
 
 PropertyIteratorImplPtr PropertyStorage::getIterator() const
 {
-	return std::make_shared< PropertyStorageIterator >( *this );
+	return std::make_shared<PropertyStorageIterator>(*this);
 }
 
-
-PropertyStorageIterator::PropertyStorageIterator( const PropertyStorage & storage )
-	: current_( nullptr )
-	, iterator_( storage.properties_.cbegin() )
-	, end_( storage.properties_.cend() )
+PropertyStorageIterator::PropertyStorageIterator(const PropertyStorage& storage)
+    : current_(nullptr), iterator_(storage.properties_.cbegin()), end_(storage.properties_.cend())
 {
-
 }
-
 
 IBasePropertyPtr PropertyStorageIterator::current() const
 {
 	return current_;
 }
-
 
 bool PropertyStorageIterator::next()
 {

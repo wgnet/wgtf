@@ -9,30 +9,29 @@
 
 namespace wgt
 {
-ITEMROLE( component )
+ITEMROLE(component)
 
-ComponentExtension::ComponentExtension()
-	: qtFramework_( Context::queryInterface< IQtFramework >() )
+ComponentExtension::ComponentExtension() : qtFramework_(Context::queryInterface<IQtFramework>())
 {
-	roles_.push_back( ItemRole::componentName );
+	roles_.push_back(ItemRole::componentName);
 }
 
 ComponentExtension::~ComponentExtension()
 {
 }
 
-QVariant ComponentExtension::data( const QModelIndex &index, ItemRole::Id roleId ) const
+QVariant ComponentExtension::data(const QModelIndex& index, ItemRole::Id roleId) const
 {
 	if (roleId != ItemRole::componentId)
 	{
 		return QVariant::Invalid;
 	}
 
-	auto data = extensionData_->data( index, ItemRole::valueTypeId );
-	auto typeName = std::string( data.toString().toUtf8() );
-	auto typeId = TypeId( typeName.c_str() );
-	std::function< bool ( const ItemRole::Id& ) > predicate = [&] ( const ItemRole::Id& roleId ) {
-		return extensionData_->data( index, roleId ) == true;
+	auto data = extensionData_->data(index, ItemRole::valueTypeId);
+	auto typeName = std::string(data.toString().toUtf8());
+	auto typeId = TypeId(typeName.c_str());
+	std::function<bool(const ItemRole::Id&)> predicate = [&](const ItemRole::Id& roleId) {
+		return extensionData_->data(index, roleId) == true;
 	};
 
 	auto component = qtFramework_->findComponent(typeId, predicate, "2.0");
@@ -41,12 +40,12 @@ QVariant ComponentExtension::data( const QModelIndex &index, ItemRole::Id roleId
 		return QVariant::Invalid;
 	}
 
-	auto qmlComponent = qtFramework_->toQmlComponent( *component );
+	auto qmlComponent = qtFramework_->toQmlComponent(*component);
 	if (qmlComponent == nullptr)
 	{
 		return QVariant::Invalid;
 	}
 
-	return QVariant::fromValue< QObject * >( qmlComponent );
+	return QVariant::fromValue<QObject*>(qmlComponent);
 }
 } // end namespace wgt

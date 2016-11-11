@@ -7,11 +7,9 @@
 #include <string>
 #include <cstdint>
 
-
 namespace wgt
 {
-class SERIALIZATION_DLL BinaryStream:
-	public BasicStream
+class SERIALIZATION_DLL BinaryStream : public BasicStream
 {
 	typedef BasicStream base;
 
@@ -19,8 +17,7 @@ public:
 	// common platform-independent types
 	typedef uint64_t size_type;
 
-	explicit BinaryStream( IDataStream& stream ):
-		base( stream )
+	explicit BinaryStream(IDataStream& stream) : base(stream)
 	{
 	}
 
@@ -29,7 +26,7 @@ public:
 
 	Serialized buffer consists of data size followed by data itself.
 	*/
-	void serializeBuffer( const void* buffer, std::streamsize size );
+	void serializeBuffer(const void* buffer, std::streamsize size);
 
 	/**
 	Deserialize buffer to a data stream.
@@ -44,46 +41,42 @@ public:
 	performance degradation. Use default @a maximumSize (i.e. unlimited data
 	size) only on trusted data sources.
 	*/
-	void deserializeBuffer( IDataStream& destination, std::streamsize maximumSize = -1 );
-
+	void deserializeBuffer(IDataStream& destination, std::streamsize maximumSize = -1);
 };
-
 
 // generic simple types serialization
 // TODO: ensure little-endian format for numbers
 
-template< typename T >
-typename std::enable_if< std::is_trivially_copyable< T >::value, BinaryStream& >::type
-	operator<<( BinaryStream& stream, const T& value )
+template <typename T>
+typename std::enable_if<std::is_trivially_copyable<T>::value, BinaryStream&>::type operator<<(BinaryStream& stream,
+                                                                                              const T& value)
 {
-	std::streamsize r = stream.writeHard( &value, sizeof( value ) );
-	if( r != static_cast<std::streamsize>( sizeof( value ) ) )
+	std::streamsize r = stream.writeHard(&value, sizeof(value));
+	if (r != static_cast<std::streamsize>(sizeof(value)))
 	{
-		stream.setState( std::ios_base::failbit );
+		stream.setState(std::ios_base::failbit);
 	}
 
 	return stream;
 }
 
-
-template< typename T >
-typename std::enable_if< std::is_trivially_copyable< T >::value, BinaryStream& >::type
-	operator>>( BinaryStream& stream, T& value )
+template <typename T>
+typename std::enable_if<std::is_trivially_copyable<T>::value, BinaryStream&>::type operator>>(BinaryStream& stream,
+                                                                                              T& value)
 {
-	std::streamsize r = stream.readHard( &value, sizeof( value ) );
-	if( r != static_cast<std::streamsize>( sizeof( value ) ) )
+	std::streamsize r = stream.readHard(&value, sizeof(value));
+	if (r != static_cast<std::streamsize>(sizeof(value)))
 	{
-		stream.setState( std::ios_base::failbit );
+		stream.setState(std::ios_base::failbit);
 	}
 
 	return stream;
 }
-
 
 // string serialization
-SERIALIZATION_DLL BinaryStream& operator<<( BinaryStream& stream, const std::string& value );
-SERIALIZATION_DLL BinaryStream& operator<<( BinaryStream& stream, const char* value );
-SERIALIZATION_DLL BinaryStream& operator>>( BinaryStream& stream, std::string& value );
+SERIALIZATION_DLL BinaryStream& operator<<(BinaryStream& stream, const std::string& value);
+SERIALIZATION_DLL BinaryStream& operator<<(BinaryStream& stream, const char* value);
+SERIALIZATION_DLL BinaryStream& operator>>(BinaryStream& stream, std::string& value);
 
 } // end namespace wgt
 

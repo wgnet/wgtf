@@ -3,7 +3,7 @@
 
 #include <string>
 
-#if defined( _WIN32 )
+#if defined(_WIN32)
 #include <windows.h>
 #endif
 

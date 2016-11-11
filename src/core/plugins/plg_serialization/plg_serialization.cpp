@@ -1,7 +1,6 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_serialization/serializer/serialization_manager.hpp"
 
-
 namespace wgt
 {
 //==============================================================================
@@ -9,11 +8,9 @@ class SerializationSystemHolder
 {
 public:
 	//==========================================================================
-	SerializationSystemHolder()
-		: serializationManager_( new SerializationManager )
+	SerializationSystemHolder() : serializationManager_(new SerializationManager)
 	{
 	}
-
 
 	//==========================================================================
 	~SerializationSystemHolder()
@@ -21,48 +18,47 @@ public:
 		serializationManager_.reset();
 	}
 
-	SerializationManager * getSerializationManager()
+	SerializationManager* getSerializationManager()
 	{
 		return serializationManager_.get();
 	}
 
 private:
-	std::unique_ptr< SerializationManager > serializationManager_;
+	std::unique_ptr<SerializationManager> serializationManager_;
 };
 
 /**
-* A plugin which registers an ISerializationManager interface which allows reading and writing Variant objects to an IDataStream
+* A plugin which registers an ISerializationManager interface which allows reading and writing Variant objects to an
+IDataStream
 *
 * @ingroup plugins
 * @note Requires Plugins:
 *       - @ref coreplugins
 
 */
-class SerializationPlugin
-	: public PluginMain
+class SerializationPlugin : public PluginMain
 {
 private:
-	std::unique_ptr< SerializationSystemHolder >	serializationSystemHolder_;
-	std::vector< IInterface * > types_;
+	std::unique_ptr<SerializationSystemHolder> serializationSystemHolder_;
+	std::vector<IInterface*> types_;
 
 public:
 	//==========================================================================
-	SerializationPlugin( IComponentContext & contextManager )
-		: serializationSystemHolder_( new SerializationSystemHolder )
-	{ 
+	SerializationPlugin(IComponentContext& contextManager) : serializationSystemHolder_(new SerializationSystemHolder)
+	{
 		types_.push_back(
-			contextManager.registerInterface( serializationSystemHolder_->getSerializationManager(), false ) );
+		contextManager.registerInterface(serializationSystemHolder_->getSerializationManager(), false));
 	}
 
 	//==========================================================================
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for( auto type : types_ )
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
 };
 
-PLG_CALLBACK_FUNC( SerializationPlugin )
+PLG_CALLBACK_FUNC(SerializationPlugin)
 } // end namespace wgt

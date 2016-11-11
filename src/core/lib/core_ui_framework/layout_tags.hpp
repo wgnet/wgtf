@@ -7,7 +7,7 @@ namespace wgt
 {
 struct LayoutTags
 {
-	std::vector< std::string > tags_;
+	std::vector<std::string> tags_;
 };
 } // end namespace wgt
-#endif//LAYOUT_TAGS_HPP
+#endif // LAYOUT_TAGS_HPP

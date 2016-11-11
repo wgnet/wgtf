@@ -7,11 +7,11 @@
 namespace wgt
 {
 /**
-	*	Converter for re-ordering or repeating model indexes.
-	*	E.g. columnSequence: [0,1,2,0,1,2]
-	*	Will create a Qt model with 6 columns,
-	*	but the WGTF model only has 3 columns repeated twice.
-	*/
+    *	Converter for re-ordering or repeating model indexes.
+    *	E.g. columnSequence: [0,1,2,0,1,2]
+    *	Will create a Qt model with 6 columns,
+    *	but the WGTF model only has 3 columns repeated twice.
+    */
 class SequenceListAdapter : public IListAdapter
 {
 	Q_OBJECT
@@ -27,45 +27,37 @@ public:
 	virtual QAbstractItemModel* model() const override;
 
 	/**
-		*	Calculate re-ordered Qt index.
-		*	Unless the sequence is empty, then return a normal Qt index.
-		*	@param row WGTF row of the item.
-		*		Should be in the range 0<=row<rowCount.
-		*	@param column WGTF row of the item.
-		*		Should be in the range 0<=column<columnCount.
-		*	@param parent WGTF parent of the item, if applicable.
-		*	@return the Qt index or invalid if the item was not found.
-		*/
-	virtual QModelIndex adaptedIndex(int row,
-	                                 int column,
-	                                 const QModelIndex& parent) const override;
+	    *	Calculate re-ordered Qt index.
+	    *	Unless the sequence is empty, then return a normal Qt index.
+	    *	@param row WGTF row of the item.
+	    *		Should be in the range 0<=row<rowCount.
+	    *	@param column WGTF row of the item.
+	    *		Should be in the range 0<=column<columnCount.
+	    *	@param parent WGTF parent of the item, if applicable.
+	    *	@return the Qt index or invalid if the item was not found.
+	    */
+	virtual QModelIndex adaptedIndex(int row, int column, const QModelIndex& parent) const override;
 
 	/**
-		*	Get the converted number of rows.
-		*	Unless the sequence is empty, then return the normal Qt row count.
-		*	@post rowCount should not be <0.
-		*	@param parent WGTF parent of the item, if applicable.
-		*	@return the number of rows or 0.
-		*/
+	    *	Get the converted number of rows.
+	    *	Unless the sequence is empty, then return the normal Qt row count.
+	    *	@post rowCount should not be <0.
+	    *	@param parent WGTF parent of the item, if applicable.
+	    *	@return the number of rows or 0.
+	    */
 	virtual int rowCount(const QModelIndex& parent) const override;
 
 private:
-	void onParentDataChanged(const QModelIndex& topLeft,
-	                         const QModelIndex& bottomRight, const QVector<int>& roles);
-	void onParentRowsAboutToBeInserted(const QModelIndex& parent, int first, int last);
-	void onParentRowsInserted(const QModelIndex& parent, int first, int last);
-	void onParentRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-	void onParentRowsRemoved(const QModelIndex& parent, int first, int last);
-	virtual void onParentRowsAboutToBeMoved(const QModelIndex& sourceParent,
-	                                        int sourceFirst,
-	                                        int sourceLast,
-	                                        const QModelIndex& destinationParent,
-	                                        int destinationRow) override;
-	virtual void onParentRowsMoved(const QModelIndex& sourceParent,
-	                               int sourceFirst,
-	                               int sourceLast,
-	                               const QModelIndex& destinationParent,
-	                               int destinationRow) override;
+	void onParentDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+	                         const QVector<int>& roles) override;
+	void onParentRowsAboutToBeInserted(const QModelIndex& parent, int first, int last) override;
+	void onParentRowsInserted(const QModelIndex& parent, int first, int last) override;
+	void onParentRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last) override;
+	void onParentRowsRemoved(const QModelIndex& parent, int first, int last) override;
+	virtual void onParentRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                                        const QModelIndex& destinationParent, int destinationRow) override;
+	virtual void onParentRowsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                               const QModelIndex& destinationParent, int destinationRow) override;
 
 	QVariant getModel() const;
 	void setModel(const QVariant& model);

@@ -13,7 +13,7 @@
 namespace wgt
 {
 PerforceResult::PerforceResult(const char* output, const char* errors, AttributeResults&& results)
-	: output_(output), errors_(errors), results_(std::move(results))
+    : output_(output), errors_(errors), results_(std::move(results))
 {
 }
 
@@ -76,17 +76,16 @@ const char* MultiResult::output() const
 
 const AttributeResults& MultiResult::results() const
 {
-	if ( attributeResults_.empty() )
+	if (attributeResults_.empty())
 	{
-		for ( auto& result : results_ )
+		for (auto& result : results_)
 		{
-			for( auto& attributeResult : result->results() )
+			for (auto& attributeResult : result->results())
 			{
 				attributeResults_.emplace_back(attributeResult);
 			}
 		}
 	}
 	return attributeResults_;
-
 }
 } // end namespace wgt

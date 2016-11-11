@@ -10,7 +10,7 @@ class CommandInstance;
 class CustomUndoRedoData : public UndoRedoData
 {
 public:
-	CustomUndoRedoData( CommandInstance & commandInstance );
+	CustomUndoRedoData(CommandInstance& commandInstance);
 
 	void undo() override;
 	void redo() override;
@@ -19,7 +19,7 @@ public:
 	const CommandInstance& getCommandInstance() const;
 
 private:
-	CommandInstance & commandInstance_;
+	CommandInstance& commandInstance_;
 };
 } // end namespace wgt
 #endif // UNDO_REDO_DATA_HPP

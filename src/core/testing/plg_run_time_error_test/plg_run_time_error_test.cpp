@@ -30,8 +30,7 @@ void fcn(A* p)
 	p->f();
 }
 
-class RunTimeErrorTestPluginApplication
-: public Implements<IApplication>
+class RunTimeErrorTestPluginApplication : public Implements<IApplication>
 {
 public:
 	int startApplication() override
@@ -61,8 +60,7 @@ public:
  *
  * @ingroup plugins
  */
-class RunTimeErrorTestPluginTestPlugin
-: public PluginMain
+class RunTimeErrorTestPluginTestPlugin : public PluginMain
 {
 public:
 	RunTimeErrorTestPluginTestPlugin(IComponentContext& contextManager)

@@ -5,92 +5,76 @@
 #include "core_reflection/interfaces/i_class_definition_modifier.hpp"
 #include "core_reflection/property_accessor.hpp"
 
-
 namespace wgt
 {
-BaseGenericObject::BaseGenericObject()
-	: definition_( nullptr )
+BaseGenericObject::BaseGenericObject() : definition_(nullptr)
 {
-
 }
-
 
 BaseGenericObject::~BaseGenericObject()
 {
-
 }
 
-
-IClassDefinition * BaseGenericObject::getDefinition() const
+IClassDefinition* BaseGenericObject::getDefinition() const
 {
 	return definition_;
 }
 
-
-void BaseGenericObject::setDefinition( IClassDefinition * definition )
+void BaseGenericObject::setDefinition(IClassDefinition* definition)
 {
 	definition_ = definition;
 }
 
-
-bool BaseGenericObject::set( const char * name, const Variant & value )
+bool BaseGenericObject::set(const char* name, const Variant& value)
 {
-	return this->setProperty( name, value );
+	return this->setProperty(name, value);
 }
 
-
-Variant BaseGenericObject::invoke( const char * name,
-	const ReflectedMethodParameters& parameters )
+Variant BaseGenericObject::invoke(const char* name, const ReflectedMethodParameters& parameters)
 {
-	return this->invokeProperty( name, parameters );
+	return this->invokeProperty(name, parameters);
 }
 
-
-Variant BaseGenericObject::invokeProperty( const char * name,
-	const ReflectedMethodParameters& parameters )
+Variant BaseGenericObject::invokeProperty(const char* name, const ReflectedMethodParameters& parameters)
 {
-	const IClassDefinition & definition = *this->getDefinition();
+	const IClassDefinition& definition = *this->getDefinition();
 	ObjectHandle provider = this->getDerivedType();
-	PropertyAccessor accessor = definition.bindProperty( name, provider );
+	PropertyAccessor accessor = definition.bindProperty(name, provider);
 	if (!accessor.isValid())
 	{
-		assert( false && "Property could not be found" );
+		assert(false && "Property could not be found");
 		return Variant();
 	}
-	return accessor.invoke( parameters );
+	return accessor.invoke(parameters);
 }
 
-
-
-PropertyAccessor BaseGenericObject::findProperty( const char * name ) const
+PropertyAccessor BaseGenericObject::findProperty(const char* name) const
 {
-	const IClassDefinition & definition = *this->getDefinition();
+	const IClassDefinition& definition = *this->getDefinition();
 	ObjectHandle provider = this->getDerivedType();
-	return definition.bindProperty( name, provider );
+	return definition.bindProperty(name, provider);
 }
 
-
-Variant BaseGenericObject::getProperty( const char * name ) const
+Variant BaseGenericObject::getProperty(const char* name) const
 {
-	auto accessor = findProperty( name );
+	auto accessor = findProperty(name);
 	if (!accessor.isValid())
 	{
-		assert( false && "Property could not be found" );
+		assert(false && "Property could not be found");
 		return Variant();
 	}
 	return accessor.getValue();
 }
 
-
-bool BaseGenericObject::setProperty( const char * name, const Variant & value )
+bool BaseGenericObject::setProperty(const char* name, const Variant& value)
 {
 	// Get existing property
-	const IClassDefinition & definition = *this->getDefinition();
+	const IClassDefinition& definition = *this->getDefinition();
 	ObjectHandle provider = this->getDerivedType();
-	PropertyAccessor accessor = definition.bindProperty( name, provider );
+	PropertyAccessor accessor = definition.bindProperty(name, provider);
 	if (accessor.isValid())
 	{
-		return accessor.setValue( value );
+		return accessor.setValue(value);
 	}
 
 	// Property does not exist
@@ -101,12 +85,12 @@ bool BaseGenericObject::setProperty( const char * name, const Variant & value )
 		return false;
 	}
 
-	auto property = definitionModifier->addProperty( name, value.type()->typeId(), nullptr );
+	auto property = definitionModifier->addProperty(name, value.type()->typeId(), nullptr);
 	if (property == nullptr)
 	{
 		return false;
 	}
 
-	return property->set( provider, value, *definition.getDefinitionManager() );
+	return property->set(provider, value, *definition.getDefinitionManager());
 }
 } // end namespace wgt

@@ -10,8 +10,7 @@ public:
 	int i_;
 };
 
-class NullApplication
-: public Implements<IApplication>
+class NullApplication : public Implements<IApplication>
 {
 public:
 	int startApplication() override
@@ -32,8 +31,7 @@ public:
  *
  * @ingroup plugins
  */
-class NullTestPlugin
-: public PluginMain
+class NullTestPlugin : public PluginMain
 {
 public:
 	NullTestPlugin(IComponentContext& contextManager)

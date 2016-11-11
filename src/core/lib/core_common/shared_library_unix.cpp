@@ -1,7 +1,6 @@
 #include "shared_library.hpp"
 #include <dlfcn.h>
 
-
 namespace wgt
 {
 bool SharedLibrary::load(const char* fileName)
@@ -13,10 +12,9 @@ bool SharedLibrary::load(const char* fileName)
 	return isValid();
 }
 
-
 void SharedLibrary::unload()
 {
-	if(!isValid())
+	if (!isValid())
 	{
 		return;
 	}
@@ -25,10 +23,9 @@ void SharedLibrary::unload()
 	lib_ = nullptr;
 }
 
-
 void* SharedLibrary::findRawSymbol(const char* name) const
 {
-	if(!isValid())
+	if (!isValid())
 	{
 		return nullptr;
 	}

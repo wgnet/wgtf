@@ -10,12 +10,8 @@ namespace wgt
 struct DialogReflectedData::Data
 {
 	Data(IComponentContext& context)
-	    : checked_(true)
-	    , text_(L"Hello Test")
-	    , slider_(0.0)
-	    , vector_(nullptr)
-	    , color_(51.0f, 153.0f, 255.0f)
-	    , context_(context)
+	    : checked_(true), text_(L"Hello Test"), slider_(0.0), vector_(nullptr), color_(51.0f, 153.0f, 255.0f),
+	      context_(context)
 	{
 		auto& definitionManager = *context_.queryInterface<IDefinitionManager>();
 		vector_ = GenericObject::create(definitionManager);
@@ -26,12 +22,8 @@ struct DialogReflectedData::Data
 	}
 
 	Data(Data& data)
-	    : checked_(data.checked_)
-	    , text_(data.text_)
-	    , slider_(data.slider_)
-	    , vector_(nullptr)
-	    , color_(data.color_)
-	    , context_(data.context_)
+	    : checked_(data.checked_), text_(data.text_), slider_(data.slider_), vector_(nullptr), color_(data.color_),
+	      context_(data.context_)
 	{
 		auto& definitionManager = *context_.queryInterface<IDefinitionManager>();
 		vector_ = GenericObject::create(definitionManager);

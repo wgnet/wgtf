@@ -4,9 +4,7 @@ plugins/plg_object
 plugins/plg_serialization
 plugins/plg_command_system
 plugins/plg_python27
-plugins/plg_qt_app
 plugins/plg_qt_common
-plugins/plg_qt_resource
 plugins/plg_editor_interaction
 plugins/plg_macros_ui
 plugins/plg_reflection_object_test

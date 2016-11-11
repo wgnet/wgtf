@@ -82,6 +82,10 @@ WGTreeViewBase {
     view: itemView
     internalModel: itemView.extendedModel
 
+	// HACK: temporary fix to erractic scroll behaviour due to an unstable contentHeight
+	// This loads all the items at the root item of a tree - even if they arent visible
+	cacheBuffer: 2000000000
+
     /** The style component to allow custom view appearance.*/
     property alias style: itemView.style
     /** Default role for the value used in a cell component.*/
@@ -120,12 +124,20 @@ WGTreeViewBase {
     property alias footerDelegate: itemView.footerDelegate
     /** Clamp (fix) width of the view to the containing component and adjust contents when width resized.*/
     property alias clamp: itemView.clamp
+    /** The model containing the selected items/indices.*/
+    property alias selectionModel: itemView.selectionModel
     /** A replacement for ListView's currentIndex that uses a QModelIndex from the selection model.*/
     property var currentIndex: itemView.selectionModel.currentIndex
     /** The combined common and view extensions.*/
     property var extensions: []
     /** The last selected item from all subtrees of type WGTreeItem */
     property var currentItem: null
+
+    signal selectionChanged(var selected, var deselected)
+
+	function expand(index) { treeExtension.expand(index); }
+	function collapse(index) { treeExtension.collapse(index); }
+	function toggle(index) { treeExtension.toggle(index); }
 
     onCurrentItemChanged: {
         updateScrollPosition();
@@ -137,9 +149,13 @@ WGTreeViewBase {
 
     Connections {
         target: itemView.selectionModel
+
+        onSelectionChanged: selectionChanged(selected, deselected)
         onCurrentChanged: {
             if (current != previous) {
                 currentIndex = current;
+				var parentIndex = itemView.getParent(currentIndex);
+				expand(parentIndex);
             }
         }
     }
@@ -168,12 +184,17 @@ WGTreeViewBase {
         }
 
         itemView.select(mouse, rowIndex);
+		forceActiveFocus();
     }
     onItemClicked: {
         if ( __skippedPress ) {
             itemView.select(mouse, rowIndex);
+			forceActiveFocus();
         }
         __skippedPress = false;
+    }
+	onItemDoubleClicked: {
+        toggle(rowIndex);
     }
 
     /** Common view code. */

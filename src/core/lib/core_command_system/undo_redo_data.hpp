@@ -3,7 +3,6 @@
 
 namespace wgt
 {
-
 class ObjectHandle;
 
 /**
@@ -12,7 +11,7 @@ class ObjectHandle;
 class UndoRedoData
 {
 public:
-	virtual ~UndoRedoData() {};
+	virtual ~UndoRedoData(){};
 
 	virtual void undo() = 0;
 	virtual void redo() = 0;

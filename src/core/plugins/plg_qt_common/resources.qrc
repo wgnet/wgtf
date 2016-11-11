@@ -1,0 +1,5 @@
+<RCC>
+	<qresource prefix="/qt_app">
+		<file alias="splash">resources/splash.png</file>
+	</qresource>
+</RCC>

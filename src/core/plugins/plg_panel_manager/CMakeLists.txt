@@ -5,7 +5,6 @@ INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 find_package(QT5)
 
-find_package( Qt5Quick REQUIRED )
 
 SET( ALL_SRCS
 	${DISPLAY}
@@ -32,14 +31,7 @@ BW_ADD_TOOL_PLUGIN( plg_panel_manager SHARED
 BW_TARGET_LINK_LIBRARIES( plg_panel_manager PRIVATE
 	core_generic_plugin
 	core_data_model
-	core_qt_common
 	core_reflection
-	core_qt_script
-	core_ui_framework
-    Qt5::Core
-    Qt5::Gui
-    Qt5::Quick
-    Qt5::Widgets
 )
 
 BW_PROJECT_CATEGORY( plg_panel_manager "Plugins" )

@@ -10,8 +10,7 @@ class GenericDefinitionHelper : public IDefinitionHelper
 public:
 	virtual TypeId typeId() const override;
 
-	virtual IClassDefinition * getDefinition( const ObjectHandle & object ) const override;
-
+	virtual IClassDefinition* getDefinition(const ObjectHandle& object) const override;
 };
 } // end namespace wgt
 #endif

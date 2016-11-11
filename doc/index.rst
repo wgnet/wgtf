@@ -11,13 +11,14 @@ Table of Contents
 .. toctree::
    :maxdepth: 1
 
-   plugins
-   coreplugins
-   wgcontrols
+   pages/plugins
+   pages/coreplugins
+   pages/wgcontrols
+   pages/known_issues
+   
    filelist
    classlist
    structlist
    unionlist
    grouplist
    namespacelist
-   known_issues

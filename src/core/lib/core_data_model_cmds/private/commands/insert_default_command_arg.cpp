@@ -4,8 +4,7 @@
 
 namespace wgt
 {
-InsertDefaultCommandArgument::InsertDefaultCommandArgument()
-    : pModel_(nullptr)
+InsertDefaultCommandArgument::InsertDefaultCommandArgument() : pModel_(nullptr)
 {
 }
 

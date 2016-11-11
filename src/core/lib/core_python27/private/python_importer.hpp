@@ -17,37 +17,35 @@
 
 namespace wgt
 {
-	struct PythonDependencies
-		: public Depends< IResourceSystem >
+struct PythonDependencies : public Depends<IResourceSystem>
+{
+	PythonDependencies(IComponentContext& context) : Depends(context)
 	{
-		PythonDependencies( IComponentContext & context )
-			: Depends( context )
-		{
-		}
-	};
-	extern std::unique_ptr< PythonDependencies > g_Deps;
-
-	template<typename T> 
-	T* getPythonDependency()
-	{
-		assert( g_Deps != nullptr );
-		return g_Deps->get<T>();
 	}
+};
+extern std::unique_ptr<PythonDependencies> g_Deps;
 
-	typedef struct _WGTPythonImporter {
-		PyObject_HEAD
-			char* _path;
-	} WGTPythonImporter;
+template <typename T>
+T* getPythonDependency()
+{
+	assert(g_Deps != nullptr);
+	return g_Deps->get<T>();
+}
 
-	/**
-	* A python module that implemented importing a python script from a resource package which used to replace
-	* python internal import functionality
-	*/
-    namespace WGTPythonImport
-    {
-    void init();
-    bool appendPath(const wchar_t* path);
-    };
+typedef struct _WGTPythonImporter
+{
+	PyObject_HEAD char* _path;
+} WGTPythonImporter;
+
+/**
+* A python module that implemented importing a python script from a resource package which used to replace
+* python internal import functionality
+*/
+namespace WGTPythonImport
+{
+void init();
+bool appendPath(const wchar_t* path);
+};
 } // end namespace wgt
 #endif // ENABLE_DEPLOY_PYTHON_SUPPORT
 

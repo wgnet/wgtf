@@ -6,14 +6,13 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( MoveItemDataCommandArgument, MetaNoSerialization() )
-	EXPOSE( "direction", direction_, MetaNone() )
-	EXPOSE( "model", pModel_, MetaNone() )
-	EXPOSE( "startParent", startParent_, MetaNone() )
-	EXPOSE( "startPos", startPos_, MetaNone() )
-	EXPOSE( "count", count_, MetaNone() )
-	EXPOSE( "endParent", endParent_, MetaNone() )
-	EXPOSE( "endPos", endPos_, MetaNone() )
+BEGIN_EXPOSE(MoveItemDataCommandArgument, MetaNoSerialization())
+EXPOSE("direction", direction_, MetaNone())
+EXPOSE("model", pModel_, MetaNone())
+EXPOSE("startParent", startParent_, MetaNone())
+EXPOSE("startPos", startPos_, MetaNone())
+EXPOSE("count", count_, MetaNone())
+EXPOSE("endParent", endParent_, MetaNone())
+EXPOSE("endPos", endPos_, MetaNone())
 END_EXPOSE()
 } // end namespace wgt
-

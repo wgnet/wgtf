@@ -6,11 +6,8 @@ PROJECT( core_data_model )
 
 SET( ALL_SRCS
 	metadata/i_active_filters_model.mpp
-	metadata/i_breadcrumbs_model_new.mpp
 	metadata/i_breadcrumbs_model.mpp
-	asset_browser/metadata/i_asset_browser_event_model20.mpp
 	asset_browser/metadata/i_asset_browser_model20.mpp
-	asset_browser/metadata/i_asset_browser_view_model20.mpp
 	asset_browser/metadata/i_asset_browser_event_model.mpp
 	asset_browser/metadata/i_asset_browser_model.mpp
 	asset_browser/metadata/i_asset_browser_view_model.mpp
@@ -34,7 +31,6 @@ SET( ALL_SRCS
 	generic_tree_item.hpp
 	i_active_filters_model.hpp
 	i_breadcrumbs_model.hpp
-	i_breadcrumbs_model_new.hpp
 	i_list_model.cpp
 	i_list_model.hpp
 	i_tree_model.cpp
@@ -101,46 +97,27 @@ SET( ALL_SRCS
 	reflection_proto/reflected_property_item.hpp
 	asset_browser/asset_browser_breadcrumbs_model.cpp
 	asset_browser/asset_browser_breadcrumbs_model.hpp
-	asset_browser/asset_browser_breadcrumbs_model20.cpp
-	asset_browser/asset_browser_breadcrumbs_model20.hpp
 	asset_browser/asset_browser_event_model.cpp
 	asset_browser/asset_browser_event_model.hpp
-	asset_browser/asset_browser_event_model20.cpp
-	asset_browser/asset_browser_event_model20.hpp
 	asset_browser/asset_browser_view_model.cpp
 	asset_browser/asset_browser_view_model.hpp
-	asset_browser/asset_browser_view_model20.cpp
-	asset_browser/asset_browser_view_model20.hpp
 	asset_browser/asset_list_model.cpp
 	asset_browser/asset_list_model.hpp
-	asset_browser/asset_list_model20.cpp
-	asset_browser/asset_list_model20.hpp
 	asset_browser/base_asset_object_item.cpp
 	asset_browser/base_asset_object_item.hpp
-	asset_browser/base_asset_object_item20.cpp
-	asset_browser/base_asset_object_item20.hpp
+	asset_browser/asset_browser_model20.cpp
+	asset_browser/asset_browser_model20.hpp
 	asset_browser/file_system_asset_browser_model.cpp
 	asset_browser/file_system_asset_browser_model.hpp
-	asset_browser/file_system_asset_browser_model20.cpp
-	asset_browser/file_system_asset_browser_model20.hpp
 	asset_browser/file_system_asset_presentation_provider.cpp
 	asset_browser/file_system_asset_presentation_provider.hpp
-	asset_browser/file_system_asset_presentation_provider20.cpp
-	asset_browser/file_system_asset_presentation_provider20.hpp
 	asset_browser/folder_tree_model.cpp
 	asset_browser/folder_tree_model.hpp
-	asset_browser/folder_tree_model20.cpp
-	asset_browser/folder_tree_model20.hpp
 	asset_browser/i_asset_object_item.hpp
 	asset_browser/i_asset_browser_event_model.hpp
 	asset_browser/i_asset_browser_model.hpp
 	asset_browser/i_asset_browser_view_model.hpp
 	asset_browser/i_asset_presentation_provider.hpp
-	asset_browser/i_asset_object_item20.hpp
-	asset_browser/i_asset_browser_event_model20.hpp
-	asset_browser/i_asset_browser_model20.hpp
-	asset_browser/i_asset_browser_view_model20.hpp
-	asset_browser/i_asset_presentation_provider20.hpp
 	dialog/dialog_model.hpp
 	dialog/dialog_model.cpp
 	filtering/i_item_filter.hpp

@@ -14,11 +14,11 @@ struct CustomXmlData
 	bool visibility_;
 	Vector3 position_;
 
-	bool operator==( const CustomXmlData& tdo ) const;
+	bool operator==(const CustomXmlData& tdo) const;
 };
 
 } // end namespace wgt
 
-META_TYPE_NAME( wgt::CustomXmlData, "CustomXmlData" )
+META_TYPE_NAME(wgt::CustomXmlData, "CustomXmlData")
 
-#endif //CUSTOM_XML_DATA_HPP
+#endif // CUSTOM_XML_DATA_HPP

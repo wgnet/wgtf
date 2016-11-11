@@ -54,11 +54,8 @@ ENDIF()
 
 BW_TARGET_LINK_LIBRARIES( plg_environment_test PRIVATE
 	core_generic_plugin
-	core_qt_common
 	core_reflection
-	core_command_system
-	core_ui_framework
-    Qt5::Core
+	core_data_model
 	${PLATFORM_LIBRARIES}
 )
 

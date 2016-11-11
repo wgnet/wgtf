@@ -1,7 +1,8 @@
 import QtQuick 2.5
 import QtQuick.Controls 1.4
 import QtQml.Models 2.2
-
+import QtQuick 2.4
+import QtQuick.Controls.Private 1.0
 import WGControls 2.0
 import WGControls.Styles 2.0
 import WGControls.Views 2.0
@@ -53,6 +54,12 @@ WGItemView {
         color: palette.textColor
         verticalAlignment: Text.AlignVCenter
         height: defaultSpacing.minimumRowHeight
+
+        WGToolTip
+        {
+            id: tooltip
+            text: itemData.display !== undefined ? itemData.display : ""
+        }
     }
     /** Specific components per index for view body cells.
     These override the default cell component for each index specified.
@@ -129,13 +136,15 @@ WGItemView {
 
     /** Retreats up the view, first up a row, then up a level.*/
     function movePrevious(event) {
-        var newIndex = viewExtension.getPreviousIndex(itemSelectionModel.currentIndex);
+        var newIndex = viewExtension.getPreviousIndex(itemSelectionModel.currentIndex,
+                                                      itemSelectionModel.model);
         WGViewSelection.updateSelection(event, itemSelectionModel, viewExtension, newIndex);
     }
 
     /** Advanced down the view, first down a level, then down a row.*/
     function moveNext(event) {
-        var newIndex = viewExtension.getNextIndex(itemSelectionModel.currentIndex);
+        var newIndex = viewExtension.getNextIndex(itemSelectionModel.currentIndex,
+                                                  itemSelectionModel.model);
         WGViewSelection.updateSelection(event, itemSelectionModel, viewExtension, newIndex);
     }
 
@@ -144,7 +153,8 @@ WGItemView {
     A WGTreeView will move up a row if it can, collapse a level if open, otherwise move up a level.
     A WGTableView will move left if possible, otherwise move up.*/
     function moveBackwards(event) {
-        var newIndex = viewExtension.getBackwardIndex(itemSelectionModel.currentIndex);
+        var newIndex = viewExtension.getBackwardIndex(itemSelectionModel.currentIndex,
+                                                      itemSelectionModel.model);
         WGViewSelection.updateSelection(event, itemSelectionModel, viewExtension, newIndex);
     }
 
@@ -153,7 +163,8 @@ WGItemView {
     A WGTreeView will expand a level if closed, move down a level if it can, otherwise move down a row.
     A WGTableView will move right if possible, otherwise move down.*/
     function moveForwards(event) {
-        var newIndex = viewExtension.getForwardIndex(itemSelectionModel.currentIndex);
+        var newIndex = viewExtension.getForwardIndex(itemSelectionModel.currentIndex,
+                                                     itemSelectionModel.model);
         WGViewSelection.updateSelection(event, itemSelectionModel, viewExtension, newIndex);
     }
 

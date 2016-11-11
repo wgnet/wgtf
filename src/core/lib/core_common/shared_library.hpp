@@ -1,7 +1,6 @@
 #ifndef SHARED_LIBRARY_HPP_INCLUDED
 #define SHARED_LIBRARY_HPP_INCLUDED
 
-
 namespace wgt
 {
 class SharedLibrary
@@ -20,13 +19,13 @@ public:
 	void unload();
 	void* findRawSymbol(const char* name) const;
 
-	template<typename T>
+	template <typename T>
 	T* findSymbol(const char* name) const
 	{
 		return reinterpret_cast<T*>(findRawSymbol(name));
 	}
 
-	template<typename T>
+	template <typename T>
 	bool findSymbol(const char* name, T** ptr) const
 	{
 		*ptr = findSymbol<T>(name);
@@ -38,9 +37,7 @@ private:
 	SharedLibrary& operator=(const SharedLibrary&);
 
 	void* lib_;
-
 };
-
 
 #if defined(_MSC_VER)
 
@@ -48,7 +45,7 @@ private:
 
 #else
 
-#define EXPORT extern "C" __attribute__ ((visibility("default")))
+#define EXPORT extern "C" __attribute__((visibility("default")))
 
 #endif
 } // end namespace wgt

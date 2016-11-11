@@ -10,35 +10,29 @@ namespace wgt
 {
 class ISelectionHandler;
 
-
 // TODO: NGT-849
 // Eventually, we need to remove this class
-class SelectionHelper
-    : public QObject
+class SelectionHelper : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-	Q_PROPERTY( QVariant source
-	READ getSource
-	WRITE setSource
-	NOTIFY sourceChanged )
+	Q_PROPERTY(QVariant source READ getSource WRITE setSource NOTIFY sourceChanged)
 
 	DECLARE_QT_MEMORY_HANDLER
 public:
 	typedef ISelectionHandler SourceType;
 
+	SelectionHelper(QObject* parent = nullptr);
+	~SelectionHelper();
 
-    SelectionHelper( QObject * parent = nullptr );
-    ~SelectionHelper();
-
-	void source( SourceType* selectionSource );
+	void source(SourceType* selectionSource);
 	const SourceType* source() const;
 
-	Q_INVOKABLE void select( const QList<QVariant>& selectionList );
+	Q_INVOKABLE void select(const QModelIndexList& selectionList);
 
 private:
 	QVariant getSource() const;
-	bool setSource( const QVariant& source );
+	bool setSource(const QVariant& source);
 
 signals:
 	void sourceChanged();
@@ -46,7 +40,6 @@ signals:
 private:
 	SourceType* source_;
 	std::vector<QModelIndex> selectionSet_;
-
 };
 } // end namespace wgt
-#endif //SELECTION_HELPER_HPP
+#endif // SELECTION_HELPER_HPP

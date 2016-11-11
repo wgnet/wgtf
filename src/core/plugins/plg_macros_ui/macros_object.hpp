@@ -16,14 +16,13 @@ class MacrosObject
 public:
 	// ClassDefinition::create() requires a default constructor
 	MacrosObject();
-	void init( ICommandManager& commandSystem );
+	void init(ICommandManager& commandSystem);
 
-	const IListModel * getMacros() const;
+	const IListModel* getMacros() const;
 	ObjectHandle getSelectedCompoundCommand() const;
-	void setSelectedRow( const int index );
+	void setSelectedRow(const int index);
 
 private:
-	
 	ICommandManager* commandSystem_;
 	int currentIndex_;
 };

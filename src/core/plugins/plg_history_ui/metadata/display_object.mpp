@@ -6,7 +6,7 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( DisplayObject, MetaNoSerialization() )
-	EXPOSE( "DisplayObject", getDisplayData, MetaNone() )
+BEGIN_EXPOSE(DisplayObject, MetaNoSerialization())
+EXPOSE("DisplayObject", getDisplayData, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

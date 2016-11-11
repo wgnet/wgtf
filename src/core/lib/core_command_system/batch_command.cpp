@@ -2,31 +2,27 @@
 #include "core_reflection/object_handle.hpp"
 #include "command_manager.hpp"
 
-
 namespace wgt
 {
 //--------------------------------------------------------------------------
-BatchCommand::BatchCommand( CommandManager * pCommandManager )
-	: pCommandManager_( pCommandManager )
+BatchCommand::BatchCommand(CommandManager* pCommandManager) : pCommandManager_(pCommandManager)
 {
 }
 
-
 //--------------------------------------------------------------------------
-const char * BatchCommand::getId() const
+const char* BatchCommand::getId() const
 {
-	static const char * s_id = typeid( BatchCommand ).name();
+	static const char* s_id = typeid(BatchCommand).name();
 	return s_id;
 }
 
-
 //--------------------------------------------------------------------------
-ObjectHandle BatchCommand::execute( const ObjectHandle & arguments ) const
+ObjectHandle BatchCommand::execute(const ObjectHandle& arguments) const
 {
-	assert( pCommandManager_ != nullptr );
+	assert(pCommandManager_ != nullptr);
 	auto stage = arguments.getBase<BatchCommandStage>();
-	assert( stage != nullptr );
-	switch( *stage )
+	assert(stage != nullptr);
+	switch (*stage)
 	{
 	case BatchCommandStage::Begin:
 		pCommandManager_->notifyBeginMultiCommand();
@@ -36,16 +32,15 @@ ObjectHandle BatchCommand::execute( const ObjectHandle & arguments ) const
 	case BatchCommandStage::Abort:
 		return CommandErrorCode::ABORTED;
 	default:
-		assert( false );
+		assert(false);
 		break;
 	}
 	return CommandErrorCode::BATCH_NO_ERROR;
 }
 
-
 //--------------------------------------------------------------------------
 CommandThreadAffinity BatchCommand::threadAffinity() const
-{ 
+{
 	return CommandThreadAffinity::ANY_THREAD;
 }
 } // end namespace wgt

@@ -10,22 +10,21 @@ class IReflectionController;
 
 namespace ReflectedCollectionDetails
 {
-	class ReflectedCollectionListener;
+class ReflectedCollectionListener;
 }
 
 /** Wrapper class around a reflected collection to provide standard collection functionality. */
 class ReflectedCollection : public CollectionImplBase
 {
 public:
-	ReflectedCollection( const PropertyAccessor & pa, IReflectionController * controller );
+	ReflectedCollection(const PropertyAccessor& pa, IReflectionController* controller);
 	virtual ~ReflectedCollection();
-	
+
 	virtual size_t size() const override;
 	virtual CollectionIteratorImplPtr begin() override;
 	virtual CollectionIteratorImplPtr end() override;
-	virtual std::pair< CollectionIteratorImplPtr, bool > get(const Variant& key, GetPolicy policy) override;
-	virtual CollectionIteratorImplPtr insert(const Variant& key,
-	                                         const Variant& value) override;
+	virtual std::pair<CollectionIteratorImplPtr, bool> get(const Variant& key, GetPolicy policy) override;
+	virtual CollectionIteratorImplPtr insert(const Variant& key, const Variant& value) override;
 
 	/** This method is disabled.
 	Erasing is only allowed using eraseKey. */
@@ -35,7 +34,8 @@ public:
 
 	/** This method is disabled.
 	Erasing is only allowed using eraseKey. */
-	virtual CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& first, const CollectionIteratorImplPtr& last) override;
+	virtual CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& first,
+	                                        const CollectionIteratorImplPtr& last) override;
 
 	virtual const TypeId& keyType() const override;
 	virtual const TypeId& valueType() const override;
@@ -43,34 +43,34 @@ public:
 	virtual const void* container() const override;
 	virtual int flags() const override;
 
-	Connection connectPreInsert( ElementRangeCallback callback ) override
+	Connection connectPreInsert(ElementRangeCallback callback) override
 	{
-		return onPreInsert_.connect( callback );
+		return onPreInsert_.connect(callback);
 	}
 
-	Connection connectPostInserted( ElementRangeCallback callback ) override
+	Connection connectPostInserted(ElementRangeCallback callback) override
 	{
-		return onPostInserted_.connect( callback );
+		return onPostInserted_.connect(callback);
 	}
 
-	Connection connectPreErase( ElementRangeCallback callback ) override
+	Connection connectPreErase(ElementRangeCallback callback) override
 	{
-		return onPreErase_.connect( callback );
+		return onPreErase_.connect(callback);
 	}
 
 	Connection connectPostErased(ElementRangeCallback callback) override
 	{
-		return onPostErased_.connect( callback );
+		return onPostErased_.connect(callback);
 	}
 
-	Connection connectPreChange( ElementPreChangeCallback callback ) override
+	Connection connectPreChange(ElementPreChangeCallback callback) override
 	{
-		return onPreChange_.connect( callback );
+		return onPreChange_.connect(callback);
 	}
 
-	Connection connectPostChanged( ElementPostChangedCallback callback ) override
+	Connection connectPostChanged(ElementPostChangedCallback callback) override
 	{
-		return onPostChanged_.connect( callback );
+		return onPostChanged_.connect(callback);
 	}
 
 private:
@@ -79,16 +79,16 @@ private:
 	friend class ReflectedCollectionDetails::ReflectedCollectionListener;
 
 	PropertyAccessor pa_;
-	std::shared_ptr< PropertyAccessorListener > listener_;
-	IReflectionController * controller_;
+	std::shared_ptr<PropertyAccessorListener> listener_;
+	IReflectionController* controller_;
 	Collection collection_;
 
-	Signal< ElementRangeCallbackSignature > onPreInsert_;
-	Signal< ElementRangeCallbackSignature > onPostInserted_;
-	Signal< ElementRangeCallbackSignature > onPreErase_;
-	Signal< ElementRangeCallbackSignature > onPostErased_;
-	Signal< ElementPreChangeCallbackSignature > onPreChange_;
-	Signal< ElementPostChangedCallbackSignature > onPostChanged_;
+	Signal<ElementRangeCallbackSignature> onPreInsert_;
+	Signal<ElementRangeCallbackSignature> onPostInserted_;
+	Signal<ElementRangeCallbackSignature> onPreErase_;
+	Signal<ElementRangeCallbackSignature> onPostErased_;
+	Signal<ElementPreChangeCallbackSignature> onPreChange_;
+	Signal<ElementPostChangedCallbackSignature> onPostChanged_;
 };
 } // end namespace wgt
 #endif // REFLECTED_COLLECTION_HPP

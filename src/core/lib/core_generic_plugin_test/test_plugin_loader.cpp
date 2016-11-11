@@ -10,22 +10,20 @@ namespace wgt
 {
 TestPluginLoader::TestPluginLoader()
 {
-	IPluginContextManager & contextManager = pluginManager_.getContextManager();
-	contextManager.getGlobalContext()->registerInterface( new MemoryPluginContextCreator );
+	IPluginContextManager& contextManager = pluginManager_.getContextManager();
+	contextManager.getGlobalContext()->registerInterface(new MemoryPluginContextCreator);
 }
 
-
-void TestPluginLoader::load( const PluginList & plugins )
+void TestPluginLoader::load(const PluginList& plugins)
 {
-	assert( plugins_.empty() );
+	assert(plugins_.empty());
 	plugins_ = plugins;
-	pluginManager_.loadPlugins( plugins_ );
+	pluginManager_.loadPlugins(plugins_);
 }
-
 
 TestPluginLoader::~TestPluginLoader()
 {
-	pluginManager_.unloadPlugins( plugins_ );
+	pluginManager_.unloadPlugins(plugins_);
 	plugins_.clear();
 }
 } // end namespace wgt

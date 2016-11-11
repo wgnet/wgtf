@@ -10,6 +10,7 @@
 #include "popup_alert_presenter.hpp"
 #include <vector>
 
+WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
@@ -19,28 +20,24 @@ namespace wgt
 * also be included in the project. No alerts will be displayed unless an
 * IAlertPresenter is registered with the AlertManager and an ILogger invokes
 * the add() functionality on the AlertManager.
-* 
+*
 * @ingroup plugins
-* @image html plg_alert_ui.png 
+* @image html plg_alert_ui.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 *       - LoggingSystemPlugin
 */
-class AlertUIPlugin
-	: public PluginMain
+class AlertUIPlugin : public PluginMain
 {
 public:
-
-	AlertUIPlugin( IComponentContext & contextManager )
-		: popupAlertPresenter_( nullptr )
+	AlertUIPlugin(IComponentContext& contextManager) : popupAlertPresenter_(nullptr)
 	{
 	}
 
-	bool PostLoad( IComponentContext & contextManager ) override
-	{		
-		auto definitionManager = 
-			contextManager.queryInterface<IDefinitionManager>();
-		assert( definitionManager != nullptr );
+	bool PostLoad(IComponentContext& contextManager) override
+	{
+		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
+		assert(definitionManager != nullptr);
 
 		definitionManager->registerDefinition<TypeClassDefinition<AlertPageModel>>();
 		definitionManager->registerDefinition<TypeClassDefinition<AlertObjectModel>>();
@@ -48,34 +45,31 @@ public:
 		return true;
 	}
 
-	void Initialise( IComponentContext & contextManager ) override
+	void Initialise(IComponentContext& contextManager) override
 	{
-		ILoggingSystem* loggingSystem = 
-			contextManager.queryInterface< ILoggingSystem >();
+		ILoggingSystem* loggingSystem = contextManager.queryInterface<ILoggingSystem>();
 		if (loggingSystem != nullptr)
 		{
 			AlertManager* alertManager = loggingSystem->getAlertManager();
 			if (alertManager != nullptr)
 			{
-				popupAlertPresenter_ = 
-					new PopupAlertPresenter( contextManager );
-				alertManager->registerPresenter( popupAlertPresenter_ );
+				popupAlertPresenter_ = new PopupAlertPresenter(contextManager);
+				alertManager->registerPresenter(popupAlertPresenter_);
 
 				loggingSystem->enableAlertManagement();
 			}
 		}
 	}
 
-	bool Finalise( IComponentContext & contextManager ) override
+	bool Finalise(IComponentContext& contextManager) override
 	{
-		ILoggingSystem* loggingSystem = 
-			contextManager.queryInterface< ILoggingSystem > ();
+		ILoggingSystem* loggingSystem = contextManager.queryInterface<ILoggingSystem>();
 		if (loggingSystem != nullptr)
 		{
 			AlertManager* alertManager = loggingSystem->getAlertManager();
 			if (alertManager != nullptr)
 			{
-				alertManager->unregisterPresenter( popupAlertPresenter_ );
+				alertManager->unregisterPresenter(popupAlertPresenter_);
 				delete popupAlertPresenter_;
 				popupAlertPresenter_ = nullptr;
 			}
@@ -86,20 +80,19 @@ public:
 		return true;
 	}
 
-	void Unload( IComponentContext & contextManager ) override
+	void Unload(IComponentContext& contextManager) override
 	{
-		for ( auto type: types_ )
+		for (auto type : types_)
 		{
-			contextManager.deregisterInterface( type );
+			contextManager.deregisterInterface(type);
 		}
 	}
 
 private:
-
-	std::vector< IInterface * > types_;
+	std::vector<IInterface*> types_;
 
 	PopupAlertPresenter* popupAlertPresenter_;
 };
 
-PLG_CALLBACK_FUNC( AlertUIPlugin )
+PLG_CALLBACK_FUNC(AlertUIPlugin)
 } // end namespace wgt

@@ -10,8 +10,8 @@
 namespace wgt
 {
 /**
-	*	Proxy layer to adapt a model by changing its model indices to redirect to different columns..
-	*/
+    *	Proxy layer to adapt a model by changing its model indices to redirect to different columns..
+    */
 class WGColumnLayoutProxy : public QAbstractProxyModel
 {
 	Q_OBJECT
@@ -22,7 +22,7 @@ public:
 	WGColumnLayoutProxy();
 	virtual ~WGColumnLayoutProxy();
 
-	//QAbstractProxyModel
+	// QAbstractProxyModel
 	virtual void setSourceModel(QAbstractItemModel* sourceModel) override;
 
 	virtual QModelIndex mapToSource(const QModelIndex& proxyIndex) const override;
@@ -31,8 +31,9 @@ public:
 	QModelIndex mapFromSourceParent(const QModelIndex& sourceIndex) const;
 	QModelIndexList mapAllFromSource(const QModelIndex& sourceIndex) const;
 
-	//QAbstractItemModel
-	Q_INVOKABLE virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+	// QAbstractItemModel
+	Q_INVOKABLE virtual QModelIndex index(int row, int column,
+	                                      const QModelIndex& parent = QModelIndex()) const override;
 	Q_INVOKABLE virtual QModelIndex parent(const QModelIndex& child) const override;
 
 	Q_INVOKABLE virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -42,8 +43,10 @@ public:
 	Q_INVOKABLE virtual QVariant data(const QModelIndex& index, int role) const override;
 	Q_INVOKABLE virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
 
-	Q_INVOKABLE virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role = Qt::EditRole) override;
+	Q_INVOKABLE virtual QVariant headerData(int section, Qt::Orientation orientation,
+	                                        int role = Qt::DisplayRole) const override;
+	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value,
+	                           int role = Qt::EditRole) override;
 
 	virtual QHash<int, QByteArray> roleNames() const override;
 
@@ -58,23 +61,27 @@ private:
 	void onSourceModelReset();
 	void onSourceDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
 	void onSourceHeaderDataChanged(Qt::Orientation orientation, int first, int last);
-	void onSourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents, QAbstractItemModel::LayoutChangeHint hint);
+	void onSourceLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+	                                    QAbstractItemModel::LayoutChangeHint hint);
 	void onSourceLayoutChanged(const QList<QPersistentModelIndex>& parents, QAbstractItemModel::LayoutChangeHint hint);
 	void onSourceRowsAboutToBeInserted(const QModelIndex& parent, int first, int last);
 	void onSourceRowsInserted();
 	void onSourceRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 	void onSourceRowsRemoved();
-	void onSourceRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd, const QModelIndex& destinationParent, int destinationRow);
+	void onSourceRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd,
+	                                const QModelIndex& destinationParent, int destinationRow);
 	void onSourceRowsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
 	void onSourceColumnsAboutToBeInserted(const QModelIndex& parent, int first, int last);
 	void onSourceColumnsInserted();
 	void onSourceColumnsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 	void onSourceColumnsRemoved();
-	void onSourceColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd, const QModelIndex& destinationParent, int destinationColumn);
-	void onSourceColumnsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int column);
+	void onSourceColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceStart, int sourceEnd,
+	                                   const QModelIndex& destinationParent, int destinationColumn);
+	void onSourceColumnsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination,
+	                          int column);
 
 	struct Impl;
 	std::unique_ptr<Impl> impl_;
 };
 } // end namespace wgt
-#endif //WG_COLUMN_LAYOUT_PROXY_HPP
+#endif // WG_COLUMN_LAYOUT_PROXY_HPP

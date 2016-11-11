@@ -16,15 +16,7 @@ WGListView 2.0 WGListView20.qml
 WGTableView 2.0 WGTableView20.qml
 WGTreeView 2.0 WGTreeView20.qml
 
-# 2.0 Unchanged Controls
-TreeItem 2.0 TreeItem.qml
-TreeView 2.0 TreeView.qml
-WGListViewRowDelegate 2.0 WGListViewRowDelegate.qml
-WGTreeItem 2.0 WGTreeItem.qml
-
 # 1.0 Controls
-TreeItem 1.0 TreeItem.qml
-TreeView 1.0 TreeView.qml
 WGColumnsFrame 1.0 WGColumnsFrame.qml
 WGHeaderRow 1.0 WGHeaderRow.qml
 WGListView 1.0 WGListView.qml

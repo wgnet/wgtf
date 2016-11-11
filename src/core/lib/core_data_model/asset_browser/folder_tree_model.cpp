@@ -25,9 +25,7 @@ struct FolderTreeModel::Implementation
 };
 
 FolderTreeModel::Implementation::Implementation(FolderTreeModel& main, IFileSystem& fileSystem)
-    : main_(main)
-    , fileSystem_(fileSystem)
-    , model_(nullptr)
+    : main_(main), fileSystem_(fileSystem), model_(nullptr)
 {
 }
 
@@ -50,8 +48,7 @@ FolderTreeModel::FolderTreeModel(IAssetBrowserModel& model, IFileSystem& fileSys
 	init(&model);
 }
 
-FolderTreeModel::FolderTreeModel(const FolderTreeModel& rhs)
-    : impl_(new Implementation(*this, rhs.impl_->fileSystem_))
+FolderTreeModel::FolderTreeModel(const FolderTreeModel& rhs) : impl_(new Implementation(*this, rhs.impl_->fileSystem_))
 
 {
 	init(rhs.model());
@@ -109,8 +106,8 @@ ITreeModel::ItemIndex FolderTreeModel::index(const IItem* item) const
 	if (temp)
 		return ItemIndex(temp->indexOf(item), temp);
 
-	auto found = std::find_if(impl_->roots_.begin(), impl_->roots_.end(),
-	                          [&](const IItem_uptr& i) { return i.get() == item; });
+	auto found =
+	std::find_if(impl_->roots_.begin(), impl_->roots_.end(), [&](const IItem_uptr& i) { return i.get() == item; });
 
 	return ItemIndex(found - impl_->roots_.begin(), temp);
 }

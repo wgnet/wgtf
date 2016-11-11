@@ -14,40 +14,39 @@ class StringRef
 public:
 	typedef size_t size_type;
 
-	StringRef( const char * str );
-	StringRef( const char * str, size_type length );
-	StringRef( const std::string & str );
+	StringRef(const char* str);
+	StringRef(const char* str, size_type length);
+	StringRef(const std::string& str);
 
-	//Accessors
+	// Accessors
 	const char* data() const;
 	size_type length() const;
 
-	//Operators
-	bool operator == ( const StringRef & other ) const;
+	// Operators
+	bool operator==(const StringRef& other) const;
 
-	bool operator != ( const StringRef & other ) const
+	bool operator!=(const StringRef& other) const
 	{
-		return !( *this == other );
+		return !(*this == other);
 	}
 
 private:
-	const char *	pStart_;
-	size_t			length_;
+	const char* pStart_;
+	size_t length_;
 };
 } // end namespace wgt
 
 namespace std
 {
-	template<>
-	struct hash< wgt::StringRef >
-		: public unary_function< wgt::StringRef, size_t >
+template <>
+struct hash<wgt::StringRef> : public unary_function<wgt::StringRef, size_t>
+{
+public:
+	size_t operator()(const wgt::StringRef& v) const
 	{
-	public:
-		size_t operator()( const wgt::StringRef & v ) const
-		{
-			return static_cast<size_t>( wgt::HashUtilities::compute( v.data(), v.length() ) );
-		}
-	};
+		return static_cast<size_t>(wgt::HashUtilities::compute(v.data(), v.length()));
+	}
+};
 }
 
 #endif // STRING_REF_HPP

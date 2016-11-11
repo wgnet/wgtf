@@ -13,14 +13,12 @@ public:
 	ComponentExtensionOld();
 	virtual ~ComponentExtensionOld();
 
-	QHash< int, QByteArray > roleNames() const override;
-	QVariant data( const QModelIndex &index, int role ) const override;
-	bool setData( const QModelIndex &index,
-		const QVariant &value,
-		int role ) override;
+	QHash<int, QByteArray> roleNames() const override;
+	QVariant data(const QModelIndex& index, int role) const override;
+	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
 private:
-	IQtFramework * qtFramework_;
+	IQtFramework* qtFramework_;
 };
 } // end namespace wgt
 #endif // COMPONENT_EXTENSION_HPP

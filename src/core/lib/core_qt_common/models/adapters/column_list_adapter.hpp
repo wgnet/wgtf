@@ -9,7 +9,7 @@ namespace wgt
 /**
  *	Convert single-column Qt lists into multiple-column WGTF lists.
  *	Takes Qt list row indexes and map some of them to columns.
- *	
+ *
  *	E.g. Qt list models only have rows
  *	row +---+---+---+---+
  *	 0  |               |
@@ -50,14 +50,11 @@ public:
 
 	virtual QAbstractItemModel* model() const override;
 
-	virtual QModelIndex adaptedIndex(int row,
-	                                 int column,
-	                                 const QModelIndex& parent) const override;
+	virtual QModelIndex adaptedIndex(int row, int column, const QModelIndex& parent) const override;
 	virtual int rowCount(const QModelIndex& parent) const override;
 
 private:
-	void onParentDataChanged(const QModelIndex& topLeft,
-	                         const QModelIndex& bottomRight,
+	void onParentDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
 	                         const QVector<int>& roles) override;
 	void onParentLayoutChanged(const QList<QPersistentModelIndex>& parents,
 	                           QAbstractItemModel::LayoutChangeHint hint) override;
@@ -65,16 +62,10 @@ private:
 	void onParentColumnsInserted(const QModelIndex& parent, int first, int last);
 	void onParentColumnsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 	void onParentColumnsRemoved(const QModelIndex& parent, int first, int last);
-	void onParentColumnsAboutToBeMoved(const QModelIndex& sourceParent,
-	                                   int sourceFirst,
-	                                   int sourceLast,
-	                                   const QModelIndex& destinationParent,
-	                                   int destinationColumn);
-	void onParentColumnsMoved(const QModelIndex& sourceParent,
-	                          int sourceFirst,
-	                          int sourceLast,
-	                          const QModelIndex& destinationParent,
-	                          int destinationColumn);
+	void onParentColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                                   const QModelIndex& destinationParent, int destinationColumn);
+	void onParentColumnsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                          const QModelIndex& destinationParent, int destinationColumn);
 
 private:
 	const QAbstractItemModel* model_;

@@ -10,11 +10,8 @@
 namespace wgt
 {
 DialogReflectedTreeModel::DialogReflectedTreeModel()
-    : model_(nullptr)
-    , dataEdited_(false)
-    , environmentID_(IEnvManager::INVALID_ID)
-    , commandIndex_(-1)
-    , modifyDataDirectly_(true)
+    : model_(nullptr), dataEdited_(false), environmentID_(IEnvManager::INVALID_ID), commandIndex_(-1),
+      modifyDataDirectly_(true)
 {
 }
 
@@ -30,8 +27,7 @@ DialogReflectedTreeModel::~DialogReflectedTreeModel()
 	}
 }
 
-void DialogReflectedTreeModel::initialise(IComponentContext* context,
-                                          const IClassDefinition* definition)
+void DialogReflectedTreeModel::initialise(IComponentContext* context, const IClassDefinition* definition)
 {
 	context_ = context;
 	assert(context_);
@@ -53,11 +49,8 @@ void DialogReflectedTreeModel::setObject(ObjectHandle data, ObjectHandle copy, b
 	assert(reflectionController);
 	copyReflectedData(*definitionManager, *reflectionController, originalData_, dialogData_, false);
 
-	AbstractTreeModel::DataCallback onDataChanged = [this](const AbstractTreeModel::ItemIndex&,
-	                                                       int,
-	                                                       ItemRole::Id,
-	                                                       const Variant&)
-	{
+	AbstractTreeModel::DataCallback onDataChanged = [this](const AbstractTreeModel::ItemIndex&, int, ItemRole::Id,
+	                                                       const Variant&) {
 		if (!dataEdited_)
 		{
 			dataEdited_ = true;
@@ -116,10 +109,8 @@ const AbstractTreeModel* DialogReflectedTreeModel::getModel() const
 }
 
 void DialogReflectedTreeModel::copyReflectedData(IDefinitionManager& definitionManager,
-                                                 IReflectionController& reflectionController,
-                                                 const ObjectHandle& src,
-                                                 const ObjectHandle& dst,
-                                                 bool notify)
+                                                 IReflectionController& reflectionController, const ObjectHandle& src,
+                                                 const ObjectHandle& dst, bool notify)
 {
 	if (!src.isValid() || !dst.isValid() || src.type() != dst.type())
 	{

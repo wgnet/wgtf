@@ -27,51 +27,79 @@ namespace wgt
 {
 //==============================================================================
 GenericPluginManager::GenericPluginManager(bool applyDebugPostfix_)
-	: contextManager_( new PluginContextManager() )
-	, applyDebugPostfix(applyDebugPostfix_)
+    : contextManager_(new PluginContextManager()), applyDebugPostfix(applyDebugPostfix_), incrementallyLoading_(false)
 {
 }
-
 
 //==============================================================================
 GenericPluginManager::~GenericPluginManager()
 {
 	// uninitialise in the reverse order. yes, we need a copy here.
 	PluginList plugins;
-	for (auto it = plugins_.crbegin(); it != plugins_.crend(); ++it)
-		plugins.push_back( it->second );
-	unloadPlugins( plugins );
+	for (auto it = plugins_.crbegin(); it != plugins_.crend(); ++it) plugins.push_back(it->second);
+	unloadPlugins(plugins);
 }
 
-
-//==============================================================================
-void GenericPluginManager::loadPlugins(
-	const PluginNameList& plugins )
+void GenericPluginManager::beginIncrementalPluginLoading()
 {
-	PluginList plgs;
-	std::transform(
-		std::begin( plugins ),
-		std::end( plugins ),
-		std::back_inserter( plgs ),
-		std::bind(
-			&GenericPluginManager::loadPlugin, this, std::placeholders::_1) );
-
-	notifyPlugins( plgs,
-		NotifyPlugin ( *this, GenericPluginLoadState::Create ) );
-
-	notifyPlugins( plgs, NotifyPluginPostLoad( *this ) );
-
-	notifyPlugins( plgs,
-		NotifyPlugin ( *this, GenericPluginLoadState::Initialise ) );
+	assert(!incrementallyLoading_);
+	incrementallyLoading_ = true;
 }
 
+//==============================================================================
+void GenericPluginManager::pushPlugin(std::wstring pluginName)
+{
+	HMODULE plugin = loadPlugin(pluginName);
+	incrementalPlugins_.push_back(std::make_pair(pluginName, plugin));
+	{
+		NotifyPlugin(*this, GenericPluginLoadState::Create)(plugin);
+	}
+	{
+		NotifyPluginPostLoad (*this)(plugin);
+	}
+}
 
 //==============================================================================
-void GenericPluginManager::unloadPlugins(
-	const PluginNameList& plugins )
+void GenericPluginManager::pushPlugins(PluginNameList pluginList)
 {
+	for (const auto& plugName : pluginList)
+	{
+		pushPlugin(plugName);
+	}
+}
+
+//==============================================================================
+void GenericPluginManager::endIncrementalPluginLoading()
+{
+	for (const auto& plugPair : incrementalPlugins_)
+	{
+		NotifyPlugin(*this, GenericPluginLoadState::Initialise)(plugPair.second);
+	}
+	incrementalPlugins_.clear();
+	incrementallyLoading_ = false;
+}
+
+//==============================================================================
+void GenericPluginManager::loadPlugins(const PluginNameList& plugins)
+{
+	assert(!incrementallyLoading_);
 	PluginList plgs;
-	for ( auto & filename : plugins )
+	std::transform(std::begin(plugins), std::end(plugins), std::back_inserter(plgs),
+	               std::bind(&GenericPluginManager::loadPlugin, this, std::placeholders::_1));
+
+	notifyPlugins(plgs, NotifyPlugin(*this, GenericPluginLoadState::Create));
+
+	notifyPlugins(plgs, NotifyPluginPostLoad(*this));
+
+	notifyPlugins(plgs, NotifyPlugin(*this, GenericPluginLoadState::Initialise));
+}
+
+//==============================================================================
+void GenericPluginManager::unloadPlugins(const PluginNameList& plugins)
+{
+	assert(!incrementallyLoading_);
+	PluginList plgs;
+	for (auto& filename : plugins)
 	{
 		auto processedFileName = processPluginFilename(filename);
 		auto it = std::find_if(plugins_.begin(), plugins_.end(),
@@ -79,34 +107,32 @@ void GenericPluginManager::unloadPlugins(
 
 		if (it != plugins_.end())
 		{
-			plgs.push_back( it->second );
+			plgs.push_back(it->second);
 		}
 	}
 
-	unloadPlugins( plgs );
+	unloadPlugins(plgs);
 }
 
-
 //==============================================================================
-void GenericPluginManager::unloadPlugins( const PluginList& plugins )
+void GenericPluginManager::unloadPlugins(const PluginList& plugins)
 {
 	if (plugins.empty())
 	{
 		return;
 	}
 
-	for( int state = Finalise; state < Destroy; ++state)
+	for (int state = Finalise; state < Destroy; ++state)
 	{
-		notifyPlugins( plugins,
-			NotifyPlugin ( *this, ( GenericPluginLoadState ) state ) );
+		notifyPlugins(plugins, NotifyPlugin(*this, (GenericPluginLoadState)state));
 	}
 
 	// Notify plugins of destroy - Matches Create notification
-	notifyPlugins( plugins,  NotifyPlugin ( *this, Destroy ) );
+	notifyPlugins(plugins, NotifyPlugin(*this, Destroy));
 
 	// Do in reverse order of load
-	std::for_each( std::begin( plugins ), std::end( plugins ), std::bind(
-		&GenericPluginManager::unloadContext, this, std::placeholders::_1 ) );
+	std::for_each(std::begin(plugins), std::end(plugins),
+	              std::bind(&GenericPluginManager::unloadContext, this, std::placeholders::_1));
 
 	for (auto it = memoryContext_.begin(); it != memoryContext_.end(); ++it)
 	{
@@ -114,38 +140,36 @@ void GenericPluginManager::unloadPlugins( const PluginList& plugins )
 	}
 
 	// Calls FreeLibrary - matches loadPlugin() LoadLibraryW
-	std::for_each( std::begin( plugins ), std::end( plugins ), std::bind(
-		&GenericPluginManager::unloadPlugin, this, std::placeholders::_1 ) );
+	std::for_each(std::begin(plugins), std::end(plugins),
+	              std::bind(&GenericPluginManager::unloadPlugin, this, std::placeholders::_1));
 
 	for (auto it = memoryContext_.begin(); it != memoryContext_.end(); ++it)
 	{
-		::OutputDebugString( it->first.c_str() );
-		::OutputDebugString( L"\n" );
+		::OutputDebugString(it->first.c_str());
+		::OutputDebugString(L"\n");
 		delete it->second;
 	}
 
 	memoryContext_.clear();
 }
 
-
 //==============================================================================
-void GenericPluginManager::notifyPlugins(
-	const PluginList& plugins, NotifyFunction func )
+void GenericPluginManager::notifyPlugins(const PluginList& plugins, NotifyFunction func)
 {
-	std::for_each( std::begin( plugins ), std::end( plugins ), func );
+	std::for_each(std::begin(plugins), std::end(plugins), func);
 }
 
 //==============================================================================
-HMODULE GenericPluginManager::loadPlugin( const std::wstring & filename )
+HMODULE GenericPluginManager::loadPlugin(const std::wstring& filename)
 {
 	std::string errorMsg;
-	auto processedFileName = processPluginFilename( filename );
+	auto processedFileName = processPluginFilename(filename);
 
 	setEnvContext(contextManager_->createContext(processedFileName, filename));
-	HMODULE hPlugin = ::LoadLibraryW( processedFileName.c_str() );
+	HMODULE hPlugin = ::LoadLibraryW(processedFileName.c_str());
 	// Must get last error before doing anything else
-	const bool hadError = FormatLastErrorMessage( errorMsg );
-	setEnvContext( nullptr );
+	const bool hadError = FormatLastErrorMessage(errorMsg);
+	setEnvContext(nullptr);
 
 	if (hPlugin != nullptr)
 	{
@@ -155,21 +179,17 @@ HMODULE GenericPluginManager::loadPlugin( const std::wstring & filename )
 	{
 		contextManager_->destroyContext(processedFileName);
 
-		NGT_ERROR_MSG( "Could not load plugin %S (from %S): %s\n",
-			filename.c_str(),
-			processedFileName.c_str(),
-			hadError ? errorMsg.c_str() : "Unknown error" );
+		NGT_ERROR_MSG("Could not load plugin %S (from %S): %s\n", filename.c_str(), processedFileName.c_str(),
+		              hadError ? errorMsg.c_str() : "Unknown error");
 
-#if defined( _DEBUG )
+#if defined(_DEBUG)
 		// Fail automated tests
-		const auto pCommandLine = this->queryInterface< ICommandLineParser >();
-		const auto requireAllSpecifiedPlugins = (pCommandLine == nullptr) ?
-			true :
-			pCommandLine->getFlag( "-unattended" );
+		const auto pCommandLine = this->queryInterface<ICommandLineParser>();
+		const auto requireAllSpecifiedPlugins = (pCommandLine == nullptr) ? true : pCommandLine->getFlag("-unattended");
 
 		if (requireAllSpecifiedPlugins)
 		{
-			assert( false && "Could not load plugin" );
+			assert(false && "Could not load plugin");
 		}
 #endif // defined( _DEBUG )
 	}
@@ -179,30 +199,28 @@ HMODULE GenericPluginManager::loadPlugin( const std::wstring & filename )
 //==============================================================================
 GenericPluginManager::PluginMap::iterator GenericPluginManager::findPlugin(HMODULE hPlugin)
 {
-	return std::find_if( plugins_.begin(), plugins_.end(),
-		[&](PluginMap::value_type& p) { return hPlugin == p.second; } );
+	return std::find_if(plugins_.begin(), plugins_.end(),
+	                    [&](PluginMap::value_type& p) { return hPlugin == p.second; });
 }
 
 //==============================================================================
-void GenericPluginManager::unloadContext( HMODULE hPlugin )
+void GenericPluginManager::unloadContext(HMODULE hPlugin)
 {
 	PluginMap::iterator it = findPlugin(hPlugin);
 
-	if ( it == std::end( plugins_ ) )
+	if (it == std::end(plugins_))
 	{
 		return;
 	}
 
-	IComponentContext * contextManager =
-		contextManager_->getContext( it->first );
-	IMemoryAllocator * memoryAllocator =
-		contextManager->queryInterface< IMemoryAllocator >();
-	contextManager_->destroyContext( it->first );
-	memoryContext_.insert( std::make_pair( it->first, memoryAllocator ) );
+	IComponentContext* contextManager = contextManager_->getContext(it->first);
+	IMemoryAllocator* memoryAllocator = contextManager->queryInterface<IMemoryAllocator>();
+	contextManager_->destroyContext(it->first);
+	memoryContext_.insert(std::make_pair(it->first, memoryAllocator));
 }
 
 //==============================================================================
-bool GenericPluginManager::unloadPlugin( HMODULE hPlugin )
+bool GenericPluginManager::unloadPlugin(HMODULE hPlugin)
 {
 	if (!hPlugin)
 	{
@@ -210,29 +228,25 @@ bool GenericPluginManager::unloadPlugin( HMODULE hPlugin )
 	}
 
 	PluginMap::iterator it = findPlugin(hPlugin);
-	assert( it != std::end( plugins_ ) );
+	assert(it != std::end(plugins_));
 
-	::FreeLibrary( hPlugin );
-	plugins_.erase ( it );
+	::FreeLibrary(hPlugin);
+	plugins_.erase(it);
 
 	return true;
 }
 
-
 //==============================================================================
-IPluginContextManager & GenericPluginManager::getContextManager() const
+IPluginContextManager& GenericPluginManager::getContextManager() const
 {
 	return *contextManager_.get();
 }
 
-
 //==============================================================================
-void * GenericPluginManager::queryInterface( const char * name ) const
+void* GenericPluginManager::queryInterface(const char* name) const
 {
-	return getContextManager().getGlobalContext()->queryInterface(
-		name );
+	return getContextManager().getGlobalContext()->queryInterface(name);
 }
-
 
 //==============================================================================
 std::wstring GenericPluginManager::processPluginFilename(const std::wstring& filename)
@@ -245,7 +259,7 @@ std::wstring GenericPluginManager::processPluginFilename(const std::wstring& fil
 #ifdef _WIN32
 	std::replace(normalisedPath, normalisedPath + filename.size(), L'/', L'\\');
 #elif __APPLE__
-	std::replace(normalisedPath, normalisedPath + filename.size(), L'\\', L'/' );
+	std::replace(normalisedPath, normalisedPath + filename.size(), L'\\', L'/');
 	wchar_t file[MAX_PATH];
 	PathFileName(file, normalisedPath);
 	PathRemoveFileSpec(normalisedPath);
@@ -279,7 +293,6 @@ std::wstring GenericPluginManager::processPluginFilename(const std::wstring& fil
 		PathCanonicalize(temp, normalisedPath);
 	}
 
-
 	PathRemoveExtension(temp);
 
 #ifdef _DEBUG
@@ -295,6 +308,6 @@ std::wstring GenericPluginManager::processPluginFilename(const std::wstring& fil
 
 	AddDllExtension(temp);
 
-	return  temp;
+	return temp;
 }
 } // end namespace wgt

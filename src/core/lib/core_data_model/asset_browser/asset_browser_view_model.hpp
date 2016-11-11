@@ -22,10 +22,8 @@ class IAssetBrowserContextMenuModel;
 class AssetBrowserViewModel : public IAssetBrowserViewModel
 {
 public:
-	AssetBrowserViewModel(
-	IDefinitionManager& definitionManager_,
-	ObjectHandleT<IAssetBrowserModel> data,
-	ObjectHandleT<IAssetBrowserEventModel> events);
+	AssetBrowserViewModel(IDefinitionManager& definitionManager_, ObjectHandleT<IAssetBrowserModel> data,
+	                      ObjectHandleT<IAssetBrowserEventModel> events);
 
 	virtual ObjectHandle data() const override;
 

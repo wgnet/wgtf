@@ -15,11 +15,8 @@ namespace CollectionModel_Detail
 	class CollectionItem : public AbstractItem
 	{
 	public:
-		CollectionItem(CollectionModel & model, size_t index)
-			: model_(model)
-			, index_(index)
-		{
-
+	    CollectionItem(CollectionModel& model, size_t index) : model_(model), index_(index)
+	    {
 		}
 
 		Variant getData(int row, int column, ItemRole::Id roleId) const override
@@ -35,8 +32,10 @@ namespace CollectionModel_Detail
 			}
 
 			auto it = collection.begin();
-			for (size_t i = 0; i < index_ && it != collection.end(); ++i, ++it) {}
-			if (it == collection.end())
+		    for (size_t i = 0; i < index_ && it != collection.end(); ++i, ++it)
+		    {
+		    }
+		    if (it == collection.end())
 			{
 				return Variant();
 			}
@@ -55,6 +54,11 @@ namespace CollectionModel_Detail
 
 		bool setData(int row, int column, ItemRole::Id roleId, const Variant & data) override
 		{
+			if (model_.readonly())
+			{
+				return false;
+			}
+
 			if (roleId == ItemRole::valueTypeId)
 			{
 				// Need to return true so that undo state is restored correctly
@@ -69,8 +73,10 @@ namespace CollectionModel_Detail
 			{
 				auto & collection = model_.getSource();
 				auto it = collection.begin();
-				for (size_t i = 0; i < index_ && it != collection.end(); ++i, ++it) {}
-				if (it == collection.end())
+			    for (size_t i = 0; i < index_ && it != collection.end(); ++i, ++it)
+			    {
+			    }
+			    if (it == collection.end())
 				{
 					return false;
 				}
@@ -90,9 +96,7 @@ namespace CollectionModel_Detail
 		size_t index_;
 	};
 
-    void updateCacheAfterInsert(int row,
-                                int count,
-                                std::vector<std::unique_ptr<AbstractItem>>& items)
+    void updateCacheAfterInsert(int row, int count, std::vector<std::unique_ptr<AbstractItem>>& items)
     {
 	    // Move items in cache
 	    const auto start = static_cast<size_t>(row);
@@ -118,15 +122,12 @@ namespace CollectionModel_Detail
 	    }
     }
 
-    void updateCacheAfterRemove(int row,
-                                int count,
-                                std::vector<std::unique_ptr<AbstractItem>>& items)
+    void updateCacheAfterRemove(int row, int count, std::vector<std::unique_ptr<AbstractItem>>& items)
     {
 	    const auto start = static_cast<size_t>(row);
 	    if (start < items.size())
 	    {
-		    const auto end = std::min(static_cast<size_t>(row + count),
-		                              items.size());
+		    const auto end = std::min(static_cast<size_t>(row + count), items.size());
 		    const auto newLastItr = items.erase(items.begin() + start, items.begin() + end);
 
 		    // Update indexes of moved items
@@ -144,19 +145,23 @@ namespace CollectionModel_Detail
     } // end namespace CollectionModel_Detail
 
 CollectionModel::CollectionModel()
+	: readonly_(false)
 {
 }
-
 
 CollectionModel::~CollectionModel()
 {
 }
 
-#define CONNECT_METHOD(method, connection, callbackType) \
-Connection CollectionModel::method(AbstractListModel::callbackType callback) \
-{ \
-	return connection.connect(callback); \
-} \
+#define CONNECT_METHOD(method, signal, callbackType)                  \
+	\
+Connection                                                     \
+	CollectionModel::method(AbstractListModel::callbackType callback) \
+	\
+{                                                              \
+		return signal.connect(callback);                              \
+	\
+}
 
 CONNECT_METHOD(connectPreItemDataChanged, preItemDataChanged_, DataCallback)
 CONNECT_METHOD(connectPostItemDataChanged, postItemDataChanged_, DataCallback)
@@ -167,109 +172,32 @@ CONNECT_METHOD(connectPostRowsInserted, postRowsInserted_, RangeCallback)
 CONNECT_METHOD(connectPreRowsRemoved, preRowsRemoved_, RangeCallback)
 CONNECT_METHOD(connectPostRowsRemoved, postRowsRemoved_, RangeCallback)
 
+CONNECT_METHOD(connectPreModelReset, preModelReset_, VoidCallback)
+CONNECT_METHOD(connectPostModelReset, postModelReset_, VoidCallback)
+
 #undef CONNECT_METHOD
 
 void CollectionModel::setSource(Collection & collection)
 {
-	// TODO emit signal
-	items_.clear();
-
-	connectPreChange_.disconnect();
-	connectPostChanged_.disconnect();
-	connectPreInsert_.disconnect();
-	connectPostInserted_.disconnect();
-	connectPreErase_.disconnect();
-	connectPostErase_.disconnect();
-
-	collection_ = collection;
-
-	//callback(int row, int column, size_t role, const Variant & value)
-#define VALUE_CALLBACK(callback) \
-		{ \
-			ItemRole::Id role = ValueTypeRole::roleId_; \
-			int row = -1; \
-			if (pos.key().tryCast<int>(row)) \
-			{ \
-				callback(row, 0, role, value); \
-			} \
-			else \
-			{ \
-				auto it = collection_.begin(); \
-				int index = 0; \
-				for ( ; it != collection_.end() && it != pos; ++it, ++index); \
-				callback(index, 0, role, value); \
-			} \
-		}
-
-	//callback(int row, int count)
-#define RANGE_CALLBACK(callback) \
-	{\
-		int row = -1;\
-		if (pos.key().tryCast<int>(row))\
-		{\
-			callback(row, (int)count);\
-		}\
-		else\
-		{\
-			auto it = collection_.begin();\
-			int index = 0;\
-			for ( ; it != collection_.end() && it != pos; ++it, ++index);\
-			callback(index, (int)count);\
-		}\
-	}
-	
-	connectPreChange_ =
-		collection_.connectPreChange(
-		(Collection::ElementPreChangeCallback)[=](const Collection::Iterator& pos, const Variant& value)
-			VALUE_CALLBACK(preItemDataChanged_)
-		);
-	
-	connectPostChanged_ =
-		collection_.connectPostChanged(
-		(Collection::ElementPostChangedCallback)[=](const Collection::Iterator& pos, const Variant& value)
-			VALUE_CALLBACK(postItemDataChanged_)
-		);
-
-	connectPreInsert_ =
-		collection_.connectPreInsert(
-		(Collection::ElementRangeCallback)[=](const Collection::Iterator& pos, size_t count)
-			RANGE_CALLBACK(preRowsInserted_)
-		);
-	
-	connectPostInserted_ =
-		collection_.connectPostInserted(
-		(Collection::ElementRangeCallback)[=](const Collection::Iterator& pos, size_t count)
-			RANGE_CALLBACK(postRowsInserted_)
-		);
-
-	connectPreErase_ =
-		collection_.connectPreErase(
-		(Collection::ElementRangeCallback)[=](const Collection::Iterator& pos, size_t count)
-			RANGE_CALLBACK(preRowsRemoved_)
-		);
-
-	connectPostErase_ =
-		collection_.connectPostErased(
-		(Collection::ElementRangeCallback)[=](const Collection::Iterator& pos, size_t count)
-			RANGE_CALLBACK(postRowsRemoved_)
-		);
-
-#undef VALUE_CALLBACK
-#undef RANGE_CALLBACK
+	readonly_ = false;
+	setSourceInternal(collection);
 }
 
+void CollectionModel::setSource(const Collection & collection)
+{
+	readonly_ = true;
+	setSourceInternal(collection);
+}
 
 const Collection & CollectionModel::getSource() const
 {
 	return collection_;
 }
 
-
 Collection & CollectionModel::getSource()
 {
 	return collection_;
 }
-
 
 AbstractItem * CollectionModel::item(int index) const
 {
@@ -290,37 +218,39 @@ AbstractItem * CollectionModel::item(int index) const
 		return item;
 	}
 
-	item = new CollectionModel_Detail::CollectionItem(
-	*const_cast<CollectionModel*>(this), index);
+	item = new CollectionModel_Detail::CollectionItem(*const_cast<CollectionModel*>(this), index);
 	items_[index] = std::unique_ptr< AbstractItem >(item);
 	return item;
 }
-
 
 int CollectionModel::index(const AbstractItem* item) const
 {
 	auto index = 0;
 	auto it = items_.begin();
-	for (; it != items_.end() && it->get() != item; ++index, ++it) {}
+	for (; it != items_.end() && it->get() != item; ++index, ++it)
+	{
+	}
 	assert(it != items_.end());
 	return index;
 }
-
 
 int CollectionModel::rowCount() const
 {
 	return (int)collection_.size();
 }
 
-
 int CollectionModel::columnCount() const
 {
 	return 1;
 }
 
-
 bool CollectionModel::insertRows( int row, int count ) /* override */
 {
+	if (readonly())
+	{
+		return false;
+	}
+
 	// Insert/remove by row disabled for mapping types
 	if (collection_.isMapping())
 	{
@@ -352,9 +282,13 @@ bool CollectionModel::insertRows( int row, int count ) /* override */
 	return true;
 }
 
-
 bool CollectionModel::removeRows( int row, int count ) /* override */
 {
+	if (readonly())
+	{
+		return false;
+	}
+
 	// Insert/remove by row disabled for mapping types
 	if (collection_.isMapping())
 	{
@@ -391,8 +325,7 @@ bool CollectionModel::removeRows( int row, int count ) /* override */
 	const auto start = static_cast< size_t >( row );
 	if (start < items_.size())
 	{
-		const auto end = std::min( static_cast< size_t >( row + count ),
-			items_.size() );
+		const auto end = std::min(static_cast<size_t>(row + count), items_.size());
 		auto newLastItr = items_.erase( items_.begin() + start, items_.begin() + end );
 		
 		// Update indexes of moved items
@@ -409,7 +342,6 @@ bool CollectionModel::removeRows( int row, int count ) /* override */
 
 	return true;
 }
-
 
 std::vector< std::string > CollectionModel::roles() const
 {
@@ -445,12 +377,22 @@ const AbstractItem* CollectionModel::find(const Variant& key) const
 
 bool CollectionModel::insertItem(const Variant& key)
 {
+	if (readonly())
+	{
+		return false;
+	}
+
 	const auto insertItr = collection_.insert(key);
 	return (insertItr != collection_.end());
 }
 
 bool CollectionModel::insertItem(const Variant& key, const Variant& value)
 {
+	if (readonly())
+	{
+		return false;
+	}
+
 	const auto insertItr = collection_.insertValue(key, value);
 	const auto success = (insertItr != collection_.end());
 	if (!success)
@@ -473,6 +415,11 @@ bool CollectionModel::insertItem(const Variant& key, const Variant& value)
 
 bool CollectionModel::removeItem( const Variant & key )
 {
+	if (readonly())
+	{
+		return false;
+	}
+
 	const auto erasedCount = collection_.eraseKey( key );
 	const auto success = (erasedCount > 0);
 	if (!success)
@@ -493,7 +440,6 @@ bool CollectionModel::removeItem( const Variant & key )
 	return true;
 }
 
-
 bool CollectionModel::isMapping() const
 {
 	return collection_.isMapping();
@@ -504,4 +450,76 @@ bool CollectionModel::hasController() const
 	return dynamic_cast<ReflectedCollection*>(collection_.impl().get()) != nullptr;
 }
 
+bool CollectionModel::readonly() const
+{
+	return readonly_;
+}
+
+void CollectionModel::setSourceInternal(const Collection& collection)
+{
+	preModelReset_();
+	items_.clear();
+	connections_.clear();
+	collection_ = collection;
+
+// callback(int row, int column, size_t role, const Variant & value)
+#define VALUE_CALLBACK(callback)                                        \
+	{                                                                   \
+		ItemRole::Id role = ValueTypeRole::roleId_;                     \
+		int row = -1;                                                   \
+		if (pos.key().tryCast<int>(row))                                \
+		{                                                               \
+			callback(row, 0, role, value);                              \
+		}                                                               \
+		else                                                            \
+		{                                                               \
+			auto it = collection_.begin();                              \
+			int index = 0;                                              \
+			for (; it != collection_.end() && it != pos; ++it, ++index) \
+				;                                                       \
+			callback(index, 0, role, value);                            \
+		}                                                               \
+	}
+
+// callback(int row, int count)
+#define RANGE_CALLBACK(callback)                                        \
+	{                                                                   \
+		int row = -1;                                                   \
+		if (pos.key().tryCast<int>(row))                                \
+		{                                                               \
+			callback(row, (int)count);                                  \
+		}                                                               \
+		else                                                            \
+		{                                                               \
+			auto it = collection_.begin();                              \
+			int index = 0;                                              \
+			for (; it != collection_.end() && it != pos; ++it, ++index) \
+				;                                                       \
+			callback(index, (int)count);                                \
+		}                                                               \
+	}
+
+	connections_.push_back(collection_.connectPreChange((Collection::ElementPreChangeCallback)[=](
+	const Collection::Iterator& pos, const Variant& value) VALUE_CALLBACK(preItemDataChanged_)));
+
+	connections_.push_back(collection_.connectPostChanged((Collection::ElementPostChangedCallback)[=](
+	const Collection::Iterator& pos, const Variant& value) VALUE_CALLBACK(postItemDataChanged_)));
+
+	connections_.push_back(collection_.connectPreInsert((Collection::ElementRangeCallback)[=](
+	const Collection::Iterator& pos, size_t count) RANGE_CALLBACK(preRowsInserted_)));
+
+	connections_.push_back(collection_.connectPostInserted((Collection::ElementRangeCallback)[=](
+	const Collection::Iterator& pos, size_t count) RANGE_CALLBACK(postRowsInserted_)));
+
+	connections_.push_back(collection_.connectPreErase((Collection::ElementRangeCallback)[=](
+	const Collection::Iterator& pos, size_t count) RANGE_CALLBACK(preRowsRemoved_)));
+
+	connections_.push_back(collection_.connectPostErased((Collection::ElementRangeCallback)[=](
+	const Collection::Iterator& pos, size_t count) RANGE_CALLBACK(postRowsRemoved_)));
+
+#undef VALUE_CALLBACK
+#undef RANGE_CALLBACK
+
+	postModelReset_();
+}
 } // end namespace wgt

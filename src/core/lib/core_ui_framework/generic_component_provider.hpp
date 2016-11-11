@@ -5,30 +5,27 @@
 
 namespace wgt
 {
-template< typename T >
+template <typename T>
 class GenericComponentProvider : public SimpleComponentProvider
 {
 public:
-	GenericComponentProvider( const char * component )
-		: SimpleComponentProvider( component )
+	GenericComponentProvider(const char* component) : SimpleComponentProvider(component)
 	{
 	}
 
-	GenericComponentProvider( const char * component,
-		const ItemRole::Id roles[], size_t count )
-		: SimpleComponentProvider( component, roles, count )
+	GenericComponentProvider(const char* component, const ItemRole::Id roles[], size_t count)
+	    : SimpleComponentProvider(component, roles, count)
 	{
 	}
 
-	const char * componentId( const TypeId & typeId,
-		std::function< bool ( const ItemRole::Id& ) > & predicate ) const override
+	const char* componentId(const TypeId& typeId, std::function<bool(const ItemRole::Id&)>& predicate) const override
 	{
 		if (typeId != TypeId::getType<T>())
 		{
 			return nullptr;
 		}
 
-		return SimpleComponentProvider::componentId( typeId, predicate );
+		return SimpleComponentProvider::componentId(typeId, predicate);
 	}
 };
 } // end namespace wgt

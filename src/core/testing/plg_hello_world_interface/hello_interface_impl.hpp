@@ -13,30 +13,26 @@
 
 namespace wgt
 {
-
- /**
+/**
  * HelloInterfaceImpl
  *
  * Plugins are driven by their interfaces, which are versioned. HelloInterface
  * is one such interface, which is at version 1 at the moment. It implements
  * the display() and remove() functions, which will create our HelloInterfaceImpl.
  */
-class HelloInterfaceImpl
-    : public Implements< HelloInterface > // Always implement latest version
-    , Depends< IUIFramework, IUIApplication, IViewCreator >
+class HelloInterfaceImpl : public Implements<HelloInterface> // Always implement latest version
+                           ,
+                           Depends<IUIFramework, IUIApplication, IViewCreator>
 {
-
 public:
+	HelloInterfaceImpl(IComponentContext& context);
+	HelloInterfaceImpl();
 
-    HelloInterfaceImpl( IComponentContext & context );
-    HelloInterfaceImpl();
-     
-    virtual void display() override;
-    virtual void remove() override;
- 
+	virtual void display() override;
+	virtual void remove() override;
+
 private:
-    
-    wg_future<std::unique_ptr< IView >> helloView_;
+	wg_future<std::unique_ptr<IView>> helloView_;
 };
 
 } // end namespace wgt

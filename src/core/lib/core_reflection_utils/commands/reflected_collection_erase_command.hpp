@@ -13,11 +13,11 @@ class ReflectedCollectionEraseCommandParameters
 public:
 	RefObjectId id_;
 	std::string path_;
-	Variant		key_;
+	Variant key_;
 
 private:
-	Variant		value_;
-	bool		erased_;
+	Variant value_;
+	bool erased_;
 
 	friend class ReflectedCollectionEraseCommand;
 };
@@ -25,20 +25,20 @@ private:
 class ReflectedCollectionEraseCommand : public Command
 {
 public:
-	ReflectedCollectionEraseCommand( IDefinitionManager & definitionManager );
+	ReflectedCollectionEraseCommand(IDefinitionManager& definitionManager);
 	virtual ~ReflectedCollectionEraseCommand();
 
-	const char * getId() const override;
-	ObjectHandle execute(const ObjectHandle & arguments) const override;
+	const char* getId() const override;
+	ObjectHandle execute(const ObjectHandle& arguments) const override;
 	bool customUndo() const override;
-	bool undo( const ObjectHandle & arguments ) const override;
-	bool redo( const ObjectHandle & arguments ) const override;
+	bool undo(const ObjectHandle& arguments) const override;
+	bool redo(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
 
-	ObjectHandle getCommandDescription(const ObjectHandle & arguments) const override;
+	ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
 
 private:
-	IDefinitionManager & definitionManager_;
+	IDefinitionManager& definitionManager_;
 };
 } // end namespace wgt
 #endif // REFLECTED_COLLECTION_ERASE_COMMAND_HPP

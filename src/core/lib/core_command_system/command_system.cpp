@@ -7,18 +7,16 @@ namespace wgt
 {
 namespace CommandSystem
 {
-
 //==============================================================================
-void initReflectedTypes( IDefinitionManager & definitionManager )
+void initReflectedTypes(IDefinitionManager& definitionManager)
 {
-	REGISTER_DEFINITION( CommandInstance )
-	REGISTER_DEFINITION( CompoundCommand )
-	REGISTER_DEFINITION( MacroObject)
-	REGISTER_DEFINITION( MacroEditObject)
-	REGISTER_DEFINITION( ReflectedPropertyCommandArgumentController )
-	REGISTER_DEFINITION( MethodParam )
-	REGISTER_DEFINITION( ReflectedMethodCommandParametersController )
+	REGISTER_DEFINITION(CommandInstance)
+	REGISTER_DEFINITION(CompoundCommand)
+	REGISTER_DEFINITION(MacroObject)
+	REGISTER_DEFINITION(MacroEditObject)
+	REGISTER_DEFINITION(ReflectedPropertyCommandArgumentController)
+	REGISTER_DEFINITION(MethodParam)
+	REGISTER_DEFINITION(ReflectedMethodCommandParametersController)
 }
-
 }
 } // end namespace wgt

@@ -7,35 +7,34 @@
 
 namespace wgt
 {
-QtTabRegion::QtTabRegion( IComponentContext & context, QTabWidget & qTabWidget )
-	: Depends( context )
-	, qTabWidget_( qTabWidget )
-	, current_(nullptr)
+QtTabRegion::QtTabRegion(IComponentContext& context, QTabWidget& qTabWidget)
+    : Depends(context), qTabWidget_(qTabWidget), current_(nullptr)
 {
-	qTabWidget_.setVisible( false );
+	qTabWidget_.setVisible(false);
 
-	auto layoutTagsProperty = qTabWidget_.property( "layoutTags" );
+	auto layoutTagsProperty = qTabWidget_.property("layoutTags");
 	if (layoutTagsProperty.isValid())
 	{
 		auto tags = layoutTagsProperty.toStringList();
 		for (auto it = tags.cbegin(); it != tags.cend(); ++it)
 		{
-			tags_.tags_.push_back( std::string( it->toUtf8() ) );
+			tags_.tags_.push_back(std::string(it->toUtf8()));
 		}
 	}
 
-	auto currentChangedFn = [this](int index)
-	{
+	auto currentChangedFn = [this](int index) {
 		if (current_ != nullptr)
 		{
-			auto it = std::find_if(tabs_.begin(), tabs_.end(), [this](const Tabs::value_type& x) { return x.first == current_; });
+			auto it =
+			std::find_if(tabs_.begin(), tabs_.end(), [this](const Tabs::value_type& x) { return x.first == current_; });
 			assert(it != tabs_.end());
 			it->second->focusOutEvent();
 		}
 		if (index >= 0)
 		{
 			QWidget* curr = qTabWidget_.widget(index);
-			auto it = std::find_if(tabs_.begin(), tabs_.end(), [curr](const Tabs::value_type& x) { return x.first == curr; });
+			auto it =
+			std::find_if(tabs_.begin(), tabs_.end(), [curr](const Tabs::value_type& x) { return x.first == curr; });
 			assert(it != tabs_.end());
 			auto view = it->second;
 			QmlView* qmlView = dynamic_cast<QmlView*>(view);
@@ -65,7 +64,7 @@ QtTabRegion::~QtTabRegion()
 	QObject::disconnect(m_connection);
 }
 
-const LayoutTags & QtTabRegion::tags() const
+const LayoutTags& QtTabRegion::tags() const
 {
 	return tags_;
 }
@@ -86,7 +85,8 @@ QtTabRegion::Tabs::iterator QtTabRegion::findTabFromView(IView& view)
 
 void QtTabRegion::setTabTitle(int index, const char* text)
 {
-	const QString title((text == nullptr || *text == 0) ? (std::string("noname_") + std::to_string(index)).c_str() : text);
+	const QString title((text == nullptr || *text == 0) ? (std::string("noname_") + std::to_string(index)).c_str() :
+	                                                      text);
 	qTabWidget_.setTabText(index, title);
 }
 
@@ -108,24 +108,24 @@ void QtTabRegion::onLoaded(IView* view)
 	}
 }
 
-void QtTabRegion::addView( IView & view )
+void QtTabRegion::addView(IView& view)
 {
 	// IView will not control qWidget's life-cycle after this call.
 	auto qtFramework = get<IQtFramework>();
-	assert( qtFramework != nullptr );
-	auto qWidget = qtFramework->toQWidget( view );
+	assert(qtFramework != nullptr);
+	auto qWidget = qtFramework->toQWidget(view);
 	if (qWidget == nullptr)
 	{
 		return;
 	}
-	int index = qTabWidget_.indexOf( qWidget );
+	int index = qTabWidget_.indexOf(qWidget);
 	if (index != -1)
 	{
 		// already added into the tabWidget
 		return;
 	}
 
-	tabs_.emplace_back( Tabs::value_type(qWidget, &view) );
+	tabs_.emplace_back(Tabs::value_type(qWidget, &view));
 
 	const int id = qTabWidget_.addTab(qWidget, "");
 	setTabTitle(id, view.title());
@@ -134,11 +134,11 @@ void QtTabRegion::addView( IView & view )
 	qTabWidget_.setVisible(true);
 }
 
-void QtTabRegion::removeView( IView & view )
+void QtTabRegion::removeView(IView& view)
 {
 	// IView will not control qWidget's life-cycle after this call.
 	auto qtFramework = get<IQtFramework>();
-	assert( qtFramework != nullptr );
+	assert(qtFramework != nullptr);
 
 	auto it = findTabFromView(view);
 	assert(it != tabs_.end());
@@ -152,8 +152,8 @@ void QtTabRegion::removeView( IView & view )
 	}
 	tabs_.erase(it);
 
-	qTabWidget_.removeTab( index );
+	qTabWidget_.removeTab(index);
 	// call this function to let IView control the qWidget's life-cycle again.
-	qtFramework->retainQWidget( view );
+	qtFramework->retainQWidget(view);
 }
 } // end namespace wgt

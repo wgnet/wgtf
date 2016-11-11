@@ -10,44 +10,30 @@ class TreeExtensionOld : public IModelExtensionOld
 {
 	Q_OBJECT
 
-	Q_PROPERTY( QVariant	currentIndex
-				READ		getCurrentIndex
-				WRITE		setCurrentIndex
-				NOTIFY		currentIndexChanged )
+	Q_PROPERTY(QVariant currentIndex READ getCurrentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
 
-	Q_PROPERTY( bool		blockSelection
-				READ		getBlockSelection
-				WRITE		setBlockSelection
-				NOTIFY		blockSelectionChanged )
+	Q_PROPERTY(bool blockSelection READ getBlockSelection WRITE setBlockSelection NOTIFY blockSelectionChanged)
 
-	Q_PROPERTY( QObject *	selectionExtension
-				READ		getSelectionExtension
-				WRITE		setSelectionExtension
-				NOTIFY		selectionExtensionChanged )
+	Q_PROPERTY(
+	QObject* selectionExtension READ getSelectionExtension WRITE setSelectionExtension NOTIFY selectionExtensionChanged)
 
 public:
 	TreeExtensionOld();
 	virtual ~TreeExtensionOld();
 
-	QHash< int, QByteArray > roleNames() const override;
-	QVariant data( const QModelIndex &index, int role ) const override;
-	bool setData( const QModelIndex &index,
-		const QVariant &value,
-		int role ) override;
+	QHash<int, QByteArray> roleNames() const override;
+	QVariant data(const QModelIndex& index, int role) const override;
+	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
-	void onLayoutAboutToBeChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint ) override;
-	void onLayoutChanged(
-		const QList< QPersistentModelIndex > & parents, 
-		QAbstractItemModel::LayoutChangeHint hint ) override;
-	void onRowsAboutToBeRemoved(
-		const QModelIndex& parent, int first, int last ) override;
-	void onRowsRemoved( 
-		const QModelIndex & parent, int first, int last ) override;
+	void onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+	                              QAbstractItemModel::LayoutChangeHint hint) override;
+	void onLayoutChanged(const QList<QPersistentModelIndex>& parents,
+	                     QAbstractItemModel::LayoutChangeHint hint) override;
+	void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last) override;
+	void onRowsRemoved(const QModelIndex& parent, int first, int last) override;
 
-	void saveStates( const char * modelUniqueName ) override;
-	void loadStates( const char * modelUniqueName ) override;
+	void saveStates(const char* modelUniqueName) override;
+	void loadStates(const char* modelUniqueName) override;
 
 	Q_INVOKABLE bool moveUp();
 	Q_INVOKABLE bool moveDown();
@@ -62,13 +48,13 @@ signals:
 
 private:
 	QVariant getCurrentIndex() const;
-	void setCurrentIndex( const QVariant& index );
+	void setCurrentIndex(const QVariant& index);
 
 	bool getBlockSelection() const;
-	void setBlockSelection( bool blockSelection );
+	void setBlockSelection(bool blockSelection);
 
-	QObject * getSelectionExtension() const;
-	void setSelectionExtension( QObject * selectionExtension );
+	QObject* getSelectionExtension() const;
+	void setSelectionExtension(QObject* selectionExtension);
 
 	bool handleCurrentIndexChanged();
 

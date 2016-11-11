@@ -15,12 +15,11 @@
 #include <mutex>
 #include "core_common/wg_condition_variable.hpp"
 
-
 namespace wgt
 {
 namespace
 {
-	class CommandManagerImpl;
+class CommandManagerImpl;
 }
 class Command;
 class ICommandManager;
@@ -38,21 +37,20 @@ enum ExecutionStatus
 class CommandStatusHandler
 {
 public:
-	virtual void setStatus( ExecutionStatus status ) = 0;
+	virtual void setStatus(ExecutionStatus status) = 0;
 };
 
 class CommandInstance;
-typedef ObjectHandleT< CommandInstance > CommandInstancePtr;
+typedef ObjectHandleT<CommandInstance> CommandInstancePtr;
 
 class UndoRedoData;
-typedef std::unique_ptr< UndoRedoData > UndoRedoDataPtr;
+typedef std::unique_ptr<UndoRedoData> UndoRedoDataPtr;
 
-//TODO: Pull out interface to remove linkage
+// TODO: Pull out interface to remove linkage
 /**
  *	CommandInstance stores per-instance data for a type of Command.
  */
-class CommandInstance
-	: public CommandStatusHandler
+class CommandInstance : public CommandStatusHandler
 {
 	DECLARE_REFLECTED
 
@@ -72,8 +70,14 @@ public:
 	bool isComplete() const;
 
 	ExecutionStatus getExecutionStatus() const;
-	ObjectHandle getArguments() const { return arguments_; }
-	ObjectHandle getReturnValue() const { return returnValue_; }
+	ObjectHandle getArguments() const
+	{
+		return arguments_;
+	}
+	ObjectHandle getReturnValue() const
+	{
+		return returnValue_;
+	}
 
 	CommandErrorCode getErrorCode() const;
 
@@ -87,46 +91,49 @@ public:
 	void undo();
 	void redo();
 
-	const char * getCommandId() const;
-	void setContextObject( const ObjectHandle & contextObject );
+	const char* getCommandId() const;
+	void setContextObject(const ObjectHandle& contextObject);
 
-	ICommandManager * getCommandSystemProvider() { return pCmdSysProvider_; }
+	ICommandManager* getCommandSystemProvider()
+	{
+		return pCmdSysProvider_;
+	}
 
 	ObjectHandle getCommandDescription() const;
 
-	void consolidateUndoRedoData( CommandInstance * parentInstance );
+	void consolidateUndoRedoData(CommandInstance* parentInstance);
 
 private:
 	// Disable copy and move
-	CommandInstance( const CommandInstance & );
-	CommandInstance( CommandInstance && );
-	CommandInstance & operator=( const CommandInstance & );
-	CommandInstance & operator=( CommandInstance && );
+	CommandInstance(const CommandInstance&);
+	CommandInstance(CommandInstance&&);
+	CommandInstance& operator=(const CommandInstance&);
+	CommandInstance& operator=(CommandInstance&&);
 
 	void waitForCompletion();
 
-	Command * getCommand();
-	const Command * getCommand() const;
+	Command* getCommand();
+	const Command* getCommand() const;
 
-	void setStatus( ExecutionStatus status );
-	void setArguments( const ObjectHandle & arguments );
-	void setCommandId( const char * commandName );
-	
-	void setCommandSystemProvider( ICommandManager * pCmdSysProvider );
-	void setDefinitionManager( IDefinitionManager & defManager );
+	void setStatus(ExecutionStatus status);
+	void setArguments(const ObjectHandle& arguments);
+	void setCommandId(const char* commandName);
 
-	std::mutex					mutex_;
-	IDefinitionManager *		defManager_;
-	std::atomic< ExecutionStatus > status_;
-	wg_condition_variable		completeStatus_; // assumed predicate: status_ == Complete
-	ObjectHandle				arguments_;
-	ObjectHandle				returnValue_;
-	std::vector< CommandInstancePtr > children_;
-	ICommandManager *			pCmdSysProvider_;
-	std::string					commandId_;
-	ObjectHandle				contextObject_;
-	CommandErrorCode			errorCode_;
-	std::vector< UndoRedoDataPtr > undoRedoData_;
+	void setCommandSystemProvider(ICommandManager* pCmdSysProvider);
+	void setDefinitionManager(IDefinitionManager& defManager);
+
+	std::mutex mutex_;
+	IDefinitionManager* defManager_;
+	std::atomic<ExecutionStatus> status_;
+	wg_condition_variable completeStatus_; // assumed predicate: status_ == Complete
+	ObjectHandle arguments_;
+	ObjectHandle returnValue_;
+	std::vector<CommandInstancePtr> children_;
+	ICommandManager* pCmdSysProvider_;
+	std::string commandId_;
+	ObjectHandle contextObject_;
+	CommandErrorCode errorCode_;
+	std::vector<UndoRedoDataPtr> undoRedoData_;
 };
 } // end namespace wgt
-#endif //COMMAND_INSTANCE_HPP
+#endif // COMMAND_INSTANCE_HPP

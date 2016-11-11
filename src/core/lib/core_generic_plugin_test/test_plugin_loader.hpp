@@ -3,10 +3,8 @@
 
 #include "core_generic_plugin_manager/generic_plugin_manager.hpp"
 
-
 #include <string>
 #include <vector>
-
 
 namespace wgt
 {
@@ -16,7 +14,7 @@ namespace wgt
 class TestPluginLoader
 {
 public:
-	typedef std::vector< std::wstring > PluginList;
+	typedef std::vector<std::wstring> PluginList;
 	TestPluginLoader();
 	virtual ~TestPluginLoader();
 
@@ -24,7 +22,7 @@ public:
 	 *	Call from the constructor of derived classes.
 	 *	@param plugins list of plugins to load.
 	 */
-	void load( const PluginList & pluginList );
+	void load(const PluginList& pluginList);
 
 	GenericPluginManager pluginManager_;
 	PluginList plugins_;

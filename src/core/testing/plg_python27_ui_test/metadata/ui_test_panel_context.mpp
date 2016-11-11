@@ -6,7 +6,7 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( PanelContext, MetaNone() )
+BEGIN_EXPOSE(PanelContext, MetaNone())
 EXPOSE("sourceModel", getSource, MetaNoSerialization())
 EXPOSE("pythonObjects", treeModel, MetaNoSerialization())
 EXPOSE("panelName", panelName, MetaNoSerialization())

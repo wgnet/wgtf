@@ -15,7 +15,9 @@ class ObjectHandle;
 class IDefinitionHelper
 {
 public:
-	virtual ~IDefinitionHelper() {}
+	virtual ~IDefinitionHelper()
+	{
+	}
 
 	/**
 	 *	TypeId for which to override reflection functionality.
@@ -25,7 +27,7 @@ public:
 	/**
 	 *	Get a definition from an ObjectHandle of the associated type
 	 */
-	virtual IClassDefinition * getDefinition( const ObjectHandle & object ) const = 0;
+	virtual IClassDefinition* getDefinition(const ObjectHandle& object) const = 0;
 };
 } // end namespace wgt
 #endif

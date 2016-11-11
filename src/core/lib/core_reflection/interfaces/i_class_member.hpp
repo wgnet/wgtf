@@ -8,7 +8,9 @@ class TypeId;
 class IClassMember
 {
 public:
-	virtual ~IClassMember() {}
+	virtual ~IClassMember()
+	{
+	}
 	virtual const TypeId& getType() const = 0;
 	virtual const char* getName() const = 0;
 };

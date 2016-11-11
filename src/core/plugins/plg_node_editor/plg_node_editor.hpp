@@ -14,7 +14,7 @@ class IComponentContext;
 * A plugin which registers an INodeEditor interface and panel which can be used to create, remove and manipulate nodes
 *
 * @ingroup plugins
-* @image html plg_node_editor.png 
+* @image html plg_node_editor.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */

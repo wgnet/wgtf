@@ -12,12 +12,8 @@ struct BaseAssetObjectItem::Implementation
 
 	Implementation(BaseAssetObjectItem& self, const IFileInfoPtr& fileInfo, const IItem* parent,
 	               IFileSystem* fileSystem, IAssetPresentationProvider* presentationProvider)
-	    : self_(self)
-	    , fileInfo_(fileInfo)
-	    , parent_(parent)
-	    , fileSystem_(fileSystem)
-	    , presentationProvider_(presentationProvider)
-	    , displayText_("")
+	    : self_(self), fileInfo_(fileInfo), parent_(parent), fileSystem_(fileSystem),
+	      presentationProvider_(presentationProvider), displayText_("")
 	{
 	}
 
@@ -26,12 +22,11 @@ struct BaseAssetObjectItem::Implementation
 		// Not currently thread safe, only one thread can initialize the children
 		if (fileSystem_ != nullptr && fileInfo_->isDirectory() && children_.empty())
 		{
-			fileSystem_->enumerate(fileInfo_->fullPath(), [&](IFileInfoPtr&& info)
-			                       {
-				                       if (!info->isDots() && !(info->attributes() & FileAttributes::Hidden))
-					                       children_.emplace_back(info, &self_, fileSystem_, presentationProvider_);
-				                       return true;
-				                   });
+			fileSystem_->enumerate(fileInfo_->fullPath(), [&](IFileInfoPtr&& info) {
+				if (!info->isDots() && !(info->attributes() & FileAttributes::Hidden))
+					children_.emplace_back(info, &self_, fileSystem_, presentationProvider_);
+				return true;
+			});
 		}
 		return children_;
 	}
@@ -46,16 +41,13 @@ struct BaseAssetObjectItem::Implementation
 };
 
 BaseAssetObjectItem::BaseAssetObjectItem(const BaseAssetObjectItem& rhs)
-    : impl_(new Implementation(*this,
-                               rhs.impl_->fileInfo_,
-                               rhs.impl_->parent_,
-                               rhs.impl_->fileSystem_,
+    : impl_(new Implementation(*this, rhs.impl_->fileInfo_, rhs.impl_->parent_, rhs.impl_->fileSystem_,
                                rhs.impl_->presentationProvider_))
 {
 }
 
-BaseAssetObjectItem::BaseAssetObjectItem(const IFileInfoPtr& fileInfo, const IItem* parent,
-                                         IFileSystem* fileSystem, IAssetPresentationProvider* assetPresentationProvider)
+BaseAssetObjectItem::BaseAssetObjectItem(const IFileInfoPtr& fileInfo, const IItem* parent, IFileSystem* fileSystem,
+                                         IAssetPresentationProvider* assetPresentationProvider)
     : impl_(new Implementation(*this, fileInfo, parent, fileSystem, assetPresentationProvider))
 {
 }
@@ -68,8 +60,8 @@ BaseAssetObjectItem& BaseAssetObjectItem::operator=(const BaseAssetObjectItem& r
 {
 	if (this != &rhs)
 	{
-		impl_.reset(new Implementation(*this, rhs.impl_->fileInfo_, rhs.impl_->parent_,
-		                               rhs.impl_->fileSystem_, rhs.impl_->presentationProvider_));
+		impl_.reset(new Implementation(*this, rhs.impl_->fileInfo_, rhs.impl_->parent_, rhs.impl_->fileSystem_,
+		                               rhs.impl_->presentationProvider_));
 	}
 
 	return *this;

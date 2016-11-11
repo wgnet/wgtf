@@ -15,12 +15,12 @@ class TestDataModelFixture
 public:
 	TestDataModelFixture();
 	virtual ~TestDataModelFixture();
-	IObjectManager * getObjectManager() const;
-	IDefinitionManager * getDefinitionManager() const;
+	IObjectManager* getObjectManager() const;
+	IDefinitionManager* getDefinitionManager() const;
 
 private:
-	std::unique_ptr< ObjectManager > objectManager_;
-	std::unique_ptr< DefinitionManager > definitionManager_;
+	std::unique_ptr<ObjectManager> objectManager_;
+	std::unique_ptr<DefinitionManager> definitionManager_;
 };
 } // end namespace wgt
-#endif //TEST_DATA_MODEL_FIXTURE_HPP
+#endif // TEST_DATA_MODEL_FIXTURE_HPP

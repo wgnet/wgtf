@@ -15,9 +15,9 @@ class ObjectHandle;
 class CustomXmlDataWriter
 {
 public:
-	CustomXmlDataWriter( TextStream& stream );
+	CustomXmlDataWriter(TextStream& stream);
 
-	bool write( const Variant& value );
+	bool write(const Variant& value);
 
 private:
 	TextStream& stream_;
@@ -30,27 +30,26 @@ private:
 		return stream_.fail();
 	}
 
-	void writeValue( const Variant& value );
+	void writeValue(const Variant& value);
 
 	void writeIndent();
 	void writeNewline();
 
-	void beginOpenTag( const char* tag );
+	void beginOpenTag(const char* tag);
 	void endOpenTag();
-	void closeTag( const char* tag );
+	void closeTag(const char* tag);
 
-	template< typename Name, typename T >
-	void writeAttribute( const Name& name, const T& value )
+	template <typename Name, typename T>
+	void writeAttribute(const Name& name, const T& value)
 	{
-		if( !tagOpening_ )
+		if (!tagOpening_)
 		{
-			stream_.setState( std::ios_base::failbit );
+			stream_.setState(std::ios_base::failbit);
 			return;
 		}
 
 		stream_ << " " << name << "=" << value;
 	}
-
 };
 } // end namespace wgt
-#endif//CUSTOM_XML_WRITER_HPP_INCLUDED
+#endif // CUSTOM_XML_WRITER_HPP_INCLUDED

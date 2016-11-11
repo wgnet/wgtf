@@ -24,6 +24,6 @@ Item {
 	property Component columnFooter: Item {}
     /** Optional styling of the column resizing handles.*/
 	property Component columnHandle: Rectangle {
-        color: palette.darkColor
+        color: palette.lighterShade
 	}
 }

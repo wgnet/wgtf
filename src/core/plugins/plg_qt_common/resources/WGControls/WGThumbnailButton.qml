@@ -89,7 +89,7 @@ Button {
 
     Item {
         anchors.fill: parent
-        Image {
+        WGImage {
             id: icon
             anchors.fill: parent
             anchors.margins: defaultSpacing.standardMargin

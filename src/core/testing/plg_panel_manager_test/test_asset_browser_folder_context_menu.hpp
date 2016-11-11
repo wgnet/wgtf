@@ -29,15 +29,15 @@ private:
 
 class TestAssetBrowserFolderContextMenu20 : public IMenuHandler
 {
-	public:
-	    TestAssetBrowserFolderContextMenu20(IComponentContext& contextManager);
+public:
+	TestAssetBrowserFolderContextMenu20(IComponentContext& contextManager);
 
-	private:
-		virtual void registerActions(IUIFramework& uiFramework, Actions& actions) override;
+private:
+	virtual void registerActions(IUIFramework& uiFramework, Actions& actions) override;
 
-		bool canCopyPath(const IAction* action) const;
-		void copyPath(IAction* action);
-	};
+	bool canCopyPath(const IAction* action) const;
+	void copyPath(IAction* action);
+};
 }
 
 #endif // TEST_ASSET_BROWSER_FOLDER_CONTEXT_MENU_H_

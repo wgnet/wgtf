@@ -4,51 +4,47 @@
 
 namespace wgt
 {
-
-HelloPanel::HelloPanel( IComponentContext & context )
-    : Depends( context )
+HelloPanel::HelloPanel(IComponentContext& context) : Depends(context)
 {
 }
- 
+
 bool HelloPanel::addPanel()
 {
-    if (this->get< IDefinitionManager >() == nullptr)
-    {
-        return false;
-    }
+	if (this->get<IDefinitionManager>() == nullptr)
+	{
+		return false;
+	}
 
-    IDefinitionManager& definitionManager = *this->get< IDefinitionManager >();
-    REGISTER_DEFINITION( HelloPanelExposed );
-    REGISTER_DEFINITION( HelloPanelExposedSource );
-    auto helloPanelExposed = definitionManager.create< HelloPanelExposedSource >();
+	IDefinitionManager& definitionManager = *this->get<IDefinitionManager>();
+	REGISTER_DEFINITION(HelloPanelExposed);
+	REGISTER_DEFINITION(HelloPanelExposedSource);
+	auto helloPanelExposed = definitionManager.create<HelloPanelExposedSource>();
 
-    auto viewCreator = this->get< IViewCreator >();
-    if (viewCreator == nullptr)
-    {
-        return false;
-    }
+	auto viewCreator = this->get<IViewCreator>();
+	if (viewCreator == nullptr)
+	{
+		return false;
+	}
 
-    helloView_ = viewCreator->createView(
-        "WGHello/HelloPanel.qml",
-        helloPanelExposed );
+	helloView_ = viewCreator->createView("WGHello/HelloPanel.qml", helloPanelExposed);
 
-    return helloView_.valid();
+	return helloView_.valid();
 }
 
 void HelloPanel::removePanel()
 {
-    auto uiApplication = this->get< IUIApplication >();
-    if (uiApplication == nullptr)
-    {
-        return;
-    }
+	auto uiApplication = this->get<IUIApplication>();
+	if (uiApplication == nullptr)
+	{
+		return;
+	}
 
-    if (helloView_.valid())
-    {
-        auto view = helloView_.get();
-        uiApplication->removeView( *view );
-        view = nullptr;
-    }
+	if (helloView_.valid())
+	{
+		auto view = helloView_.get();
+		uiApplication->removeView(*view);
+		view = nullptr;
+	}
 }
 
 } // end namespace wgt

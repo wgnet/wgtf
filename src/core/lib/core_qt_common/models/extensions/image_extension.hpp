@@ -11,7 +11,7 @@ public:
 	ImageExtension();
 	virtual ~ImageExtension();
 
-	QVariant data( const QModelIndex &index, ItemRole::Id roleId ) const override;
+	QVariant data(const QModelIndex& index, ItemRole::Id roleId) const override;
 };
 } // end namespace wgt
 #endif // IMAGE_EXTENSION_HPP

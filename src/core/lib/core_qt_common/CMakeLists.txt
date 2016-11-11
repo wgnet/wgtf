@@ -38,6 +38,8 @@ SET( ALL_SRCS
 	models/wg_column_layout_proxy.hpp
 	models/wg_merge_proxy.cpp
 	models/wg_merge_proxy.hpp
+	models/wg_sub_proxy.cpp
+	models/wg_sub_proxy.hpp
 	models/wg_sort_filter_proxy.cpp
 	models/wg_sort_filter_proxy.hpp
 	models/wg_transpose_proxy.cpp
@@ -171,6 +173,36 @@ SET( ALL_SRCS
 
 	qt_private/qsortfilterproxymodel.cpp
 	qt_private/qsortfilterproxymodel.h
+	
+	
+	qobject_qt_type_converter.hpp
+	wg_list_iterator.cpp
+	wg_list_iterator.hpp
+	qt_scripting_engine.cpp
+	qt_scripting_engine.hpp
+	qt_script_object.cpp
+	qt_script_object.hpp
+	script_qt_type_converter.cpp
+	script_qt_type_converter.hpp
+	collection_qt_type_converter.cpp
+	collection_qt_type_converter.hpp
+	
+	qt_copy_paste_manager.cpp
+	qt_copy_paste_manager.hpp
+	qt_framework.cpp
+	qt_framework.hpp
+	qt_preferences.cpp
+	qt_preferences.hpp
+	qt_action_manager.cpp
+	qt_action_manager.hpp
+	private/ui_view_creator.hpp
+	private/ui_view_creator.cpp
+	private/qt_ui_worker.hpp
+	private/qt_ui_worker.cpp
+	qt_application.cpp
+	qt_application.hpp
+	qt_resource_system.cpp
+    qt_resource_system.hpp
 )
 
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
@@ -187,7 +219,6 @@ BW_TARGET_LINK_LIBRARIES( core_qt_common INTERFACE
 	core_logging
 	core_string_utils
 	core_ui_framework
-	core_qt_script
 )
 BW_TARGET_LINK_LIBRARIES( core_qt_common PRIVATE
 	Qt5::Core

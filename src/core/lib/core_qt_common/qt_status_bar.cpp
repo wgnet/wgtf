@@ -12,7 +12,7 @@
 
 namespace wgt
 {
-QtStatusBar::QtStatusBar(QStatusBar & qStatusBar) : qStatusBar_(qStatusBar)
+QtStatusBar::QtStatusBar(QStatusBar& qStatusBar) : qStatusBar_(qStatusBar)
 {
 }
 

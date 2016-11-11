@@ -6,11 +6,7 @@
 namespace wgt
 {
 InsertRowsCommandArgument::InsertRowsCommandArgument()
-    : pModel_(nullptr)
-    , startPos_(-1)
-    , type_(Type::ROW)
-    , count_(-1)
-    , pParent_(nullptr)
+    : pModel_(nullptr), startPos_(-1), type_(Type::ROW), count_(-1), pParent_(nullptr)
 {
 }
 

@@ -1,0 +1,15 @@
+#include "../view_model.hpp"
+
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(ViewModel, MetaNone())
+EXPOSE("title", getTitle, MetaNone())
+EXPOSE("windowId", getWindowId, MetaNone())
+EXPOSE("layoutHints", getLayoutHints, MetaNone())
+END_EXPOSE()
+} // end namespace wgt

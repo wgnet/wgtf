@@ -15,86 +15,72 @@ namespace wgt
 //==============================================================================
 
 //------------------------------------------------------------------------------
-ObjectHandle::ObjectHandle()
-	: storage_( nullptr )
+ObjectHandle::ObjectHandle() : storage_(nullptr)
 {
 }
-
 
 //--------------------------------------------------------------------------
-ObjectHandle::ObjectHandle( const ObjectHandle & other )
-	: storage_( other.storage_ )
+ObjectHandle::ObjectHandle(const ObjectHandle& other) : storage_(other.storage_)
 {
 }
 
-
-ObjectHandle::ObjectHandle( ObjectHandle && other )
-	: storage_( std::move( other.storage_ ) )
+ObjectHandle::ObjectHandle(ObjectHandle&& other) : storage_(std::move(other.storage_))
 {
 }
-
 
 //--------------------------------------------------------------------------
-ObjectHandle::ObjectHandle( const std::shared_ptr< IObjectHandleStorage > & storage )
-	: storage_( storage )
+ObjectHandle::ObjectHandle(const std::shared_ptr<IObjectHandleStorage>& storage) : storage_(storage)
 {
 }
-
 
 //------------------------------------------------------------------------------
-ObjectHandle::ObjectHandle( const std::nullptr_t & )
-	: storage_( nullptr )
+ObjectHandle::ObjectHandle(const std::nullptr_t&) : storage_(nullptr)
 {
 }
 
-
-ObjectHandle::ObjectHandle( const Variant & variant, const IClassDefinition * definition )
+ObjectHandle::ObjectHandle(const Variant& variant, const IClassDefinition* definition)
 {
-	if( auto handlePtr = variant.value< ObjectHandle* >() )
+	if (auto handlePtr = variant.value<ObjectHandle*>())
 	{
 		// avoid pointless nesting
 		storage_ = handlePtr->storage_;
 	}
 	else
 	{
-		storage_ = std::make_shared< ObjectHandleVariantStorage >( variant, definition );
+		storage_ = std::make_shared<ObjectHandleVariantStorage>(variant, definition);
 	}
 }
 
-
-ObjectHandle::ObjectHandle( Variant * variant, const IClassDefinition * definition )
+ObjectHandle::ObjectHandle(Variant* variant, const IClassDefinition* definition)
 {
-	if( !variant )
+	if (!variant)
 	{
 		// leave storage_ empty
 		return;
 	}
 
-	if( auto handlePtr = variant->value< ObjectHandle* >() )
+	if (auto handlePtr = variant->value<ObjectHandle*>())
 	{
 		// avoid pointless nesting
 		storage_ = handlePtr->storage_;
 	}
 	else
 	{
-		storage_ = std::make_shared< ObjectHandleVariantStorage >( variant, definition );
+		storage_ = std::make_shared<ObjectHandleVariantStorage>(variant, definition);
 	}
 }
 
-
 //------------------------------------------------------------------------------
 ObjectHandle::ObjectHandle(std::shared_ptr<void> data, TypeId type, DataGetter getter)
-	: storage_(new ObjectHandleStorageVoid(data, type, getter))
+    : storage_(new ObjectHandleStorageVoid(data, type, getter))
 {
 }
 
-
 //------------------------------------------------------------------------------
-void * ObjectHandle::data() const
+void* ObjectHandle::data() const
 {
 	return storage_ != nullptr ? storage_->data() : nullptr;
 }
-
 
 //------------------------------------------------------------------------------
 TypeId ObjectHandle::type() const
@@ -102,42 +88,37 @@ TypeId ObjectHandle::type() const
 	return storage_ != nullptr ? storage_->type() : nullptr;
 }
 
-
 //------------------------------------------------------------------------------
 bool ObjectHandle::isValid() const
 {
 	return data() != nullptr;
 }
 
-
 //------------------------------------------------------------------------------
-std::shared_ptr< IObjectHandleStorage > ObjectHandle::storage() const
+std::shared_ptr<IObjectHandleStorage> ObjectHandle::storage() const
 {
 	return storage_;
 }
 
-
 //------------------------------------------------------------------------------
-const IClassDefinition * ObjectHandle::getDefinition( const IDefinitionManager & definitionManager ) const
+const IClassDefinition* ObjectHandle::getDefinition(const IDefinitionManager& definitionManager) const
 {
-	return definitionManager.getObjectDefinition( *this );
+	return definitionManager.getObjectDefinition(*this);
 }
 
-
 //------------------------------------------------------------------------------
-bool ObjectHandle::getId( RefObjectId & o_Id ) const 
+bool ObjectHandle::getId(RefObjectId& o_Id) const
 {
 	if (storage_ == nullptr)
 	{
 		return false;
 	}
 
-	return storage_->getId( o_Id );
+	return storage_->getId(o_Id);
 }
 
-
 //------------------------------------------------------------------------------
-bool ObjectHandle::operator ==( const ObjectHandle & other ) const
+bool ObjectHandle::operator==(const ObjectHandle& other) const
 {
 	if (storage_ == other.storage_)
 	{
@@ -161,48 +142,42 @@ bool ObjectHandle::operator ==( const ObjectHandle & other ) const
 	return false;
 }
 
-
 //------------------------------------------------------------------------------
-bool ObjectHandle::operator !=( const ObjectHandle & other ) const
+bool ObjectHandle::operator!=(const ObjectHandle& other) const
 {
-	return !operator==( other );
+	return !operator==(other);
 }
 
-
 //------------------------------------------------------------------------------
-ObjectHandle & ObjectHandle::operator=( const std::nullptr_t & )
+ObjectHandle& ObjectHandle::operator=(const std::nullptr_t&)
 {
 	storage_ = nullptr;
 	return *this;
 }
 
-
 //------------------------------------------------------------------------------
-ObjectHandle & ObjectHandle::operator=( const ObjectHandle & other )
+ObjectHandle& ObjectHandle::operator=(const ObjectHandle& other)
 {
 	storage_ = other.storage_;
 	return *this;
 }
 
-
 //------------------------------------------------------------------------------
-ObjectHandle & ObjectHandle::operator=( ObjectHandle && other )
+ObjectHandle& ObjectHandle::operator=(ObjectHandle&& other)
 {
-	storage_ = std::move( other.storage_ );
+	storage_ = std::move(other.storage_);
 	return *this;
 }
 
-
 //------------------------------------------------------------------------------
-ObjectHandle & ObjectHandle::operator=( const std::shared_ptr< IObjectHandleStorage > & storage )
+ObjectHandle& ObjectHandle::operator=(const std::shared_ptr<IObjectHandleStorage>& storage)
 {
 	storage_ = storage;
 	return *this;
 }
 
-
 //------------------------------------------------------------------------------
-bool ObjectHandle::operator<( const ObjectHandle & other ) const
+bool ObjectHandle::operator<(const ObjectHandle& other) const
 {
 	if (storage_ == other.storage_)
 	{
@@ -228,20 +203,20 @@ bool ObjectHandle::operator<( const ObjectHandle & other ) const
 	return left < right;
 }
 
-
 //------------------------------------------------------------------------------
-ObjectHandle reflectedCast( const ObjectHandle & other, const TypeId & typeIdDest, const IDefinitionManager & definitionManager )
+ObjectHandle reflectedCast(const ObjectHandle& other, const TypeId& typeIdDest,
+                           const IDefinitionManager& definitionManager)
 {
-	std::shared_ptr< IObjectHandleStorage > storage =
-		std::make_shared< ObjectHandleStorageReflectedCast >( other.storage(), typeIdDest, definitionManager );
-	return ObjectHandle( storage );
+	std::shared_ptr<IObjectHandleStorage> storage =
+	std::make_shared<ObjectHandleStorageReflectedCast>(other.storage(), typeIdDest, definitionManager);
+	return ObjectHandle(storage);
 }
 
-
 //------------------------------------------------------------------------------
-void * reflectedCast( void * source, const TypeId & typeIdSource, const TypeId & typeIdDest, const IDefinitionManager & definitionManager )
+void* reflectedCast(void* source, const TypeId& typeIdSource, const TypeId& typeIdDest,
+                    const IDefinitionManager& definitionManager)
 {
-	char * pRaw = static_cast< char * >( source );
+	char* pRaw = static_cast<char*>(source);
 	if (pRaw == nullptr)
 	{
 		return pRaw;
@@ -252,15 +227,14 @@ void * reflectedCast( void * source, const TypeId & typeIdSource, const TypeId &
 		return pRaw;
 	}
 
-	auto srcDefinition = definitionManager.getDefinition( typeIdSource.getName() );
+	auto srcDefinition = definitionManager.getDefinition(typeIdSource.getName());
 	if (srcDefinition != nullptr)
 	{
-		auto dstDefinition = definitionManager.getDefinition( typeIdDest.getName() );
-		if (dstDefinition != nullptr &&
-			srcDefinition->canBeCastTo( *dstDefinition ))
+		auto dstDefinition = definitionManager.getDefinition(typeIdDest.getName());
+		if (dstDefinition != nullptr && srcDefinition->canBeCastTo(*dstDefinition))
 		{
-			auto result = srcDefinition->castTo( *dstDefinition, pRaw);
-			assert( result != nullptr );
+			auto result = srcDefinition->castTo(*dstDefinition, pRaw);
+			assert(result != nullptr);
 			return result;
 		}
 		else
@@ -272,9 +246,8 @@ void * reflectedCast( void * source, const TypeId & typeIdSource, const TypeId &
 	return nullptr;
 }
 
-
 //------------------------------------------------------------------------------
-ObjectHandle reflectedRoot( const ObjectHandle & source, const IDefinitionManager & definitionManager )
+ObjectHandle reflectedRoot(const ObjectHandle& source, const IDefinitionManager& definitionManager)
 {
 	if (!source.isValid())
 	{
@@ -282,8 +255,7 @@ ObjectHandle reflectedRoot( const ObjectHandle & source, const IDefinitionManage
 	}
 
 	auto root = source.storage();
-	auto reflectedRoot = 
-		definitionManager.getObjectDefinition( root ) != nullptr ? root : nullptr;
+	auto reflectedRoot = definitionManager.getObjectDefinition(root) != nullptr ? root : nullptr;
 	for (;;)
 	{
 		auto inner = root->inner();
@@ -292,102 +264,91 @@ ObjectHandle reflectedRoot( const ObjectHandle & source, const IDefinitionManage
 			break;
 		}
 		root = inner;
-		reflectedRoot = 
-			definitionManager.getObjectDefinition( root ) != nullptr ? root : nullptr;
+		reflectedRoot = definitionManager.getObjectDefinition(root) != nullptr ? root : nullptr;
 	}
-	return ObjectHandle( reflectedRoot );
+	return ObjectHandle(reflectedRoot);
 }
 
 namespace
 {
+template <typename Fn>
+void metaAction(const ObjectHandle& value, Fn fn)
+{
+	const MetaType* metaType = nullptr;
+	void* raw = nullptr;
 
-	template< typename Fn >
-	void metaAction( const ObjectHandle& value, Fn fn )
+	if (IObjectHandleStorage* storage = value.storage().get())
 	{
-		const MetaType* metaType = nullptr;
-		void* raw = nullptr;
-
-		if( IObjectHandleStorage* storage = value.storage().get() )
-		{
-			metaType = MetaType::find( storage->type() );
-			raw = storage->data();
-		}
-
-		fn( metaType, raw );
+		metaType = MetaType::find(storage->type());
+		raw = storage->data();
 	}
 
+	fn(metaType, raw);
+}
 }
 
-
 //------------------------------------------------------------------------------
-TextStream& operator<<( TextStream& stream, StrongType< const ObjectHandle& > value )
+TextStream& operator<<(TextStream& stream, StrongType<const ObjectHandle&> value)
 {
-	metaAction( value, [&]( const MetaType* metaType, void* raw )
-	{
-		if( metaType && raw )
+	metaAction(value, [&](const MetaType* metaType, void* raw) {
+		if (metaType && raw)
 		{
-			metaType->streamOut( stream, raw );
+			metaType->streamOut(stream, raw);
 		}
 		else
 		{
-			stream.setState( std::ios_base::failbit );
+			stream.setState(std::ios_base::failbit);
 		}
 	});
 
 	return stream;
 }
 
-
 //------------------------------------------------------------------------------
-TextStream& operator>>( TextStream& stream, ObjectHandle& value )
+TextStream& operator>>(TextStream& stream, ObjectHandle& value)
 {
-	metaAction( value, [&]( const MetaType* metaType, void* raw )
-	{
-		if( metaType && raw )
+	metaAction(value, [&](const MetaType* metaType, void* raw) {
+		if (metaType && raw)
 		{
-			metaType->streamIn( stream, raw );
+			metaType->streamIn(stream, raw);
 		}
 		else
 		{
-			stream.setState( std::ios_base::failbit );
+			stream.setState(std::ios_base::failbit);
 		}
 	});
 
 	return stream;
 }
 
-
 //------------------------------------------------------------------------------
-BinaryStream& operator<<( BinaryStream& stream, StrongType< const ObjectHandle& > value )
+BinaryStream& operator<<(BinaryStream& stream, StrongType<const ObjectHandle&> value)
 {
-	metaAction( value, [&]( const MetaType* metaType, void* raw )
-	{
-		if( metaType && raw )
+	metaAction(value, [&](const MetaType* metaType, void* raw) {
+		if (metaType && raw)
 		{
-			metaType->streamOut( stream, raw );
+			metaType->streamOut(stream, raw);
 		}
 		else
 		{
-			stream.setState( std::ios_base::failbit );
+			stream.setState(std::ios_base::failbit);
 		}
 	});
 
 	return stream;
 }
 
-
 //------------------------------------------------------------------------------
-BinaryStream& operator>>( BinaryStream& stream, ObjectHandle& value )
+BinaryStream& operator>>(BinaryStream& stream, ObjectHandle& value)
 {
-	metaAction( value, [&]( const MetaType* metaType, void* raw )
-	{
-		if( metaType && raw )
+	metaAction(value, [&](const MetaType* metaType, void* raw) {
+		if (metaType && raw)
 		{
-			metaType->streamIn( stream, raw );
+			metaType->streamIn(stream, raw);
 		}
 		else
 		{
-			stream.setState( std::ios_base::failbit );
+			stream.setState(std::ios_base::failbit);
 		}
 	});
 

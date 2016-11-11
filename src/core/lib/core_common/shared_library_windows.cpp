@@ -2,21 +2,20 @@
 #include <cstdint>
 #include "ngt_windows.hpp"
 
-
 namespace wgt
 {
 bool SharedLibrary::load(const char* fileName)
 {
 	unload();
 
-	if(fileName)
+	if (fileName)
 	{
 		lib_ = static_cast<void*>(LoadLibraryA(fileName));
 	}
 	else
 	{
 		lib_ = static_cast<void*>(GetModuleHandleA(NULL));
-		if(isValid())
+		if (isValid())
 		{
 			// Set lower bit to indicate that we shouldn't unload library.
 			// Modules are aligned to memory page boundary so lower bits are normally zeroed.
@@ -27,15 +26,14 @@ bool SharedLibrary::load(const char* fileName)
 	return isValid();
 }
 
-
 void SharedLibrary::unload()
 {
-	if(!isValid())
+	if (!isValid())
 	{
 		return;
 	}
 
-	if((reinterpret_cast<uintptr_t>(lib_) & 1) == 0)
+	if ((reinterpret_cast<uintptr_t>(lib_) & 1) == 0)
 	{
 		FreeLibrary(static_cast<HMODULE>(lib_));
 	}
@@ -43,10 +41,9 @@ void SharedLibrary::unload()
 	lib_ = nullptr;
 }
 
-
 void* SharedLibrary::findRawSymbol(const char* name) const
 {
-	if(!isValid())
+	if (!isValid())
 	{
 		return nullptr;
 	}

@@ -8,12 +8,12 @@ namespace wgt
 class DisplayObject
 {
 public:
-    DisplayObject();
-    void init( IDefinitionManager& defManager, const CommandInstancePtr & instance );
-    ObjectHandle getDisplayData() const;
+	DisplayObject();
+	void init(IDefinitionManager& defManager, const CommandInstancePtr& instance);
+	ObjectHandle getDisplayData() const;
+
 private:
 	ObjectHandle data_;
-
 };
 } // end namespace wgt
-#endif //DISPLAY_OBJECT_HPP
+#endif // DISPLAY_OBJECT_HPP

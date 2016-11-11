@@ -22,18 +22,19 @@ struct BezierPointData;
 class BezierPoint
 {
 public:
-	BezierPoint(){}
+	BezierPoint()
+	{
+	}
 	BezierPoint(IDefinitionManager& definitionManager, const Point& pos);
 	BezierPoint(IDefinitionManager& definitionManager, const Point& pos, const Point& cp1, const Point& cp2);
 
-	BezierPoint& operator=( const BezierPointData& rhs );
-	
+	BezierPoint& operator=(const BezierPointData& rhs);
+
 	ObjectHandleT<Point> pos;
 	ObjectHandleT<Point> cp1;
 	ObjectHandleT<Point> cp2;
 };
 
-
-bool operator==( const BezierPoint& lhs, const BezierPoint& rhs );
+bool operator==(const BezierPoint& lhs, const BezierPoint& rhs);
 } // end namespace wgt
 #endif // BEZIER_POINT_H_

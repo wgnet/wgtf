@@ -75,7 +75,6 @@ WGNumberBox {
     \qmltype SpinBox
     \inqmlmodule QtQuick.Controls
     \since 5.1
-    \ingroup controls
     \brief Provides a spin box control.
 
     SpinBox allows the user to choose a value by clicking the up or down buttons, or by

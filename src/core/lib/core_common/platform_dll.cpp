@@ -15,7 +15,7 @@ void* GetProcAddress(void* handle, const char* symbol)
 uint GetModuleFileNameA(HMODULE hModule, char* filename, uint size)
 {
 	Dl_info info;
-	if (!dladdr( hModule != nullptr ? hModule : reinterpret_cast<void*>(GetModuleFileNameA), &info ))
+	if (!dladdr(hModule != nullptr ? hModule : reinterpret_cast<void*>(GetModuleFileNameA), &info))
 	{
 		return 0;
 	}
@@ -26,11 +26,11 @@ uint GetModuleFileNameA(HMODULE hModule, char* filename, uint size)
 uint GetModuleFileNameW(HMODULE hModule, wchar_t* filename, uint size)
 {
 	char path[size];
-	if (!GetModuleFileNameA( hModule, path, size ))
+	if (!GetModuleFileNameA(hModule, path, size))
 	{
 		return 0;
 	}
-	std::wstring_convert< std::codecvt_utf8<wchar_t> > conv;
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
 	wcscpy(filename, conv.from_bytes(path).c_str());
 	return 1;
 }
@@ -42,7 +42,7 @@ uint GetModuleFileName(HMODULE hModule, wchar_t* filename, uint size)
 
 HMODULE LoadLibraryW(const wchar_t* fileName)
 {
-	std::wstring_convert< std::codecvt_utf8<wchar_t> > conv;
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
 	return LoadLibraryA(conv.to_bytes(fileName).c_str());
 }
 

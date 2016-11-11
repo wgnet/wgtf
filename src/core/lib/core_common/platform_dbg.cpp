@@ -8,7 +8,7 @@
 #include <string.h>
 #endif
 
-#if defined( _WIN32 )
+#if defined(_WIN32)
 namespace wgt
 {
 bool FormatLastErrorMessage(std::string& errorMsg)
@@ -23,7 +23,7 @@ bool FormatLastErrorMessage(std::string& errorMsg)
 
 	if (lastError != ERROR_SUCCESS)
 	{
-		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, 0, lastError, 0, &errorMsg.front(), (unsigned int ) errorMsgLength, 0);
+		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, 0, lastError, 0, &errorMsg.front(), (unsigned int)errorMsgLength, 0);
 		hadError = true;
 	}
 	return hadError;
@@ -47,9 +47,9 @@ bool FormatLastErrorMessage(std::string& errorMsg)
 	{
 		errorMsg = dlerr;
 	}
-	else if ( errno )
+	else if (errno)
 	{
-		errorMsg = strerror( errno );
+		errorMsg = strerror(errno);
 	}
 
 	return !errorMsg.empty();

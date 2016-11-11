@@ -6,21 +6,20 @@
 
 namespace wgt
 {
-
-bool LoggingViewModel::initialise( IComponentContext& componentContext )
+bool LoggingViewModel::initialise(IComponentContext& componentContext)
 {
-	auto defManager = componentContext.queryInterface< IDefinitionManager >();
+	auto defManager = componentContext.queryInterface<IDefinitionManager>();
 	if (defManager == nullptr)
 	{
 		return false;
 	}
 
-	dataModel_ = std::shared_ptr< LoggingDataModel >( new LoggingDataModel() );
+	dataModel_ = std::shared_ptr<LoggingDataModel>(new LoggingDataModel());
 
 	return true;
 }
 
-std::shared_ptr< ILoggingModel > LoggingViewModel::getModel() const
+std::shared_ptr<ILoggingModel> LoggingViewModel::getModel() const
 {
 	return dataModel_;
 }

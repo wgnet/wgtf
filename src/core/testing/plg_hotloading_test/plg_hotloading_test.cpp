@@ -25,12 +25,11 @@ namespace wgt
 * This plugin is used to test QML hotloading of multiple files
 *
 * @ingroup plugins
-* @image html plg_hotloading_test.png 
+* @image html plg_hotloading_test.png
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class HotloadingTestPlugin
-: public PluginMain
+class HotloadingTestPlugin : public PluginMain
 {
 public:
 	HotloadingTestPlugin(IComponentContext& componentContext)
@@ -59,8 +58,7 @@ public:
 		auto viewCreator = componentContext.queryInterface<IViewCreator>();
 		if (viewCreator != nullptr)
 		{
-			auto onViewLoad = [qtFramework, hotloadingPanel, this](IView& view)
-			{
+			auto onViewLoad = [qtFramework, hotloadingPanel, this](IView& view) {
 				std::vector<std::string> files;
 				files.push_back("WGHotloadingPanel.qml");
 				files.push_back("WGHotloadingBase.qml");
@@ -142,8 +140,7 @@ private:
 
 		for (const std::string& file : filesToCheck)
 		{
-			auto findFn = [file](const QString& watchedFile)
-			{
+			auto findFn = [file](const QString& watchedFile) {
 				return FilePath::getFileWithExtension(watchedFile.toUtf8().constData()) == file;
 			};
 

@@ -5,67 +5,58 @@
 
 namespace wgt
 {
-TestPolyCheckBox::TestPolyCheckBox()
-	: checked_( false )
+TestPolyCheckBox::TestPolyCheckBox() : checked_(false)
 {
-
 }
 
-TestPolyTextField::TestPolyTextField()
-	: text_( "Wargaming" )
-	, num_( 55 )
+TestPolyTextField::TestPolyTextField() : text_("Wargaming"), num_(55)
 {
-
 }
 
-void TestPolyTextField::getText( std::string * text ) const
+void TestPolyTextField::getText(std::string* text) const
 {
 	*text = text_;
 }
 
-void TestPolyTextField::setText( const std::string & text )
+void TestPolyTextField::setText(const std::string& text)
 {
 	text_ = text;
 }
 
-void TestPolyTextField::getNumber( int * num ) const
+void TestPolyTextField::getNumber(int* num) const
 {
 	*num = num_;
 }
 
-void TestPolyTextField::setNumber( const int & num )
+void TestPolyTextField::setNumber(const int& num)
 {
 	num_ = num;
 }
 
-TestPolyComboBox::TestPolyComboBox()
-	: curSelected_( 0 )
+TestPolyComboBox::TestPolyComboBox() : curSelected_(0)
 {
-
 }
 
-void TestPolyComboBox::getSelected( int * select ) const
+void TestPolyComboBox::getSelected(int* select) const
 {
 	*select = curSelected_;
 }
 
-void TestPolyComboBox::setSelected( const int & select )
+void TestPolyComboBox::setSelected(const int& select)
 {
 	curSelected_ = select;
 }
 
-TestPolyColor3::TestPolyColor3()
-	: seletColor_( 0 )
+TestPolyColor3::TestPolyColor3() : seletColor_(0)
 {
-
 }
 
-void TestPolyColor3::getSelected( int * select ) const
+void TestPolyColor3::getSelected(int* select) const
 {
 	*select = seletColor_;
 }
 
-void TestPolyColor3::setSelected( const int & select )
+void TestPolyColor3::setSelected(const int& select)
 {
 	seletColor_ = select;
 }

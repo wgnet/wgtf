@@ -30,3 +30,8 @@ class unique_ptr
 * @defgroup wgcontrols WG Controls
 * A list of QML controls available
 */
+
+/**
+* @defgroup qmlaccessible QML Accessible.
+* A list of functions that is accessible to QML
+*/

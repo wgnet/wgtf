@@ -11,15 +11,16 @@ class HistorySelectionHandler
 {
 public:
 	typedef std::vector<unsigned int> Selection;
+
 public:
 	HistorySelectionHandler();
 	~HistorySelectionHandler();
 
-	void setSelection( const Selection& selectionCollection );
-	const Selection & getSelection() const;
+	void setSelection(const Selection& selectionCollection);
+	const Selection& getSelection() const;
 
 private:
 	Selection selectionSet_;
 };
 } // end namespace wgt
-#endif //HISTORY_SELECTION_HANDLER_HPP
+#endif // HISTORY_SELECTION_HANDLER_HPP

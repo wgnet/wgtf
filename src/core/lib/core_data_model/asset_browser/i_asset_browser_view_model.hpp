@@ -34,8 +34,7 @@ class IValueChangeNotifier;
 class IAssetBrowserViewModel
 {
 public:
-	IAssetBrowserViewModel()
-	    : tempInt_(0)
+	IAssetBrowserViewModel() : tempInt_(0)
 	{
 	}
 

@@ -12,18 +12,17 @@ class IComponentContext;
 class IView;
 class IViewCreator;
 
-class CustomModelInterfaceTest
-	: public Depends< IViewCreator >
+class CustomModelInterfaceTest : public Depends<IViewCreator>
 {
 public:
-	CustomModelInterfaceTest(IComponentContext & );
+	CustomModelInterfaceTest(IComponentContext&);
 	~CustomModelInterfaceTest();
 
-	void initialise( IComponentContext & contextManager );
-	void fini( IComponentContext & contextManager );
+	void initialise(IComponentContext& contextManager);
+	void fini(IComponentContext& contextManager);
 
 private:
-	wg_future<std::unique_ptr< IView >> testView_;
+	wg_future<std::unique_ptr<IView>> testView_;
 };
 } // end namespace wgt
-#endif//CUSTOM_MODEL_INTERFACE_TEST__HPP
+#endif // CUSTOM_MODEL_INTERFACE_TEST__HPP

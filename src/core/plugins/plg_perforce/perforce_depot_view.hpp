@@ -27,6 +27,7 @@ class PerforceDepotView : public IDepotView
 
 public:
 	PerforceDepotView(ClientApiPtr clientApi, const char* depotPath, const char* clientPath);
+
 private:
 	virtual IResultPtr add(const PathList& filePaths, ChangeListId changeListId) override;
 	virtual IResultPtr remove(const PathList& filePaths, ChangeListId changeListId) override;
@@ -37,7 +38,8 @@ private:
 	virtual IResultPtr get(const PathList& filePaths, Revision revision) override;
 	virtual IResultPtr getLatest(const PathList& filePaths) override;
 	virtual IResultPtr status(const PathList& filePaths) override;
-	virtual IResultPtr submit(const PathList& filePaths, const char* description = "", bool bKeepCheckedOut = false) override;
+	virtual IResultPtr submit(const PathList& filePaths, const char* description = "",
+	                          bool bKeepCheckedOut = false) override;
 	virtual IResultPtr submit(int changelistId, bool bKeepCheckedOut = false) override;
 	virtual IResultPtr reopen(const PathList& filePaths, ChangeListId changeListId) override;
 	virtual IResultPtr createChangeList(const char* description, ChangeListId& rChangeListId) override;

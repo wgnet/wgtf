@@ -8,17 +8,9 @@
 namespace wgt
 {
 BEGIN_EXPOSE(AssetBrowser20::IAssetBrowserModel, MetaNone())
-EXPOSE("folders", getFolderTreeModel, MetaDisplayName(L"FolderTreeModel"))
-EXPOSE("iconSize", getIconSize, setIconSize, MetaDisplayName(L"Icon Size"))
-EXPOSE("folderContents", getFolderContents, MetaDisplayName(L"FolderContents"))
-EXPOSE("activeFilters", getActiveFiltersModel, MetaDisplayName(L"ActiveFiltersModel"))
-EXPOSE_METHOD("populateFolderContents", populateFolderContents)
-EXPOSE_METHOD("findAssetWithPath", findAssetWithPath)
-
-// Functionality added to support custom content filters. This feature can be removed when more robust
-// filtering options (regex, and/or, tokenized string input, chained filters) are added.
-EXPOSE("customContentFilters", getCustomContentFilters, MetaDisplayName(L"CustomContentFilters"))
-EXPOSE("customContentFilterIndexNotifier", customContentFilterIndexNotifier, MetaNone())
-EXPOSE("currentCustomContentFilter", currentCustomContentFilter, currentCustomContentFilter, MetaNone())
+EXPOSE("assetModel", getAssetModel, MetaDisplayName(L"Asset Model"))
+EXPOSE("nameFilters", getNameFilters, MetaDisplayName(L"Name Filters"))
+EXPOSE("iconSize", getIconSize, MetaDisplayName(L"Icon Size"))
+EXPOSE_METHOD("assetAccepted", assetAccepted)
 END_EXPOSE()
 } // end namespace wgt

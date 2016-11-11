@@ -37,21 +37,24 @@ public:
 	~WGItemView();
 
 	/** Extracts the row number from an index.
-		@param index The index to get the row from.
-		@return The row number.*/
+	    @param index The index to get the row from.
+	    @return The row number.*/
 	Q_INVOKABLE int getRow(const QModelIndex& index) const;
 	/** Extracts the column number from an index.
-		@param index The index to get the column from.
-		@return The column number.*/
+	    @param index The index to get the column from.
+	    @return The column number.*/
 	Q_INVOKABLE int getColumn(const QModelIndex& index) const;
 	/** Determines the parent index from an index.
-		@param index The index to get the parent index from.
-		@return The parent index.*/
+	    @param index The index to get the parent index from.
+	    @return The parent index.*/
 	Q_INVOKABLE QModelIndex getParent(const QModelIndex& index) const;
 
 	Q_INVOKABLE int sourceColumn(int index) const;
 	Q_INVOKABLE void hideColumn(int index);
 	Q_INVOKABLE void showAllColumns();
+
+	Q_INVOKABLE QModelIndex sourceIndex(const QModelIndex& index) const;
+	Q_INVOKABLE QModelIndex extendedIndex(const QModelIndex& index) const;
 
 	Q_INVOKABLE QStringList mimeTypes() const;
 	Q_INVOKABLE QVariantMap mimeData(const QList<QModelIndex>& indexes);
@@ -60,8 +63,10 @@ public:
 
 	Q_INVOKABLE QStringList headerMimeTypes(Qt::Orientation orientation) const;
 	Q_INVOKABLE QVariantMap headerMimeData(const QList<int>& sections, Qt::Orientation orientation) const;
-	Q_INVOKABLE bool canDropHeaderMimeData(const QVariantMap& data, Qt::DropAction action, int section, Qt::Orientation orientation) const;
-	Q_INVOKABLE bool dropHeaderMimeData(const QVariantMap& data, Qt::DropAction action, int section, Qt::Orientation orientation);
+	Q_INVOKABLE bool canDropHeaderMimeData(const QVariantMap& data, Qt::DropAction action, int section,
+	                                       Qt::Orientation orientation) const;
+	Q_INVOKABLE bool dropHeaderMimeData(const QVariantMap& data, Qt::DropAction action, int section,
+	                                    Qt::Orientation orientation);
 
 signals:
 	/** Signalled when the model has changed.*/
@@ -95,4 +100,4 @@ private:
 	std::unique_ptr<Impl> impl_;
 };
 } // end namespace wgt
-#endif//WG_ITEM_VIEW_HPP
+#endif // WG_ITEM_VIEW_HPP

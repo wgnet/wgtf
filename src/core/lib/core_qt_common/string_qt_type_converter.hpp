@@ -10,7 +10,7 @@ namespace wgt
 class StringQtTypeConverter : public IQtTypeConverter
 {
 public:
-	bool toVariant( const QVariant & qVariant, Variant & o_variant ) const override
+	bool toVariant(const QVariant& qVariant, Variant& o_variant) const override
 	{
 		QVariant::Type type = qVariant.type();
 		if ((type != QVariant::String) && (type != QVariant::Url))
@@ -22,31 +22,29 @@ public:
 		return true;
 	}
 
-	bool toQVariant( const Variant & variant, QVariant & o_qVariant, QObject* parent = nullptr ) const override
+	bool toQVariant(const Variant& variant, QVariant& o_qVariant, QObject* parent = nullptr) const override
 	{
-		if (variant.typeIs< const char * >() ||
-			variant.typeIs< std::string >())
+		if (variant.typeIs<const char*>() || variant.typeIs<std::string>())
 		{
 			std::string value;
-			if (!variant.tryCast( value ))
+			if (!variant.tryCast(value))
 			{
 				return false;
 			}
 
-			o_qVariant = QString( value.c_str() );
+			o_qVariant = QString(value.c_str());
 			return true;
 		}
 
-		if (variant.typeIs< const wchar_t * >() ||
-			variant.typeIs< std::wstring >())
+		if (variant.typeIs<const wchar_t*>() || variant.typeIs<std::wstring>())
 		{
 			std::wstring value;
-			if (!variant.tryCast( value ))
+			if (!variant.tryCast(value))
 			{
 				return false;
 			}
 
-			o_qVariant = QString::fromWCharArray( value.c_str() );
+			o_qVariant = QString::fromWCharArray(value.c_str());
 			return true;
 		}
 

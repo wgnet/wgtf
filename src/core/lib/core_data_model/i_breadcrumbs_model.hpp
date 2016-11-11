@@ -24,9 +24,7 @@ class BaseBreadcrumbItem
 	DECLARE_REFLECTED
 
 public:
-	BaseBreadcrumbItem()
-	    : fullPath_("")
-	    , displayValue_("")
+	BaseBreadcrumbItem() : fullPath_(""), displayValue_("")
 	{
 	}
 
@@ -144,4 +142,4 @@ public:
 	}
 };
 } // end namespace wgt
-#endif //I_BREADCRUMBS_MODEL_HPP
+#endif // I_BREADCRUMBS_MODEL_HPP

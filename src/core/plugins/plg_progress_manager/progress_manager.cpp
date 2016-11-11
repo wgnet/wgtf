@@ -7,14 +7,10 @@
 #include "core_logging_system/interfaces/i_logging_system.hpp"
 #include "core_logging_system/log_level.hpp"
 
-
 namespace wgt
 {
-ProgressManager::ProgressManager( IComponentContext & contextManager )
-	: Depends( contextManager )
-	, progressValue_( 0 )
-	, isMultiCommandProgress_( false )
-	, isViewVisible_( false )
+ProgressManager::ProgressManager(IComponentContext& contextManager)
+    : Depends(contextManager), progressValue_(0), isMultiCommandProgress_(false), isViewVisible_(false)
 {
 }
 
@@ -25,25 +21,23 @@ ProgressManager::~ProgressManager()
 /// Cache the context manager and register command status listener
 void ProgressManager::init()
 {
-	ICommandManager * commandSystemProvider = get< ICommandManager >();
-	assert ( nullptr != commandSystemProvider );
+	ICommandManager* commandSystemProvider = get<ICommandManager>();
+	assert(nullptr != commandSystemProvider);
 
-	commandSystemProvider->registerCommandStatusListener( this );
+	commandSystemProvider->registerCommandStatusListener(this);
 }
-
 
 /// Deregister command status listener
 void ProgressManager::fini()
 {
-	ICommandManager * commandSystemProvider = get< ICommandManager >();
-	assert ( nullptr != commandSystemProvider );
-	commandSystemProvider->deregisterCommandStatusListener( this );
+	ICommandManager* commandSystemProvider = get<ICommandManager>();
+	assert(nullptr != commandSystemProvider);
+	commandSystemProvider->deregisterCommandStatusListener(this);
 }
-
 
 /// ICommandEventListener implementation.
 /// Let the QML know about the status change.
-void ProgressManager::statusChanged( const CommandInstance & commandInstance ) const
+void ProgressManager::statusChanged(const CommandInstance& commandInstance) const
 {
 	curCommandId_ = std::find(commandIdList_.begin(), commandIdList_.end(), commandInstance.getCommandId());
 	// We only care the commandIds in our list, see if this is in our list commandId
@@ -52,32 +46,31 @@ void ProgressManager::statusChanged( const CommandInstance & commandInstance ) c
 		return;
 	}
 	ExecutionStatus curCommandStatus = commandInstance.getExecutionStatus();
-	switch( curCommandStatus )
+	switch (curCommandStatus)
 	{
 	case Queued:
-		{
-		    createProgressDialog(commandInstance.getCommandId());
-		    break;
-		}
+	{
+		createProgressDialog(commandInstance.getCommandId());
+		break;
+	}
 
 	case Complete:
-		{
-			break;
-		}
+	{
+		break;
+	}
 
-	case Running:	// Intentional fall through
+	case Running: // Intentional fall through
 	default:
-		{
-			// Do nothing!
-			break;
-		}
+	{
+		// Do nothing!
+		break;
+	}
 	}
 }
-
 
 /// ICommandEventListener implementation.
 /// Let the QML know about the progress change.
-void ProgressManager::progressMade( const CommandInstance & commandInstance ) const
+void ProgressManager::progressMade(const CommandInstance& commandInstance) const
 {
 	curCommandId_ = std::find(commandIdList_.begin(), commandIdList_.end(), commandInstance.getCommandId());
 	// We only care the commandIds in our list, see if this is in our list commandId
@@ -86,107 +79,103 @@ void ProgressManager::progressMade( const CommandInstance & commandInstance ) co
 		return;
 	}
 	ExecutionStatus curCommandStatus = commandInstance.getExecutionStatus();
-	switch( curCommandStatus )
+	switch (curCommandStatus)
 	{
 	case Running:
-		{
-			perform();
-			break;
-		}
+	{
+		perform();
+		break;
+	}
 
 	case Complete:
-		{
-		    progressCompleted(commandInstance.getCommandId());
-		    break;
-		}
+	{
+		progressCompleted(commandInstance.getCommandId());
+		break;
+	}
 
-	case Queued:	// Intentional fall through
+	case Queued: // Intentional fall through
 	default:
-		{
-			// Do nothing!
-			break;
-		}
+	{
+		// Do nothing!
+		break;
+	}
 	}
 }
-
 
 /// ICommandEventListener implementation.
 /// Handle multi commands begin / complete events
-void ProgressManager::multiCommandStatusChanged( MultiCommandStatus multiCommandStatus ) const
+void ProgressManager::multiCommandStatusChanged(MultiCommandStatus multiCommandStatus) const
 {
 	// TODO: Incoming command is multi (batch / compound)
 	//		 command. Prepare the widget for it.
-	switch ( multiCommandStatus )
+	switch (multiCommandStatus)
 	{
 	case ICommandEventListener::MultiCommandStatus_Begin:
-		{
-			isMultiCommandProgress_ = true;
-		    createProgressDialog();
-		    break;
-		}
+	{
+		isMultiCommandProgress_ = true;
+		createProgressDialog();
+		break;
+	}
 
 	case ICommandEventListener::MultiCommandStatus_Cancel:
-		{
-			break;
-		}
+	{
+		break;
+	}
 
 	case ICommandEventListener::MultiCommandStatus_Complete:
-		{
-			isMultiCommandProgress_ = false;
-			progressCompleted();
-			break;
-		}
+	{
+		isMultiCommandProgress_ = false;
+		progressCompleted();
+		break;
+	}
 
 	default:
-		{
-			// Do nothing!
-			break;
-		}
+	{
+		// Do nothing!
+		break;
+	}
 	}
 }
 
-
 /// ICommandEventListener implementation.
 /// Display status (progress bar) on the command being queued
-void ProgressManager::handleCommandQueued( const char * commandId ) const
+void ProgressManager::handleCommandQueued(const char* commandId) const
 {
 	// The command being queued with this commandId will show the status (progress dialog)
-	commandIdList_.push_back( commandId );
+	commandIdList_.push_back(commandId);
 }
-
 
 /// ICommandEventListener implementation.
 /// Present the non-blocking process to the user ( with the alert manager )
-void ProgressManager::onNonBlockingProcessExecution( const char * commandId ) const
+void ProgressManager::onNonBlockingProcessExecution(const char* commandId) const
 {
-	auto loggingSystem = get< ILoggingSystem >();
-	if ( loggingSystem == nullptr )
+	auto loggingSystem = get<ILoggingSystem>();
+	if (loggingSystem == nullptr)
 	{
 		// Logging system is not available, nothing to handle.
-		assert( false && "Missing - plg_logging_system" );
+		assert(false && "Missing - plg_logging_system");
 
 		// Early return here!
 		return;
 	}
 	else
 	{
-		AlertManager * alertManager = loggingSystem->getAlertManager();
-		if ( alertManager != nullptr )
+		AlertManager* alertManager = loggingSystem->getAlertManager();
+		if (alertManager != nullptr)
 		{
-			loggingSystem->log( LOG_ALERT, "Command [ %s ] is executed!", commandId);
+			loggingSystem->log(LOG_ALERT, "Command [ %s ] is executed!", commandId);
 		}
 	}
 }
-
 
 /// Create a QQuickView
 void ProgressManager::createProgressDialog(const char* commandId) const
 {
 	progressValue_ = 0;
 
-	curCommandId_ = std::find( commandIdList_.begin(), commandIdList_.end(), commandId );
-	// We only care the commandIds in our list, see if this is in our list commandId 
-	if ( commandIdList_.end() == curCommandId_ )
+	curCommandId_ = std::find(commandIdList_.begin(), commandIdList_.end(), commandId);
+	// We only care the commandIds in our list, see if this is in our list commandId
+	if (commandIdList_.end() == curCommandId_)
 	{
 		return;
 	}
@@ -206,9 +195,8 @@ void ProgressManager::createProgressDialog(const char* commandId) const
 	dlg_->show();
 }
 
-
 /// Clean up when a command is completed
-void ProgressManager::progressCompleted( const char * commandId ) const
+void ProgressManager::progressCompleted(const char* commandId) const
 {
 	if (dlg_ == nullptr)
 	{
@@ -233,11 +221,10 @@ void ProgressManager::progressCompleted( const char * commandId ) const
 	removeCommand(commandId);
 }
 
-
 /// Increment the progress dialog value when the command made a progress
 void ProgressManager::perform() const
 {
-	if ( isViewVisible_ )
+	if (isViewVisible_)
 	{
 		progressValue_++;
 		if (progressValue_ == dlg_->maximum())
@@ -248,7 +235,6 @@ void ProgressManager::perform() const
 	}
 }
 
-
 /// Set "ProgressValue" QML property value with current progressValue_
 void ProgressManager::setProgressValueProperty() const
 {
@@ -258,17 +244,15 @@ void ProgressManager::setProgressValueProperty() const
 	}
 }
 
-
 /// Remove a command from our list
-void ProgressManager::removeCommand( const char * commandId ) const
+void ProgressManager::removeCommand(const char* commandId) const
 {
-	auto commandIdToRemove = std::remove( commandIdList_.begin(), commandIdList_.end(), commandId );
-	commandIdList_.erase( commandIdToRemove, commandIdList_.end() );
+	auto commandIdToRemove = std::remove(commandIdList_.begin(), commandIdList_.end(), commandId);
+	commandIdList_.erase(commandIdToRemove, commandIdList_.end());
 
 	// Reset the current
 	curCommandId_ = commandIdList_.end();
 }
-
 
 /// Cancel the current command
 void ProgressManager::cancelCurrentCommand() const
@@ -279,7 +263,7 @@ void ProgressManager::cancelCurrentCommand() const
 	// Make sure the current command is in our list to cancel
 	if (isCurrentCommandActive())
 	{
-		ICommandManager * commandSystemProvider = get< ICommandManager >();
+		ICommandManager* commandSystemProvider = get<ICommandManager>();
 		assert(nullptr != commandSystemProvider);
 
 		// NOTE: By calling undo function here, the status changes to Complete which will trigger our
@@ -288,7 +272,6 @@ void ProgressManager::cancelCurrentCommand() const
 		{
 			commandSystemProvider->undo();
 		}
-		
 	}
 }
 } // end namespace wgt

@@ -3,8 +3,7 @@
 
 namespace wgt
 {
-SequenceListAdapter::SequenceListAdapter()
-    : model_(nullptr)
+SequenceListAdapter::SequenceListAdapter() : model_(nullptr)
 {
 }
 
@@ -18,182 +17,172 @@ QAbstractItemModel* SequenceListAdapter::model() const
 }
 
 QModelIndex SequenceListAdapter::adaptedIndex(int row, int column, const QModelIndex& parent) const
-    {
-	    if (model() == nullptr)
-	    {
-		    return QModelIndex();
-	    }
-
-	    if (sequence_.empty())
-	    {
-		    return model()->index(row, column, parent);
-	    }
-
-	    if (row < sequence_.size())
-	    {
-		    return model()->index(sequence_[row], column, parent);
-	    }
-	    return QModelIndex();
+{
+	if (model() == nullptr)
+	{
+		return QModelIndex();
 	}
 
-    int SequenceListAdapter::rowCount(const QModelIndex& parent) const
-    {
-	    if (model() == nullptr)
-	    {
-		    return 0;
-	    }
+	if (sequence_.empty())
+	{
+		return model()->index(row, column, parent);
+	}
 
-	    if (sequence_.empty())
-	    {
-		    return model()->rowCount(parent);
-	    }
+	if (row < sequence_.size())
+	{
+		return model()->index(sequence_[row], column, parent);
+	}
+	return QModelIndex();
+}
 
-	    return sequence_.size();
-    }
+int SequenceListAdapter::rowCount(const QModelIndex& parent) const
+{
+	if (model() == nullptr)
+	{
+		return 0;
+	}
 
-    QVariant SequenceListAdapter::getModel() const
-    {
-	    return QVariant::fromValue<QAbstractItemModel*>(model_);
-    }
+	if (sequence_.empty())
+	{
+		return model()->rowCount(parent);
+	}
 
-    void SequenceListAdapter::setModel(const QVariant& model)
-    {
-	    auto m = model.value<QAbstractItemModel*>();
-	    if (model_ == m)
-	    {
-		    return;
-	    }
+	return sequence_.size();
+}
 
-	    beginResetModel();
-	    disconnect();
-	    reset();
-	    model_ = m;
-	    connect();
-	    endResetModel();
-    }
+QVariant SequenceListAdapter::getModel() const
+{
+	return QVariant::fromValue<QAbstractItemModel*>(model_);
+}
 
-    QList<int> SequenceListAdapter::getSequence()
-    {
-	    return sequence_;
-    }
+void SequenceListAdapter::setModel(const QVariant& model)
+{
+	auto m = model.value<QAbstractItemModel*>();
+	if (model_ == m)
+	{
+		return;
+	}
 
-    void SequenceListAdapter::setSequence(const QList<int>& sequence)
-    {
-	    layoutAboutToBeChanged();
-	    reset();
-	    sequence_ = sequence;
-	    layoutChanged();
-    }
+	beginResetModel();
+	disconnect();
+	reset();
+	model_ = m;
+	connect();
+	endResetModel();
+}
 
-    void SequenceListAdapter::onParentDataChanged(const QModelIndex& topLeft,
-                                                  const QModelIndex& bottomRight, const QVector<int>& roles)
-    {
-	    if (sequence_.empty())
-	    {
-		    emit dataChanged(
-		    createIndex(topLeft.row(), topLeft.column(), topLeft.internalPointer()),
-		    createIndex(bottomRight.row(), bottomRight.column(), bottomRight.internalPointer()),
-		    roles);
-		    return;
-	    }
+QList<int> SequenceListAdapter::getSequence()
+{
+	return sequence_;
+}
 
-	    for (int i = topLeft.row(); i <= bottomRight.row(); ++i)
-	    {
-		    int index = 0;
-		    for (;;)
-		    {
-			    index = sequence_.indexOf(i, index);
-			    if (index < 0)
-			    {
-				    break;
-			    }
+void SequenceListAdapter::setSequence(const QList<int>& sequence)
+{
+	layoutAboutToBeChanged();
+	reset();
+	sequence_ = sequence;
+	layoutChanged();
+}
 
-			    emit dataChanged(
-			    createIndex(index, topLeft.column()),
-			    createIndex(index, bottomRight.column()),
-			    roles);
-			    ++index;
-		    }
-	    }
-    }
+void SequenceListAdapter::onParentDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+                                              const QVector<int>& roles)
+{
+	if (sequence_.empty())
+	{
+		emit dataChanged(createIndex(topLeft.row(), topLeft.column(), topLeft.internalPointer()),
+		                 createIndex(bottomRight.row(), bottomRight.column(), bottomRight.internalPointer()), roles);
+		return;
+	}
 
-    void SequenceListAdapter::onParentRowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
-    {
-	    if (!sequence_.empty())
-	    {
-		    assert(false && "Not supported");
-	    }
+	for (int i = topLeft.row(); i <= bottomRight.row(); ++i)
+	{
+		int index = 0;
+		for (;;)
+		{
+			index = sequence_.indexOf(i, index);
+			if (index < 0)
+			{
+				break;
+			}
 
-	    auto index = parent.isValid() ? createIndex(parent.row(), parent.column(), parent.internalPointer()) : parent;
-	    beginInsertRows(index, first, last);
-    }
+			emit dataChanged(createIndex(index, topLeft.column()), createIndex(index, bottomRight.column()), roles);
+			++index;
+		}
+	}
+}
 
-    void SequenceListAdapter::onParentRowsInserted(const QModelIndex& parent, int first, int last)
-    {
-	    if (!sequence_.empty())
-	    {
-		    assert(false && "Not supported");
-	    }
+void SequenceListAdapter::onParentRowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
+{
+	if (!sequence_.empty())
+	{
+		assert(false && "Not supported");
+	}
 
-	    this->reset();
-	    endInsertRows();
-    }
+	auto index = parent.isValid() ? createIndex(parent.row(), parent.column(), parent.internalPointer()) : parent;
+	beginInsertRows(index, first, last);
+}
 
-    void SequenceListAdapter::onParentRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
-    {
-	    if (!sequence_.empty())
-	    {
-		    assert(false && "Not supported");
-	    }
+void SequenceListAdapter::onParentRowsInserted(const QModelIndex& parent, int first, int last)
+{
+	if (!sequence_.empty())
+	{
+		assert(false && "Not supported");
+	}
 
-	    auto index = parent.isValid() ? createIndex(parent.row(), parent.column(), parent.internalPointer()) : parent;
-	    beginRemoveRows(index, first, last);
-    }
+	this->reset();
+	endInsertRows();
+}
 
-    void SequenceListAdapter::onParentRowsRemoved(const QModelIndex& parent, int first, int last)
-    {
-	    if (!sequence_.empty())
-	    {
-		    assert(false && "Not supported");
-	    }
+void SequenceListAdapter::onParentRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+	if (!sequence_.empty())
+	{
+		assert(false && "Not supported");
+	}
 
-	    this->reset();
-	    endRemoveRows();
-    }
+	auto index = parent.isValid() ? createIndex(parent.row(), parent.column(), parent.internalPointer()) : parent;
+	beginRemoveRows(index, first, last);
+}
 
-    void SequenceListAdapter::onParentRowsAboutToBeMoved(const QModelIndex& sourceParent,
-                                                         int sourceFirst,
-                                                         int sourceLast,
-                                                         const QModelIndex& destinationParent,
-                                                         int destinationRow) /* override */
-    {
-	    if (!sequence_.empty())
-	    {
-		    assert(false && "Not supported");
-	    }
+void SequenceListAdapter::onParentRowsRemoved(const QModelIndex& parent, int first, int last)
+{
+	if (!sequence_.empty())
+	{
+		assert(false && "Not supported");
+	}
 
-	    auto sourceIndex = sourceParent.isValid() ? createIndex(sourceParent.row(), sourceParent.column(), sourceParent.internalPointer()) : sourceParent;
-	    auto destinationIndex = destinationParent.isValid() ? createIndex(destinationParent.row(), destinationParent.column(), destinationParent.internalPointer()) : destinationParent;
-	    beginMoveRows(sourceIndex,
-	                  sourceFirst,
-	                  sourceLast,
-	                  destinationIndex,
-	                  destinationRow);
-    }
+	this->reset();
+	endRemoveRows();
+}
 
-    void SequenceListAdapter::onParentRowsMoved(const QModelIndex& sourceParent,
-                                                int sourceFirst,
-                                                int sourceLast,
-                                                const QModelIndex& destinationParent,
-                                                int destinationRow) /* override */
-    {
-	    if (!sequence_.empty())
-	    {
-		    assert(false && "Not supported");
-	    }
+void SequenceListAdapter::onParentRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+                                                     const QModelIndex& destinationParent,
+                                                     int destinationRow) /* override */
+{
+	if (!sequence_.empty())
+	{
+		assert(false && "Not supported");
+	}
 
-	    this->reset();
-	    endMoveRows();
-    }
+	auto sourceIndex = sourceParent.isValid() ?
+	createIndex(sourceParent.row(), sourceParent.column(), sourceParent.internalPointer()) :
+	sourceParent;
+	auto destinationIndex = destinationParent.isValid() ?
+	createIndex(destinationParent.row(), destinationParent.column(), destinationParent.internalPointer()) :
+	destinationParent;
+	beginMoveRows(sourceIndex, sourceFirst, sourceLast, destinationIndex, destinationRow);
+}
+
+void SequenceListAdapter::onParentRowsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+                                            const QModelIndex& destinationParent, int destinationRow) /* override */
+{
+	if (!sequence_.empty())
+	{
+		assert(false && "Not supported");
+	}
+
+	this->reset();
+	endMoveRows();
+}
 
 } // end namespace wgt

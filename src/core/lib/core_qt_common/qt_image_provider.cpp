@@ -4,34 +4,33 @@
 
 namespace wgt
 {
-QtImageProvider::QtImageProvider()
-	: QQuickImageProvider( ImageType::Image )
+QtImageProvider::QtImageProvider() : QQuickImageProvider(ImageType::Image)
 {
 }
 
-QString QtImageProvider::encode( const QColor &color )
+QString QtImageProvider::encode(const QColor& color)
 {
-	QImage image( 1, 1, QImage::Format_ARGB32 );
-	image.fill( color );
-	return encode( image );
+	QImage image(1, 1, QImage::Format_ARGB32);
+	image.fill(color);
+	return encode(image);
 }
 
-QString QtImageProvider::encode( const QIcon &icon )
+QString QtImageProvider::encode(const QIcon& icon)
 {
 	auto availableSizes = icon.availableSizes();
-	auto pixmap = icon.pixmap( availableSizes[0] );
-	return encode( pixmap );
+	auto pixmap = icon.pixmap(availableSizes[0]);
+	return encode(pixmap);
 }
 
-QString QtImageProvider::encode( const QPixmap &pixmap )
+QString QtImageProvider::encode(const QPixmap& pixmap)
 {
-	return encode( pixmap.toImage() );
+	return encode(pixmap.toImage());
 }
 
-QString QtImageProvider::encode( const QImage &image )
+QString QtImageProvider::encode(const QImage& image)
 {
 	auto key = image.cacheKey();
-	auto it = imageCache_.find( key );
+	auto it = imageCache_.find(key);
 	if (it == imageCache_.end())
 	{
 		imageCache_[key] = image;
@@ -39,7 +38,7 @@ QString QtImageProvider::encode( const QImage &image )
 	return "image://" + QString(providerId()) + "/" + QString(std::to_string(key).c_str());
 }
 
-QImage QtImageProvider::requestImage(const QString &id, QSize *size, const QSize& requestedSize)
+QImage QtImageProvider::requestImage(const QString& id, QSize* size, const QSize& requestedSize)
 {
 	if (size != nullptr)
 	{
@@ -47,16 +46,16 @@ QImage QtImageProvider::requestImage(const QString &id, QSize *size, const QSize
 	}
 
 	auto key = id.toLongLong();
-	auto it = imageCache_.find( key );
+	auto it = imageCache_.find(key);
 	if (it == imageCache_.end())
 	{
-		return QImage( requestedSize.width(), requestedSize.height(), QImage::Format_ARGB32 );
+		return QImage(requestedSize.width(), requestedSize.height(), QImage::Format_ARGB32);
 	}
 
 	return requestedSize.isValid() ? it.value().scaled(requestedSize) : it.value();
 }
 
-const char * QtImageProvider::providerId()
+const char* QtImageProvider::providerId()
 {
 	return "QtImageProvider";
 }

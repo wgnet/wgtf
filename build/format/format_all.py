@@ -12,7 +12,7 @@ if os.name == 'nt':
 else:
 	execName = 'clang-format'
 
-sources = ['../../src/core/interfaces', '../../src/core/lib', '../../src/core/plugins', '../../src/core/testing']
+sources = ['../../src/core/interfaces', '../../src/core/lib', '../../src/core/plugins', '../../src/core/testing', '../../src/core/app']
 for source in sources:
 	for root, dirnames, filenames in os.walk(source):
 		for ext in ['cpp', 'hpp', 'mpp']:

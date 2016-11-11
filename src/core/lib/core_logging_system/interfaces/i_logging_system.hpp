@@ -14,18 +14,23 @@ class LogMessage;
 class ILoggingSystem
 {
 public:
+	ILoggingSystem()
+	{
+	}
+	ILoggingSystem(IDefinitionManager& definitionManager)
+	{
+	}
+	virtual ~ILoggingSystem()
+	{
+	}
 
-	ILoggingSystem() {}
-	ILoggingSystem( IDefinitionManager & definitionManager ) {}
-	virtual ~ILoggingSystem() {}
-
-	virtual bool registerLogger( ILogger* logger ) = 0;
-	virtual bool unregisterLogger( ILogger* logger ) = 0;
+	virtual bool registerLogger(ILogger* logger) = 0;
+	virtual bool unregisterLogger(ILogger* logger) = 0;
 	virtual AlertManager* getAlertManager() = 0;
 	virtual void enableAlertManagement() = 0;
 	virtual void disableAlertManagement() = 0;
-	virtual void log( LogLevel level, const char* format, ... ) = 0;
-	virtual void log( LogMessage* message ) = 0;
+	virtual void log(LogLevel level, const char* format, ...) = 0;
+	virtual void log(LogMessage* message) = 0;
 	virtual void shutdown() = 0;
 	virtual void process() = 0;
 };

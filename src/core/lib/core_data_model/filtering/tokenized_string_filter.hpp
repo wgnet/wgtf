@@ -16,14 +16,14 @@ public:
 	TokenizedStringFilter();
 	virtual ~TokenizedStringFilter();
 
-	virtual void setRole( ItemRole::Id roleId ) override;
-	
-	virtual bool checkFilter( const IItem * item ) override;
+	virtual void setRole(ItemRole::Id roleId) override;
 
-	void updateFilterTokens( const char * filterText );
+	virtual bool checkFilter(const IItem* item) override;
+
+	void updateFilterTokens(const char* filterText);
 	const char* getFilterText();
 
-	void setSplitterChar( const char * splitter );
+	void setSplitterChar(const char* splitter);
 	const char* getSplitterChar();
 
 private:

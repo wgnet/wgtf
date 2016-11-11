@@ -7,8 +7,8 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( ILoggingModel, MetaNone() )
-	EXPOSE( "text", getText, putText, MetaDisplayName(L"Text") )
-	EXPOSE_METHOD( "clearText", clear )
+BEGIN_EXPOSE(ILoggingModel, MetaNone())
+EXPOSE("text", getText, putText, MetaDisplayName(L"Text"))
+EXPOSE_METHOD("clearText", clear)
 END_EXPOSE()
 } // end namespace wgt

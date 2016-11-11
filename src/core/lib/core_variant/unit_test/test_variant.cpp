@@ -13,287 +13,260 @@
 #include "core_serialization/resizing_memory_stream.hpp"
 #include "core_serialization/text_stream_manip.hpp"
 
-
-#define EXTRA_ARGS_DECLARE TestResult& result_, const char* m_name
+#define EXTRA_ARGS_DECLARE TestResult &result_, const char *m_name
 #define EXTRA_ARGS result_, m_name
-
 
 namespace wgt
 {
 namespace
 {
-
-	struct Base
+struct Base
+{
+	explicit Base(int i = 0) : i(i), f(0.5f), s("hello")
 	{
-		explicit Base(int i = 0):
-			i(i),
-			f(0.5f),
-			s("hello")
-		{
-		}
-
-		virtual ~Base()
-		{
-		}
-
-		int i;
-		float f;
-		std::string s;
-
-		bool operator==(const Base& v) const
-		{
-			return
-				i == v.i &&
-				f == v.f &&
-				s == v.s;
-		}
-
-		bool operator!=(const Base& v) const
-		{
-			return !(*this == v);
-		}
-
-		Base& operator=(const Base& that)
-		{
-			i = that.i;
-			f = that.f;
-			s = that.s;
-
-			return *this;
-		}
-
-	};
-
-
-	Base* upcast( Base* v )
-	{
-		return v;
 	}
 
-
-	template<typename T>
-	typename std::enable_if<std::is_base_of<Base, T>::value, bool>::type downcast(T** v, Base* storage)
+	virtual ~Base()
 	{
-		if( T* tmp = dynamic_cast< T* >( storage ) )
-		{
-			if( v )
-			{
-				*v = tmp;
-			}
-
-			return true;
-		}
-
-		return false;
 	}
 
+	int i;
+	float f;
+	std::string s;
 
-	template<int I>
-	struct Derived:
-		Base
+	bool operator==(const Base& v) const
 	{
-		Derived():
-			Base(I)
-		{
-		}
-	};
-
-
-	template< int I >
-	struct DerivedPtr
-	{
-		typedef Derived< I > D;
-		explicit DerivedPtr( D* ptr = nullptr ):
-			ptr( ptr )
-		{
-		}
-
-		bool operator==( const DerivedPtr& that ) const
-		{
-			return ptr == that.ptr;
-		}
-
-		D* ptr;
-	};
-
-
-	template< int I >
-	Derived< I >* upcast( const DerivedPtr< I >& v )
-	{
-		return v.ptr;
+		return i == v.i && f == v.f && s == v.s;
 	}
 
-
-	template< int I >
-	bool downcast( DerivedPtr< I >* v, Derived< I >* storage )
+	bool operator!=(const Base& v) const
 	{
-		if( v )
+		return !(*this == v);
+	}
+
+	Base& operator=(const Base& that)
+	{
+		i = that.i;
+		f = that.f;
+		s = that.s;
+
+		return *this;
+	}
+};
+
+Base* upcast(Base* v)
+{
+	return v;
+}
+
+template <typename T>
+typename std::enable_if<std::is_base_of<Base, T>::value, bool>::type downcast(T** v, Base* storage)
+{
+	if (T* tmp = dynamic_cast<T*>(storage))
+	{
+		if (v)
 		{
-			v->ptr = storage;
+			*v = tmp;
 		}
 
 		return true;
 	}
 
+	return false;
+}
 
-	TextStream& operator<<(TextStream& stream, const Base& v)
+template <int I>
+struct Derived : Base
+{
+	Derived() : Base(I)
 	{
-		stream << v.i << ' ' << v.f << ' ' << quoted( v.s );
-		return stream;
+	}
+};
+
+template <int I>
+struct DerivedPtr
+{
+	typedef Derived<I> D;
+	explicit DerivedPtr(D* ptr = nullptr) : ptr(ptr)
+	{
 	}
 
-	TextStream& operator>>(TextStream& stream, Base& v)
+	bool operator==(const DerivedPtr& that) const
 	{
-		stream >> v.i >> v.f >> quoted( v.s );
-		return stream;
+		return ptr == that.ptr;
 	}
 
+	D* ptr;
+};
 
-	////////////////////////////////////////////////////////////////////////////
+template <int I>
+Derived<I>* upcast(const DerivedPtr<I>& v)
+{
+	return v.ptr;
+}
 
-
-	bool areEqual(float lhs, float rhs)
+template <int I>
+bool downcast(DerivedPtr<I>* v, Derived<I>* storage)
+{
+	if (v)
 	{
-		return std::abs(lhs - rhs) <= 1e-5f;
+		v->ptr = storage;
 	}
 
-	bool areEqual(double lhs, double rhs)
+	return true;
+}
+
+TextStream& operator<<(TextStream& stream, const Base& v)
+{
+	stream << v.i << ' ' << v.f << ' ' << quoted(v.s);
+	return stream;
+}
+
+TextStream& operator>>(TextStream& stream, Base& v)
+{
+	stream >> v.i >> v.f >> quoted(v.s);
+	return stream;
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+bool areEqual(float lhs, float rhs)
+{
+	return std::abs(lhs - rhs) <= 1e-5f;
+}
+
+bool areEqual(double lhs, double rhs)
+{
+	return std::abs(lhs - rhs) <= 1e-13f;
+}
+
+bool areEqual(double lhs, float rhs)
+{
+	return areEqual(static_cast<float>(lhs), rhs);
+}
+
+bool areEqual(const char* lhs, const char* rhs)
+{
+	return lhs == rhs || strcmp(lhs, rhs) == 0;
+}
+
+template <typename T1, typename T2>
+bool areEqual(const T1& lhs, const T2& rhs)
+{
+	return lhs == rhs;
+}
+
+template <typename T, typename Check>
+void variantCheck(EXTRA_ARGS_DECLARE, const Variant& v, const Check& check)
+{
+	// type
+	CHECK(v.typeIs<T>());
+	CHECK(!v.isVoid());
+
+	// everything can be casted to `const void*`, i.e. to its storage address
+	CHECK(v.canCast<const void*>());
+	CHECK(v.cast<const void*>());
+
+	// cast
+	CHECK(areEqual(v.cast<T>(), check));
+	CHECK(areEqual(v, check));
+
+	// tryCast
 	{
-		return std::abs(lhs - rhs) <= 1e-13f;
+		T tmp;
+		CHECK(v.tryCast(tmp));
+		CHECK(areEqual(tmp, check));
 	}
 
-	bool areEqual(double lhs, float rhs)
+	// value
+	CHECK(areEqual(v.value<T>(), check));
+
+	// marshaling
 	{
-		return areEqual(static_cast<float>(lhs), rhs);
+		Variant tmp = v.cast<T>();
+		CHECK(areEqual(tmp, v));
+		CHECK(areEqual(tmp, check));
 	}
 
-	bool areEqual(const char* lhs, const char* rhs)
+	// to/from string conversion
 	{
-		return
-			lhs == rhs ||
-			strcmp(lhs, rhs) == 0;
-	}
-
-	template<typename T1, typename T2>
-	bool areEqual(const T1& lhs, const T2& rhs)
-	{
-		return lhs == rhs;
-	}
-
-
-	template<typename T, typename Check>
-	void variantCheck(EXTRA_ARGS_DECLARE, const Variant& v, const Check& check)
-	{
-		// type
-		CHECK(v.typeIs<T>());
-		CHECK(!v.isVoid());
-
-		// everything can be casted to `const void*`, i.e. to its storage address
-		CHECK(v.canCast<const void*>());
-		CHECK(v.cast<const void*>());
-
-		// cast
-		CHECK(areEqual(v.cast<T>(), check));
-		CHECK(areEqual(v, check));
-
-		// tryCast
-		{
-			T tmp;
-			CHECK(v.tryCast(tmp));
-			CHECK(areEqual(tmp, check));
-		}
-
-		// value
-		CHECK(areEqual(v.value<T>(), check));
-
-		// marshaling
-		{
-			Variant tmp = v.cast<T>();
-			CHECK(areEqual(tmp, v));
-			CHECK(areEqual(tmp, check));
-		}
-
-		// to/from string conversion
-		{
-			Variant tmp = v.cast<std::string>();
-			// note that v.cast<T>() will fail here since it can't return const-ref to an object
-			CHECK(areEqual(tmp.value<T>(), check));
-			CHECK(areEqual(tmp, check));
-			CHECK(areEqual(v, tmp));
-			CHECK(areEqual(tmp, v));
-		}
-	}
-
-	template<typename T>
-	void serializationCheck(EXTRA_ARGS_DECLARE, const Variant& v, const char* serialized, const T& check)
-	{
-		ResizingMemoryStream dataStream;
-		TextStream s(dataStream);
-		s << v;
-		CHECK(s.good());
-		s.sync();
-
-		CHECK_EQUAL(serialized, dataStream.buffer());
-
-		Variant tmp = T(); // give type to deserializer
-		s.seek(0);
-		s >> tmp;
-
-		RETURN_ON_FAIL_CHECK(!s.fail());
-
-		CHECK(areEqual(tmp.cast<T>(), check));
+		Variant tmp = v.cast<std::string>();
+		// note that v.cast<T>() will fail here since it can't return const-ref to an object
+		CHECK(areEqual(tmp.value<T>(), check));
 		CHECK(areEqual(tmp, check));
 		CHECK(areEqual(v, tmp));
 		CHECK(areEqual(tmp, v));
 	}
-
-	template<typename T, typename Check>
-	void variantCheck(EXTRA_ARGS_DECLARE, const Variant& v, const Check& check, const char* serialized)
-	{
-		variantCheck<T, Check>(EXTRA_ARGS, v, check);
-		serializationCheck<T>(EXTRA_ARGS, v, serialized, static_cast<T>(check));
-	}
-
-	template<typename T, typename Check>
-	void castCheck(EXTRA_ARGS_DECLARE, const Variant& v, const Check& check)
-	{
-		CHECK(v.canCast<T>());
-		CHECK(areEqual(v.cast<T>(), check));
-		CHECK(areEqual(v, check));
-
-		T tmp;
-		CHECK(v.tryCast(tmp));
-		CHECK(areEqual(tmp, check));
-
-		CHECK(areEqual(v.value<T>(), check));
-	}
-
-	template<typename T>
-	void castFailCheck(EXTRA_ARGS_DECLARE, const Variant& v)
-	{
-		CHECK(!v.canCast<T>());
-
-		T tmp = T();
-		CHECK(!v.tryCast(tmp));
-
-		CHECK(areEqual(v.value<T>(), T()));
-	}
-
-	template<typename T>
-	void deserializeCheck(EXTRA_ARGS_DECLARE, const char* str, const T& check)
-	{
-		FixedMemoryStream dataStream(str);
-		TextStream s(dataStream);
-		Variant v;
-		s >> v;
-
-		CHECK(v.typeIs<T>());
-		CHECK(areEqual(v.cast<T>(), check));
-		CHECK(areEqual(v, check));
-	}
-
 }
 
+template <typename T>
+void serializationCheck(EXTRA_ARGS_DECLARE, const Variant& v, const char* serialized, const T& check)
+{
+	ResizingMemoryStream dataStream;
+	TextStream s(dataStream);
+	s << v;
+	CHECK(s.good());
+	s.sync();
+
+	CHECK_EQUAL(serialized, dataStream.buffer());
+
+	Variant tmp = T(); // give type to deserializer
+	s.seek(0);
+	s >> tmp;
+
+	RETURN_ON_FAIL_CHECK(!s.fail());
+
+	CHECK(areEqual(tmp.cast<T>(), check));
+	CHECK(areEqual(tmp, check));
+	CHECK(areEqual(v, tmp));
+	CHECK(areEqual(tmp, v));
+}
+
+template <typename T, typename Check>
+void variantCheck(EXTRA_ARGS_DECLARE, const Variant& v, const Check& check, const char* serialized)
+{
+	variantCheck<T, Check>(EXTRA_ARGS, v, check);
+	serializationCheck<T>(EXTRA_ARGS, v, serialized, static_cast<T>(check));
+}
+
+template <typename T, typename Check>
+void castCheck(EXTRA_ARGS_DECLARE, const Variant& v, const Check& check)
+{
+	CHECK(v.canCast<T>());
+	CHECK(areEqual(v.cast<T>(), check));
+	CHECK(areEqual(v, check));
+
+	T tmp;
+	CHECK(v.tryCast(tmp));
+	CHECK(areEqual(tmp, check));
+
+	CHECK(areEqual(v.value<T>(), check));
+}
+
+template <typename T>
+void castFailCheck(EXTRA_ARGS_DECLARE, const Variant& v)
+{
+	CHECK(!v.canCast<T>());
+
+	T tmp = T();
+	CHECK(!v.tryCast(tmp));
+
+	CHECK(areEqual(v.value<T>(), T()));
+}
+
+template <typename T>
+void deserializeCheck(EXTRA_ARGS_DECLARE, const char* str, const T& check)
+{
+	FixedMemoryStream dataStream(str);
+	TextStream s(dataStream);
+	Variant v;
+	s >> v;
+
+	CHECK(v.typeIs<T>());
+	CHECK(areEqual(v.cast<T>(), check));
+	CHECK(areEqual(v, check));
+}
+}
 
 TEST(Variant_construct)
 {
@@ -321,7 +294,6 @@ TEST(Variant_construct)
 	CHECK(areEqual(v, tmp));
 }
 
-
 TEST(Variant_int)
 {
 	Variant v = 42;
@@ -340,7 +312,6 @@ TEST(Variant_int)
 	castCheck<std::string>(EXTRA_ARGS, v, "42");
 }
 
-
 TEST(Variant_double)
 {
 	Variant v = 1.5;
@@ -358,7 +329,6 @@ TEST(Variant_double)
 	castCheck<float>(EXTRA_ARGS, v, 1.5f);
 	castCheck<std::string>(EXTRA_ARGS, v, "1.5");
 }
-
 
 TEST(Variant_bool)
 {
@@ -381,7 +351,6 @@ TEST(Variant_bool)
 	castCheck<std::string>(EXTRA_ARGS, v, "1");
 }
 
-
 TEST(Variant_string_number)
 {
 	Variant v = "-1.5";
@@ -394,10 +363,10 @@ TEST(Variant_string_number)
 	castFailCheck<int8_t>(EXTRA_ARGS, v);
 
 	// storing negative values in unsigned storage is a bit tricky, so don't test it
-	//castCheck<uint64_t>(EXTRA_ARGS, v, (uint64_t)-123);
-	//castCheck<uint32_t>(EXTRA_ARGS, v, (uint32_t)-123);
-	//castCheck<uint16_t>(EXTRA_ARGS, v, (uint16_t)-123);
-	//castCheck<uint8_t>(EXTRA_ARGS, v, (uint8_t)-123);
+	// castCheck<uint64_t>(EXTRA_ARGS, v, (uint64_t)-123);
+	// castCheck<uint32_t>(EXTRA_ARGS, v, (uint32_t)-123);
+	// castCheck<uint16_t>(EXTRA_ARGS, v, (uint16_t)-123);
+	// castCheck<uint8_t>(EXTRA_ARGS, v, (uint8_t)-123);
 
 	castCheck<double>(EXTRA_ARGS, v, -1.5);
 	castCheck<float>(EXTRA_ARGS, v, -1.5f);
@@ -405,11 +374,10 @@ TEST(Variant_string_number)
 	castCheck<std::string>(EXTRA_ARGS, v, "-1.5");
 }
 
-
 TEST(Variant_string)
 {
-	const char buf[] = {'q', 'w', 'e', '\\', '"', '\0', '\r', '\n'};
-	const std::string s(buf, buf + sizeof(buf)/sizeof(buf[0]));
+	const char buf[] = { 'q', 'w', 'e', '\\', '"', '\0', '\r', '\n' };
+	const std::string s(buf, buf + sizeof(buf) / sizeof(buf[0]));
 
 	Variant v = s;
 	variantCheck<std::string>(EXTRA_ARGS, v, s, "\"qwe\\\\\\\"\\0\\r\\n\"");
@@ -427,7 +395,6 @@ TEST(Variant_string)
 
 	castCheck<std::string>(EXTRA_ARGS, v, s);
 }
-
 
 TEST(Variant_custom_type)
 {
@@ -451,7 +418,6 @@ TEST(Variant_custom_type)
 
 	CHECK(v.cast<Base>() != Base(1));
 }
-
 
 TEST(Variant_qualifiers)
 {
@@ -483,37 +449,35 @@ TEST(Variant_qualifiers)
 	CHECK(v.canCast<const volatile Base&>());
 }
 
-
 /*TEST(Variant_qualified_upcast)
 {
-	const Derived<42> d;
-	Variant v = &d;
+    const Derived<42> d;
+    Variant v = &d;
 
-	variantCheck<Base>(EXTRA_ARGS, v, Base(42), "42 0.5 \"hello\"");
+    variantCheck<Base>(EXTRA_ARGS, v, Base(42), "42 0.5 \"hello\"");
 
-	castFailCheck<int64_t>(EXTRA_ARGS, v);
-	castFailCheck<int32_t>(EXTRA_ARGS, v);
-	castFailCheck<int16_t>(EXTRA_ARGS, v);
-	castFailCheck<int8_t>(EXTRA_ARGS, v);
-	castFailCheck<uint64_t>(EXTRA_ARGS, v);
-	castFailCheck<uint32_t>(EXTRA_ARGS, v);
-	castFailCheck<uint16_t>(EXTRA_ARGS, v);
-	castFailCheck<uint8_t>(EXTRA_ARGS, v);
-	castFailCheck<double>(EXTRA_ARGS, v);
-	castFailCheck<float>(EXTRA_ARGS, v);
+    castFailCheck<int64_t>(EXTRA_ARGS, v);
+    castFailCheck<int32_t>(EXTRA_ARGS, v);
+    castFailCheck<int16_t>(EXTRA_ARGS, v);
+    castFailCheck<int8_t>(EXTRA_ARGS, v);
+    castFailCheck<uint64_t>(EXTRA_ARGS, v);
+    castFailCheck<uint32_t>(EXTRA_ARGS, v);
+    castFailCheck<uint16_t>(EXTRA_ARGS, v);
+    castFailCheck<uint8_t>(EXTRA_ARGS, v);
+    castFailCheck<double>(EXTRA_ARGS, v);
+    castFailCheck<float>(EXTRA_ARGS, v);
 
-	castCheck<std::string>(EXTRA_ARGS, v, "42 0.5 \"hello\"");
+    castCheck<std::string>(EXTRA_ARGS, v, "42 0.5 \"hello\"");
 
-	castCheck<Base>(EXTRA_ARGS, v, Base(42));
+    castCheck<Base>(EXTRA_ARGS, v, Base(42));
 
-	CHECK(v.cast<Base>() != Base(1));
+    CHECK(v.cast<Base>() != Base(1));
 
-	CHECK(!v.canCast<Base&>());
-	CHECK(v.canCast<const Base&>());
-	CHECK(!v.canCast<volatile Base&>());
-	CHECK(v.canCast<const volatile Base&>());
+    CHECK(!v.canCast<Base&>());
+    CHECK(v.canCast<const Base&>());
+    CHECK(!v.canCast<volatile Base&>());
+    CHECK(v.canCast<const volatile Base&>());
 }*/
-
 
 TEST(Variant_void_pointer)
 {
@@ -540,7 +504,6 @@ TEST(Variant_void_pointer)
 	}
 }
 
-
 TEST(Variant_const_void_pointer)
 {
 	const void* p = nullptr;
@@ -564,7 +527,6 @@ TEST(Variant_const_void_pointer)
 		CHECK(tmp == p);
 	}
 }
-
 
 TEST(Variant_pointer)
 {
@@ -592,7 +554,6 @@ TEST(Variant_pointer)
 	castCheck<const void*>(EXTRA_ARGS, v, &tmp);
 }
 
-
 TEST(Variant_cast)
 {
 	Derived<1> tmp;
@@ -616,12 +577,11 @@ TEST(Variant_cast)
 	CHECK(vs.cast<Base&>() == tmp);
 }
 
-
 TEST(Variant_recursive_cast)
 {
-	Derived< 1 > d;
-	typedef DerivedPtr< 1 > Ptr;
-	Ptr tmp( &d );
+	Derived<1> d;
+	typedef DerivedPtr<1> Ptr;
+	Ptr tmp(&d);
 
 	// upcast DerivedPtr<1> -> Derived<1>* -> Base*
 	Variant v = tmp;
@@ -635,7 +595,6 @@ TEST(Variant_recursive_cast)
 	CHECK(!v.canCast<Derived<2>*>());
 	CHECK(!v.canCast<DerivedPtr<2>>());
 }
-
 
 TEST(Variant_interchange)
 {
@@ -697,7 +656,6 @@ TEST(Variant_interchange)
 	variantCheck<Base>(EXTRA_ARGS, v1, Base(15), "15 0.5 \"hello\"");
 }
 
-
 TEST(Variant_deserialize)
 {
 	// (u)int overflow -> double
@@ -724,39 +682,34 @@ TEST(Variant_deserialize)
 	deserializeCheck<uintmax_t>(EXTRA_ARGS, "0b00011011", 0x1b);
 }
 
-
 TEST(Variant_with)
 {
 	int withCalls = 0;
 
 	Variant v;
-	CHECK(!v.visit<int>([](const int&){}));
+	CHECK(!v.visit<int>([](const int&) {}));
 
 	v = 42;
-	CHECK(v.visit<int>([&](const int& i)
-	{
+	CHECK(v.visit<int>([&](const int& i) {
 		CHECK_EQUAL(42, i);
 		withCalls += 1;
 	}));
 	CHECK_EQUAL(1, withCalls);
 
-	CHECK(v.visit<unsigned>([&](const unsigned& u)
-	{
+	CHECK(v.visit<unsigned>([&](const unsigned& u) {
 		CHECK_EQUAL(42, u);
 		withCalls += 1;
 	}));
 	CHECK_EQUAL(2, withCalls);
 
 	v = Base(8);
-	CHECK(v.visit<Base>([&](const Base& b)
-	{
+	CHECK(v.visit<Base>([&](const Base& b) {
 		CHECK_EQUAL(8, b.i);
 		withCalls += 1;
 	}));
 	CHECK_EQUAL(3, withCalls);
 
-	CHECK(v.visit<Variant>([&](const Variant& t)
-	{
+	CHECK(v.visit<Variant>([&](const Variant& t) {
 		CHECK(&t == &v);
 		CHECK(t == Base(8));
 		withCalls += 1;
@@ -764,45 +717,43 @@ TEST(Variant_with)
 	CHECK_EQUAL(4, withCalls);
 }
 
-
-TEST( Variant_value_cast_ptr_and_ref )
+TEST(Variant_value_cast_ptr_and_ref)
 {
-	Variant v = Base( 42 );
+	Variant v = Base(42);
 
 	// matching pointer
-	Base* pb = v.value< Base* >();
-	RETURN_ON_FAIL_CHECK( pb != nullptr );
-	CHECK_EQUAL( 42, pb->i );
+	Base* pb = v.value<Base*>();
+	RETURN_ON_FAIL_CHECK(pb != nullptr);
+	CHECK_EQUAL(42, pb->i);
 	pb->i = 1;
-	CHECK( v == Base( 1 ) );
+	CHECK(v == Base(1));
 
 	// matching reference
-	Base& rb = v.cast< Base& >();
-	CHECK( &rb == pb );
-	CHECK_EQUAL( 1, rb.i );
+	Base& rb = v.cast<Base&>();
+	CHECK(&rb == pb);
+	CHECK_EQUAL(1, rb.i);
 	rb.i = 13;
-	CHECK( v == Base( 13 ) );
+	CHECK(v == Base(13));
 }
 
-
-TEST( Variant_ptr_cast_ptr_and_ref )
+TEST(Variant_ptr_cast_ptr_and_ref)
 {
-	Derived< 42 > d;
-	DerivedPtr< 42 > dp( &d );
+	Derived<42> d;
+	DerivedPtr<42> dp(&d);
 	Variant v = dp;
 
 	// matching pointer
-	Base* pb = v.cast< Base* >();
-	CHECK( pb == &d );
-	CHECK_EQUAL( 42, pb->i );
+	Base* pb = v.cast<Base*>();
+	CHECK(pb == &d);
+	CHECK_EQUAL(42, pb->i);
 	pb->i = 1;
-	CHECK( v == Base( 1 ) );
+	CHECK(v == Base(1));
 
 	// matching reference
-	Base& rb = v.cast< Base& >();
-	CHECK( &rb == pb );
-	CHECK_EQUAL( 1, rb.i );
+	Base& rb = v.cast<Base&>();
+	CHECK(&rb == pb);
+	CHECK_EQUAL(1, rb.i);
 	rb.i = 13;
-	CHECK( v == Base( 13 ) );
+	CHECK(v == Base(13));
 }
 } // end namespace wgt

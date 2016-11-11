@@ -7,41 +7,44 @@
 
 namespace wgt
 {
-
 class IDefinitionManager;
 class IReflectionController;
-class DefaultSetterGetterExtension: public SetterGetterExtension
+class DefaultSetterGetterExtension : public SetterGetterExtension
 {
 public:
-    DefaultSetterGetterExtension(IComponentContext& context);
-    Variant getValue(const RefPropertyItem* item, int column, ItemRole::Id roleId, IDefinitionManager& defMng) const override;
-    bool setValue(RefPropertyItem * item, int column, ItemRole::Id roleId, const Variant & data,
-        IDefinitionManager & definitionManager, ICommandManager & commandManager) const;
+	DefaultSetterGetterExtension(IComponentContext& context);
+	Variant getValue(const RefPropertyItem* item, int column, ItemRole::Id roleId,
+	                 IDefinitionManager& defMng) const override;
+	bool setValue(RefPropertyItem* item, int column, ItemRole::Id roleId, const Variant& data,
+	              IDefinitionManager& definitionManager, ICommandManager& commandManager) const;
 
 private:
-    Depends<IReflectionController> reflectionControllerHolder;
+	Depends<IReflectionController> reflectionControllerHolder;
 };
 
-class UrlGetterExtension: public SetterGetterExtension
+class UrlGetterExtension : public SetterGetterExtension
 {
 public:
-    Variant getValue(const RefPropertyItem* item, int column, ItemRole::Id roleId, IDefinitionManager& defMng) const override;
+	Variant getValue(const RefPropertyItem* item, int column, ItemRole::Id roleId,
+	                 IDefinitionManager& defMng) const override;
 };
 
-class DefaultChildCreatorExtension: public ChildCreatorExtension
+class DefaultChildCreatorExtension : public ChildCreatorExtension
 {
 public:
-    void exposeChildren(const std::shared_ptr<const PropertyNode>& node, std::vector<std::shared_ptr<const PropertyNode>> & children, IDefinitionManager& defMng) const override;
+	void exposeChildren(const std::shared_ptr<const PropertyNode>& node,
+	                    std::vector<std::shared_ptr<const PropertyNode>>& children,
+	                    IDefinitionManager& defMng) const override;
 };
 
-class DefaultMergeValueExtension: public MergeValuesExtension
+class DefaultMergeValueExtension : public MergeValuesExtension
 {
 public:
-    RefPropertyItem* lookUpItem(const std::shared_ptr<const PropertyNode>& node, const std::vector<std::unique_ptr<RefPropertyItem>>& items,
-        IDefinitionManager & definitionManager) const override;
+	RefPropertyItem* lookUpItem(const std::shared_ptr<const PropertyNode>& node,
+	                            const std::vector<std::unique_ptr<RefPropertyItem>>& items,
+	                            IDefinitionManager& definitionManager) const override;
 };
 
 std::shared_ptr<IChildAllocator> createDefaultAllocator();
-
 }
 #endif

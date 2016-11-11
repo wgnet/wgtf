@@ -8,6 +8,8 @@
 
 #include <memory>
 
+WGT_INIT_QRC_RESOURCE
+
 namespace wgt
 {
 /**
@@ -22,14 +24,11 @@ public:
 	bool PostLoad(IComponentContext& contextManager) override;
 };
 
-class CustomSplash : public Implements<ISplash>
-                     ,
-                     Depends<IResourceSystem>
+class CustomSplash : public Implements<ISplash>, Depends<IResourceSystem>
 {
 public:
 	CustomSplash(IComponentContext& context);
-	bool loadData(std::unique_ptr<BinaryBlock>& o_data,
-	              std::string& o_format) const override;
+	bool loadData(std::unique_ptr<BinaryBlock>& o_data, std::string& o_format) const override;
 };
 
 SplashTestPlugin::SplashTestPlugin(IComponentContext& contextManager)
@@ -42,13 +41,11 @@ bool SplashTestPlugin::PostLoad(IComponentContext& contextManager) /* override *
 	return true;
 }
 
-CustomSplash::CustomSplash(IComponentContext& context)
-    : Depends<IResourceSystem>(context)
+CustomSplash::CustomSplash(IComponentContext& context) : Depends<IResourceSystem>(context)
 {
 }
 
-bool CustomSplash::loadData(std::unique_ptr<BinaryBlock>& o_data,
-                            std::string& o_format) const /* override */
+bool CustomSplash::loadData(std::unique_ptr<BinaryBlock>& o_data, std::string& o_format) const /* override */
 {
 	const auto resourceSystem = this->get<IResourceSystem>();
 	if (resourceSystem == nullptr)

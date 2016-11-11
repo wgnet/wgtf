@@ -6,124 +6,121 @@ namespace wgt
 {
 namespace ReflectedCollectionDetails
 {
-	class ReflectedCollectionListener : public PropertyAccessorListener
+class ReflectedCollectionListener : public PropertyAccessorListener
+{
+public:
+	ReflectedCollectionListener(ReflectedCollection& reflectedCollection) : reflectedCollection_(reflectedCollection)
 	{
-	public:
-		ReflectedCollectionListener( ReflectedCollection & reflectedCollection )
-			: reflectedCollection_( reflectedCollection )
+		object_ = reflectedCollection_.pa_.getObject();
+		path_ = reflectedCollection_.pa_.getFullPath();
+	}
+
+	void preSetValue(const PropertyAccessor& accessor, const Variant& value) override
+	{
+		if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
 		{
-			object_ = reflectedCollection_.pa_.getObject();
-			path_ = reflectedCollection_.pa_.getFullPath();
+			return;
+		}
+	}
+
+	void postSetValue(const PropertyAccessor& accessor, const Variant& value) override
+	{
+		if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
+		{
+			return;
+		}
+	}
+
+	void preInsert(const PropertyAccessor& accessor, size_t index, size_t count) override
+	{
+		if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
+		{
+			return;
 		}
 
-		void preSetValue( const PropertyAccessor & accessor, const Variant& value ) override 
+		auto it = reflectedCollection_.begin();
+		for (size_t i = 0; i < index; ++i)
 		{
-			if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
-			{
-				return;
-			}
+			it->inc();
 		}
-		
-		void postSetValue( const PropertyAccessor & accessor, const Variant& value ) override 
-		{
-			if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
-			{
-				return;
-			}
-		}
+		reflectedCollection_.onPreInsert_(it, count);
+	}
 
-		void preInsert( const PropertyAccessor & accessor, size_t index, size_t count ) override
+	void postInserted(const PropertyAccessor& accessor, size_t index, size_t count) override
+	{
+		if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
 		{
-			if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
-			{
-				return;
-			}
-
-			auto it = reflectedCollection_.begin();
-			for (size_t i = 0; i < index; ++i)
-			{
-				it->inc();
-			}
-			reflectedCollection_.onPreInsert_( it, count );
+			return;
 		}
 
-		void postInserted( const PropertyAccessor & accessor, size_t index, size_t count ) override 
+		reflectedCollection_.reset();
+		auto it = reflectedCollection_.begin();
+		for (size_t i = 0; i < index; ++i)
 		{
-			if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
-			{
-				return;
-			}
+			it->inc();
+		}
+		reflectedCollection_.onPostInserted_(it, count);
+	}
 
-			reflectedCollection_.reset();
-			auto it = reflectedCollection_.begin();
-			for (size_t i = 0; i < index; ++i)
-			{
-				it->inc();
-			}
-			reflectedCollection_.onPostInserted_( it, count );
+	void preErase(const PropertyAccessor& accessor, size_t index, size_t count) override
+	{
+		if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
+		{
+			return;
 		}
 
-		void preErase( const PropertyAccessor & accessor, size_t index, size_t count ) override 
+		auto it = reflectedCollection_.begin();
+		for (size_t i = 0; i < index; ++i)
 		{
-			if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
-			{
-				return;
-			}
+			it->inc();
+		}
+		reflectedCollection_.onPreErase_(it, count);
+	}
 
-			auto it = reflectedCollection_.begin();
-			for (size_t i = 0; i < index; ++i)
-			{
-				it->inc();
-			}
-			reflectedCollection_.onPreErase_( it, count );
+	void postErased(const PropertyAccessor& accessor, size_t index, size_t count) override
+	{
+		if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
+		{
+			return;
 		}
 
-		void postErased( const PropertyAccessor & accessor, size_t index, size_t count ) override 
+		reflectedCollection_.reset();
+		auto it = reflectedCollection_.begin();
+		for (size_t i = 0; i < index; ++i)
 		{
-			if (object_ != accessor.getObject() || path_ != accessor.getFullPath())
-			{
-				return;
-			}
-
-			reflectedCollection_.reset();
-			auto it = reflectedCollection_.begin();
-			for (size_t i = 0; i < index; ++i)
-			{
-				it->inc();
-			}
-			reflectedCollection_.onPostErased_( it, count );
+			it->inc();
 		}
+		reflectedCollection_.onPostErased_(it, count);
+	}
 
-	private:
-		ReflectedCollection & reflectedCollection_;
-		ObjectHandle object_;
-		std::string path_;
-	};
+private:
+	ReflectedCollection& reflectedCollection_;
+	ObjectHandle object_;
+	std::string path_;
+};
 }
 
-//TODO custom iterator
+// TODO custom iterator
 
-ReflectedCollection::ReflectedCollection( const PropertyAccessor & pa, IReflectionController * controller )
-	: pa_( pa )
-	, listener_( new ReflectedCollectionDetails::ReflectedCollectionListener( *this ) )
-    , controller_( controller )
+ReflectedCollection::ReflectedCollection(const PropertyAccessor& pa, IReflectionController* controller)
+    : pa_(pa), listener_(new ReflectedCollectionDetails::ReflectedCollectionListener(*this)), controller_(controller)
 {
-	auto definitionManager = const_cast< IDefinitionManager * >( pa_.getDefinitionManager() );
-	definitionManager->registerPropertyAccessorListener( listener_ );
+	auto definitionManager = const_cast<IDefinitionManager*>(pa_.getDefinitionManager());
+	definitionManager->registerPropertyAccessorListener(listener_);
 
 	reset();
 }
 
 ReflectedCollection::~ReflectedCollection()
 {
-	auto definitionManager = const_cast< IDefinitionManager * >( pa_.getDefinitionManager() );
-	definitionManager->deregisterPropertyAccessorListener( listener_ );
+	auto definitionManager = const_cast<IDefinitionManager*>(pa_.getDefinitionManager());
+	definitionManager->deregisterPropertyAccessorListener(listener_);
 }
 
 void ReflectedCollection::reset()
 {
 	auto value = pa_.getValue();
-	collection_ = value.cast< Collection >();
+	collection_ = value.cast<Collection>();
 }
 
 size_t ReflectedCollection::size() const
@@ -141,32 +138,31 @@ CollectionIteratorImplPtr ReflectedCollection::end()
 	return collection_.end().impl();
 }
 
-std::pair< CollectionIteratorImplPtr, bool > ReflectedCollection::get(const Variant& key, GetPolicy policy)
+std::pair<CollectionIteratorImplPtr, bool> ReflectedCollection::get(const Variant& key, GetPolicy policy)
 {
-	typedef std::pair< CollectionIteratorImplPtr, bool > result_type;
+	typedef std::pair<CollectionIteratorImplPtr, bool> result_type;
 
-	auto it = collection_.find( key );
+	auto it = collection_.find(key);
 	if (policy == GetPolicy::GET_EXISTING)
 	{
-		return result_type( it.impl(), false );
+		return result_type(it.impl(), false);
 	}
 
 	if (it != collection_.end())
 	{
 		if (policy == GetPolicy::GET_AUTO)
 		{
-			return result_type( it.impl(), false );
+			return result_type(it.impl(), false);
 		}
 	}
 
 	assert(controller_ != nullptr);
-	controller_->insert( pa_, key, Variant() );
-	it = collection_.find( key );
-	return it != end() ? result_type( it.impl(), true ) : result_type( end(), false );
+	controller_->insert(pa_, key, Variant());
+	it = collection_.find(key);
+	return it != end() ? result_type(it.impl(), true) : result_type(end(), false);
 }
 
-CollectionIteratorImplPtr ReflectedCollection::insert(const Variant& key,
-                                                      const Variant& value) /* override */
+CollectionIteratorImplPtr ReflectedCollection::insert(const Variant& key, const Variant& value) /* override */
 {
 	assert(controller_ != nullptr);
 	controller_->insert(pa_, key, value);
@@ -176,22 +172,23 @@ CollectionIteratorImplPtr ReflectedCollection::insert(const Variant& key,
 
 CollectionIteratorImplPtr ReflectedCollection::erase(const CollectionIteratorImplPtr& pos)
 {
-	assert( false );
+	assert(false);
 	return end();
 }
 
 size_t ReflectedCollection::eraseKey(const Variant& key)
 {
-	assert (controller_ != nullptr);
+	assert(controller_ != nullptr);
 	auto count = collection_.size();
-	controller_->erase( pa_, key );
+	controller_->erase(pa_, key);
 	count -= collection_.size();
 	return count;
 }
 
-CollectionIteratorImplPtr ReflectedCollection::erase(const CollectionIteratorImplPtr& first, const CollectionIteratorImplPtr& last)
+CollectionIteratorImplPtr ReflectedCollection::erase(const CollectionIteratorImplPtr& first,
+                                                     const CollectionIteratorImplPtr& last)
 {
-	assert( false );
+	assert(false);
 	return end();
 }
 

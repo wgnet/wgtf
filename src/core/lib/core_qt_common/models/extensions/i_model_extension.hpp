@@ -33,7 +33,8 @@ public:
 	virtual QVariant dataExt(const QModelIndex& index, ItemRole::Id roleId) = 0;
 	virtual bool setDataExt(const QModelIndex& index, const QVariant& value, ItemRole::Id roleId) = 0;
 
-	virtual void dataExtChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<ItemRole::Id> roleIds) = 0;
+	virtual void dataExtChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+	                            const QVector<ItemRole::Id> roleIds) = 0;
 };
 
 /** An extension to a model or view.
@@ -85,80 +86,54 @@ public:
 	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, ItemRole::Id roleId);
 
 public slots:
-	virtual void onDataChanged(
-	const QModelIndex& topLeft,
-	const QModelIndex& bottomRight,
-	const QVector<int>& roles)
+	virtual void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 	{
 	}
-	virtual void onLayoutAboutToBeChanged(
-	const QList<QPersistentModelIndex>& parents,
-	QAbstractItemModel::LayoutChangeHint hint)
+	virtual void onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
+	                                      QAbstractItemModel::LayoutChangeHint hint)
 	{
 	}
-	virtual void onLayoutChanged(
-	const QList<QPersistentModelIndex>& parents,
-	QAbstractItemModel::LayoutChangeHint hint)
+	virtual void onLayoutChanged(const QList<QPersistentModelIndex>& parents, QAbstractItemModel::LayoutChangeHint hint)
 	{
 	}
-	virtual void onRowsAboutToBeInserted(
-	const QModelIndex& parent, int first, int last)
+	virtual void onRowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onRowsInserted(
-	const QModelIndex& parent, int first, int last)
+	virtual void onRowsInserted(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onRowsAboutToBeRemoved(
-	const QModelIndex& parent, int first, int last)
+	virtual void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onRowsRemoved(
-	const QModelIndex& parent, int first, int last)
+	virtual void onRowsRemoved(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onRowsAboutToBeMoved(const QModelIndex& sourceParent,
-	                                  int sourceFirst,
-	                                  int sourceLast,
-	                                  const QModelIndex& destinationParent,
-	                                  int destinationRow)
+	virtual void onRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                                  const QModelIndex& destinationParent, int destinationRow)
 	{
 	}
-	virtual void onRowsMoved(const QModelIndex& sourceParent,
-	                         int sourceFirst,
-	                         int sourceLast,
-	                         const QModelIndex& destinationParent,
-	                         int destinationRow)
+	virtual void onRowsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                         const QModelIndex& destinationParent, int destinationRow)
 	{
 	}
-	virtual void onColumnsAboutToBeInserted(
-	const QModelIndex& parent, int first, int last)
+	virtual void onColumnsAboutToBeInserted(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onColumnsInserted(
-	const QModelIndex& parent, int first, int last)
+	virtual void onColumnsInserted(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onColumnsAboutToBeRemoved(
-	const QModelIndex& parent, int first, int last)
+	virtual void onColumnsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onColumnsRemoved(
-	const QModelIndex& parent, int first, int last)
+	virtual void onColumnsRemoved(const QModelIndex& parent, int first, int last)
 	{
 	}
-	virtual void onColumnsAboutToBeMoved(const QModelIndex& sourceParent,
-	                                     int sourceFirst,
-	                                     int sourceLast,
-	                                     const QModelIndex& destinationParent,
-	                                     int destinationRow)
+	virtual void onColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                                     const QModelIndex& destinationParent, int destinationRow)
 	{
 	}
-	virtual void onColumnsMoved(const QModelIndex& sourceParent,
-	                            int sourceFirst,
-	                            int sourceLast,
-	                            const QModelIndex& destinationParent,
-	                            int destinationColumn)
+	virtual void onColumnsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                            const QModelIndex& destinationParent, int destinationColumn)
 	{
 	}
 

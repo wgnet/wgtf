@@ -6,11 +6,14 @@ namespace wgt
 class IAssetListener
 {
 public:
+	IAssetListener()
+	{
+	}
+	virtual ~IAssetListener()
+	{
+	}
 
-	IAssetListener() {}
-	virtual ~IAssetListener() {}
-
-	virtual void useAsset( const char* assetPath ) = 0;
+	virtual void useAsset(const char* assetPath) = 0;
 };
 } // end namespace wgt
 #endif // I_ASSET_LISTENER_HPP

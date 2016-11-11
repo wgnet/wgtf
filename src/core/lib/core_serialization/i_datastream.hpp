@@ -13,7 +13,6 @@
 #include <ios>
 #include <type_traits>
 
-
 namespace wgt
 {
 /**
@@ -47,7 +46,7 @@ public:
 	@return resulting position relative to begin, negative value
 	if the stream is not seekable or some error occured.
 	*/
-	virtual std::streamoff seek( std::streamoff offset, std::ios_base::seekdir dir = std::ios_base::beg ) = 0;
+	virtual std::streamoff seek(std::streamoff offset, std::ios_base::seekdir dir = std::ios_base::beg) = 0;
 
 	/**
 	Read data from stream.
@@ -56,10 +55,10 @@ public:
 	@param size maximum amount of data to read into the @a destination
 
 	@return actual amount of data read, 0 or less if EOF was reached or other error.
-	
+
 	@note Result can be less than @a size.
 	*/
-	virtual std::streamsize read( void* destination, std::streamsize size );
+	virtual std::streamsize read(void* destination, std::streamsize size);
 
 	/**
 	Write data to stream.
@@ -71,7 +70,7 @@ public:
 
 	@note Result can be less than @a size.
 	*/
-	virtual std::streamsize write( const void* source, std::streamsize size );
+	virtual std::streamsize write(const void* source, std::streamsize size);
 
 	/**
 	Synchronize the data stream with underlying storage backend.
@@ -86,45 +85,44 @@ public:
 
 	DEPRECATED virtual size_t pos() const;
 	DEPRECATED virtual size_t size() const;
-	DEPRECATED virtual const void * rawBuffer() const;
-	DEPRECATED virtual size_t readRaw( void * o_Data, size_t length );
-	DEPRECATED virtual size_t writeRaw( const void * data, size_t length );
+	DEPRECATED virtual const void* rawBuffer() const;
+	DEPRECATED virtual size_t readRaw(void* o_Data, size_t length);
+	DEPRECATED virtual size_t writeRaw(const void* data, size_t length);
 	DEPRECATED virtual bool eof() const;
 
-	template< typename T>
-	DEPRECATED typename std::enable_if<!std::is_pointer<T>::value && Variant::traits<T>::can_downcast, bool>::type
-		read( T & t )
+	template <typename T>
+	DEPRECATED typename std::enable_if<!std::is_pointer<T>::value && Variant::traits<T>::can_downcast, bool>::type read(
+	T& t)
 	{
 		bool br = false;
 		Variant variant = t;
-		br = read( variant );
-		if(br)
+		br = read(variant);
+		if (br)
 		{
 			t = variant.cast<T>();
 		}
 		else
 		{
-			assert( false );
+			assert(false);
 		}
 		return br;
 	}
 
-	DEPRECATED bool read( Variant & variant );
+	DEPRECATED bool read(Variant& variant);
 
-	template< typename T >
-	DEPRECATED typename std::enable_if<!std::is_pointer<T>::value && Variant::traits<T>::can_upcast, bool>::type
-		write( const T & t )
+	template <typename T>
+	DEPRECATED typename std::enable_if<!std::is_pointer<T>::value && Variant::traits<T>::can_upcast, bool>::type write(
+	const T& t)
 	{
 		Variant variant = t;
-		return write( variant );
+		return write(variant);
 	}
 
-	DEPRECATED bool write( const Variant & variant );
+	DEPRECATED bool write(const Variant& variant);
 
 private:
-	DEPRECATED virtual bool writeValue( const Variant & variant );
-	DEPRECATED virtual bool readValue( Variant & variant );
-
+	DEPRECATED virtual bool writeValue(const Variant& variant);
+	DEPRECATED virtual bool readValue(Variant& variant);
 };
 } // end namespace wgt
 #endif

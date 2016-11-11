@@ -6,9 +6,9 @@
 
 namespace wgt
 {
-class ObjectManager : public Implements< IObjectManagerNew >
+class ObjectManager : public Implements<IObjectManagerNew>
 {
 public:
 };
 } // end namespace wgt
-#endif //OBJECT_MANAGER_HPP
+#endif // OBJECT_MANAGER_HPP

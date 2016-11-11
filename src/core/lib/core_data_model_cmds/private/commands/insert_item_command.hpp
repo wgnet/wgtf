@@ -12,8 +12,7 @@ class IComponentContext;
  *	Type of command for inserting data into an AbstractItemModel.
  *	Currently data cannot be serialized to history.
  */
-class InsertItemCommand
-: public Command
+class InsertItemCommand : public Command
 {
 public:
 	InsertItemCommand(IComponentContext& context);
@@ -22,8 +21,7 @@ public:
 	virtual bool canUndo(const ObjectHandle& arguments) const override;
 	virtual bool undo(const ObjectHandle& arguments) const override;
 	virtual bool redo(const ObjectHandle& arguments) const override;
-	virtual ObjectHandle getCommandDescription(
-	const ObjectHandle& arguments) const override;
+	virtual ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
 	virtual const char* getId() const override;
 	virtual ObjectHandle execute(const ObjectHandle& arguments) const override;
 	virtual bool validateArguments(const ObjectHandle& arguments) const override;

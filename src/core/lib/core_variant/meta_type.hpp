@@ -9,57 +9,52 @@
 #include <type_traits>
 #include <cstddef>
 
-
 namespace wgt
 {
-
 class TextStream;
 class BinaryStream;
 
 namespace meta_type_details
 {
+template <typename T, bool is_void>
+struct size_traits_impl
+{
+	static const size_t size = sizeof(T);
+};
 
-	template< typename T, bool is_void >
-	struct size_traits_impl
+template <typename T>
+struct size_traits_impl<T, true>
+{
+	static const size_t size = 0;
+};
+
+template <typename T>
+struct size_traits : size_traits_impl<T, std::is_void<T>::value>
+{
+};
+
+template <typename T>
+struct StaticInstantiator
+{
+	StaticInstantiator()
 	{
-		static const size_t size = sizeof( T );
-	};
+		instance();
+	}
 
-	template< typename T >
-	struct size_traits_impl< T, true >
+	T& instance()
 	{
-		static const size_t size = 0;
-	};
+		static T s_instance;
+		return s_instance;
+	}
 
-	template< typename T >
-	struct size_traits:
-		size_traits_impl< T, std::is_void< T >::value >
-	{
-	};
+	static StaticInstantiator<T> instantiator;
+};
 
-	template< typename T >
-	struct StaticInstantiator
-	{
-		StaticInstantiator()
-		{
-			instance();
-		}
-
-		T& instance()
-		{
-			static T s_instance;
-			return s_instance;
-		}
-
-		static StaticInstantiator< T > instantiator;
-	};
-
-	template< typename T >
-	StaticInstantiator< T > StaticInstantiator< T >::instantiator;
-
+template <typename T>
+StaticInstantiator<T> StaticInstantiator<T>::instantiator;
 }
 
-template<typename T>
+template <typename T>
 class MetaTypeImpl;
 
 /**
@@ -71,15 +66,15 @@ public:
 	enum Flag
 	{
 		/**
-		Prefer dynamic storage and implicit sharing (shallow copy). Set this
-		flag for types that are expensive to copy.
-		*/
+	    Prefer dynamic storage and implicit sharing (shallow copy). Set this
+	    flag for types that are expensive to copy.
+	    */
 		ForceShared = 1,
 
 		/**
-		This type can be deduced from a textual representation. Currently only
-		some basic types are deducible.
-		*/
+	    This type can be deduced from a textual representation. Currently only
+	    some basic types are deducible.
+	    */
 		DeducibleFromText = 2,
 	};
 
@@ -95,12 +90,10 @@ public:
 		QualifiersMask = Const | Volatile
 	};
 
-	template< typename T >
+	template <typename T>
 	struct qualifiers_of
 	{
-		static const int value =
-			(std::is_const< T >::value ? Const : 0) |
-			(std::is_volatile< T >::value ? Volatile : 0);
+		static const int value = (std::is_const<T>::value ? Const : 0) | (std::is_volatile<T>::value ? Volatile : 0);
 	};
 
 	class Qualified
@@ -115,47 +108,43 @@ public:
 
 		int qualifiers() const
 		{
-			return static_cast< int >( this - type_->qualified_ );
+			return static_cast<int>(this - type_->qualified_);
 		}
 
-		bool testQualifiers( int test ) const
+		bool testQualifiers(int test) const
 		{
-			return ( qualifiers() & test ) == test;
+			return (qualifiers() & test) == test;
 		}
 
-		template< typename Dest, typename Src >
-		bool castPtr( Dest** dest, Src* src ) const
+		template <typename Dest, typename Src>
+		bool castPtr(Dest** dest, Src* src) const
 		{
 			// check qualifiers
-			auto srcQualifiers = qualifiers_of< Src >::value | qualifiers();
-			auto destQualifiers = qualifiers_of< Dest >::value;
-			if( !qualifiersMatch( srcQualifiers, destQualifiers ) )
+			auto srcQualifiers = qualifiers_of<Src>::value | qualifiers();
+			auto destQualifiers = qualifiers_of<Dest>::value;
+			if (!qualifiersMatch(srcQualifiers, destQualifiers))
 			{
 				// conversion loses qualifiers, fail
 				return false;
 			}
 
 			// check types
-			return type()->castPtr(
-				TypeId::getType< Dest >(),
-				(void**)dest,
-				(void*)src );
+			return type()->castPtr(TypeId::getType<Dest>(), (void**)dest, (void*)src);
 		}
 
 	private:
 		const MetaType* type_;
-
 	};
 
 	static bool qualifiersMatch(int src, int dest)
 	{
 		// dest must have all bits of src set
-		return ( src & dest ) == src;
+		return (src & dest) == src;
 	}
 
 	virtual ~MetaType();
 
-	const Qualified* qualified( int qualifiers ) const;
+	const Qualified* qualified(int qualifiers) const;
 
 	const TypeId& typeId() const
 	{
@@ -177,9 +166,9 @@ public:
 		return data_.flags_;
 	}
 
-	bool testFlags( int test ) const
+	bool testFlags(int test) const
 	{
-		return ( data_.flags_ & test ) == test;
+		return (data_.flags_ & test) == test;
 	}
 
 	virtual void init(void* value) const = 0;
@@ -188,41 +177,38 @@ public:
 	virtual void destroy(void* value) const = 0;
 	virtual bool equal(const void* lhs, const void* rhs) const = 0;
 
-	virtual void streamOut( TextStream& stream, const void* value ) const = 0;
-	virtual void streamIn( TextStream& stream, void* value ) const = 0;
+	virtual void streamOut(TextStream& stream, const void* value) const = 0;
+	virtual void streamIn(TextStream& stream, void* value) const = 0;
 
-	virtual void streamOut( BinaryStream& stream, const void* value ) const = 0;
-	virtual void streamIn( BinaryStream& stream, void* value ) const = 0;
+	virtual void streamOut(BinaryStream& stream, const void* value) const = 0;
+	virtual void streamIn(BinaryStream& stream, void* value) const = 0;
 
 	/**
 	Try convert a @a from value of @a fromType to a @a to value of this type.
 	*/
-	virtual bool convertFrom( void* to, const MetaType* fromType, const void* from ) const;
-	bool canConvertFrom( const MetaType* toType ) const;
+	virtual bool convertFrom(void* to, const MetaType* fromType, const void* from) const;
+	bool canConvertFrom(const MetaType* toType) const;
 
 	/**
 	Try convert a @a from value of this type to a @a to value of @a toType.
 	*/
-	bool convertTo( const MetaType* toType, void* to, const void* from ) const;
-	bool canConvertTo( const MetaType* toType ) const;
+	bool convertTo(const MetaType* toType, void* to, const void* from) const;
+	bool canConvertTo(const MetaType* toType) const;
 
-	bool castPtr( const TypeId& destType, void** dest, void* src ) const;
+	bool castPtr(const TypeId& destType, void** dest, void* src) const;
 
-	bool operator==( const MetaType& other ) const;
+	bool operator==(const MetaType& other) const;
 
-	bool operator!=( const MetaType& other ) const
+	bool operator!=(const MetaType& other) const
 	{
-		return !( *this == other );
+		return !(*this == other);
 	}
 
-	template<typename T>
+	template <typename T>
 	static const MetaType* get()
 	{
-		return &meta_type_details::StaticInstantiator<
-			MetaTypeImpl<
-				typename std::decay< T >::type
-			>
-		>::instantiator.instance();
+		return &meta_type_details::StaticInstantiator<MetaTypeImpl<typename std::decay<T>::type>>::instantiator
+		        .instance();
 	}
 
 	static const MetaType* find(const char* name);
@@ -236,29 +222,23 @@ protected:
 		int flags_;
 	};
 
-	MetaType( const char* name, const Data& data );
+	MetaType(const char* name, const Data& data);
 
-	template< typename T >
-	static Data data( int flags = 0 )
+	template <typename T>
+	static Data data(int flags = 0)
 	{
-		Data result =
-		{
-			TypeId::getType< T >(),
-			meta_type_details::size_traits< T >::size,
-			flags
-		};
+		Data result = { TypeId::getType<T>(), meta_type_details::size_traits<T>::size, flags };
 		return result;
 	}
 
 private:
 	Data data_;
 	const char* name_; // allow custom (human readable) type name for MetaType
-	Qualified qualified_[ QualifiersMask + 1 ];
+	Qualified qualified_[QualifiersMask + 1];
 	DLink link_;
 
 	static void validateIndex();
-
 };
 
 } // end namespace wgt
-#endif //META_TYPE_HPP
+#endif // META_TYPE_HPP

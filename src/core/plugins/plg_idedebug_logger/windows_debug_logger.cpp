@@ -8,21 +8,19 @@
 
 namespace wgt
 {
-void WindowsDebugLogger::out( LogMessage* message )
+void WindowsDebugLogger::out(LogMessage* message)
 {
 	if (message != nullptr)
 	{
 		auto currentTime = time(nullptr);
-		auto tm = *localtime( &currentTime );
+		auto tm = *localtime(&currentTime);
 
 		std::stringstream ss;
-		
-		ss << "[" << message->getLevelString() << "]["
-			<< std::put_time( &tm, "%d/%m/%Y %H:%M:%S" ) << "] "
-			<< message->c_str()
-			<< std::endl;
 
-		OutputDebugStringA( ss.str().c_str() );
+		ss << "[" << message->getLevelString() << "][" << std::put_time(&tm, "%d/%m/%Y %H:%M:%S") << "] "
+		   << message->c_str() << std::endl;
+
+		OutputDebugStringA(ss.str().c_str());
 	}
 }
 } // end namespace wgt

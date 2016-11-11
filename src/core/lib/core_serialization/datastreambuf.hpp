@@ -20,8 +20,7 @@ std::streambuf adapter for BasicStream.
 Use this adapter to perform stream IO on BasicStream using std::iostream.
 */
 template <typename _CharT, typename _Traits = std::char_traits<_CharT>>
-class BasicDataStreamBuf :
-public std::basic_streambuf<_CharT, _Traits>
+class BasicDataStreamBuf : public std::basic_streambuf<_CharT, _Traits>
 {
 	typedef std::basic_streambuf<_CharT, _Traits> base;
 
@@ -32,11 +31,7 @@ public:
 	typedef typename traits_type::pos_type pos_type;
 	typedef typename traits_type::off_type off_type;
 
-	explicit BasicDataStreamBuf(BasicStream& stream)
-	    :
-	    base()
-	    ,
-	    stream_(stream)
+	explicit BasicDataStreamBuf(BasicStream& stream) : base(), stream_(stream)
 	{
 		// allow ungetting at least one char
 		if (stream_.ungetBufferSize() < sizeof(char_type))
@@ -51,19 +46,15 @@ public:
 		// ignore locale
 	}
 
-	std::basic_streambuf<char_type, traits_type>* setbuf(
-	char_type* b,
-	std::streamsize s) override
+	std::basic_streambuf<char_type, traits_type>* setbuf(char_type* b, std::streamsize s) override
 	{
 		DATA_STREAM_BUF_LOG("setbuf(s=" << s << ")")
 		// stream_ has its own buffer, ignore buffer
 		return this;
 	}
 
-	pos_type seekoff(
-	off_type off,
-	std::ios_base::seekdir dir,
-	std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out) override
+	pos_type seekoff(off_type off, std::ios_base::seekdir dir,
+	                 std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out) override
 	{
 		// ignore mode
 		auto r = stream_.seek(off, dir);
@@ -71,9 +62,7 @@ public:
 		return r;
 	}
 
-	pos_type seekpos(
-	pos_type pos,
-	std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out) override
+	pos_type seekpos(pos_type pos, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out) override
 	{
 		auto r = seekoff(pos, std::ios_base::beg, mode);
 		DATA_STREAM_BUF_LOG("seekpos(pos=" << pos << ", mode=" << mode << ")=" << r)
@@ -192,8 +181,8 @@ public:
 			result = (r > 0) ? c : traits_type::eof();
 		}
 
-		DATA_STREAM_BUF_LOG("overflow(c=" << c << " '" << traits_type::to_char_type(c) << "')=" <<
-		                    result << " '" << traits_type::to_char_type(result) << "'")
+		DATA_STREAM_BUF_LOG("overflow(c=" << c << " '" << traits_type::to_char_type(c) << "')=" << result << " '"
+		                                  << traits_type::to_char_type(result) << "'")
 		return result;
 	}
 
@@ -227,7 +216,6 @@ private:
 
 typedef BasicDataStreamBuf<char> DataStreamBuf;
 typedef BasicDataStreamBuf<wchar_t> WDataStreamBuf;
-
 
 #undef DATA_STREAM_BUF_LOG
 } // end namespace wgt

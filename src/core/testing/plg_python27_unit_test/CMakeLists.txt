@@ -43,7 +43,6 @@ BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_unit_test
 	core_python27
 	wg_pyscript
-	Qt5::Core
 )
 WG_TARGET_LINK_PYTHON()
 

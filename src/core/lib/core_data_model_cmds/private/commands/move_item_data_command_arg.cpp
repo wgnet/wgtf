@@ -3,53 +3,45 @@
 
 namespace wgt
 {
-
-
-MoveItemDataCommandArgument::MoveItemDataCommandArgument( ) :
-	  pModel_( nullptr )
-	, startPos_( -1 )
-	, direction_( Direction::ROW )
-	, count_( -1 )
-	, startParent_( nullptr )
-	, endParent_( nullptr )
+MoveItemDataCommandArgument::MoveItemDataCommandArgument()
+    : pModel_(nullptr), startPos_(-1), direction_(Direction::ROW), count_(-1), startParent_(nullptr),
+      endParent_(nullptr)
 {
 }
 
-void MoveItemDataCommandArgument::setModel( AbstractItemModel & model )
+void MoveItemDataCommandArgument::setModel(AbstractItemModel& model)
 {
 	pModel_ = &model;
 }
 
-
-void MoveItemDataCommandArgument::setStartPos( int startPos )
+void MoveItemDataCommandArgument::setStartPos(int startPos)
 {
 	startPos_ = startPos;
 }
 
-void MoveItemDataCommandArgument::setDirection( Direction direction )
+void MoveItemDataCommandArgument::setDirection(Direction direction)
 {
 	direction_ = direction;
 }
 
-void MoveItemDataCommandArgument::setEndPos( int endPos )
+void MoveItemDataCommandArgument::setEndPos(int endPos)
 {
 	endPos_ = endPos;
 }
 
-void MoveItemDataCommandArgument::setCount( int count )
+void MoveItemDataCommandArgument::setCount(int count)
 {
 	count_ = count;
 }
 
-void MoveItemDataCommandArgument::setStartParent( const AbstractItem * startParent )
+void MoveItemDataCommandArgument::setStartParent(const AbstractItem* startParent)
 {
 	startParent_ = startParent;
 }
 
-void MoveItemDataCommandArgument::setEndParent( const AbstractItem * endParent )
+void MoveItemDataCommandArgument::setEndParent(const AbstractItem* endParent)
 {
 	endParent_ = endParent;
 }
-
 
 } // end namespace wgt

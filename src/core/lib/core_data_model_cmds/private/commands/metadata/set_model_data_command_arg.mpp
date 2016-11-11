@@ -6,13 +6,12 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE( SetModelDataCommandArgument, MetaNoSerialization() )
-	EXPOSE( "model", pModel_, MetaNone() )
-	EXPOSE( "row", row_, MetaNone() )
-	EXPOSE( "column", column_, MetaNone() )
-	EXPOSE( "roleId", roleId_, MetaNone() )
-	EXPOSE( "oldValue", oldValue_, MetaNone() )
-	EXPOSE( "newValue", newValue_, MetaNone() )
+BEGIN_EXPOSE(SetModelDataCommandArgument, MetaNoSerialization())
+EXPOSE("model", pModel_, MetaNone())
+EXPOSE("row", row_, MetaNone())
+EXPOSE("column", column_, MetaNone())
+EXPOSE("roleId", roleId_, MetaNone())
+EXPOSE("oldValue", oldValue_, MetaNone())
+EXPOSE("newValue", newValue_, MetaNone())
 END_EXPOSE()
 } // end namespace wgt
-

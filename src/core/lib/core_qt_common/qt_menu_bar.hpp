@@ -11,13 +11,13 @@ namespace wgt
 class QtMenuBar : public QtMenu
 {
 public:
-	QtMenuBar( QMenuBar & qMenuBar, const char * windowId );
+	QtMenuBar(QMenuBar& qMenuBar, const char* windowId);
 
-	void addAction( IAction & action, const char* path ) override;
-	void removeAction( IAction & action ) override;
+	void addAction(IAction& action, const char* path) override;
+	void removeAction(IAction& action) override;
 
 private:
-	QMenuBar & qMenuBar_;
+	QMenuBar& qMenuBar_;
 };
 } // end namespace wgt
-#endif//QT_MENU_BAR_HPP
+#endif // QT_MENU_BAR_HPP

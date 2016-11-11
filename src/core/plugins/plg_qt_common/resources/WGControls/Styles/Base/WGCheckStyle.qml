@@ -56,9 +56,24 @@ WGCheckBoxStyle {
                 PropertyChanges {target: checkboxFrame; border.color: palette.darkerShade}
             },
             State {
+                name: "HOVERED"
+                when: control.hovered && control.enabled && control.checkedState == Qt.Unchecked
+                PropertyChanges {target: baseStyle; __textColor: palette.textColor}
+                PropertyChanges {target: checkboxFrame; color: palette.lightShade}
+            },
+            State {
                 name: "CHECKED"
-                when: control.checkedState == Qt.Checked && control.enabled
+                when: control.checkedState == Qt.Checked && control.enabled && !control.hovered
                 PropertyChanges {target: checkContainer; visible: true}
+                PropertyChanges {target: checkboxFrame; color: "transparent"}
+                PropertyChanges {target: tickMark; visible: true}
+            },
+            State {
+                name: "HOVERED CHECKED"
+                when: control.hovered && control.enabled && control.checkedState == Qt.Checked
+                PropertyChanges {target: baseStyle; __textColor: palette.textColor}
+                PropertyChanges {target: checkContainer; visible: true}
+                PropertyChanges {target: checkboxFrame; color: palette.lighterShade}
                 PropertyChanges {target: tickMark; visible: true}
             },
             State {
@@ -74,10 +89,21 @@ WGCheckBoxStyle {
             },
             State {
                 name: "PART CHECKED"
-                when: control.checkedState == Qt.PartiallyChecked && control.enabled
+                when: control.checkedState == Qt.PartiallyChecked && control.enabled && !control.hovered
                 PropertyChanges {target: checkContainer; visible: true}
                 PropertyChanges {target: checkContainer; anchors.margins: 2}
                 PropertyChanges {target: checkContainer; color: palette.highlightShade}
+                PropertyChanges {target: checkContainer; z: 1}
+            },
+            State {
+                name: "HOVERED PART CHECKED"
+                when: control.hovered && control.enabled && control.checkedState == Qt.PartiallyChecked
+                PropertyChanges {target: baseStyle; __textColor: palette.textColor}
+                PropertyChanges {target: checkboxFrame; color: palette.lightShade}
+                PropertyChanges {target: checkContainer; visible: true}
+                PropertyChanges {target: checkContainer; anchors.margins: 2}
+                PropertyChanges {target: checkContainer; color: palette.highlightShade}
+                PropertyChanges {target: checkContainer; z: 1}
             },
             State {
                 name: "PART CHECKED DISABLED"
@@ -98,6 +124,7 @@ WGCheckBoxStyle {
             radius: defaultSpacing.halfRadius
             anchors.fill: parent
             anchors.margins: 1
+            z: -1
 
             Text {
                 id : tickMark

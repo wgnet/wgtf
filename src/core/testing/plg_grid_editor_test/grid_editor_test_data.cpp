@@ -68,4 +68,9 @@ void GridEditorTestModel::init(IComponentContext& context)
 	objects_.push_back(std::move(object4));
 	objects_.push_back(std::move(object5));
 }
+
+void GridEditorTestModel::fini()
+{
+	objects_.clear();
+}
 }

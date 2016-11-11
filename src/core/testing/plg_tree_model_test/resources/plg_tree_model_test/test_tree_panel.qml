@@ -34,7 +34,7 @@ WGPanel {
 	}
     property int topControlsHeight: 20
 
-    title: "TreeModel Test 2.0"
+    title: "TreeModel Test"
     layoutHints: { 'test': 0.1 }
     color: palette.mainWindowColor
 

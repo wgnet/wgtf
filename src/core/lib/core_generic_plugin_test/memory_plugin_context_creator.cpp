@@ -6,16 +6,14 @@
 namespace wgt
 {
 //==============================================================================
-IInterface * MemoryPluginContextCreator::createContext(
-	const wchar_t * contextId )
+IInterface* MemoryPluginContextCreator::createContext(const wchar_t* contextId)
 {
-	return new InterfaceHolder< PluginMemoryAllocator >( new PluginMemoryAllocator( contextId ), false );
+	return new InterfaceHolder<PluginMemoryAllocator>(new PluginMemoryAllocator(contextId), false);
 }
 
-
 //==============================================================================
-const char * MemoryPluginContextCreator::getType() const
+const char* MemoryPluginContextCreator::getType() const
 {
-	return typeid( IMemoryAllocator ).name();
+	return typeid(IMemoryAllocator).name();
 }
 } // end namespace wgt

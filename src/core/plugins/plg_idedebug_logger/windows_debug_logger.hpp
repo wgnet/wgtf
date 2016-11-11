@@ -4,8 +4,8 @@
 #include "core_logging_system/interfaces/i_logger.hpp"
 
 /*
-	The WindowsDebugLogger is an ILogger implementation, which will leverage
-	Windows-based output logging in Visual Studio.
+    The WindowsDebugLogger is an ILogger implementation, which will leverage
+    Windows-based output logging in Visual Studio.
  */
 
 namespace wgt
@@ -13,8 +13,10 @@ namespace wgt
 class WindowsDebugLogger : public ILogger
 {
 public:
-	virtual ~WindowsDebugLogger() {}
-	virtual void out( LogMessage* message );
+	virtual ~WindowsDebugLogger()
+	{
+	}
+	virtual void out(LogMessage* message);
 };
 } // end namespace wgt
 #endif // WINDOWS_DEBUG_LOGGER_HPP

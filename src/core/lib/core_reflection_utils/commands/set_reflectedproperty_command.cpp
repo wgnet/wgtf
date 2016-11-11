@@ -13,138 +13,125 @@
 namespace wgt
 {
 //==============================================================================
-const char * ReflectedPropertyCommandArgument::s_ContextId = "PropertyContextId";
-const char * ReflectedPropertyCommandArgument::s_PropertyPath = "PropertyPath";
-const char * ReflectedPropertyCommandArgument::s_PropertyValue = "PropertyValue";
-
+const char* ReflectedPropertyCommandArgument::s_ContextId = "PropertyContextId";
+const char* ReflectedPropertyCommandArgument::s_PropertyPath = "PropertyPath";
+const char* ReflectedPropertyCommandArgument::s_PropertyValue = "PropertyValue";
 
 //==============================================================================
-const char * ReflectedPropertyCommandArgument::contextIdPropertyName()
+const char* ReflectedPropertyCommandArgument::contextIdPropertyName()
 {
 	return s_ContextId;
 }
 
-
 //==============================================================================
-const char * ReflectedPropertyCommandArgument::pathPropertyName()
+const char* ReflectedPropertyCommandArgument::pathPropertyName()
 {
 	return s_PropertyPath;
 }
 
-
 //==============================================================================
-const char * ReflectedPropertyCommandArgument::valuePropertyName()
+const char* ReflectedPropertyCommandArgument::valuePropertyName()
 {
 	return s_PropertyValue;
 }
 
 //==============================================================================
-ReflectedPropertyCommandArgument::ReflectedPropertyCommandArgument()
-	: contextId_("")
-	, propertyPath_("")
+ReflectedPropertyCommandArgument::ReflectedPropertyCommandArgument() : contextId_(""), propertyPath_("")
 {
 }
 
 //==============================================================================
-const RefObjectId & ReflectedPropertyCommandArgument::getContextId() const
+const RefObjectId& ReflectedPropertyCommandArgument::getContextId() const
 {
 	return contextId_;
 }
 
-
 //==============================================================================
-const char * ReflectedPropertyCommandArgument::getPropertyPath() const
+const char* ReflectedPropertyCommandArgument::getPropertyPath() const
 {
 	return propertyPath_.c_str();
 }
 
-
 //==============================================================================
-const Variant & ReflectedPropertyCommandArgument::getPropertyValue() const
+const Variant& ReflectedPropertyCommandArgument::getPropertyValue() const
 {
 	return value_;
 }
 
-
 //==============================================================================
-void ReflectedPropertyCommandArgument::setContextId( const RefObjectId & id )
+void ReflectedPropertyCommandArgument::setContextId(const RefObjectId& id)
 {
 	contextId_ = id;
 }
 
-
 //==============================================================================
-void ReflectedPropertyCommandArgument::setPath( const char * path )
+void ReflectedPropertyCommandArgument::setPath(const char* path)
 {
 	propertyPath_ = path;
 }
 
-
 //==============================================================================
-void ReflectedPropertyCommandArgument::setValue( const Variant & value )
+void ReflectedPropertyCommandArgument::setValue(const Variant& value)
 {
 	value_ = value;
 }
 
-
 //==============================================================================
-SetReflectedPropertyCommand::SetReflectedPropertyCommand( IDefinitionManager & definitionManager )
-	: definitionManager_( definitionManager )
+SetReflectedPropertyCommand::SetReflectedPropertyCommand(IDefinitionManager& definitionManager)
+    : definitionManager_(definitionManager)
 {
 }
-
 
 //==============================================================================
 SetReflectedPropertyCommand::~SetReflectedPropertyCommand()
 {
 }
 
-
 //==============================================================================
-const char * SetReflectedPropertyCommand::getId() const
+const char* SetReflectedPropertyCommand::getId() const
 {
-	static const char * s_Id = getClassIdentifier<SetReflectedPropertyCommand>();
+	static const char* s_Id = getClassIdentifier<SetReflectedPropertyCommand>();
 	return s_Id;
 }
 
 //==============================================================================
 bool SetReflectedPropertyCommand::validateArguments(const ObjectHandle& arguments) const
 {
-	if ( !arguments.isValid() ) 
+	if (!arguments.isValid())
 	{
 		return false;
 	}
 
-	auto commandArgs = arguments.getBase< ReflectedPropertyCommandArgument >();
-	
-	if ( commandArgs == nullptr ) 
+	auto commandArgs = arguments.getBase<ReflectedPropertyCommandArgument>();
+
+	if (commandArgs == nullptr)
 	{
-			return false;
+		return false;
 	}
 
 	auto objManager = definitionManager_.getObjectManager();
-	if ( objManager == nullptr ) 
+	if (objManager == nullptr)
 	{
 		return false;
 	}
 
-	const ObjectHandle & object = objManager->getObject( commandArgs->getContextId() );
+	const ObjectHandle& object = objManager->getObject(commandArgs->getContextId());
 	if (!object.isValid())
 	{
 		return false;
 	}
 
-	const IClassDefinition* defn = object.getDefinition( definitionManager_ );
-	PropertyAccessor property = defn->bindProperty(commandArgs->getPropertyPath(), object );
+	const IClassDefinition* defn = object.getDefinition(definitionManager_);
+	PropertyAccessor property = defn->bindProperty(commandArgs->getPropertyPath(), object);
 	if (property.isValid() == false)
 	{
 		return false;
 	}
-	
-	const MetaType * dataType = commandArgs->getPropertyValue().type();
-	const MetaType * propertyValueType = property.getValue().type();
 
-	if ( !dataType->canConvertTo(propertyValueType) ) 
+	const MetaType* dataType = commandArgs->getPropertyValue().type();
+	const MetaType* propertyValueType = property.getValue().type();
+
+	if (!dataType->canConvertTo(propertyValueType))
 	{
 		return false;
 	}
@@ -153,27 +140,25 @@ bool SetReflectedPropertyCommand::validateArguments(const ObjectHandle& argument
 }
 
 //==============================================================================
-ObjectHandle SetReflectedPropertyCommand::execute(
-	const ObjectHandle & arguments ) const
+ObjectHandle SetReflectedPropertyCommand::execute(const ObjectHandle& arguments) const
 {
-	ReflectedPropertyCommandArgument * commandArgs =
-		arguments.getBase< ReflectedPropertyCommandArgument >();
+	ReflectedPropertyCommandArgument* commandArgs = arguments.getBase<ReflectedPropertyCommandArgument>();
 	auto objManager = definitionManager_.getObjectManager();
-	assert( objManager != nullptr );
-	ObjectHandle object = objManager->getObject( commandArgs->getContextId() );
+	assert(objManager != nullptr);
+	ObjectHandle object = objManager->getObject(commandArgs->getContextId());
 	if (!object.isValid())
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
-	PropertyAccessor property = object.getDefinition( definitionManager_ )->bindProperty( 
-		commandArgs->getPropertyPath(), object );
+	PropertyAccessor property =
+	object.getDefinition(definitionManager_)->bindProperty(commandArgs->getPropertyPath(), object);
 	if (property.isValid() == false)
 	{
-		//Can't set
+		// Can't set
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
-	const Variant & data = commandArgs->getPropertyValue();
-	bool br = property.setValue( data );
+	const Variant& data = commandArgs->getPropertyValue();
+	bool br = property.setValue(data);
 	if (!br)
 	{
 		return CommandErrorCode::INVALID_VALUE;
@@ -185,7 +170,6 @@ ObjectHandle SetReflectedPropertyCommand::execute(
 	// This is due to a circular reference in CommandManagerImpl::pushFrame
 	return nullptr;
 }
-
 
 //==============================================================================
 CommandThreadAffinity SetReflectedPropertyCommand::threadAffinity() const

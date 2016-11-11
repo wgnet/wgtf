@@ -10,8 +10,7 @@ class SharedControls
 {
 public:
 	static void init();
-	static void initDefs(
-		IDefinitionManager & definitionManager );
+	static void initDefs(IDefinitionManager& definitionManager);
 };
 } // end namespace wgt
-#endif //SHARED_CONTROLS_HPP
+#endif // SHARED_CONTROLS_HPP

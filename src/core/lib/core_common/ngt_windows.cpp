@@ -4,22 +4,20 @@
 
 void ZeroMemory(PVOID Destination, DWORD Length)
 {
-
 }
 
-int mbstowcs_s(size_t *pReturnValue, wchar_t *wcstr, size_t sizeInWords, const char *mbstr, size_t count)
+int mbstowcs_s(size_t* pReturnValue, wchar_t* wcstr, size_t sizeInWords, const char* mbstr, size_t count)
 {
 	return 0;
 }
 
-int sprintf_s(char *buffer, size_t sizeOfBuffer, const char *format, ...)
+int sprintf_s(char* buffer, size_t sizeOfBuffer, const char* format, ...)
 {
 	return 0;
 }
 
 void SetDllDirectoryA(const char* d)
 {
-
 }
 
 HANDLE WINAPI FindFirstFileW(_In_ const wchar_t* lpFileName, _Out_ WIN32_FIND_DATA* lpFindFileData)
@@ -92,7 +90,7 @@ BOOL WINAPI IsClipboardFormatAvailable(_In_ UINT format)
 	return true;
 }
 
-HRESULT CoCreateGuid(_Out_ GUID *pguid)
+HRESULT CoCreateGuid(_Out_ GUID* pguid)
 {
 	return 0;
 }
@@ -112,7 +110,7 @@ LPWSTR WINAPI GetCommandLineW(void)
 	return nullptr;
 }
 
-LPWSTR* CommandLineToArgvW(_In_ LPCWSTR lpCmdLine, _Out_ int *pNumArgs)
+LPWSTR* CommandLineToArgvW(_In_ LPCWSTR lpCmdLine, _Out_ int* pNumArgs)
 {
 	return nullptr;
 }
@@ -127,8 +125,7 @@ BOOL WINAPI SetEnvironmentVariableA(_In_ LPCTSTR lpName, _In_opt_ LPCTSTR lpValu
 	return false;
 }
 
-int strncpy_s(char *restrict dest, DWORD destsz,
-                  const char *restrict src, DWORD count)
+int strncpy_s(char* restrict dest, DWORD destsz, const char* restrict src, DWORD count)
 {
 	return 0;
 }
@@ -138,43 +135,28 @@ HANDLE WINAPI GetCurrentProcess(void)
 	return nullptr;
 }
 
-HMODULE WINAPI GetModuleHandleW(
-  _In_opt_ const wchar_t* lpModuleName
-)
+HMODULE WINAPI GetModuleHandleW(_In_opt_ const wchar_t* lpModuleName)
 {
 	return nullptr;
 }
 
-HANDLE WINAPI CreateEvent(
-  _In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes,
-  _In_     BOOL                  bManualReset,
-  _In_     BOOL                  bInitialState,
-  _In_opt_ LPCTSTR               lpName
-)
+HANDLE WINAPI CreateEvent(_In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes, _In_ BOOL bManualReset,
+                          _In_ BOOL bInitialState, _In_opt_ LPCTSTR lpName)
 {
 	return nullptr;
 }
 
-DWORD WINAPI WaitForSingleObject(
-  _In_ HANDLE hHandle,
-  _In_ DWORD  dwMilliseconds
-)
+DWORD WINAPI WaitForSingleObject(_In_ HANDLE hHandle, _In_ DWORD dwMilliseconds)
 {
 	return 0;
 }
 
-SIZE_T WINAPI VirtualQuery(
-  _In_opt_ LPCVOID                   lpAddress,
-  _Out_    PMEMORY_BASIC_INFORMATION lpBuffer,
-  _In_     SIZE_T                    dwLength
-)
+SIZE_T WINAPI VirtualQuery(_In_opt_ LPCVOID lpAddress, _Out_ PMEMORY_BASIC_INFORMATION lpBuffer, _In_ SIZE_T dwLength)
 {
 	return 0u;
 }
 
-VOID WINAPI Sleep(
-	_In_ DWORD dwMilliseconds
-)
+VOID WINAPI Sleep(_In_ DWORD dwMilliseconds)
 {
 	struct timespec ts = { dwMilliseconds / 1000, (dwMilliseconds % 1000) * 1000 * 1000 };
 	nanosleep(&ts, NULL);

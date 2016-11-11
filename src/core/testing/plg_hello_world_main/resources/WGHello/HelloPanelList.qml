@@ -48,7 +48,7 @@ WGPanel {
                 id: helloPanelListView
                 columnDelegates: [customDelegate]
                 columnSpacing: 1
-                columnSequence: [1]
+                columnSequence: [0]
                 model: sampleCollection
                 clamp: true
                 currentIndex: 0

@@ -17,20 +17,17 @@ class IDataStream;
 /**
  * Serialization Manager
  */
-class DEPRECATED SERIALIZATION_DLL SerializationManager
-	: public Implements< ISerializationManager >
+class DEPRECATED SERIALIZATION_DLL SerializationManager : public Implements<ISerializationManager>
 {
 public:
 	SerializationManager();
 	~SerializationManager();
 
-	bool registerSerializer( const char * typeName, ISerializer * serializer ) override;
-	void deregisterSerializer( const char * typeName ) override;
+	bool registerSerializer(const char* typeName, ISerializer* serializer) override;
+	void deregisterSerializer(const char* typeName) override;
 
 private:
-
-
-	ISerializer * getSerializer( const TypeId & typeId ) override;
+	ISerializer* getSerializer(const TypeId& typeId) override;
 
 	class Impl;
 	std::unique_ptr<Impl> serializerMapImpl_;

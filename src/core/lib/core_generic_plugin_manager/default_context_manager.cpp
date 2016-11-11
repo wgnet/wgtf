@@ -8,16 +8,14 @@ namespace wgt
 {
 namespace
 {
-	static const TypeId s_ComponentContextCreatorTypeId =
-		TypeId::getType< IComponentContextCreator >();
+static const TypeId s_ComponentContextCreatorTypeId = TypeId::getType<IComponentContextCreator>();
 }
 
 class RTTIHelper
 {
 public:
 	//==========================================================================
-	RTTIHelper( IInterface * pImpl )
-		: pImpl_( pImpl )
+	RTTIHelper(IInterface* pImpl) : pImpl_(pImpl)
 	{
 	}
 
@@ -28,141 +26,131 @@ public:
 	}
 
 	//==========================================================================
-	void * queryInterface(
-		const TypeId & name )
+	void* queryInterface(const TypeId& name)
 	{
-		auto && findIt = typeCache_.find( name );
+		auto&& findIt = typeCache_.find(name);
 		if (findIt != typeCache_.end())
 		{
 			return findIt->second;
 		}
-		void * found = pImpl_->queryInterface( name );
-		typeCache_.insert( std::make_pair( name, found ) );
+		void* found = pImpl_->queryInterface(name);
+		typeCache_.insert(std::make_pair(name, found));
 		return found;
 	}
 
-	IInterface * getImpl() const { return pImpl_; }
-	bool owns() const { return owns_; }
+	IInterface* getImpl() const
+	{
+		return pImpl_;
+	}
+	bool owns() const
+	{
+		return owns_;
+	}
 
 private:
-	IInterface *								pImpl_;
-	bool										owns_;
-	std::unordered_map< const TypeId, void * >	typeCache_;
+	IInterface* pImpl_;
+	bool owns_;
+	std::unordered_map<const TypeId, void*> typeCache_;
 };
 
-
 //==============================================================================
-DefaultComponentContext::DefaultComponentContext( IComponentContext * parentContext )
-	: parentContext_( parentContext )
+DefaultComponentContext::DefaultComponentContext(IComponentContext* parentContext) : parentContext_(parentContext)
 {
 }
-
 
 //==============================================================================
 DefaultComponentContext::~DefaultComponentContext()
 {
-	for( auto & interface : interfaces_ )
+	for (auto& interface : interfaces_)
 	{
-		registeredInterfaces_.erase( interface.second->getImpl() );
+		registeredInterfaces_.erase(interface.second->getImpl());
 		delete interface.second;
 	}
 	interfaces_.clear();
 
-	if(parentContext_ == nullptr)
+	if (parentContext_ == nullptr)
 	{
 		return;
 	}
-	for( auto & parentInterface : registeredInterfaces_ )
+	for (auto& parentInterface : registeredInterfaces_)
 	{
-		parentContext_->deregisterInterface( parentInterface );
+		parentContext_->deregisterInterface(parentInterface);
 	}
 }
 
 //==============================================================================
-IInterface * DefaultComponentContext::registerInterfaceImpl(
-	const TypeId & id, IInterface * pImpl, ContextRegState regState )
+IInterface* DefaultComponentContext::registerInterfaceImpl(const TypeId& id, IInterface* pImpl,
+                                                           ContextRegState regState)
 {
-	//Use pointer as unique id
-	registeredInterfaces_.insert( pImpl );
-	if (regState == Reg_Parent &&
-		parentContext_ != nullptr)
+	// Use pointer as unique id
+	registeredInterfaces_.insert(pImpl);
+	if (regState == Reg_Parent && parentContext_ != nullptr)
 	{
-		return parentContext_->registerInterfaceImpl(
-			id, pImpl, Reg_Local );
+		return parentContext_->registerInterfaceImpl(id, pImpl, Reg_Local);
 	}
-	auto insertIt = interfaces_.insert(
-		std::make_pair(
-			id, new RTTIHelper( pImpl ) ) );
+	auto insertIt = interfaces_.insert(std::make_pair(id, new RTTIHelper(pImpl)));
 
 	auto contextCreator =
-		static_cast< IComponentContextCreator * >(
-			pImpl->queryInterface( s_ComponentContextCreatorTypeId ) );
-	if(contextCreator)
+	static_cast<IComponentContextCreator*>(pImpl->queryInterface(s_ComponentContextCreatorTypeId));
+	if (contextCreator)
 	{
-		for( auto & listener : listeners_ )
+		for (auto& listener : listeners_)
 		{
-			listener->onContextCreatorRegistered( contextCreator );
+			listener->onContextCreatorRegistered(contextCreator);
 		}
 	}
 	IComponentContextListener::InterfaceCaster function =
-		std::bind( &RTTIHelper::queryInterface, insertIt->second, std::placeholders::_1 );
-	onInterfaceRegistered( function );
+	std::bind(&RTTIHelper::queryInterface, insertIt->second, std::placeholders::_1);
+	onInterfaceRegistered(function);
 	return pImpl;
 }
 
-
 //------------------------------------------------------------------------------
-void DefaultComponentContext::onInterfaceRegistered( InterfaceCaster & caster )
+void DefaultComponentContext::onInterfaceRegistered(InterfaceCaster& caster)
 {
-	for( auto & listener : listeners_ )
+	for (auto& listener : listeners_)
 	{
-		listener->onInterfaceRegistered( caster );
+		listener->onInterfaceRegistered(caster);
 	}
 }
 
-
 //------------------------------------------------------------------------------
-void DefaultComponentContext::onInterfaceDeregistered( InterfaceCaster & caster )
+void DefaultComponentContext::onInterfaceDeregistered(InterfaceCaster& caster)
 {
-	for( auto & listener : listeners_ )
+	for (auto& listener : listeners_)
 	{
-		listener->onInterfaceDeregistered( caster );
+		listener->onInterfaceDeregistered(caster);
 	}
 }
-
 
 //==============================================================================
-bool DefaultComponentContext::deregisterInterface(
-	IInterface * pImpl )
+bool DefaultComponentContext::deregisterInterface(IInterface* pImpl)
 {
-	for( InterfaceMap::const_iterator it = interfaces_.begin();
-		 it != interfaces_.end();
-		 it++ )
+	for (InterfaceMap::const_iterator it = interfaces_.begin(); it != interfaces_.end(); it++)
 	{
 		if (pImpl != it->second->getImpl())
 		{
 			continue;
 		}
-		IComponentContextCreator * contextCreator =
-			static_cast< IComponentContextCreator * >(
-				pImpl->queryInterface( s_ComponentContextCreatorTypeId ) );
+		IComponentContextCreator* contextCreator =
+		static_cast<IComponentContextCreator*>(pImpl->queryInterface(s_ComponentContextCreatorTypeId));
 		if (contextCreator)
 		{
-			for( auto & listener : listeners_ )
+			for (auto& listener : listeners_)
 			{
-				listener->onContextCreatorDeregistered( contextCreator );
-			} 
+				listener->onContextCreatorDeregistered(contextCreator);
+			}
 		}
 		IComponentContextListener::InterfaceCaster function =
-			std::bind( &RTTIHelper::queryInterface, it->second, std::placeholders::_1 ); 
-		for( auto & listener : listeners_ )
+		std::bind(&RTTIHelper::queryInterface, it->second, std::placeholders::_1);
+		for (auto& listener : listeners_)
 		{
-			listener->onInterfaceDeregistered( function );
-		} 
+			listener->onInterfaceDeregistered(function);
+		}
 		// For safety capture and delete after removing from the lists to prevent querying the interface during deletion
 		auto helper = it->second;
-		interfaces_.erase( it );
-		registeredInterfaces_.erase( pImpl );
+		interfaces_.erase(it);
+		registeredInterfaces_.erase(pImpl);
 		delete helper;
 		return true;
 	}
@@ -170,23 +158,20 @@ bool DefaultComponentContext::deregisterInterface(
 	{
 		return false;
 	}
-	bool deregistered =
-		parentContext_->deregisterInterface( pImpl );
+	bool deregistered = parentContext_->deregisterInterface(pImpl);
 	if (deregistered)
 	{
-		registeredInterfaces_.erase( pImpl );
+		registeredInterfaces_.erase(pImpl);
 	}
 	return deregistered;
 }
 
-
 //==============================================================================
-void * DefaultComponentContext::queryInterface( const TypeId & name )
+void* DefaultComponentContext::queryInterface(const TypeId& name)
 {
-	for( auto & interfaceIt : interfaces_ )
+	for (auto& interfaceIt : interfaces_)
 	{
-		void * found = interfaceIt.second->queryInterface(
-			name );
+		void* found = interfaceIt.second->queryInterface(name);
 		if (found)
 		{
 			return found;
@@ -196,45 +181,38 @@ void * DefaultComponentContext::queryInterface( const TypeId & name )
 	{
 		return nullptr;
 	}
-	return parentContext_->queryInterface( name );
+	return parentContext_->queryInterface(name);
 }
 
-
 //==============================================================================
-void DefaultComponentContext::queryInterface(
-	const TypeId & name, std::vector< void * > & o_Impls )
+void DefaultComponentContext::queryInterface(const TypeId& name, std::vector<void*>& o_Impls)
 {
-	for( auto & interfaceIt : interfaces_ )
+	for (auto& interfaceIt : interfaces_)
 	{
-		void * found =
-			interfaceIt.second->queryInterface( name );
+		void* found = interfaceIt.second->queryInterface(name);
 		if (found)
 		{
-			o_Impls.push_back( found );
+			o_Impls.push_back(found);
 		}
 	}
 	if (parentContext_ == nullptr)
 	{
 		return;
 	}
-	return parentContext_->queryInterface( name, o_Impls );
+	return parentContext_->queryInterface(name, o_Impls);
 }
 
-
 //==============================================================================
-void DefaultComponentContext::registerListener( IComponentContextListener & listener )
+void DefaultComponentContext::registerListener(IComponentContextListener& listener)
 {
-	listeners_.push_back( &listener );
+	listeners_.push_back(&listener);
 }
 
-
 //==============================================================================
-void DefaultComponentContext::deregisterListener(
-	IComponentContextListener & listener )
+void DefaultComponentContext::deregisterListener(IComponentContextListener& listener)
 {
-	auto && listenerIt = std::find(
-		listeners_.begin(), listeners_.end(), &listener );
-	assert( listenerIt != listeners_.end() );
-	listeners_.erase( listenerIt );
+	auto&& listenerIt = std::find(listeners_.begin(), listeners_.end(), &listener);
+	assert(listenerIt != listeners_.end());
+	listeners_.erase(listenerIt);
 }
 } // end namespace wgt

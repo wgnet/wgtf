@@ -6,30 +6,24 @@
 #include <QVariant>
 #include <QPersistentModelIndex>
 
-
 namespace wgt
 {
 //==============================================================================
-SelectionHelper::SelectionHelper( QObject * parent )
-    : QObject( parent )
+SelectionHelper::SelectionHelper(QObject* parent) : QObject(parent)
 {
 }
-
 
 //==============================================================================
 SelectionHelper::~SelectionHelper()
 {
 }
 
-
 //==============================================================================
-void SelectionHelper::source( SourceType* source )
+void SelectionHelper::source(SourceType* source)
 {
-
 	source_ = source;
 	emit sourceChanged();
 }
-
 
 //==============================================================================
 const SelectionHelper::SourceType* SelectionHelper::source() const
@@ -37,19 +31,17 @@ const SelectionHelper::SourceType* SelectionHelper::source() const
 	return source_;
 }
 
-
 //==============================================================================
 QVariant SelectionHelper::getSource() const
 {
 	Variant variant = source_;
-	return QtHelpers::toQVariant( variant, const_cast<SelectionHelper*>(this) );
+	return QtHelpers::toQVariant(variant, const_cast<SelectionHelper*>(this));
 }
 
-
 //==============================================================================
-bool SelectionHelper::setSource( const QVariant& source )
+bool SelectionHelper::setSource(const QVariant& source)
 {
-	Variant variant = QtHelpers::toVariant( source );
+	Variant variant = QtHelpers::toVariant(source);
 	if (variant.typeIs<SourceType>())
 	{
 		auto selectionHandler = const_cast<SourceType*>(variant.cast<const SourceType*>());
@@ -62,25 +54,23 @@ bool SelectionHelper::setSource( const QVariant& source )
 	return false;
 }
 
-
 //==============================================================================
-void SelectionHelper::select( const QList<QVariant>& selectionList )
+void SelectionHelper::select(const QModelIndexList& selectionList)
 {
-	assert( source_ != nullptr );
+	assert(source_ != nullptr);
 	std::vector<IItem*> selectedItems;
 	std::vector<int> selectedRows;
-	for (auto & selection : selectionList)
+
+	for (auto& index: selectionList)
 	{
-		assert( selection.canConvert<QModelIndex>() );
-		QModelIndex index = selection.toModelIndex();
 		int row = index.row();
-		selectedRows.push_back( row );
-		IItem* item = reinterpret_cast< IItem* >( index.internalId() );
-		selectedItems.push_back( item );
+		selectedRows.push_back(row);
+		IItem* item = reinterpret_cast<IItem*>(index.internalId());
+		selectedItems.push_back(item);
 	}
 	source_->signalPreSelectionChanged();
-	source_->setSelectedItems( selectedItems );
-	source_->setSelectedRows( selectedRows );
+	source_->setSelectedItems(selectedItems);
+	source_->setSelectedRows(selectedRows);
 	source_->signalPostSelectionChanged();
 }
 } // end namespace wgt

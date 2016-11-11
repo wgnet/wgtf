@@ -11,9 +11,7 @@ class ReflectedGroupItem : public AbstractTreeItem
 {
 public:
 	ReflectedGroupItem(const ObjectHandle& object, const MetaGroupObj& groupObj)
-	    : object_(object)
-	    , groupName_(groupObj.getGroupName())
-	    , hash_(groupObj.getGroupNameHash())
+	    : object_(object), groupName_(groupObj.getGroupName()), hash_(groupObj.getGroupNameHash())
 	{
 	}
 
@@ -80,12 +78,6 @@ std::unique_ptr<ReflectedTreeModel::Children> PropertyTreeModel::getChildren(con
 			auto definition = object.getDefinition(*getDefinitionManager());
 			auto propertyAccessor = definition->bindProperty(path.c_str(), object);
 
-			auto hiddenObj = findFirstMetaData<MetaHiddenObj>(propertyAccessor, *getDefinitionManager());
-			if (hiddenObj != nullptr)
-			{
-				continue;
-			}
-
 			auto groupObj = findFirstMetaData<MetaGroupObj>(propertyAccessor, *getDefinitionManager());
 			if (groupObj == nullptr || groupObj->getGroupNameHash() != groupItem->getHash())
 			{
@@ -99,7 +91,7 @@ std::unique_ptr<ReflectedTreeModel::Children> PropertyTreeModel::getChildren(con
 	{
 		auto propertyItem = static_cast<const ReflectedPropertyItem*>(item);
 
-		auto& groups = enumerateGroups(propertyItem);
+		auto& groups = getGroups(propertyItem);
 		for (auto& group : groups)
 		{
 			children->push_back(group.get());
@@ -115,12 +107,6 @@ std::unique_ptr<ReflectedTreeModel::Children> PropertyTreeModel::getChildren(con
 			auto definition = object.getDefinition(*getDefinitionManager());
 			auto propertyAccessor = definition->bindProperty(path.c_str(), object);
 
-			auto hiddenObj = findFirstMetaData<MetaHiddenObj>(propertyAccessor, *getDefinitionManager());
-			if (hiddenObj != nullptr)
-			{
-				continue;
-			}
-
 			auto groupObj = findFirstMetaData<MetaGroupObj>(propertyAccessor, *getDefinitionManager());
 			if (groupObj != nullptr)
 			{
@@ -134,22 +120,20 @@ std::unique_ptr<ReflectedTreeModel::Children> PropertyTreeModel::getChildren(con
 	return std::unique_ptr<Children>(children);
 }
 
-void PropertyTreeModel::removeChildren(const AbstractItem* item, std::unique_ptr<Children>& children)
+void PropertyTreeModel::clearChildren(const AbstractItem* item)
 {
 	auto groupItem = dynamic_cast<const ReflectedGroupItem*>(item);
 	if (groupItem)
 	{
-		children.reset();
 		return;
 	}
 
 	auto propertyItem = static_cast<const ReflectedPropertyItem*>(item);
 	clearGroups(propertyItem);
 	clearProperties(propertyItem);
-	children.reset();
 }
 
-const PropertyTreeModel::Groups& PropertyTreeModel::enumerateGroups(const ReflectedPropertyItem* item)
+const PropertyTreeModel::Groups& PropertyTreeModel::getGroups(const ReflectedPropertyItem* item)
 {
 	auto groupsIt = groups_.find(item);
 	if (groupsIt != groups_.end())
@@ -162,7 +146,7 @@ const PropertyTreeModel::Groups& PropertyTreeModel::enumerateGroups(const Reflec
 	auto groups = new Groups();
 	groups_.insert(std::make_pair(item, groups));
 
-	auto& properties = enumerateProperties(item);
+	auto& properties = getProperties(item);
 	for (auto& property : properties)
 	{
 		auto& object = property->getObject();
@@ -174,11 +158,14 @@ const PropertyTreeModel::Groups& PropertyTreeModel::enumerateGroups(const Reflec
 		auto groupObj = findFirstMetaData<MetaGroupObj>(propertyAccessor, *getDefinitionManager());
 		if (groupObj != nullptr)
 		{
-			auto it = std::find_if(groups->begin(), groups->end(),
-			                       [&](const std::unique_ptr<ReflectedGroupItem>& groupItem) { return groupItem->getHash() == groupObj->getGroupNameHash(); });
+			auto it =
+			std::find_if(groups->begin(), groups->end(), [&](const std::unique_ptr<ReflectedGroupItem>& groupItem) {
+				return groupItem->getHash() == groupObj->getGroupNameHash();
+			});
 			if (it == groups->end())
 			{
-				groups->emplace_back(new ReflectedGroupItem(item != nullptr ? item->getObject() : getObject(), *groupObj));
+				groups->emplace_back(
+				new ReflectedGroupItem(item != nullptr ? item->getObject() : getObject(), *groupObj));
 			}
 		}
 	}
@@ -200,36 +187,66 @@ void PropertyTreeModel::clearGroups(const ReflectedPropertyItem* item)
 	delete groups;
 }
 
-void PropertyTreeModel::collectProperties(const ReflectedPropertyItem* item, std::vector<const ReflectedPropertyItem*>& o_Properties)
+void PropertyTreeModel::collectProperties(const ReflectedPropertyItem* item,
+                                          std::vector<const ReflectedPropertyItem*>& o_Properties)
 {
-	auto& properties = enumerateProperties(item);
+	auto& properties = getProperties(item);
 	for (auto& property : properties)
 	{
-		auto& object = property->getObject();
-		auto& path = property->getPath();
-
-		auto definition = object.getDefinition(*getDefinitionManager());
-		auto propertyAccessor = definition->bindProperty(path.c_str(), object);
-
-		if (!propertyAccessor.isValid())
+		auto filterResult = filterProperty(property.get());
+		switch (filterResult)
 		{
-			continue;
-		}
+		case INCLUDE:
+			o_Properties.push_back(property.get());
+			break;
 
-		if (propertyAccessor.getProperty()->isMethod())
-		{
-			continue;
-		}
-
-		auto metaInPlaceObj = findFirstMetaData<MetaInPlaceObj>(propertyAccessor, *getDefinitionManager());
-		if (metaInPlaceObj != nullptr)
-		{
+		case INCLUDE_CHILDREN:
 			collectProperties(property.get(), o_Properties);
-			continue;
-		}
+			break;
 
-		o_Properties.push_back(property.get());
+		case IGNORE:
+		default:
+			break;
+		}
 	}
+}
+
+PropertyTreeModel::FilterResult PropertyTreeModel::filterProperty(const ReflectedPropertyItem* item) const
+{
+	auto& object = item->getObject();
+	auto& path = item->getPath();
+
+	auto& definitionManager = *getDefinitionManager();
+	auto definition = object.getDefinition(definitionManager);
+	if (definition == nullptr)
+	{
+		return IGNORE;
+	}
+
+	auto propertyAccessor = definition->bindProperty(path.c_str(), object);
+	if (!propertyAccessor.isValid())
+	{
+		return IGNORE;
+	}
+
+	if (propertyAccessor.getProperty()->isMethod())
+	{
+		return IGNORE;
+	}
+
+	auto hiddenObj = findFirstMetaData<MetaHiddenObj>(propertyAccessor, *getDefinitionManager());
+	if (hiddenObj != nullptr)
+	{
+		return IGNORE;
+	}
+
+	auto metaInPlaceObj = findFirstMetaData<MetaInPlaceObj>(propertyAccessor, *getDefinitionManager());
+	if (metaInPlaceObj != nullptr)
+	{
+		return INCLUDE_CHILDREN;
+	}
+
+	return INCLUDE;
 }
 }
 }

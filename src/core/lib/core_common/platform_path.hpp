@@ -1,7 +1,7 @@
 #ifndef __PLATFORM_PATH_HPP__
 #define __PLATFORM_PATH_HPP__
 
-#if defined( _WIN32 )
+#if defined(_WIN32)
 #include <windows.h>
 #include <shlwapi.h>
 #include <shellapi.h>
@@ -15,9 +15,9 @@
 
 namespace wgt
 {
-void AddDllExtension( wchar_t* file );
-bool GetUserDirectoryPath( char (&path) [MAX_PATH] );
-bool CreateDirectoryPath( const char* path );
+void AddDllExtension(wchar_t* file);
+bool GetUserDirectoryPath(char (&path)[MAX_PATH]);
+bool CreateDirectoryPath(const char* path);
 } // end namespace wgt
 
 #ifdef __APPLE__
@@ -25,8 +25,8 @@ bool CreateDirectoryPath( const char* path );
 bool PathIsRelative(const char* path);
 bool PathIsRelative(const wchar_t* path);
 
-bool PathCanonicalize(wchar_t*  dst, const wchar_t* src);
-bool PathCanonicalizeW(wchar_t*  dst, const wchar_t* src);
+bool PathCanonicalize(wchar_t* dst, const wchar_t* src);
+bool PathCanonicalizeW(wchar_t* dst, const wchar_t* src);
 
 void PathRemoveExtension(wchar_t* path);
 bool PathAddExtension(wchar_t* path, const wchar_t* ext);
