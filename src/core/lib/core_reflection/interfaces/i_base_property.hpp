@@ -5,7 +5,6 @@
 #include <cassert>
 #include <memory>
 #include "core_variant/variant.hpp"
-
 #include "core_reflection/reflection_dll.hpp"
 
 // TODO:
@@ -16,17 +15,13 @@ namespace wgt
 {
 class TypeId;
 class ObjectHandle;
-class MetaBase;
 class Variant;
 class IDefinitionManager;
+class MetaData;
+class IPropertyPath;
+template <typename T> class ObjectHandleT;
 
-template <typename T>
-class ObjectHandleT;
-class MetaBase;
-typedef ObjectHandleT<MetaBase> MetaHandle;
-
-class IBaseProperty;
-typedef std::shared_ptr<IBaseProperty> IBasePropertyPtr;
+typedef std::shared_ptr<class IBaseProperty> IBasePropertyPtr;
 
 /**
  *	Interface for storing info about a member/method of a class.
@@ -44,6 +39,10 @@ public:
 	 */
 	virtual const TypeId& getType() const = 0;
 
+
+	virtual std::shared_ptr< IPropertyPath> generatePropertyName( 
+		const std::shared_ptr< const IPropertyPath > & parent ) const = 0;
+
 	/**
 	 *	Get the name of the property.
 	 */
@@ -58,8 +57,9 @@ public:
 	 *	Get metadata about the property.
 	 *	Such as display or usage hints.
 	 */
-	virtual MetaHandle getMetaData() const = 0;
-	virtual bool readOnly() const = 0;
+	virtual const MetaData & getMetaData() const = 0;
+
+	virtual bool readOnly(const ObjectHandle&) const = 0;
 
 	// TODO: remove isMethod and add separate accessors to the class definition for properties and methods.
 	virtual bool isMethod() const = 0;
@@ -71,6 +71,16 @@ public:
 	 *		and a value.
 	 */
 	virtual bool isValue() const = 0;
+
+	/**
+	*	Check if property is a collection.
+	*/
+	virtual bool isCollection() const = 0;
+
+	/**
+	*	Check if property is by reference.
+	*/
+	virtual bool isByReference() const = 0;
 
 	/**
 	 *	Set the value on the given property.

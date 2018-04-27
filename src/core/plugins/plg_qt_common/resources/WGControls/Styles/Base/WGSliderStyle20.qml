@@ -129,7 +129,7 @@ Style {
     /*! This property holds the coloured bar of the slider.
     */
     property Component bar: Item {
-        property color fillColor: control.multipleValues ? "transparent" : control.__handlePosList[barid].barColor
+        property color fillColor: control.multipleValues ? "transparent" : control.readonly ? palette.readonlyColor : control.__handlePosList[barid].barColor
         clip: true
         Rectangle {
             clip: true
@@ -144,16 +144,55 @@ Style {
     /*! This property holds the tick mark labels
     */
 
-    property Component tickmarks: Repeater {
-        id: repeater
-        model: control.stepSize > 0 ? 1 + (control.maximumValue - control.minimumValue) / control.stepSize : 0
-        WGSeparator {
-            vertical: true
-            width: defaultSpacing.separatorWidth
-            height: defaultSpacing.standardMargin
+    property Component tickmarks: Item {
+        Repeater {
+            id: tickRepeater
+            anchors.fill: parent
+            model: control.tickmarkInterval > 0 && control.tickmarksEnabled ? 1 + (control.maximumValue - control.minimumValue) / control.tickmarkInterval : 0
+            WGSeparator {
+                vertical: true
+                width: defaultSpacing.separatorWidth
+                height: parent.height
 
-            x: control.__handleWidth / 2 + index * ((repeater.width - control.__handleWidth) / (repeater.count-1)) - (defaultSpacing.separatorWidth / 2)
-            y: defaultSpacing.doubleMargin
+                x: control.__handleWidth / 2 + index * ((tickRepeater.width - control.__handleWidth) / (tickRepeater.count-1)) - (defaultSpacing.separatorWidth / 2)
+
+                Text {
+                    visible: control.showTickmarkLabels
+                    anchors.top: parent.bottom
+                    anchors.topMargin: -1
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    font.pixelSize: 9
+                    color: palette.textColor
+
+                    text: index * control.tickmarkInterval
+                }
+            }
+        }
+
+        Repeater {
+            id: customTickRepeater
+            anchors.fill: parent
+            model: control.customTickmarks.length
+            WGSeparator {
+                vertical: true
+                width: defaultSpacing.separatorWidth
+                height: parent.height
+
+                x: ((customTickRepeater.width - control.__handleWidth) / (control.maximumValue - control.minimumValue)) * (control.customTickmarks[index]  - control.minimumValue) - defaultSpacing.separatorWidth / 2 + control.__handleWidth / 2
+
+                Text {
+                    visible: control.showTickmarkLabels
+                    anchors.top: parent.bottom
+                    anchors.topMargin: -1
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    font.pixelSize: 9
+                    color: palette.textColor
+
+                    text: typeof control.customTickmarkLabels[index] != "undefined" ? control.customTickmarkLabels[index] : "NaN"
+                }
+            }
         }
     }
 
@@ -192,27 +231,7 @@ Style {
 
                 height: groove.implicitHeight
 
-                x: {
-                    if(control.groovePadding)
-                    {
-                        padding.left
-                    }
-                    else
-                    {
-                        0
-                    }
-                }
-
-                y: {
-                    if(control.groovePadding)
-                    {
-                        padding.top + (parent.height - grooveLoader.item.height)/2
-                    }
-                    else
-                    {
-                        (parent.height - grooveLoader.item.height)/2
-                    }
-                }
+                y: control.showTickmarkLabels ? defaultSpacing.standardBorderSize : (parent.height - grooveLoader.item.height)/2
 
                 Repeater {
                 model: control.__handleCount
@@ -237,10 +256,12 @@ Style {
 
             Loader {
                 id: tickMarkLoader
-                anchors.centerIn: parent
-                height: control.height
+                anchors.top: grooveLoader.top
+                anchors.topMargin: defaultSpacing.standardBorderSize
+                anchors.horizontalCenter: parent.horizontalCenter
+                height: grooveLoader.height + defaultSpacing.doubleBorderSize
                 width: control.width
-                sourceComponent: control.tickmarksEnabled ? tickmarks : null
+                sourceComponent: control.tickmarksEnabled || control.customTickmarks.length > 0 ? tickmarks : null
             }
 
             Repeater {
@@ -255,13 +276,15 @@ Style {
 
                     sourceComponent: control.__handlePosList[index].handleStyle
 
-                    y: Math.round(parent.height / 2 - height / 2)
+                    y: Math.round(grooveLoader.y + (grooveLoader.height / 2) - (height / 2))
 
                     x: Math.round((((control.__handlePosList[index].value - control.minimumValue) / (control.maximumValue - control.minimumValue)) * __clampedLength) + control.__visualMinPos + handleOffset)
 
                     onLoaded: {
-                        control.__handleHeight = handleLoader.implicitHeight
-                        control.__handleWidth = handleLoader.implicitWidth
+                        handleLoader.height = item.handleHeight
+                        handleLoader.width = item.handleWidth
+                        control.__handleHeight = handleLoader.height
+                        control.__handleWidth = handleLoader.width
                     }
 
                     Connections {
@@ -313,6 +336,7 @@ Style {
                                 }
                             }
                             control.handleClicked(index, mouse.button, mouse.modifiers)
+                            control.hoveredHandle = index
                             if (mouse.button == Qt.LeftButton)
                             {
                                 mouse.accepted = false

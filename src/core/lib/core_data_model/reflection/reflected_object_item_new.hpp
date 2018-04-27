@@ -19,8 +19,7 @@ public:
 	@warning the parent *must* correspond to the object.
 	@param object The object relating to this item.
 	@param model the parent model of this property. */
-	ReflectedObjectItemNew(IComponentContext& contextManager, const ObjectHandle& object,
-	                       const ReflectedTreeModelNew& model);
+	ReflectedObjectItemNew(const ObjectHandle& object, const ReflectedTreeModelNew& model);
 
 	/** Creates a reflected tree item to represent a reflected object.
 	The created item may contain child items as well.
@@ -28,8 +27,7 @@ public:
 	@warning the parent *must* correspond to the object.
 	@param object The object relating to this item.
 	@param parent the parent item of this property. */
-	ReflectedObjectItemNew(IComponentContext& contextManager, const ObjectHandle& object, ReflectedTreeItemNew* parent,
-	                       size_t index);
+	ReflectedObjectItemNew(const ObjectHandle& object, ReflectedTreeItemNew* parent, size_t index);
 
 	virtual ~ReflectedObjectItemNew();
 

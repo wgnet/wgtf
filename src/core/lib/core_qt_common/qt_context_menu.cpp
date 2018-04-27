@@ -14,6 +14,11 @@ QtContextMenu::QtContextMenu(QMenu& qMenu, QWidget* qView, const char* windowId)
 {
 }
 
+void QtContextMenu::addPath(const char* path)
+{
+	QtMenu::addMenuPath(qMenu_, relativePath(path));
+}
+
 void QtContextMenu::addAction(IAction& action, const char* path)
 {
 	auto qAction = getQAction(action);

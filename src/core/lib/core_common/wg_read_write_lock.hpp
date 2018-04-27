@@ -34,6 +34,10 @@ public:
 	{
 		read_Lock_.read_lock();
 	}
+	wg_read_lock_guard(wg_read_lock_guard& other) : read_Lock_(other.read_Lock_)
+	{
+		read_Lock_.read_lock();
+	}
 	~wg_read_lock_guard()
 	{
 		read_Lock_.read_unlock();

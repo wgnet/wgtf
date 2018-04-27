@@ -21,6 +21,7 @@ WGPanel {
 	property var __nameFilters: nameFilters
 	property var __iconSize: iconSize
 	property var __assetAccepted: assetAccepted
+    property var __assetPreview: assetPreview
 
 	WGAssetBrowser {
 		id: assetBrowserControl
@@ -30,9 +31,20 @@ WGPanel {
 		model: assetModel
 		nameFilters: __nameFilters
 		iconSize: __iconSize
+
+        collapsedTreeNodeIconRole: "collapsedFolderIcon"
+        expandedTreeNodeIconRole: "expandedFolderIcon"
+        defaultCollapsedTreeNodeIconKey: "folder"
+        defaultExpandedTreeNodeIconKey: "folder_open"
+        defaultLeafTreeNodeIconKey: "file"
 		
 		onAssetAccepted: {
 			__assetAccepted(assetPath);
 		}
+
+        onPreviewAsset: {
+            var previewData = __assetPreview(assetPath);
+            assetBrowserControl.currentPreview = previewData != 'undefined' ? previewData : null;
+        }
 	}	
 }

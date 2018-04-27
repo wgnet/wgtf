@@ -2,7 +2,7 @@ import QtQuick 2.5
 import QtQuick.Controls.Styles 1.4
 import WGControls 1.0
 
-/*! 
+/*!
  \ingroup wgcontrols
  \brief Provides custom styling for WGTextBox.
 */
@@ -31,7 +31,7 @@ TextFieldStyle {
             State {
                 name: "READ ONLY"
                 when: control.enabled && control.readOnly && !control.activeFocus
-                PropertyChanges {target: baseStyle; textColor: palette.neutralTextColor}
+                PropertyChanges {target: baseStyle; textColor: palette.readonlyTextColor}
             },
             State {
                 name: "DISABLED"

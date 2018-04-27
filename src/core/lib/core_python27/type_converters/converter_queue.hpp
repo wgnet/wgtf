@@ -55,7 +55,7 @@ private:
 	TupleConverter tupleTypeConverter_;
 	DictConverter dictTypeConverter_;
 
-	IInterface* pTypeConvertersInterface_;
+	InterfacePtr pTypeConvertersInterface_;
 };
 
 } // namespace PythonType

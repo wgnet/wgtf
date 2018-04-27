@@ -9,7 +9,7 @@ SET( ALL_SRCS
       test_objects_pool.cpp
 )
 
-BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
+WG_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 BW_ADD_EXECUTABLE( core_common_unit_test ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_common_unit_test PRIVATE

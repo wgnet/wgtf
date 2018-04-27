@@ -1,5 +1,5 @@
-import QtQuick 2.1
-import QtQuick.Controls 1.0
+import QtQuick 2.5
+import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.0
 
 import WGControls 2.0
@@ -73,20 +73,35 @@ WGPanel {
                         id: historyList
                         objectName: "historyList"
                         model: historyListModel
-                        columnWidth: width
+                        columnWidth: parent.width
                         columnDelegates: [historyItemComponent]
 
                         property int currentCommandRow: 0
 
                         property Component historyItemComponent: WGTimelineEntryDelegate {
+                            id: historyDelegate
                             view: historyList
-                            historyItem: extractItemDetail(itemData.value)
+                            width: parent.width
+                            height: implicitHeight
+                            historyItem: itemData.value
                             columnIndex: itemColumnIndex
                             currentItem: itemRowIndex === historyList.currentCommandRow
                             applied: itemRowIndex <= historyList.currentCommandRow
+                            Rectangle {
+                                color: palette.lightShade
+                                anchors.bottom: parent.bottom
+                                width: parent.width
+                                height: 1
+                            }
                         }
 
-                        onItemDoubleClicked: historySelection.data = rowIndex.row
+                        onCountChanged: {
+                            contentY = contentHeight
+                        }
+
+                        onItemDoubleClicked: {
+                            setCommandIndex(rowIndex.row);
+                        }
                         onSelectionChanged: historySelectionHelper.select(selectionModel.selectedIndexes)
 
                         WGSelectionHelper {
@@ -102,12 +117,9 @@ WGPanel {
                             }
                         }
 
-                        WGDataChangeNotifier {
-                            id: historySelection
-                            source: CurrentIndexSource
-
-                            onSourceChanged: historyList.currentCommandRow = data
-                            onDataChanged: historyList.currentCommandRow = data
+                        property int historyIndex: commandIndex
+                        onHistoryIndexChanged: {
+                            historyList.currentCommandRow = commandIndex
                         }
                     }
                 }

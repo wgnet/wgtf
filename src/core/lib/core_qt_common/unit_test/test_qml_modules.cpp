@@ -50,13 +50,15 @@ void checkValidComponent(const QString& path, std::string& errors)
 	const std::string str = getFileText(path, errors);
 
 	const auto index = str.find("WGComponent");
+	std::string temp( str.c_str() + index );
 	if (index == std::string::npos)
 	{
 		errors += filePath + " did not include WGComponent\n";
 		return;
 	}
 
-	if (str.find("\"" + FilePath::getFileNoExtension(filePath) + "\"", index) == std::string::npos)
+	auto componentPath = "\"" + FilePath::getFileNoExtension(filePath) + "\"";
+	if (str.find(componentPath, index) == std::string::npos)
 	{
 		errors += filePath + " WGComponent was not named after file\n";
 		return;

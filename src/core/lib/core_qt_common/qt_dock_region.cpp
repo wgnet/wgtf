@@ -1,6 +1,8 @@
 #include "qt_dock_region.hpp"
+
 #include "qt_window.hpp"
 #include "i_qt_framework.hpp"
+#include "core_common/assert.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "qml_view.hpp"
 #include <QDockWidget>
@@ -14,17 +16,31 @@ namespace wgt
 {
 // This ugly class handles all the cases for switching between docked and floating DockWigets
 // Unfortunately Qt does not provide generous solution for it
-class NGTDockWidget : public QDockWidget, public IViewEventListener
+class NGTDockWidget : public QDockWidget, public Depends<IUIApplication>
 {
 public:
-	NGTDockWidget(IView* view) : QDockWidget(view->title()), view_(view), active_(false), visible_(false)
+	NGTDockWidget(IView* view, IWindow* window)
+	    : QDockWidget(view->title()), view_(view), active_(false), visible_(false), window_(window)
 	{
-		view->registerListener(this);
+		using namespace std::placeholders;
+		connections_.push_back(view->connectFocusChanged(std::bind(&NGTDockWidget::onFocusChanged, this, _1)));
+		connections_.push_back(view->connectTitleChanged(std::bind(&NGTDockWidget::onTitleChanged, this, _1)));
 	}
 
 	~NGTDockWidget()
 	{
-		view_->deregisterListener(this);
+		for (auto& connection : connections_)
+		{
+			connection.disconnect();
+		}
+
+		connections_.clear();
+		
+		if (action_)
+		{
+			get<IUIApplication>()->removeAction(*action_);
+			action_ = nullptr;
+		}
 	}
 
 	void visibilityChanged(bool visible)
@@ -46,6 +62,36 @@ public:
 		return visible_;
 	}
 
+	void createAction(IQtFramework& framework, const std::string& menuPath)
+	{
+		const char* title = view_->title();
+		std::string actionId("View.");
+		actionId += title;
+
+		auto executeFn = [this](IAction*) {
+			if (isHidden())
+			{
+				show();
+				raise();
+				view_->setFocus(true);
+			}
+			else
+			{
+				hide();
+				lower();
+				view_->setFocus(false);
+			}
+		};
+
+		auto enabledFn = [this](const IAction*) { return isEnabled(); };
+		auto checkedFn = [this](const IAction*) { return !isHidden(); };
+		auto visibleFn = [this](const IAction*) { return isActionVisible(); };
+
+		action_ = framework.createAction(actionId.c_str(), title, menuPath.c_str(), executeFn, enabledFn, checkedFn, visibleFn);
+
+		get<IUIApplication>()->addAction(*action_);
+	}
+
 protected:
 	virtual bool event(QEvent* e) override
 	{
@@ -58,50 +104,75 @@ protected:
 		case QEvent::WindowDeactivate:
 			active_ = false;
 			break;
+
 		case QEvent::FocusIn:
 			if (visible_)
 			{
-				view_->focusInEvent();
+				view_->setFocus(true);
 			}
+
+			break;
+
+		case QEvent::FocusOut:
+			view_->setFocus(false);
 			break;
 
 		case QEvent::ActivationChange:
 			if (isFloating())
 			{
-				if (active_)
-					view_->focusInEvent();
-				else
-					view_->focusOutEvent();
+				view_->setFocus(active_);
 			}
+
 			break;
 		}
+
 		return QDockWidget::event(e);
 	}
 
 private:
-	virtual void onFocusIn(IView*) override
+	bool isActionVisible()
 	{
+		const char* title = view_->title();
+		return title != nullptr && title[0] != '\0'; 
 	}
 
-	virtual void onFocusOut(IView*) override
+	void onFocusChanged(bool focus)
 	{
+		if (focus)
+		{
+			window_->setFocusedView(view_);
+			raise();
+			return;
+		}
+
+		if (window_->getFocusedView() != view_)
+		{
+			return;
+		}
+
+		window_->setFocusedView(nullptr);
 	}
 
-	virtual void onLoaded(IView* view) override
+	void onTitleChanged(const char* title)
 	{
-		setWindowTitle(view->title());
+		setWindowTitle(title);
+		action_->text(title);
+		action_->signalVisibilityChanged(isActionVisible()); // Title determines visibility (see visibleFn callback).
 	}
 
 	IView* view_;
+	IWindow* window_;
+	std::unique_ptr<IAction> action_;
 	bool active_;
 	bool visible_;
+	std::vector<Connection> connections_;
 };
 
-QtDockRegion::QtDockRegion(IComponentContext& context, QtWindow& qtWindow, QDockWidget& qDockWidget)
-    : Depends(context), qtWindow_(qtWindow), qDockWidget_(qDockWidget), hidden_(false)
+QtDockRegion::QtDockRegion(QtWindow& qtWindow, QDockWidget& qDockWidget)
+    : qtWindow_(qtWindow), qDockWidget_(qDockWidget), hidden_(false)
 {
 	auto qMainWindow = qtWindow_.window();
-	assert(qMainWindow != nullptr);
+	TF_ASSERT(qMainWindow != nullptr);
 
 	// Walk our parent hierarchy and make sure we are tabified with the topmost dock widget.
 	// Dock widgets as children of anything but the main window are not supported.
@@ -139,41 +210,39 @@ QtDockRegion::QtDockRegion(IComponentContext& context, QtWindow& qtWindow, QDock
 		hidden_ = hiddenProperty.toBool();
 	}
 
+	auto menuPathProperty = qDockWidget_.property("menuPath");
+	menuPath_ = menuPathProperty.isValid() ? menuPathProperty.toString().toUtf8().constData() : "View";
+
 	QObject::connect(&qtWindow_, &QtWindow::windowReady, [&]() {
 		if (needToRestorePreference_.empty())
 		{
 			return;
 		}
 		auto qtFramework = get<IQtFramework>();
-		assert(qtFramework != nullptr);
+		TF_ASSERT(qtFramework != nullptr);
 		auto qMainWindow = qtWindow_.window();
 		for (auto& it : needToRestorePreference_)
 		{
 			auto qtDockWidget = it.first;
-			assert(qtDockWidget != nullptr);
+			TF_ASSERT(qtDockWidget != nullptr);
 			auto pView = it.second;
-			assert(pView != nullptr);
+			TF_ASSERT(pView != nullptr);
 			bool isOk = qMainWindow->restoreDockWidget(qtDockWidget);
 			if (!isOk)
 			{
 				setDefaultPreferenceForDockWidget(qtDockWidget);
 			}
 			auto pQWidget = qtFramework->toQWidget(*pView);
-			assert(pQWidget != nullptr);
+			TF_ASSERT(pQWidget != nullptr);
 			qtDockWidget->setWidget(pQWidget);
 			QmlView* qmlView = dynamic_cast<QmlView*>(pView);
-			if (qmlView == nullptr)
-			{
-				return;
-			}
 			auto ngtDockWidget = dynamic_cast<NGTDockWidget*>(qtDockWidget);
-			if (ngtDockWidget == nullptr)
+			if (ngtDockWidget && qmlView)
 			{
-				return;
-			}
-			if (ngtDockWidget->isVisible() && ngtDockWidget->getVisibility())
-			{
-				qmlView->setNeedsToLoad(true);
+				if (ngtDockWidget->isVisible() && ngtDockWidget->getVisibility())
+				{
+					qmlView->setNeedsToLoad(true);
+				}
 			}
 		}
 		needToRestorePreference_.clear();
@@ -188,15 +257,15 @@ const LayoutTags& QtDockRegion::tags() const
 void QtDockRegion::restoreDockWidgets()
 {
 	auto qtFramework = get<IQtFramework>();
-	assert(qtFramework != nullptr);
+	TF_ASSERT(qtFramework != nullptr);
 	auto qMainWindow = qtWindow_.window();
-	assert(qMainWindow != nullptr);
+	TF_ASSERT(qMainWindow != nullptr);
 	for (auto& it : dockWidgetMap_)
 	{
 		auto view = it.first;
-		assert(view != nullptr);
-		auto qDockWidget = it.second.first.get();
-		assert(qDockWidget != nullptr);
+		TF_ASSERT(view != nullptr);
+		auto qDockWidget = it.second.get();
+		TF_ASSERT(qDockWidget != nullptr);
 		if (qtWindow_.isReady())
 		{
 			qMainWindow->restoreDockWidget(qDockWidget);
@@ -211,18 +280,57 @@ void QtDockRegion::restoreDockWidgets()
 void QtDockRegion::setDefaultPreferenceForDockWidget(QDockWidget* qDockWidget)
 {
 	auto qMainWindow = qtWindow_.window();
-	assert(qMainWindow != nullptr);
+	TF_ASSERT(qMainWindow != nullptr);
 	qDockWidget->setVisible(!hidden_);
-	qMainWindow->tabifyDockWidget(&qDockWidget_, qDockWidget);
-	qDockWidget->setFloating(qDockWidget_.isFloating());
+	if(qDockWidget_.isFloating())
+	{
+		qDockWidget->setFloating(true);
+		auto savedGeometry = getWidgetPersistentGeometry(qDockWidget->objectName().toUtf8().constData());
+		if(savedGeometry != nullptr)
+		{
+			qDockWidget->restoreGeometry(*savedGeometry);
+		}
+	}
+	else
+	{
+		qMainWindow->tabifyDockWidget(&qDockWidget_, qDockWidget);
+		auto tabifiedWidgets = qMainWindow->tabifiedDockWidgets(&qDockWidget_);
+		if(!tabifiedWidgets.contains(qDockWidget))
+		{
+			// Tabify failed because the default widget isn't part of the main window. qDockWidget will appear
+			// improperly in the mainwindow if we do nothing, so we float the widget instead.
+			// This isn't ideal, but seems to be the best we can do without modifying and recompiling Qt.
+			qDockWidget->setFloating(true);
+			auto savedGeometry = getWidgetPersistentGeometry(qDockWidget->objectName().toUtf8().constData());;
+			if(savedGeometry != nullptr)
+			{
+				qDockWidget->restoreGeometry(*savedGeometry);
+			}
+		}
+	}
 	qDockWidget->setFeatures(qDockWidget_.features());
 	qDockWidget->setAllowedAreas(qDockWidget_.allowedAreas());
+}
+
+const QByteArray* QtDockRegion::getWidgetPersistentGeometry(const char* widgetName) const
+{
+	auto it = persistentWidgetGeometry_.find(widgetName);
+	if(it != persistentWidgetGeometry_.end())
+	{
+		return &it->second;
+	}
+	return nullptr;
+}
+
+void QtDockRegion::setWidgetPersistentGeometry(const char* widgetName, const QByteArray& geometry)
+{
+	persistentWidgetGeometry_[widgetName] = geometry;
 }
 
 void QtDockRegion::addView(IView& view)
 {
 	auto qMainWindow = qtWindow_.window();
-	assert(qMainWindow != nullptr);
+	TF_ASSERT(qMainWindow != nullptr);
 
 	auto findIt = dockWidgetMap_.find(&view);
 	if (findIt != dockWidgetMap_.end())
@@ -232,7 +340,7 @@ void QtDockRegion::addView(IView& view)
 	}
 	// IView will not control qWidget's life-cycle after this call.
 	auto qtFramework = get<IQtFramework>();
-	assert(qtFramework != nullptr);
+	TF_ASSERT(qtFramework != nullptr);
 	auto qWidget = qtFramework->toQWidget(view);
 	if (qWidget == nullptr)
 	{
@@ -250,21 +358,17 @@ void QtDockRegion::addView(IView& view)
 	qWidget->setBaseSize(qDockWidget_.baseSize());
 	qWidget->resize(qWidget->baseSize());
 
-	auto qDockWidget = new NGTDockWidget(&view);
+	auto qDockWidget = new NGTDockWidget(&view, &qtWindow_);
 	qDockWidget->setObjectName(view.id());
 	IView* pView = &view;
 	QtWindow* pWindow = &qtWindow_;
 	QObject::connect(qDockWidget, &QDockWidget::visibilityChanged, [qDockWidget, pWindow](bool visible) {
 		qDockWidget->visibilityChanged(visible);
-		if (visible)
+		if (pWindow->isLoadingPreferences())
 		{
-			if (pWindow->isLoadingPreferences())
-			{
-				return;
-			}
-			QCoreApplication::postEvent(qDockWidget, new QEvent(QEvent::FocusIn));
+			return;
 		}
-
+		QCoreApplication::postEvent(qDockWidget, new QEvent(visible ? QEvent::FocusIn : QEvent::FocusOut));
 	});
 
 	if (qtWindow_.isReady())
@@ -287,21 +391,10 @@ void QtDockRegion::addView(IView& view)
 	{
 		needToRestorePreference_.push_back(std::make_pair(qDockWidget, pView));
 	}
+
 	qDockWidget->setWidget(qWidget);
-
-	std::string actionId("View.");
-	actionId += view.title();
-
-	auto action = qtFramework->createAction(actionId.c_str(), view.title(), "View", [pView, qDockWidget](IAction*) {
-		qDockWidget->show();
-		qDockWidget->raise();
-		pView->focusInEvent();
-	});
-	auto application = get<IUIApplication>();
-	assert(application != nullptr);
-	application->addAction(*action);
-
-	dockWidgetMap_[&view] = std::make_pair(std::unique_ptr<QDockWidget>(qDockWidget), std::move(action));
+	qDockWidget->createAction(*qtFramework, menuPath_);
+	dockWidgetMap_[&view] = std::unique_ptr<QDockWidget>(qDockWidget);
 }
 
 void QtDockRegion::removeView(IView& view)
@@ -318,22 +411,25 @@ void QtDockRegion::removeView(IView& view)
 		return;
 	}
 
+	if (qtWindow_.getFocusedView() == &view)
+	{
+		qtWindow_.setFocusedView(nullptr);
+	}
+
 	// TODO: save dockWidget state
-	auto dockWidget = std::move(findIt->second.first);
-	auto action = std::move(findIt->second.second);
+	auto dockWidget = std::move(findIt->second);
 	dockWidgetMap_.erase(findIt);
 
-	auto application = get<IUIApplication>();
-	assert(application != nullptr);
-	application->removeAction(*action);
-	action = nullptr;
+	TF_ASSERT(dockWidget != nullptr);
 
-	assert(dockWidget != nullptr);
+	setWidgetPersistentGeometry(dockWidget->objectName().toUtf8().constData() , dockWidget->saveGeometry());
+
 	dockWidget->setWidget(nullptr);
 	qMainWindow->removeDockWidget(dockWidget.get());
+
 	// call this function to let IView control the qWidget's life-cycle again.
 	auto qtFramework = get<IQtFramework>();
-	assert(qtFramework != nullptr);
+	TF_ASSERT(qtFramework != nullptr);
 	qtFramework->retainQWidget(view);
 	dockWidget = nullptr;
 }

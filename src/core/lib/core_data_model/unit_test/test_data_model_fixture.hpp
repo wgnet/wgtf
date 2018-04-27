@@ -2,14 +2,10 @@
 #define TEST_DATA_MODEL_FIXTURE_HPP
 
 #include <memory>
+#include "core_unit_test/test_framework.hpp"
 
 namespace wgt
 {
-class IObjectManager;
-class IDefinitionManager;
-class ObjectManager;
-class DefinitionManager;
-
 class TestDataModelFixture
 {
 public:
@@ -19,8 +15,7 @@ public:
 	IDefinitionManager* getDefinitionManager() const;
 
 private:
-	std::unique_ptr<ObjectManager> objectManager_;
-	std::unique_ptr<DefinitionManager> definitionManager_;
+    TestFramework framework_;
 };
 } // end namespace wgt
 #endif // TEST_DATA_MODEL_FIXTURE_HPP

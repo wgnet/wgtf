@@ -13,6 +13,6 @@ QtFrameworkAdapter::~QtFrameworkAdapter()
 
 QtWindow* QtFrameworkAdapter::createQtWindow(QIODevice& source)
 {
-	return new QtWindowAdapter(*this, source);
+	return new QtWindowAdapter(source);
 }
 } // end namespace wgt

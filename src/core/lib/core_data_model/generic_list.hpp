@@ -4,6 +4,7 @@
 #include "i_list_model.hpp"
 #include "i_item.hpp"
 #include "i_item_role.hpp"
+#include "core_common/assert.hpp"
 #include "core_variant/variant.hpp"
 #include "core_serialization/resizing_memory_stream.hpp"
 #include <memory>
@@ -110,7 +111,7 @@ public:
 		for (; it != items_.end() && it->get() != item; ++index, ++it)
 		{
 		}
-		assert(it != items_.end());
+		TF_ASSERT(it != items_.end());
 		return index;
 	}
 
@@ -151,14 +152,14 @@ public:
 		typedef value_type* pointer;
 		typedef value_type& reference;
 
-		ConstIterator(const ConstIterator& rhs) : iterator_(new Items::const_iterator(*rhs.iterator_))
+		ConstIterator(const ConstIterator& rhs) : iterator_(rhs.iterator_)
 		{
 		}
 		ConstIterator& operator=(const ConstIterator& rhs)
 		{
 			if (this != &rhs)
 			{
-				iterator_.reset(new Items::const_iterator(*rhs.iterator_));
+				iterator_ = Items::const_iterator(rhs.iterator_);
 			}
 			return *this;
 		}
@@ -169,7 +170,7 @@ public:
 		}
 		pointer operator->() const
 		{
-			auto item = static_cast<GenericListItemT<T>*>((*this->iterator_)->get());
+			auto item = static_cast<GenericListItemT<T>*>(iterator_->get());
 			const T& value = item->value_;
 
 			return &value;
@@ -177,7 +178,7 @@ public:
 
 		ConstIterator& operator++()
 		{
-			++(*iterator_);
+			++iterator_;
 			return *this;
 		}
 		ConstIterator operator++(int)
@@ -188,7 +189,7 @@ public:
 		}
 		bool operator==(const ConstIterator& other) const
 		{
-			return *iterator_ == *other.iterator_;
+			return iterator_ == other.iterator_;
 		}
 		bool operator!=(const ConstIterator& other) const
 		{
@@ -196,31 +197,31 @@ public:
 		}
 		bool operator<(const ConstIterator& other) const
 		{
-			return *iterator_ < *other.iterator_;
+			return iterator_ < other.iterator_;
 		}
 		difference_type operator-(const ConstIterator& other) const
 		{
-			return *iterator_ - *other.iterator_;
+			return iterator_ - other.iterator_;
 		}
 		ConstIterator operator+(difference_type n) const
 		{
-			return *iterator_ + n;
+			return iterator_ + n;
 		}
 
 	protected:
 		ConstIterator()
 		{
 		}
-		ConstIterator(const Items::const_iterator& iterator) : iterator_(new Items::const_iterator(iterator))
+		ConstIterator(const Items::const_iterator& iterator) : iterator_(iterator)
 		{
 		}
 
 		const Items::const_iterator& iterator() const
 		{
-			return *iterator_;
+			return iterator_;
 		}
 
-		std::unique_ptr<Items::const_iterator> iterator_;
+		Items::const_iterator iterator_;
 
 		friend class GenericListT<T>;
 	};
@@ -236,13 +237,13 @@ public:
 
 		Iterator(const Iterator& rhs) : ConstIterator()
 		{
-			this->iterator_.reset(new Items::const_iterator(rhs.iterator()));
+			this->iterator_ = rhs.iterator();
 		}
 		Iterator& operator=(const Iterator& rhs)
 		{
 			if (this != &rhs)
 			{
-				this->iterator_.reset(new Items::const_iterator(*rhs.iterator_));
+				this->iterator_ = rhs.iterator_;
 			}
 
 			return *this;
@@ -254,7 +255,7 @@ public:
 		}
 		pointer operator->() const
 		{
-			auto item = static_cast<GenericListItemT<T>*>((*this->iterator_)->get());
+			auto item = static_cast<GenericListItemT<T>*>(*this->iterator_->get());
 			T& value = item->value_;
 
 			return &value;
@@ -262,7 +263,7 @@ public:
 
 		Iterator& operator++()
 		{
-			++(*this->iterator_);
+			++(iterator_);
 			return *this;
 		}
 		Iterator operator++(int)
@@ -273,19 +274,19 @@ public:
 		}
 		Iterator operator+(difference_type n) const
 		{
-			*this->iterator_ += n;
+			iterator_ += n;
 			return *this;
 		}
 
 	private:
 		Iterator(const Items::iterator& iterator) : ConstIterator()
 		{
-			this->iterator_.reset(new Items::const_iterator(iterator));
+			this->iterator_ = Items::const_iterator(iterator);
 		}
 
 		const Items::const_iterator& iterator() const
 		{
-			return *(this->iterator_.get());
+			return this->iterator_;
 		}
 
 		friend class GenericListT<T>;

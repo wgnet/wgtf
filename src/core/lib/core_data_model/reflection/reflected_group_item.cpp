@@ -1,32 +1,37 @@
 #include "reflected_group_item.hpp"
+
 #include "reflected_property_item.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_reflection/interfaces/i_base_property.hpp"
 #include "core_reflection/interfaces/i_class_definition.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
-
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
 #include "core_data_model/i_item_role.hpp"
-
+#include "core_data_model/common_data_roles.hpp"
 #include "core_string_utils/string_utils.hpp"
 #include <codecvt>
 
 namespace wgt
 {
-ReflectedGroupItem::ReflectedGroupItem(const MetaGroupObj* groupObj, ReflectedItem* parent,
+ReflectedGroupItem::ReflectedGroupItem(
+	const MetaData & metaData, 
+	ObjectHandleT<MetaGroupObj> groupObj, ReflectedItem* parent,
                                        const std::string& inplacePath)
-    : ReflectedItem(parent, inplacePath), groupObj_(groupObj)
+    : ReflectedItem(parent, inplacePath)
+	, metaData_( &metaData )
+	, groupObj_(groupObj)
 {
-	assert(groupObj_ != nullptr);
-	std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
+	TF_ASSERT(groupObj_ != nullptr);
 	if (groupObj_ == nullptr)
 	{
 		displayName_.clear();
 	}
 	else
 	{
-		displayName_ = conversion.to_bytes(groupObj_->getGroupName());
+		displayName_ = StringUtils::to_string(groupObj_->getGroupName(getObject()));
 	}
 }
 
@@ -60,14 +65,22 @@ Variant ReflectedGroupItem::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == ObjectRole::roleId_)
 	{
 		return getObject();
-		;
 	}
 	else if (roleId == RootObjectRole::roleId_)
 	{
 		return getRootObject();
 	}
-
-	if (roleId == ValueRole::roleId_)
+	else if (roleId == ItemRole::tooltipId)
+	{
+		auto definitionManager = getDefinitionManager();
+		auto tooltipObj = findFirstMetaData<MetaTooltipObj>(*metaData_, *definitionManager);
+		if (tooltipObj != nullptr)
+		{
+			return tooltipObj->getTooltip(nullptr);
+		}
+		return Variant();
+	}
+	else if (roleId == ValueRole::roleId_)
 	{
 		auto collectionHolder = std::make_shared<CollectionHolder<Variants>>();
 		Variants& childValues_ = collectionHolder->storage();
@@ -92,7 +105,7 @@ void ReflectedGroupItem::getChildValues(Variants& childValues) const
 	if (definitionManager == nullptr)
 		return;
 
-	auto definition = object.getDefinition(*getDefinitionManager());
+	auto definition = definitionManager->getDefinition(object);
 	if (definition == nullptr)
 		return;
 
@@ -110,10 +123,11 @@ void ReflectedGroupItem::getChildValues(Variants& childValues) const
 	});
 }
 
-bool ReflectedGroupItem::isSameGroup(const MetaGroupObj* group) const
+bool ReflectedGroupItem::isSameGroup(ObjectHandleT<MetaGroupObj> group) const
 {
+	const auto& object = getObject();
 	return groupObj_ != nullptr && group != nullptr &&
-	(group == groupObj_ || group->getGroupNameHash() == groupObj_->getGroupNameHash());
+	(group == groupObj_ || group->getGroupNameHash(object) == groupObj_->getGroupNameHash(object));
 }
 
 bool ReflectedGroupItem::setData(int column, ItemRole::Id roleId, const Variant& data)

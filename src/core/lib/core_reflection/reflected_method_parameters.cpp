@@ -1,8 +1,8 @@
 #include "core_reflection/reflected_method_parameters.hpp"
-#include "core_reflection/object_handle.hpp"
-#include "core_variant/variant.hpp"
 
-#include <cassert>
+#include "core_common/assert.hpp"
+#include "core_variant/variant.hpp"
+#include "core_variant/collection.hpp"
 
 namespace wgt
 {
@@ -52,6 +52,11 @@ ReflectedMethodParameters &ReflectedMethodParameters::operator,(const Variant&va
 	return *this;
 }
 
+ReflectedMethodParameters::operator Collection()
+{
+	return Collection(impl_->parameters_);
+}
+
 bool ReflectedMethodParameters::empty() const
 {
 	return impl_->parameters_.empty();
@@ -85,7 +90,7 @@ ReflectedMethodParameters::const_reference ReflectedMethodParameters::operator[]
 ReflectedMethodParameters::const_iterator::const_iterator(const ReflectedMethodParameters& collection, size_t index)
     : collection_(const_cast<ReflectedMethodParameters&>(collection)), index_(index)
 {
-	assert(index_ <= collection_.size());
+	TF_ASSERT(index_ <= collection_.size());
 }
 
 ReflectedMethodParameters::const_reference ReflectedMethodParameters::const_iterator::operator*() const
@@ -100,13 +105,14 @@ ReflectedMethodParameters::const_pointer ReflectedMethodParameters::const_iterat
 
 ReflectedMethodParameters::const_iterator ReflectedMethodParameters::const_iterator::operator++(int)
 {
-	assert(index_ < collection_.size());
-	return const_iterator(collection_, index_ + 1);
+	TF_ASSERT(index_ < collection_.size());
+	++index_;
+	return const_iterator(collection_, index_-1);
 }
 
 ReflectedMethodParameters::const_iterator& ReflectedMethodParameters::const_iterator::operator++()
 {
-	assert(index_ < collection_.size());
+	TF_ASSERT(index_ < collection_.size());
 	++index_;
 	return *this;
 }
@@ -119,7 +125,7 @@ ReflectedMethodParameters::const_iterator ReflectedMethodParameters::const_itera
 ReflectedMethodParameters::const_iterator::difference_type ReflectedMethodParameters::const_iterator::operator-(
 const const_iterator& rhs) const
 {
-	assert(&collection_ == &rhs.collection_);
+	TF_ASSERT(&collection_ == &rhs.collection_);
 	return index_ - rhs.index_;
 }
 
@@ -155,13 +161,13 @@ ReflectedMethodParameters::pointer ReflectedMethodParameters::iterator::operator
 
 ReflectedMethodParameters::iterator ReflectedMethodParameters::iterator::operator++(int)
 {
-	assert(index_ < collection_.size());
+	TF_ASSERT(index_ < collection_.size());
 	return iterator(collection_, index_ + 1);
 }
 
 ReflectedMethodParameters::iterator& ReflectedMethodParameters::iterator::operator++()
 {
-	assert(index_ < collection_.size());
+	TF_ASSERT(index_ < collection_.size());
 	++index_;
 	return *this;
 }

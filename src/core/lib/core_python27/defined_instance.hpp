@@ -5,12 +5,14 @@
 #include "core_reflection/generic/base_generic_object.hpp"
 #include "wg_pyscript/py_script_object.hpp"
 #include "core_serialization/text_stream.hpp"
+#include "core_dependency_system/depends.hpp"
 
 #include <memory>
 
 namespace wgt
 {
-class IComponentContext;
+struct IScriptObjectDefinitionRegistry;
+class IObjectManager;
 
 namespace ReflectedPython
 {
@@ -32,7 +34,7 @@ namespace ReflectedPython
  *
  *	@see GenericObject, QtScriptObject.
  */
-class DefinedInstance : public BaseGenericObject
+class DefinedInstance : public BaseGenericObject, Depends<IScriptObjectDefinitionRegistry, IObjectManager>
 {
 public:
 	/**
@@ -44,22 +46,17 @@ public:
 	DefinedInstance();
 	~DefinedInstance();
 
-	static ObjectHandle findOrCreate(IComponentContext& context, const PyScript::ScriptObject& pythonObject,
-	                                 const ObjectHandle& parentHandle, const std::string& childPath);
-
-	static ObjectHandle find(IComponentContext& context, const PyScript::ScriptObject& pythonObject);
-
 	const PyScript::ScriptObject& pythonObject() const;
 	const DefinedInstance& root() const;
 	const std::string& fullPath() const;
 
 private:
+	friend class PythonObjManager;
 	/**
 	 *	Construct a class definition from the given Python object.
 	 */
-	DefinedInstance(IComponentContext& context, const PyScript::ScriptObject& pythonObject,
-	                std::shared_ptr<IClassDefinition>& definition, const ObjectHandle& parentHandle,
-	                const std::string& childPath);
+	DefinedInstance(const PyScript::ScriptObject& pythonObject, std::shared_ptr<IClassDefinition>& definition,
+	                const ObjectHandle& parentHandle, const std::string& childPath);
 
 	// Prevent copy and move
 	// There should only be one DefinedInstance per PyScript::ScriptObject
@@ -82,8 +79,6 @@ private:
 	 *	be used by NGT reflection.
 	 */
 	std::shared_ptr<IClassDefinition> pDefinition_;
-
-	IComponentContext* context_;
 
 	// Track parent object so that the reflection system can get the full
 	// property path to this object
@@ -112,6 +107,7 @@ public:
 	void copy(void* dest, const void* src) const override;
 	void move(void* dest, void* src) const override;
 	void destroy(void* value) const override;
+	bool lessThan(const void* lhs, const void* rhs) const override;
 	bool equal(const void* lhs, const void* rhs) const override;
 
 	void streamOut(TextStream& stream, const void* value) const override;

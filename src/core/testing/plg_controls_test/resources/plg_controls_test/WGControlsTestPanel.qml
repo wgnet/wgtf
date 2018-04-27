@@ -19,17 +19,6 @@ Rectangle {
         anchors.fill: parent
 
         Tab {
-            title: "WGControls 1.0"
-
-            Loader {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                source: "WGControlsTestPanel10.qml"
-            }
-        }
-
-        Tab {
             title: "WGControls 2.0"
 
             Loader {
@@ -41,7 +30,7 @@ Rectangle {
         }
 
         Component.onCompleted: {
-            currentIndex = 1
+            currentIndex = 0
         }
     }
 }

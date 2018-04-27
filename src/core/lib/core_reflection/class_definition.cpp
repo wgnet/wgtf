@@ -1,92 +1,152 @@
 #include "class_definition.hpp"
+
 #include "base_property.hpp"
 #include "reflected_object.hpp"
 #include "property_accessor.hpp"
 #include "property_iterator.hpp"
 #include "i_definition_manager.hpp"
 #include "i_object_manager.hpp"
+#include "object/object_reference.hpp"
 
 #include "interfaces/i_class_definition_details.hpp"
+#include "interfaces/i_meta_utilities.hpp"
 
 #include "metadata/meta_base.hpp"
-#include "metadata/meta_utilities.hpp"
 #include "metadata/meta_impl.hpp"
 
 #include "utilities/definition_helpers.hpp"
+#include "utilities/reflection_utilities.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_variant/variant.hpp"
 #include "core_variant/collection.hpp"
 #include "core_serialization/fixed_memory_stream.hpp"
 #include "core_serialization/text_stream.hpp"
 #include "core_serialization/text_stream_manip.hpp"
-
+#include "private/reflection_cache.hpp"
+#include "private/property_path.hpp"
+#include "private/collection_element_holder.hpp"
 #include <algorithm>
 #include <utility>
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
-namespace
-{
-//==========================================================================
-class CollectionElementHolder : public BaseProperty
-{
-	typedef BaseProperty base;
-
-public:
-	CollectionElementHolder(const Collection& collection, const Collection::Iterator& collectionIt,
-	                        const TypeId& valueType, std::string propName)
-	    :
-
-	      base("", valueType),
-	      collection_(collection), collectionIt_(collectionIt), propName_(std::move(propName))
-	{
-		setName(propName_.c_str());
-	}
-
-	const TypeId& getType() const override
-	{
-		return collectionIt_.valueType();
-	}
-
-	virtual bool isValue() const override
-	{
-		return true;
-	}
-
-	Variant get(const ObjectHandle& pBase, const IDefinitionManager& definitionManager) const override
-	{
-		assert(this->isValue());
-		return collectionIt_.value();
-	}
-
-	bool set(const ObjectHandle&, const Variant& value, const IDefinitionManager& definitionManager) const override
-	{
-		assert(!this->readOnly());
-
-		auto valueType = collectionIt_.valueType();
-		if (valueType.isPointer())
-		{
-			auto targetType = valueType.removePointer();
-			ObjectHandle source;
-			if (value.tryCast(source))
-			{
-				auto target = reflectedCast(source, targetType, definitionManager);
-				return collectionIt_.setValue(target);
-			}
-		}
-
-		return collectionIt_.setValue(value);
-	}
-
-private:
-	Collection collection_; // need to keep Collection data alive to keep iterator valid
-	Collection::Iterator collectionIt_;
-	std::string propName_;
-};
-}
 
 //------------------------------------------------------------------------------
-ClassDefinition::ClassDefinition(std::unique_ptr<IClassDefinitionDetails> details) : details_(std::move(details))
+struct ClassDefinition::Impl
+{
+	Impl(std::unique_ptr<IClassDefinitionDetails> details, ClassDefinition & self )
+		: details_(std::move(details))
+		, metaBasesHolder_(nullptr)
+		, metaBaseInited_( false )
+		, self_( self )
+	{
+	}
+
+	std::unique_ptr<const IClassDefinitionDetails> details_;
+	IDefinitionManager * defManager_ = nullptr;
+	mutable std::vector<ManagedObjectPtr> sharedObjects_;
+	mutable bool metaBaseInited_;
+	mutable ObjectHandleT< MetaBasesHolderObj  > metaBasesHolder_;
+	ClassDefinition & self_;
+
+	const ObjectHandleT< MetaBasesHolderObj  > & getMetaBasesHolder() const
+	{
+		if (metaBaseInited_)
+		{
+			return metaBasesHolder_;
+		}
+		metaBaseInited_ = true;
+		metaBasesHolder_ = findFirstMetaData< MetaBasesHolderObj >(self_, *self_.getDefinitionManager());
+		return metaBasesHolder_;
+	}
+
+	PropertyAccessor bindProperty(
+		const IClassDefinition & definition,
+		IPropertyPath::ConstPtr & path, const Variant& base) const;
+
+	void bindProperty(
+		const ClassDefinition & definition,
+		const char* path, 
+		const Variant& base, PropertyAccessor& propertyAccessor) const;
+
+	PropertyAccessor bindProperty(
+		std::vector< std::remove_const< IPropertyPath::ConstPtr >::type > & o_Components,
+		const Variant & base,
+		IBasePropertyPtr& parentProperty,
+		std::shared_ptr<ObjectReference> & o_ParentReference,
+		const IClassDefinition * & o_ParentDefinition) const;
+
+
+
+	//------------------------------------------------------------------------------
+	const std::vector< std::string > & getParentNames() const
+	{
+		auto metaBasesHolder = getMetaBasesHolder();
+		if (metaBasesHolder == nullptr)
+		{
+			static std::vector< std::string > s_EmptyCollection;
+			return s_EmptyCollection;
+		}
+		return metaBasesHolder->getParents();
+	}
+
+
+	//------------------------------------------------------------------------------
+	PropertyIteratorRange allProperties() const
+	{
+		return PropertyIteratorRange(PropertyIterator::ITERATE_PARENTS, self_ );
+	}
+
+	//------------------------------------------------------------------------------
+	IBasePropertyPtr findProperty( IPropertyPath::ConstPtr & path) const
+	{
+		// Some definitions allow you to lookup by name directly
+		if (details_->canDirectLookupProperty())
+		{
+			IBasePropertyPtr prop = details_->directLookupProperty(path);
+			if (prop != nullptr)
+			{
+				return prop;
+			}
+			const auto & parentNames = getParentNames();
+
+			for (const auto & parentName : parentNames)
+			{
+				auto parentDef =
+					defManager_->getDefinition(parentName.c_str());
+				if (parentDef == nullptr)
+				{
+					continue;
+				}
+				prop = parentDef->findProperty(path);
+				if (prop != nullptr)
+				{
+					return prop;
+				}
+			}
+			return nullptr;
+		}
+
+		// Otherwise, perform a search
+		auto nameHash = path->getHash();
+		auto properties = allProperties();
+		for (auto it = properties.begin(); it != properties.end(); ++it)
+		{
+			if (it->getNameHash() == nameHash)
+			{
+				return *it;
+			}
+		}
+		return nullptr;
+	}
+};
+
+
+//------------------------------------------------------------------------------
+ClassDefinition::ClassDefinition(std::unique_ptr<IClassDefinitionDetails> details)
+	: impl_( std::make_unique< Impl >( std::move( details ), *this ) )
 {
 }
 
@@ -98,13 +158,13 @@ ClassDefinition::~ClassDefinition()
 //------------------------------------------------------------------------------
 const IClassDefinitionDetails& ClassDefinition::getDetails() const
 {
-	return *details_;
+	return *impl_->details_;
 }
 
 //------------------------------------------------------------------------------
 PropertyIteratorRange ClassDefinition::allProperties() const
 {
-	return PropertyIteratorRange(PropertyIterator::ITERATE_PARENTS, *this);
+	return impl_->allProperties();
 }
 
 //------------------------------------------------------------------------------
@@ -113,192 +173,431 @@ PropertyIteratorRange ClassDefinition::directProperties() const
 	return PropertyIteratorRange(PropertyIterator::ITERATE_SELF_ONLY, *this);
 }
 
+
 //------------------------------------------------------------------------------
-IClassDefinition* ClassDefinition::getParent() const
+const std::vector< std::string > & ClassDefinition::getParentNames() const
 {
-	if (details_->getParentName() == NULL)
-	{
-		return NULL;
-	}
-	return defManager_->getDefinition(details_->getParentName());
+	return impl_->getParentNames();
+}
+
+
+//------------------------------------------------------------------------------
+PropertyAccessor ClassDefinition::bindProperty(
+	IPropertyPath::ConstPtr & path, const ObjectHandle& object) const
+{
+	return impl_->bindProperty( *this, path, object );
 }
 
 //------------------------------------------------------------------------------
 PropertyAccessor ClassDefinition::bindProperty(const char* name, const ObjectHandle& object) const
 {
-	assert(getDefinitionManager());
-	assert(this == object.getDefinition(*getDefinitionManager()));
-	PropertyAccessor propAccessor(getDefinitionManager(), object, name);
-	bindPropertyImpl(name, object, propAccessor);
+	TF_ASSERT(getDefinitionManager());
+	TF_ASSERT(this == getDefinitionManager()->getDefinition(object));
+
+	std::shared_ptr<ObjectReference> reference =
+		std::dynamic_pointer_cast<ObjectReference>(object.storage());
+	TF_ASSERT(reference);
+	auto path = name ? name : "";
+
+	PropertyAccessor propAccessor("", reference);
+	impl_->bindProperty( *this, path, object, propAccessor);
 	return std::move(propAccessor);
 }
 
 //------------------------------------------------------------------------------
-void ClassDefinition::bindPropertyImpl(const char* name, const ObjectHandle& pBase,
-                                       PropertyAccessor& o_PropertyAccessor) const
+PropertyAccessor ClassDefinition::Impl::bindProperty(
+	const IClassDefinition & definition,
+	IPropertyPath::ConstPtr & path, const Variant& base) const
 {
-	if (!*name)
+	if (!path)
 	{
-		// empty name causes noop
-		return;
+		return PropertyAccessor();
 	}
 
-	// find property operator
-	auto propOperator = name;
-	while (true)
+	auto cache = ReflectionPrivate::s_Cache
+		? &(ReflectionPrivate::s_Cache->propCache_[&definition][base])
+		: nullptr;
+
+	auto paCache = ReflectionPrivate::s_Cache
+		? &(ReflectionPrivate::s_Cache->valueCache_) : nullptr;
+
+	auto propertyId = cache ? path->getRecursiveHash() : 0;
+
+	PropertyAccessor accessor;
+	IBasePropertyPtr parentProperty = nullptr;
+	std::shared_ptr<ObjectReference> parentReference;
+	const IClassDefinition * parentDefinition = &definition;
+	Variant currentBase = base;
+
+	auto tail = path;
+	typedef std::remove_const< IPropertyPath::ConstPtr >::type PropertyPathStorage;
+	std::vector< PropertyPathStorage > components;
+
+	PropertyPathStorage componentsEnd = nullptr;
+
+	//TODO? Cache the bases as well?
+	if (cache)
 	{
-		if (!*propOperator || *propOperator == INDEX_OPEN || *propOperator == DOT_OPERATOR)
+		auto subTail = tail;
+		while (subTail != nullptr)
+		{
+			auto subId = cache ? subTail->getRecursiveHash() : 0;
+			auto findIt = cache->find(subId);
+			if (findIt != cache->end())
+			{
+				accessor = std::move(PropertyAccessor(findIt->second));
+				componentsEnd = subTail;
+				break;
+			}
+			subTail = subTail->getParent();
+		}
+	}
+	while (
+		tail != nullptr && 
+		tail != componentsEnd)
+	{
+		components.push_back(tail);
+		tail = tail->getParent();
+	}
+
+	if (components.empty())
+	{
+		return accessor;
+	}
+
+	if (accessor.isValid())
+	{
+		parentProperty = accessor.getProperty();
+		parentReference = accessor.getData()->reference_;
+		currentBase = accessor.getValue();
+	}
+
+	while (components.empty() == false)
+	{
+		accessor = bindProperty(
+			components,
+			currentBase, parentProperty, parentReference, parentDefinition );
+		if (accessor.isValid() == false )
+		{
+			return PropertyAccessor();
+		}
+
+		if (components.empty())
 		{
 			break;
 		}
+		parentProperty = accessor.getProperty();
 
-		propOperator += 1;
+		//If a sub object
+		currentBase = accessor.getValue();
+	}
+	if (cache)
+	{
+		(*cache)[propertyId] = accessor.getData();
+	}
+	return accessor;
+}
+
+//------------------------------------------------------------------------------
+PropertyAccessor ClassDefinition::Impl::bindProperty(
+	std::vector< std::remove_const< IPropertyPath::ConstPtr >::type > & o_Components,
+	const Variant& base,
+	IBasePropertyPtr& parentProperty,
+	std::shared_ptr<ObjectReference> & o_ParentReference,
+	const IClassDefinition * & o_ParentDefinition ) const
+{
+	TF_ASSERT(o_Components.empty() == false);
+
+	auto component = o_Components.back();
+	o_Components.pop_back();
+	switch (component->getType() )
+	{
+
+	case IPropertyPath::TYPE_PROPERTY:
+	case IPropertyPath::TYPE_COLLECTION:
+	{
+		ObjectHandle handle;
+		if (!base.tryCast(handle))
+		{
+			// Fail: could not find property
+			return PropertyAccessor();
+		}
+
+		handle = reflectedRoot(handle, *defManager_);
+		o_ParentDefinition = defManager_->getDefinition(handle);
+		auto currentDef = o_ParentDefinition;
+		if (!currentDef)
+		{
+			// Fail: not a reflected type
+			return PropertyAccessor();
+		}
+
+		auto cache = ReflectionPrivate::s_Cache
+			? &(ReflectionPrivate::s_Cache->propCache_[currentDef][handle.getRecursiveHash()])
+			: nullptr;
+
+		auto propertyId = cache ? component->getRecursiveHash() : 0;
+		if (cache)
+		{
+			auto findIt = cache->find(propertyId);
+			if (findIt != cache->end())
+			{
+				o_ParentReference = findIt->second->reference_;
+				return std::move( PropertyAccessor(findIt->second) );
+			}
+		}
+
+		auto property = currentDef->findProperty(component->getPath().c_str(), component->getPath().length());
+		if (property == nullptr)
+		{
+			// Fail: could not find property
+			return PropertyAccessor();
+		}
+
+		/* BEGIN TEMP */
+		o_ParentReference =
+			std::dynamic_pointer_cast<ObjectReference>(handle.storage());
+		TF_ASSERT(o_ParentReference);
+		/* END TEMP */
+
+		PropertyAccessor accessor( component->getPath().c_str(), o_ParentReference );
+		accessor.setBaseProperty(property);
+
+		if (cache)
+		{
+			(*cache)[propertyId] = accessor.getData();
+		}
+		return accessor;
+	}
+	case IPropertyPath::TYPE_COLLECTION_ITEM:
+	{
+		Collection collection;
+
+		if (!base.tryCast(collection))
+		{
+			ObjectHandle handle;
+			bool castSuccessful = base.tryCast(handle);
+			Collection* collectionPointer = handle.getBase<Collection>();
+
+			if (!castSuccessful || collectionPointer == nullptr)
+			{
+				// Fail: could not find property
+				return PropertyAccessor();
+			}
+			collection = *collectionPointer;
+		}
+
+		auto cache = ReflectionPrivate::s_Cache
+			? &(ReflectionPrivate::s_Cache->propCache_[o_ParentDefinition][collection])
+			: nullptr;
+
+		auto propertyId = cache ? component->getRecursiveHash() : 0;
+		if (cache)
+		{
+			auto findIt = cache->find(propertyId);
+			if (findIt != cache->end())
+			{
+				o_ParentReference = findIt->second->reference_;
+				return std::move(PropertyAccessor(findIt->second));
+			}
+		}
+
+
+		// determine key type (heterogeneous keys are not supported yet)
+		const auto begin = collection.begin();
+		const auto end = collection.end();
+
+		if (begin == end)
+		{
+			// can't index empty collection
+			return PropertyAccessor();
+		}
+
+		
+		auto decoratedPath = component->generateDecoratedPath();
+		auto pDecoratedPath = decoratedPath.c_str();
+
+		Variant key = Collection::parseKey(begin.key().type(), pDecoratedPath);
+		auto it = collection.find(key);
+		// TODO Cache these against the parent reference
+		auto property = std::make_shared<CollectionElementHolder>(collection, it, collection.valueType(), decoratedPath,
+			parentProperty, *defManager_);
+
+		auto parent = component->getParent();
+		TF_ASSERT(parent);
+		PropertyAccessor accessor(
+			(parent ? parent->getPath() + decoratedPath : decoratedPath).c_str(), 
+			o_ParentReference );
+
+		accessor.setBaseProperty(property);
+
+		if (cache)
+		{
+			(*cache)[propertyId] = accessor.getData();
+		}
+		return accessor;
+	}
+	default:
+		TF_ASSERT(false, "Unhandled type");
+		break;
+	}
+	return PropertyAccessor();
+}
+
+//------------------------------------------------------------------------------
+void ClassDefinition::Impl::bindProperty(
+	const ClassDefinition & definition,
+	const char* path, const Variant& base,
+	PropertyAccessor& o_PropertyAccessor) const
+{
+	if (!*path)
+	{
+		return;
 	}
 
-	auto propName = name;
-	auto propLength = propOperator - propName;
+	auto hashCode = base.getHashCode();
+	auto cache = ReflectionPrivate::s_Cache
+		? &( ReflectionPrivate::s_Cache->propCache_[ &definition ][ base ] )
+		: nullptr;
 
-	auto baseProp = findProperty(propName, propLength);
-	if (baseProp == nullptr)
+	auto propertyId = cache ? ReflectionPrivate::computePropertyId(path) : 0;
+	if (cache)
 	{
-		// error: property `propName` is not found
+		auto findIt = cache->find(propertyId);
+		if (findIt != cache->end())
+		{
+			o_PropertyAccessor = std::move(PropertyAccessor(findIt->second));
+			return;
+		}
+	}
+	IBasePropertyPtr property;
+	bool continueLooking;
+	std::string propertyName;
+
+	std::tie(property, continueLooking, propertyName) = ReflectionUtilities::parseProperty(path, base, o_PropertyAccessor.getProperty(), &definition, *defManager_);
+
+	if (property == nullptr)
+	{
+		// Fail: could not find property
 		o_PropertyAccessor.setBaseProperty(nullptr);
 		return;
 	}
 
-	o_PropertyAccessor.setObject(pBase);
-	o_PropertyAccessor.setBaseProperty(baseProp);
+	o_PropertyAccessor.setBaseProperty(property);
+	o_PropertyAccessor.setPath(o_PropertyAccessor.getPath() + propertyName);
 
-	assert(strncmp(propName, o_PropertyAccessor.getName(), propLength) == 0);
-
-	if (!*propOperator)
+	if (!continueLooking)
 	{
-		// no operator, so that's it
+		// Success
+		if (cache)
+		{
+			(*cache)[ propertyId ] = o_PropertyAccessor.getData();
+		}
 		return;
 	}
 
-	Variant propVal = o_PropertyAccessor.getValue();
-	if (*propOperator == INDEX_OPEN)
+	auto newPath = path + propertyName.length();
+	if (*newPath == DOT_OPERATOR)
 	{
-		auto wholeIndex = propOperator;
-
-		// read "multidimensional" indices without recursive bind (optimization)
-		while (true)
+		++newPath;
+		if (*newPath == DOT_OPERATOR || *newPath == Collection::getIndexOpen() || *newPath == Collection::getIndexClose())
 		{
-			Collection collection;
-			if (!propVal.tryCast(collection))
-			{
-				// error: index operator is applicable to collections only
-				o_PropertyAccessor.setBaseProperty(nullptr);
-				return;
-			}
-
-			// determine key type (heterogeneous keys are not supported yet)
-			const auto begin = collection.begin();
-			const auto end = collection.end();
-			if (begin == end)
-			{
-				// error: can't index empty collection
-				o_PropertyAccessor.setBaseProperty(nullptr);
-				return;
-			}
-
-			// read key
-			Variant key(begin.key().type());
-			{
-				propOperator += 1; // skip INDEX_OPEN
-
-				FixedMemoryStream dataStream(propOperator);
-				TextStream stream(dataStream);
-
-				stream >> key >> match(INDEX_CLOSE);
-
-				if (stream.fail())
-				{
-					// error: either key can't be read, or it isn't followed by INDEX_CLOSE
-					o_PropertyAccessor.setBaseProperty(nullptr);
-					return;
-				}
-
-				// skip key and closing bracket
-				propOperator += stream.seek(0, std::ios_base::cur);
-			}
-
-			auto it = collection.find(key);
-
-			// If (it == end), still return a valid property accessor to end,
-			// rather than an invalid property accessor.
-			if (!*propOperator || (it == end))
-			{
-				// name parsing is completed
-				auto baseProp =
-				std::make_shared<CollectionElementHolder>(collection, it, collection.valueType(), wholeIndex);
-				// o_PropertyAccessor.setObject(); - keep current base
-				o_PropertyAccessor.setBaseProperty(baseProp);
-				return;
-			}
-
-			propVal = it.value();
-
-			if (*propOperator == INDEX_OPEN)
-			{
-				continue;
-			}
-
-			// parse next operator
-			break;
-		}
-	}
-
-	if (*propOperator == DOT_OPERATOR)
-	{
-		ObjectHandle propObject;
-		auto typeId = propVal.type()->typeId();
-		auto defManager = getDefinitionManager();
-		assert(defManager != nullptr);
-		auto def = defManager->getDefinition(typeId.getName());
-		if (def != nullptr)
-		{
-			propObject = ObjectHandle(propVal, def);
-		}
-		else if (propVal.typeIs<ObjectHandle>())
-		{
-			propObject = propVal.cast<ObjectHandle>();
-		}
-		else
-		{
-			// error: dot operator is applicable to objects only
+			// Fail: unexpected character
 			o_PropertyAccessor.setBaseProperty(nullptr);
 			return;
 		}
 
-		propObject = reflectedRoot(propObject, *getDefinitionManager());
-		auto definition = propObject.getDefinition(*getDefinitionManager());
-		if (definition == nullptr)
+		Variant newBase = o_PropertyAccessor.getValue();
+		ObjectHandle newObject;
+		if (!newBase.tryCast(newObject))
 		{
-			// error: dot operator applied to object of type which is not reflected
+			// Fail: unexpected type
 			o_PropertyAccessor.setBaseProperty(nullptr);
 			return;
 		}
 
-		o_PropertyAccessor.setParent(o_PropertyAccessor);
-		return definition->bindPropertyImpl(propOperator + 1, // skip dot
-		                                    propObject, o_PropertyAccessor);
+		/* BEGIN TEMP */
+		std::shared_ptr<ObjectReference> reference = std::dynamic_pointer_cast<ObjectReference>(newObject.storage());
+		TF_ASSERT(reference);
+		/* END TEMP */
+
+		newObject = reflectedRoot(newObject, *defManager_);
+		auto subDefinition = defManager_->getDefinition(newObject);
+		if (!subDefinition)
+		{
+			// Fail: not a reflected type
+			o_PropertyAccessor.setBaseProperty(nullptr);
+			return;
+		}
+
+		o_PropertyAccessor = subDefinition->bindProperty(newPath, newObject);
+		if (cache && o_PropertyAccessor.isValid())
+		{
+			(*cache)[ propertyId ] = o_PropertyAccessor.getData();
+		}
+		return;
+	}
+	else if (*newPath == Collection::getIndexOpen())
+	{
+		Variant newBase = o_PropertyAccessor.getValue();
+		// recurse
+		bindProperty(definition, newPath, newBase, o_PropertyAccessor);
+		if (cache && o_PropertyAccessor.isValid())
+		{
+			(*cache)[propertyId] = o_PropertyAccessor.getData();
+		}
+		return;
 	}
 
-	// error: unknown operator at *propOperator
+	// Fail: unexpected character
 	o_PropertyAccessor.setBaseProperty(nullptr);
-	return;
+}
+
+std::shared_ptr<ObjectReference> ClassDefinition::getChildReference(
+	const std::shared_ptr<ObjectReference>& parent, const char* path, const Variant& value) const
+{
+	TF_ASSERT(parent);
+	TF_ASSERT(path && *path);
+	auto objectManager = impl_->defManager_->getObjectManager();
+	TF_ASSERT(objectManager);
+
+	auto childReference = objectManager->getObject(parent->id(), path);
+	objectManager->updateObjectStorage(childReference, value);
+	return childReference;
 }
 
 //==============================================================================
 IBasePropertyPtr ClassDefinition::findProperty(const char* name, size_t length) const
 {
 	// Some definitions allow you to lookup by name directly
-	if (details_->canDirectLookupProperty())
+	auto & details = getDetails();
+	if (details.canDirectLookupProperty())
 	{
 		std::string propName(name, length);
-		return details_->directLookupProperty(propName.c_str());
+
+		auto target = &details;
+		IBasePropertyPtr prop = details.directLookupProperty(propName.c_str());
+		if (prop != nullptr)
+		{
+			return prop;
+		}
+		const auto & parentNames = getParentNames();
+
+		for (const auto & parentName : parentNames)
+		{
+			auto parentDef =
+				impl_->defManager_->getDefinition(parentName.c_str());
+			if (parentDef == nullptr)
+			{
+				continue;
+			}
+			prop = parentDef->findProperty(propName.c_str());
+			if (prop != nullptr)
+			{
+				return prop;
+			}
+		}
+		return nullptr;
 	}
 
 	// Otherwise, perform a search
@@ -314,6 +613,14 @@ IBasePropertyPtr ClassDefinition::findProperty(const char* name, size_t length) 
 	return nullptr;
 }
 
+
+//------------------------------------------------------------------------------
+IBasePropertyPtr ClassDefinition::findProperty(IPropertyPath::ConstPtr & path) const
+{
+	return impl_->findProperty(path);
+}
+
+
 //------------------------------------------------------------------------------
 bool ClassDefinition::isGeneric() const
 {
@@ -323,15 +630,26 @@ bool ClassDefinition::isGeneric() const
 //------------------------------------------------------------------------------
 bool ClassDefinition::canBeCastTo(const IClassDefinition& definition) const
 {
-	const IClassDefinition* baseDefinition = this;
-	while (baseDefinition != NULL)
+	// Assuming definitions are shared we only need to check the pointer
+	if (this == &definition)
 	{
-		// Assuming definitions are shared we only need to check the pointer
-		if (baseDefinition == &definition)
+		return true;
+	}
+
+	auto && metaBasesHolder = impl_->getMetaBasesHolder();
+	if (metaBasesHolder == nullptr)
+	{
+		return false;
+	}
+	const auto & parents = metaBasesHolder->getParents();
+	for (const auto & parent : parents)
+	{
+		auto baseDef =
+			getDefinitionManager()->getDefinition(parent.c_str());
+		if (baseDef->canBeCastTo(definition))
 		{
 			return true;
 		}
-		baseDefinition = baseDefinition->getParent();
 	}
 	return false;
 }
@@ -339,83 +657,80 @@ bool ClassDefinition::canBeCastTo(const IClassDefinition& definition) const
 //------------------------------------------------------------------------------
 void* ClassDefinition::castTo(const IClassDefinition& definition, void* object) const
 {
-	const IClassDefinition* baseDefinition = this;
-	while (baseDefinition != NULL)
+	// Assuming definitions are shared we only need to check the pointer
+	if (this == &definition)
 	{
-		// Assuming definitions are shared we only need to check the pointer
-		if (baseDefinition == &definition)
-		{
-			return object;
-		}
-		object = baseDefinition->upCast(object);
-		baseDefinition = baseDefinition->getParent();
+		return object;
 	}
 
+	auto metaBasesHolder = findFirstMetaData< MetaBasesHolderObj >(
+		*this, *getDefinitionManager());
+	if (metaBasesHolder == nullptr)
+	{
+		return nullptr;
+	}
+	const auto & parents = metaBasesHolder->getParents();
+	const auto & casters = metaBasesHolder->getCasters();
+	size_t i = 0;
+	for (const auto & parent : parents)
+	{
+		auto baseDef =
+			getDefinitionManager()->getDefinition(parent.c_str());
+		if (baseDef == nullptr)
+		{
+			continue;
+		}
+		if (baseDef->canBeCastTo(definition))
+		{
+			object = casters[i](object);
+			return baseDef->castTo(definition, object);
+		}
+		++i;
+	}
 	return nullptr;
 }
 
 //------------------------------------------------------------------------------
-void* ClassDefinition::upCast(void* object) const
+ObjectHandleStoragePtr ClassDefinition::createObjectStorage() const
 {
-	return details_->upCast(object);
+	return impl_->details_->createObjectStorage(*this);
 }
 
 //------------------------------------------------------------------------------
-ObjectHandle ClassDefinition::create() const
+ManagedObjectPtr ClassDefinition::createManaged(RefObjectId id) const
 {
-	return details_->create(*this);
+	return impl_->details_->createManaged(*this, id);
 }
 
 //------------------------------------------------------------------------------
-ObjectHandle ClassDefinition::createManagedObject(const RefObjectId& id) const
+ObjectHandle ClassDefinition::createShared(RefObjectId id) const
 {
-	RefObjectId newId = id;
-	auto metaId = findFirstMetaData<MetaUniqueIdObj>(*this, *defManager_);
-	if (metaId != nullptr)
-	{
-		std::string strId = metaId->getId();
-		newId = strId;
-	}
-	ObjectHandle pObject = create();
-	return registerObject(pObject, newId);
+	impl_->sharedObjects_.push_back(createManaged(id));
+	return impl_->sharedObjects_.back()->getHandle();
 }
 
 //------------------------------------------------------------------------------
 const char* ClassDefinition::getName() const
 {
-	return details_->getName();
+	return impl_->details_->getName();
 }
 
 //------------------------------------------------------------------------------
-MetaHandle ClassDefinition::getMetaData() const
+const MetaData & ClassDefinition::getMetaData() const
 {
-	return details_->getMetaData();
+	return impl_->details_->getMetaData();
 }
 
 //------------------------------------------------------------------------------
 void ClassDefinition::setDefinitionManager(IDefinitionManager* defManager)
 {
-	defManager_ = defManager;
+	impl_->defManager_ = defManager;
 }
 
 //------------------------------------------------------------------------------
 IDefinitionManager* ClassDefinition::getDefinitionManager() const
 {
-	return defManager_;
+	return impl_->defManager_;
 }
 
-//------------------------------------------------------------------------------
-ObjectHandle ClassDefinition::registerObject(ObjectHandle& pObj, const RefObjectId& id) const
-{
-	const IDefinitionManager* pDefManager = getDefinitionManager();
-	if (pDefManager)
-	{
-		IObjectManager* pObjManager = pDefManager->getObjectManager();
-		if (pObjManager)
-		{
-			return pObjManager->registerObject(pObj, id);
-		}
-	}
-	return ObjectHandle();
-}
 } // end namespace wgt

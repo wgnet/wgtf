@@ -3,7 +3,6 @@
 //
 #pragma warning(push)
 #pragma warning(disable : 4244 4100 4238 4239 4263 4245 4201)
-#define WIN32_LEAN_AND_MEAN
 
 #ifdef _WIN32
 #if _WIN32_WINNT < 0x0502
@@ -41,7 +40,7 @@
 #include <maya/MQtUtil.h>
 #include <maya/MTemplateCommand.h>
 #include <assert.h>
-#include "core_automation/interfaces/automation_interface.hpp"
+#include "core_automation/interfaces/i_automation.hpp"
 
 namespace wgt
 {
@@ -100,7 +99,7 @@ bool loadWGT()
 
 	wgtApp = new ApplicationProxy(uiApp);
 	wgtApp->start();
-	auto automation = globalContext->queryInterface<AutomationInterface>();
+	auto automation = globalContext->queryInterface<IAutomation>();
 	if (automation != nullptr)
 	{
 		MGlobal::executeCommandOnIdle("evalDeferred(\"quit -force\")");

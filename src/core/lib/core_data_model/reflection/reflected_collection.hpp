@@ -7,17 +7,19 @@
 namespace wgt
 {
 class IReflectionController;
+class PropertyAccessorListener;
 
 namespace ReflectedCollectionDetails
 {
 class ReflectedCollectionListener;
+class ReflectedCollectionIteratorImpl;
 }
 
 /** Wrapper class around a reflected collection to provide standard collection functionality. */
 class ReflectedCollection : public CollectionImplBase
 {
 public:
-	ReflectedCollection(const PropertyAccessor& pa, IReflectionController* controller);
+	ReflectedCollection(const PropertyAccessor& pa, IReflectionController* controller = nullptr);
 	virtual ~ReflectedCollection();
 
 	virtual size_t size() const override;
@@ -77,11 +79,13 @@ private:
 	void reset();
 
 	friend class ReflectedCollectionDetails::ReflectedCollectionListener;
+	friend class ReflectedCollectionDetails::ReflectedCollectionIteratorImpl;
 
 	PropertyAccessor pa_;
 	std::shared_ptr<PropertyAccessorListener> listener_;
 	IReflectionController* controller_;
 	Collection collection_;
+	ConnectionHolder connections_;
 
 	Signal<ElementRangeCallbackSignature> onPreInsert_;
 	Signal<ElementRangeCallbackSignature> onPostInserted_;

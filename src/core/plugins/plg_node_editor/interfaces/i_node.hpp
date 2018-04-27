@@ -4,8 +4,8 @@
 #include <string>
 
 #include "core_reflection/reflected_object.hpp"
-#include "core_data_model/generic_list.hpp"
 #include "core_reflection/object_handle.hpp"
+#include "core_data_model/collection_model.hpp"
 
 namespace wgt
 {
@@ -30,6 +30,8 @@ public:
 	virtual ~INode()
 	{
 	}
+
+	virtual void Init() = 0;
 
 	/*! Returns an unique node id
 	@return unique id of node
@@ -135,21 +137,21 @@ public:
 	/*! Gets all input slots of node
 	@return input slots
 	*/
-	virtual const GenericListT<ObjectHandleT<ISlot>>* GetInputSlots() const = 0;
+	virtual const CollectionModel* GetInputSlots() const = 0;
 
 	/*! Gets all output slots of node
 	@return output slots
 	*/
-	virtual const GenericListT<ObjectHandleT<ISlot>>* GetOutputSlots() const = 0;
+	virtual const CollectionModel* GetOutputSlots() const = 0;
 
 protected:
 	/*! Gets input slots model
 	*/
-	virtual const IListModel* GetInputSlotsModel() const = 0;
+	virtual const AbstractListModel* GetInputSlotsModel() const = 0;
 
 	/*! Gets output slots model
 	*/
-	virtual const IListModel* GetOutputSlotsModel() const = 0;
+	virtual const AbstractListModel* GetOutputSlotsModel() const = 0;
 };
 } // end namespace wgt
 #endif // __I_NODE_H__

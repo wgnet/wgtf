@@ -1,143 +1,170 @@
 #include "qt_view.hpp"
+
 #include "i_qt_framework.hpp"
+#include "core_string_utils/string_utils.hpp"
+#include "core_common/assert.hpp"
+#include "core_logging/logging.hpp"
+#include "helpers/qt_helpers.hpp"
+#include "qt_context_menu.hpp"
+
 #include <QUiLoader>
 #include <QVariantMap>
+#include <QMenu>
 
 namespace wgt
 {
-QtView::QtView(const char* id, IQtFramework& qtFramework, QIODevice& source)
-    : qtFramework_(qtFramework), widgetView_(nullptr), id_(id), released_(false)
+struct QtView::Implementation: Depends<IQtFramework>
+{
+	CursorId cursorId_ = ArrowCursor;
+	std::vector<std::unique_ptr<IMenu>> menus_;
+};
+
+QtView::QtView(const char* id, QIODevice& source)
+	: QtViewCommon(id), impl_(std::make_unique<Implementation>())
 {
 	QUiLoader loader;
 
 	// Load optional plugins that may have custom widgets
-	auto& pluginPath = qtFramework.getPluginPath();
+	auto& pluginPath = impl_->get<IQtFramework>()->getPluginPath();
+
 	if (!pluginPath.empty())
-		loader.addPluginPath(pluginPath.c_str());
-
-	widgetView_ = qobject_cast<QWidget*>(loader.load(&source));
-
-	if (widgetView_ == nullptr)
 	{
+		loader.addPluginPath(pluginPath.c_str());
+	}
+
+	setWidget(qobject_cast<QWidget*>(loader.load(&source)));
+
+	if (widget() == nullptr)
+	{
+		NGT_ERROR_MSG(loader.errorString().toUtf8().constData());
 		return;
 	}
-	init();
+
+	initialise();
 }
 
 QtView::~QtView()
 {
-	if (!released_)
-	{
-		delete widgetView_;
-	}
 }
 
-void QtView::init()
+void QtView::initialise()
 {
-	auto hintsProperty = widgetView_->property("layoutHints");
-	hint_.clear();
+	auto viewWidget = widget();
+	QtViewCommon::initialise(viewWidget);
 
-	if (hintsProperty.isValid())
+	auto property = viewWidget->property("layoutHints");
+	auto& hint = this->hint();
+	hint.clear();
+
+	if (property.isValid())
 	{
-		auto tags = hintsProperty.toStringList();
-		std::string key;
-		for (auto it = tags.cbegin(); it != tags.cend(); ++it)
+		setLayoutHint(property.toStringList());
+	}
+
+	auto contextMenus = QtHelpers::getChildren<QMenu>(*viewWidget);
+
+	for (auto& menu : contextMenus)
+	{
+		if (menu->property("path").isValid())
 		{
-			// value of string list should be like "hint string:float number"
-			auto tmp = std::string(it->toUtf8());
-			char* pch = nullptr;
-			pch = strtok(const_cast<char*>(tmp.c_str()), ":");
-			key = pch;
-			pch = strtok(nullptr, ":");
-			float v = static_cast<float>(atof(pch));
-			hint_ += LayoutHint(key.c_str(), v);
+			impl_->menus_.emplace_back(new QtContextMenu(*menu, viewWidget, windowId()));
 		}
 	}
-
-	QVariant windowProperty = widgetView_->property("windowId");
-	windowId_ = "";
-	if (windowProperty.isValid())
-	{
-		windowId_ = windowProperty.toString().toUtf8().data();
-	}
-
-	QVariant titleProperty = widgetView_->property("title");
-	title_ = "";
-	if (titleProperty.isValid())
-	{
-		title_ = titleProperty.toString().toUtf8().data();
-	}
-}
-
-const char* QtView::id() const
-{
-	return id_.c_str();
-}
-
-const char* QtView::title() const
-{
-	return title_.c_str();
-}
-
-const char* QtView::windowId() const
-{
-	return windowId_.c_str();
-}
-
-const LayoutHint& QtView::hint() const
-{
-	return hint_;
-}
-
-QWidget* QtView::releaseView()
-{
-	released_ = true;
-	return view();
-}
-
-void QtView::retainView()
-{
-	released_ = false;
-	widgetView_->setParent(nullptr);
-}
-
-QWidget* QtView::view() const
-{
-	return widgetView_;
 }
 
 void QtView::update()
 {
-}
-
-void QtView::focusInEvent()
-{
-	for (auto& l : listeners_)
+	for (auto& menu : impl_->menus_)
 	{
-		l->onFocusIn(this);
-	}
-
-	widgetView_->setFocus();
-}
-
-void QtView::focusOutEvent()
-{
-	for (auto& l : listeners_)
-	{
-		l->onFocusOut(this);
+		menu->update();
 	}
 }
 
-void QtView::registerListener(IViewEventListener* listener)
+void QtView::reload()
 {
-	assert(std::find(listeners_.begin(), listeners_.end(), listener) == listeners_.end());
-	listeners_.push_back(listener);
+	NGT_WARNING_MSG("QtView Reload not supported");
 }
 
-void QtView::deregisterListener(IViewEventListener* listener)
+std::vector<IMenu*> QtView::menus() const
 {
-	auto it = std::find(listeners_.begin(), listeners_.end(), listener);
-	assert(it != listeners_.end());
-	listeners_.erase(it);
+	std::vector<IMenu*> menus;
+
+	for(auto& menu : impl_->menus_)
+	{
+		menus.push_back(menu.get());
+	}
+
+	return menus;
+}
+
+void QtView::setFocus(bool focus)
+{
+	QtViewCommon::setFocus(focus);
+	auto view = widget();
+
+	if (focus == view->hasFocus())
+	{
+		return;
+	}
+
+	focus ? view->setFocus() : view->clearFocus();
+}
+
+CursorId QtView::getCursor() const
+{
+	if(impl_->cursorId_ != ArrowCursor)
+	{
+		return impl_->cursorId_;
+	}
+
+	auto widget = this->widget();
+	TF_ASSERT(widget->cursor().shape() <= LastCursor.id());
+	return CursorId::make(widget->cursor().shape());
+}
+
+void QtView::setCursor(CursorId cursorId)
+{
+	impl_->cursorId_ = cursorId;
+	auto widget = this->widget();
+	if(widget == nullptr)
+	{
+		return;
+	}
+
+	if(cursorId.id() > LastCursor.id())
+	{
+		auto qCursor = reinterpret_cast<QCursor*>(cursorId.nativeCursor());
+		widget->setCursor(*qCursor);
+	}
+	else
+	{
+		auto shape = static_cast<Qt::CursorShape>(cursorId.id());
+		widget->setCursor(shape);
+	}
+}
+
+void QtView::unsetCursor()
+{
+	impl_->cursorId_ = ArrowCursor;
+	widget()->unsetCursor();
+}
+
+void QtView::setLayoutHint(const QStringList& tags)
+{
+	LayoutHint& layoutHint = this->hint();
+	layoutHint.clear();
+
+	for (auto it = tags.cbegin(); it != tags.cend(); ++it)
+	{
+		// value of string list should be like "hint string:float number"
+		std::string hint(it->toUtf8().constData());
+		auto split = StringUtils::split(hint, ':');
+		layoutHint += LayoutHint(split[0].c_str(), atof(split[1].c_str()));
+	}
+}
+
+void QtView::setWindowId(const char* windowId)
+{
+	QtViewCommon::setWindowId(windowId);
 }
 }

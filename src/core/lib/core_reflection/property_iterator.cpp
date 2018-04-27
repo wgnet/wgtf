@@ -1,10 +1,71 @@
 #include "property_iterator.hpp"
 #include "interfaces/i_class_definition.hpp"
 #include "interfaces/i_class_definition_details.hpp"
+#include "i_definition_manager.hpp"
 #include "interfaces/i_base_property.hpp"
 
 namespace wgt
 {
+
+struct PropertyIterator::ParentDefinitionIterator
+{
+	ParentDefinitionIterator(const IClassDefinition & definition)
+		: visitedCurrent_(false)
+		, current_(nullptr)
+		, iterator_(definition.getParentNames().cbegin())
+		, end_(definition.getParentNames().cend())
+		, definitionManager_(*definition.getDefinitionManager())
+	{
+		next();
+	}
+
+	IClassDefinition * getCurrent() const
+	{
+		return current_;
+	}
+
+	bool next()
+	{
+		if (parentIterator_)
+		{
+			current_ = parentIterator_->getCurrent();
+			if( parentIterator_->next())
+			{
+				return true;
+			}
+			if (current_ != nullptr)
+			{
+				parentIterator_ = nullptr;
+				return true;
+			}
+		}
+
+		if (iterator_ == end_)
+		{
+			current_ = nullptr;
+			return false;
+		}
+
+		current_ = definitionManager_.getDefinition(iterator_->c_str());
+		if (current_)
+		{
+			parentIterator_ = std::make_shared< ParentDefinitionIterator >(*current_);
+		}
+		++iterator_;
+		return true;
+	}
+
+	typedef std::vector< std::string > ParentCollection;
+
+	bool visitedCurrent_;
+	IClassDefinition * current_;
+	ParentCollection::const_iterator iterator_;
+	ParentCollection::const_iterator end_;
+
+	IDefinitionManager & definitionManager_;
+	std::shared_ptr< ParentDefinitionIterator > parentIterator_;
+};
+
 // =============================================================================
 PropertyIterator::PropertyIterator() : strategy_(ITERATE_SELF_ONLY), currentDefinition_(nullptr)
 {
@@ -17,6 +78,13 @@ PropertyIterator::PropertyIterator(IterateStrategy strategy, const IClassDefinit
 {
 	moveNext();
 }
+
+
+//------------------------------------------------------------------------------
+PropertyIterator::~PropertyIterator()
+{
+}
+
 
 // =============================================================================
 IBasePropertyPtr PropertyIterator::get() const
@@ -73,6 +141,7 @@ bool PropertyIterator::operator!=(const PropertyIterator& other) const
 	return !operator==(other);
 }
 
+
 // =============================================================================
 void PropertyIterator::moveNext()
 {
@@ -88,7 +157,44 @@ void PropertyIterator::moveNext()
 	}
 
 	currentIterator_.reset();
-	currentDefinition_ = strategy_ == ITERATE_PARENTS ? currentDefinition_->getParent() : nullptr;
+	if (strategy_ == ITERATE_PARENTS)
+	{
+		if (parentIterator_ == nullptr)
+		{
+			parentIterator_ = std::make_shared< ParentDefinitionIterator >(*currentDefinition_);
+			currentDefinition_ = parentIterator_->getCurrent();
+			if (currentDefinition_ != nullptr)
+			{
+				currentIterator_ =
+					currentDefinition_->getDetails().getPropertyIterator();
+				if (currentIterator_->next())
+				{
+					return;
+				}
+				currentIterator_ = nullptr;
+			}
+		}
+
+		currentDefinition_ = nullptr;
+		while (parentIterator_->next())
+		{
+			currentDefinition_ = parentIterator_->getCurrent();
+			if (currentDefinition_ == nullptr)
+			{
+				continue;
+			}
+			currentIterator_ =
+				currentDefinition_->getDetails().getPropertyIterator();
+			if (currentIterator_->next())
+			{
+				return;
+			}
+		}
+	}
+	else
+	{
+		currentDefinition_ = nullptr;
+	}
 	if (currentDefinition_ == nullptr)
 	{
 		return;

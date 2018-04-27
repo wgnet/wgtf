@@ -11,11 +11,11 @@ class PerforcePlugin : public PluginMain
 public:
 	PerforcePlugin(IComponentContext& contextManager)
 	{
+		types_.emplace_back(contextManager.registerInterface<PerforceVersionControl>(new PerforceVersionControl()));
 	}
 
 	bool PostLoad(IComponentContext& contextManager) override
 	{
-		types_.emplace_back(contextManager.registerInterface<PerforceVersionControl>(new PerforceVersionControl()));
 		return true;
 	}
 
@@ -32,12 +32,12 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 };
 
 PLG_CALLBACK_FUNC(PerforcePlugin)

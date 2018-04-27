@@ -2,6 +2,7 @@ plugins/plg_logging_system
 plugins/plg_reflection
 plugins/plg_object
 plugins/plg_serialization
+plugins/plg_environment_system
 plugins/plg_command_system
 plugins/plg_maya_adapter
 plugins/plg_editor_interaction
@@ -10,7 +11,6 @@ plugins/plg_reflection_object_test
 plugins/plg_window_test
 plugins/plg_history_ui
 plugins/plg_ui_main_test
-plugins/plg_copy_paste
 plugins/plg_file_system
 plugins/plg_progress_manager
 plugins/plg_progress_manager_test
@@ -21,7 +21,6 @@ plugins/plg_test_active_filters
 plugins/plg_list_model_test
 plugins/plg_table_model_test
 plugins/plg_tree_model_test
-plugins/plg_modal_dlg_test
 plugins/plg_context_menu_test
 plugins/plg_custom_panel
 plugins/plg_demo_test
@@ -29,8 +28,8 @@ plugins/plg_curve_editor
 plugins/plg_curve_editor_test
 plugins/plg_node_editor
 plugins/plg_node_editor_test
-plugins/plg_color_picker
 plugins/plg_qml_preferences
 plugins/plg_grid_editor_test
 plugins/plg_dialog_test
 plugins/plg_hotloading_test
+plugins/plg_color_test

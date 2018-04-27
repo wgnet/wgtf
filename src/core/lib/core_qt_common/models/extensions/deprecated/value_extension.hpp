@@ -2,13 +2,16 @@
 #define VALUE_EXTENSION_HPP
 
 #include "i_model_extension_old.hpp"
+#include "core_dependency_system/depends.hpp"
 
 #include <QQmlListProperty>
 #include <QStringList>
 
 namespace wgt
 {
-class ValueExtension : public IModelExtensionOld
+class IQtHelpers;
+
+class ValueExtension : public IModelExtensionOld, Depends<IQtHelpers>
 {
 	Q_OBJECT
 

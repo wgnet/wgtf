@@ -1,5 +1,6 @@
 import QtQuick 2.5
 import WGControls.Styles 1.0
+import WGControls.Global 2.0
 
 /*!
  \ingroup wgcontrols
@@ -162,15 +163,14 @@ Item {
          onExited: {
              if (!scrollBarArea.drag.active && expandableScrollBar)
              {
-                 shrinkDelay.restart()
+                 WGScrollBarTimer.restartTimer()
              }
          }
 
         //short delay so bar doesn't shrink instantly
-         Timer{
-             id: shrinkDelay
-             interval: 600
-             onTriggered: {
+         Connections {
+             target: WGScrollBarTimer
+             onTimerTriggered: {
                  if (!scrollBarArea.drag.active && !scrollBarArea.containsMouse && expandableScrollBar)
                  {
                      __expanded = false

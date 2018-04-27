@@ -2,7 +2,8 @@
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
-
+#include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_action.hpp"
@@ -29,7 +30,7 @@ namespace wgt
 class EnvrionmentTestPlugin : public PluginMain, public Depends<IViewCreator>
 {
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	std::unique_ptr<IAction> newProject_;
 	std::unique_ptr<IAction> openProject_;
 	std::unique_ptr<IAction> saveProject_;
@@ -37,13 +38,17 @@ private:
 	std::unique_ptr<IWindow> newProjectDialog_;
 	std::unique_ptr<IWindow> openProjectDialog_;
 	IComponentContext* contextManager_;
-	ObjectHandle projectManager_;
+	std::unique_ptr<ManagedObject<ProjectManager>> projectManager_;
 	ConnectionHolder connections_;
 
 public:
 	//==========================================================================
-	EnvrionmentTestPlugin(IComponentContext& contextManager) : Depends(contextManager), contextManager_(&contextManager)
+	EnvrionmentTestPlugin(IComponentContext& contextManager) : contextManager_(&contextManager)
 	{
+		registerCallback([](IDefinitionManager & defManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
 
 	//==========================================================================
@@ -55,15 +60,8 @@ public:
 	//==========================================================================
 	void Initialise(IComponentContext& contextManager) override
 	{
-		// register reflected type definition
-		IDefinitionManager* defManager = contextManager.queryInterface<IDefinitionManager>();
-		assert(defManager != nullptr);
-
-		this->initReflectedTypes(*defManager);
-		auto pDefinition = defManager->getDefinition(getClassIdentifier<ProjectManager>());
-		assert(pDefinition != nullptr);
-		projectManager_ = pDefinition->create();
-		projectManager_.getBase<ProjectManager>()->init(contextManager);
+		projectManager_ = std::make_unique<ManagedObject<ProjectManager>>();
+		(*projectManager_)->init();
 
 		auto uiFramework = contextManager.queryInterface<IUIFramework>();
 		auto uiApplication = contextManager.queryInterface<IUIApplication>();
@@ -90,7 +88,7 @@ public:
 		if (viewCreator)
 		{
 			viewCreator->createWindow(
-			"TestingProjectControl/NewProjectDialog.qml", projectManager_, [this](std::unique_ptr<IWindow>& window) {
+			"TestingProjectControl/NewProjectDialog.qml", projectManager_->getHandle(), [this](std::unique_ptr<IWindow>& window) {
 				newProjectDialog_ = std::move(window);
 				if (newProjectDialog_ != nullptr)
 				{
@@ -103,8 +101,8 @@ public:
 	//==========================================================================
 	bool Finalise(IComponentContext& contextManager) override
 	{
-		projectManager_.getBase<ProjectManager>()->fini();
-		projectManager_ = nullptr;
+		(*projectManager_)->fini();
+		projectManager_.reset();
 		auto uiApplication = contextManager.queryInterface<IUIApplication>();
 		assert(uiApplication != nullptr);
 		uiApplication->removeAction(*newProject_);
@@ -133,14 +131,8 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
-	}
-
-	void initReflectedTypes(IDefinitionManager& definitionManager)
-	{
-		REGISTER_DEFINITION(ProjectManager)
-		REGISTER_DEFINITION(ProjectData)
 	}
 
 	void newProject()
@@ -156,12 +148,12 @@ public:
 
 	void onNewDlgClose()
 	{
-		projectManager_.getBase<ProjectManager>()->createProject();
+		(*projectManager_)->createProject();
 	}
 
 	void onOpenDlgClose()
 	{
-		projectManager_.getBase<ProjectManager>()->openProject();
+		(*projectManager_)->openProject();
 	}
 	void openProject()
 	{
@@ -177,7 +169,7 @@ public:
 		if (viewCreator)
 		{
 			viewCreator->createWindow(
-			"TestingProjectControl/OpenProjectDialog.qml", projectManager_, [this](std::unique_ptr<IWindow>& window) {
+			"TestingProjectControl/OpenProjectDialog.qml", projectManager_->getHandle(), [this](std::unique_ptr<IWindow>& window) {
 				openProjectDialog_ = std::move(window);
 				if (openProjectDialog_ != nullptr)
 				{
@@ -189,25 +181,25 @@ public:
 	}
 	void saveProject()
 	{
-		projectManager_.getBase<ProjectManager>()->saveProject();
+		(*projectManager_)->saveProject();
 	}
 	void closeProject()
 	{
-		projectManager_.getBase<ProjectManager>()->closeProject();
+		(*projectManager_)->closeProject();
 	}
 	bool canOpen()
 	{
-		return projectManager_.getBase<ProjectManager>()->canOpen();
+		return (*projectManager_)->canOpen();
 	}
 
 	bool canSave()
 	{
-		return projectManager_.getBase<ProjectManager>()->canSave();
+		return (*projectManager_)->canSave();
 	}
 
 	bool canClose()
 	{
-		return projectManager_.getBase<ProjectManager>()->canClose();
+		return (*projectManager_)->canClose();
 	}
 };
 

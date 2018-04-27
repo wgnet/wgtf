@@ -9,6 +9,7 @@
 namespace wgt
 {
 class ObjectHandle;
+class IObjectManager;
 
 /**
  * reflected object Serializer

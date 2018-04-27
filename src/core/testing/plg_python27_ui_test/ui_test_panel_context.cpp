@@ -2,7 +2,11 @@
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_data_model/reflection/reflected_tree_model_new.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
-#include "metadata/ui_test_panel_context.mpp"
+#include "core_reflection/interfaces/i_class_definition.hpp"
+#include "core_reflection/interfaces/i_base_property.hpp"
+#include "core_reflection/reflected_method_parameters.hpp"
+#include "core_reflection/i_definition_manager.hpp"
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
@@ -17,7 +21,7 @@ void callMethod(Variant& object, IDefinitionManager& definitionManager, const ch
 		return;
 	}
 
-	auto definition = handle.getDefinition(definitionManager);
+	auto definition = definitionManager.getDefinition(handle);
 	auto property = definition->findProperty(name);
 	if (property == nullptr)
 	{
@@ -35,13 +39,12 @@ PanelContext::PanelContext() : testScriptDescription_("<---- Click Me!")
 {
 }
 
-bool PanelContext::initialize(IComponentContext& context, const char* panelName, const ObjectHandle& pythonObject)
+bool PanelContext::initialize(const char* panelName, const ObjectHandle& pythonObject)
 {
-	context_ = &context;
 	panelName_ = panelName;
 	pythonObject_ = pythonObject;
 
-	treeModel_.reset(new ReflectedTreeModelNew(context, pythonObject));
+	treeModel_.reset(new ReflectedTreeModelNew(pythonObject));
 	return true;
 }
 
@@ -62,7 +65,7 @@ const PanelContext* PanelContext::getSource() const
 
 void PanelContext::updateValues()
 {
-	auto pDefinitionManager = context_->queryInterface<IDefinitionManager>();
+	auto pDefinitionManager = get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		NGT_ERROR_MSG("Failed to find IDefinitionManager\n");
@@ -72,7 +75,7 @@ void PanelContext::updateValues()
 
 	const char* methodName = "updateValues";
 
-	auto moduleDefinition = pythonObject_.getDefinition(definitionManager);
+	auto moduleDefinition = definitionManager.getDefinition(pythonObject_);
 
 	auto property = moduleDefinition->findProperty("oldStyleObject");
 	auto oldStylePythonObject_ = property->get(pythonObject_, definitionManager);
@@ -86,13 +89,13 @@ void PanelContext::updateValues()
 	testScriptDescription_ = "Update Values Finished";
 }
 
-void PanelContext::undoUpdateValues(const ObjectHandle&, Variant)
+void PanelContext::undoUpdateValues(Variant, Variant)
 {
 	/*values automatically undone*/
 	testScriptDescription_ = "Update Values Undone";
 }
 
-void PanelContext::redoUpdateValues(const ObjectHandle&, Variant)
+void PanelContext::redoUpdateValues(Variant, Variant)
 {
 	/*values automatically redone*/
 	testScriptDescription_ = "Update Values Redone";

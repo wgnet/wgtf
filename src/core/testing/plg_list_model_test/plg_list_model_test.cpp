@@ -26,18 +26,13 @@ namespace wgt
 class ListModelTestPlugin : public PluginMain, public Depends<IViewCreator>
 {
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	wg_future<std::unique_ptr<IView>> listView_;
 	wg_future<std::unique_ptr<IView>> shortListView_;
 	wg_future<std::unique_ptr<IView>> multiColumnListView_;
 	std::shared_ptr<AbstractListModel> listModel_;
 
 public:
-	//==========================================================================
-	ListModelTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
-	{
-	}
-
 	//==========================================================================
 	bool PostLoad(IComponentContext& contextManager)
 	{
@@ -81,7 +76,7 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 };

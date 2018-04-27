@@ -2,7 +2,7 @@
 #define _THREADLOCALVALUE_IPP_
 #pragma once
 
-#include <assert.h>
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
@@ -23,7 +23,7 @@ template <typename T, bool Small>
 T& ThreadLocalValueImpl<T, Small>::GetValue()
 {
 	T* t = reinterpret_cast<T*>(ThreadLocalBase::GetTlsValue(m_tlsId));
-	assert(t != nullptr);
+	TF_ASSERT(t != nullptr);
 
 	return *t;
 }
@@ -39,7 +39,7 @@ template <typename T, bool Small>
 void ThreadLocalValueImpl<T, Small>::Shutdown()
 {
 	T* t = reinterpret_cast<T*>(ThreadLocalBase::GetTlsValue(m_tlsId));
-	assert(t != nullptr);
+	TF_ASSERT(t != nullptr);
 
 	delete t;
 }

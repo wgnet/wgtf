@@ -1,5 +1,6 @@
 #include "pch.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_generic_plugin/interfaces/i_command_line_parser.hpp"
 #include "python27_interface_test.hpp"
@@ -31,7 +32,7 @@ public:
 	void Initialise(IComponentContext& contextManager) override
 	{
 		auto clp = contextManager.queryInterface<ICommandLineParser>();
-		assert(clp != nullptr);
+		TF_ASSERT(clp != nullptr);
 		// Pass reference to unit tests
 		g_contextManager = &contextManager;
 		BWUnitTest::runTest("python27_interface_test", clp->argc(), clp->argv());

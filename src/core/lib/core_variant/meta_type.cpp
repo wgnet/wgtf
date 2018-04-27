@@ -1,12 +1,13 @@
 #include "meta_type.hpp"
+
 #include "variant.hpp"
 #include "wg_types/string_ref.hpp"
+#include "core_common/assert.hpp"
 #include "core_serialization/fixed_memory_stream.hpp"
 #include "core_serialization/resizing_memory_stream.hpp"
 #include "core_serialization/text_stream.hpp"
 
 #include <cstring>
-#include <cassert>
 #include <cstdint>
 #include <unordered_map>
 #include <memory>
@@ -56,7 +57,7 @@ MetaType::MetaType(const char* name, const Data& data)
 	for (int i = 0; i <= QualifiersMask; ++i)
 	{
 		// Qualified instance must be at least 4 bytes aligned (Variant uses 2 lower bits for storage type)
-		assert((reinterpret_cast<uintptr_t>(qualified_ + i) & 0x03) == 0);
+		TF_ASSERT((reinterpret_cast<uintptr_t>(qualified_ + i) & 0x03) == 0);
 		qualified_[i].type_ = this;
 	}
 
@@ -71,8 +72,8 @@ MetaType::~MetaType()
 
 const MetaType::Qualified* MetaType::qualified(int qualifiers) const
 {
-	assert(qualifiers >= 0);
-	assert(qualifiers < QualifiersMask);
+	TF_ASSERT(qualifiers >= 0);
+	TF_ASSERT(qualifiers < QualifiersMask);
 
 	return qualified_ + qualifiers;
 }

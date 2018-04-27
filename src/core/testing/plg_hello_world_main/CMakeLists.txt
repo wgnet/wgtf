@@ -7,7 +7,7 @@ PROJECT( plg_hello_world_main )
 INCLUDE( WGToolsCoreProject )
 
 # Then we find QT5 which should have been set up in ngt/src/core/third_party/Qt as part of getting the source from Stash.
-FIND_PACKAGE( QT5 )
+FIND_PACKAGE( QT5 ${QT_FIND_PACKAGE_VERSION} )
 
 # Add any files required for reflection
 # ALL_SRCS is a list of any uncategorized files that should be part of your project.
@@ -39,6 +39,7 @@ BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 # Libraries to link against
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
     core_generic_plugin
+	core_object
 )
  
 # Grouping in the Visual Studio Solution Explorer

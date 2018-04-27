@@ -18,6 +18,9 @@ uint64_t compute(unsigned int value);
 uint64_t compute(int64_t value);
 uint64_t compute(uint64_t value);
 
+//Case insensitive hash
+uint64_t computei(const char* value);
+
 template <typename T>
 void combine(uint64_t& seed, const T& value)
 {

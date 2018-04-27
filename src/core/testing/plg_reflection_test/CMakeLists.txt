@@ -18,7 +18,7 @@ SET( ALL_SRCS
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_TOOL_PLUGIN( plg_reflection_test SHARED
@@ -29,6 +29,9 @@ BW_ADD_TOOL_PLUGIN( plg_reflection_test SHARED
 BW_TARGET_LINK_LIBRARIES( plg_reflection_test PRIVATE
 	core_generic_plugin
 	core_reflection
+	core_object
+	core_serialization_xml
+	core_variant
 )
 
 BW_PROJECT_CATEGORY( plg_reflection_test "Plugins" )

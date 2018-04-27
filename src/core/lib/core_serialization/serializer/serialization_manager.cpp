@@ -1,4 +1,6 @@
 #include "serialization_manager.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_serialization/serializer/i_serializer.hpp"
 
 namespace wgt
@@ -29,7 +31,7 @@ bool SerializationManager::registerSerializer(const char* typeName, ISerializer*
 		serializerMapImpl_->serializerMap_[id] = serializer;
 		br = true;
 	}
-	assert(br);
+	TF_ASSERT(br);
 	return br;
 }
 

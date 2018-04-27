@@ -1,18 +1,19 @@
 #include "wg_tree_list_adapter.hpp"
+
 #include "qt_model_helpers.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/models/extensions/deprecated/i_model_extension_old.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/i_item_role.hpp"
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
 class WGTreeListAdapter::Impl
 {
 public:
-	Impl();
-
-	IQtFramework* qtFramework_;
 	QPersistentModelIndex parentIndex_;
 	QModelIndex removedParent_;
 	QtModelHelpers::Extensions extensions_;
@@ -20,13 +21,8 @@ public:
 	QtConnectionHolder connections_;
 };
 
-WGTreeListAdapter::Impl::Impl() : qtFramework_(nullptr), extensions_()
-{
-}
-
 WGTreeListAdapter::WGTreeListAdapter() : impl_(new Impl())
 {
-	impl_->qtFramework_ = Context::queryInterface<IQtFramework>();
 }
 
 WGTreeListAdapter::~WGTreeListAdapter()
@@ -144,7 +140,6 @@ void WGTreeListAdapter::disconnect()
 void WGTreeListAdapter::registerExtension(IModelExtensionOld* extension)
 {
 	beginResetModel();
-	extension->init(impl_->qtFramework_);
 	std::string modelName = this->objectName().toUtf8().constData();
 	extension->loadStates(modelName.c_str());
 	impl_->extensions_.emplace_back(extension);
@@ -187,7 +182,7 @@ QVariant WGTreeListAdapter::data(const QModelIndex& index, int role) const
 		return QVariant(QVariant::Invalid);
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 
 	if (role == Qt::DisplayRole || role == Qt::DecorationRole)
 	{

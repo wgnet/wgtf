@@ -1,4 +1,6 @@
 #include "component_extension_old.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_variant/type_id.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
@@ -8,7 +10,7 @@
 
 namespace wgt
 {
-ComponentExtensionOld::ComponentExtensionOld() : qtFramework_(Context::queryInterface<IQtFramework>())
+ComponentExtensionOld::ComponentExtensionOld()
 {
 }
 
@@ -31,7 +33,7 @@ QVariant ComponentExtensionOld::data(const QModelIndex& index, int role) const
 		return QVariant(QVariant::Invalid);
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	auto item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr)
 	{
@@ -54,10 +56,11 @@ QVariant ComponentExtensionOld::data(const QModelIndex& index, int role) const
 		std::function<bool(const ItemRole::Id&)> predicate = [&](const ItemRole::Id& role) {
 			return item->getData(column, role) == true;
 		};
-		auto component = qtFramework_->findComponent(typeId, predicate, "1.0");
+		auto qtFramework = get<IQtFramework>();
+		auto component = qtFramework->findComponent(typeId, predicate, "1.0");
 		if (component != nullptr)
 		{
-			auto qmlComponent = qtFramework_->toQmlComponent(*component);
+			auto qmlComponent = qtFramework->toQmlComponent(*component);
 			if (qmlComponent != nullptr)
 			{
 				return QVariant::fromValue<QObject*>(qmlComponent);

@@ -2,34 +2,34 @@
 
 #include "core_reflection/object_handle.hpp"
 #include "core_reflection/reflected_object.hpp"
+#include "core_dependency_system/depends.hpp"
 
 #include <memory>
 #include <string>
 
 namespace wgt
 {
-class IComponentContext;
 class AbstractTreeModel;
+class IDefinitionManager;
 
 /**
  *	Stores variables that can be accessed by QML.
  */
-class PanelContext
+class PanelContext : public Depends<IDefinitionManager>
 {
 public:
 	DECLARE_REFLECTED
 	PanelContext();
 
-	bool initialize(IComponentContext& context, const char* panelName, const ObjectHandle& pythonObject);
+	bool initialize(const char* panelName, const ObjectHandle& pythonObject);
 	const std::string& panelName() const;
 	AbstractTreeModel* treeModel() const;
 	void updateValues();
-	void undoUpdateValues(const ObjectHandle&, Variant);
-	void redoUpdateValues(const ObjectHandle&, Variant);
+	void undoUpdateValues(Variant, Variant);
+	void redoUpdateValues(Variant, Variant);
 	const PanelContext* getSource() const;
 
 private:
-	IComponentContext* context_;
 	std::string panelName_;
 	std::string testScriptDescription_;
 	ObjectHandle pythonObject_;

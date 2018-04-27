@@ -5,16 +5,17 @@
 #include "i_command_manager.hpp"
 
 #include <functional>
+#include <vector>
 
 namespace wgt
 {
 class IApplication;
-class IDefinitionManager;
 class BatchCommand;
 class UndoRedoCommand;
 class IEnvManager;
 class IFileSystem;
 class IReflectionController;
+class LockedState;
 
 class SelectionContext : public ISelectionContext
 {
@@ -34,12 +35,13 @@ private:
 
 class CommandManager : public Implements<ICommandManager>
 {
+	typedef std::vector<ICommandEventListener*> EventListenerCollection;
+
 public:
-	CommandManager(IDefinitionManager& defManager);
+	CommandManager(IEnvManager& envManager);
 	virtual ~CommandManager();
 
-	void init(IApplication& application, IEnvManager& envManager, IFileSystem* fileSystem,
-	          IReflectionController* controller);
+	void init(IApplication& application, IDefinitionManager& defManager );
 
 	void fini() override;
 
@@ -47,8 +49,11 @@ public:
 	void registerCommand(Command* command) override;
 	void deregisterCommand(const char* commandId) override;
 	Command* findCommand(const char* commandId) const override;
-	CommandInstancePtr queueCommand(const char* commandId, const ObjectHandle& arguments = ObjectHandle()) override;
 	void waitForInstance(const CommandInstancePtr& instance) override;
+
+    virtual CommandInstancePtr queueCommand(const char* commandId) override;
+    virtual CommandInstancePtr queueCommand(const char* commandId, const ObjectHandle& arguments) override;
+    virtual CommandInstancePtr queueCommand(const char* commandId, ManagedObjectPtr arguments) override;
 
 	void registerCommandStatusListener(ICommandEventListener* listener) override;
 	void deregisterCommandStatusListener(ICommandEventListener* listener) override;
@@ -65,38 +70,36 @@ public:
 	const Collection& getHistory() const override;
 	const int commandIndex() const override;
 	void moveCommandIndex(int newIndex) override;
-	const IListModel& getMacros() const override;
+	Collection& getMacros() const override;
 	bool createMacro(const Collection& commandInstanceList, const char* id = "") override;
 	bool deleteMacroByName(const char* id) override;
 
 	void beginBatchCommand() override;
-	void endBatchCommand() override;
+	void endBatchCommand(const char* description = "") override;
 	void abortBatchCommand() override;
 	void notifyBeginMultiCommand() override;
 	void notifyCompleteMultiCommand() override;
 	void notifyCancelMultiCommand() override;
 	void notifyHandleCommandQueued(const char* commandId) override;
 	void notifyNonBlockingProcessExecution(const char* commandId) override;
-	void SetHistorySerializationEnabled(bool isEnabled) override;
-	bool SaveHistory(ISerializer& serializer) override;
-	bool LoadHistory(ISerializer& serializer) override;
 	ISelectionContext& selectionContext() override;
 	virtual std::thread::id ownerThreadId() override;
+	virtual bool executingCommandGroup() override;
 	// From ICommandManager end
 
 	IDefinitionManager& getDefManager() const;
-	IFileSystem* getFileSystem() const;
-	IReflectionController* getReflectionController() const;
 
 private:
 	friend UndoRedoCommand;
 	void addToHistory(const CommandInstancePtr& instance);
-	bool undoRedo(const int& desiredIndex);
+	bool undoRedo(int& desiredIndex);
+	void multiCommandStatusChanged(ICommandEventListener::MultiCommandStatus status);
 	std::unique_ptr<class CommandManagerImpl> pImpl_;
-	IDefinitionManager& defManager_;
+	IDefinitionManager * defManager_;
 	IFileSystem* fileSystem_;
 	IReflectionController* controller_;
 	SelectionContext selectionContext_;
+	EventListenerCollection eventListenerCollection_;
 };
 
 class CommandManagerEventListener : public ICommandEventListener

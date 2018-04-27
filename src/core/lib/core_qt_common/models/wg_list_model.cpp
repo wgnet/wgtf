@@ -1,7 +1,8 @@
 #include "wg_list_model.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/models/extensions/deprecated/i_model_extension_old.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
@@ -10,13 +11,15 @@
 #include "core_reflection/object_handle.hpp"
 #include "core_variant/collection.hpp"
 #include "core_data_model/collection_model_old.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_logging/logging.hpp"
 
 #include <QApplication>
 #include <QThread>
 
 namespace wgt
 {
-class WGListModel::Impl
+class WGListModel::Impl : public Depends<IQtFramework, IQtHelpers>
 {
 public:
 	Impl();
@@ -25,7 +28,6 @@ public:
 	}
 	static QModelIndex calculateModelIndex(const WGListModel& self, const IItem* pItem, int column);
 
-	IQtFramework* qtFramework_;
 	std::unique_ptr<IListModel> ownedModel_;
 	IListModel* model_;
 	QVariant source_;
@@ -36,7 +38,7 @@ public:
 	QHash<int, QByteArray> defaultRoleNames_;
 };
 
-WGListModel::Impl::Impl() : qtFramework_(nullptr), model_(nullptr)
+WGListModel::Impl::Impl() : model_(nullptr)
 {
 }
 
@@ -57,8 +59,6 @@ WGListModel::WGListModel() : QAbstractListModel(), impl_(new Impl())
 {
 	impl_->defaultRoleNames_ = QAbstractListModel::roleNames();
 	impl_->roleNames_ = QAbstractListModel::roleNames();
-
-	impl_->qtFramework_ = Context::queryInterface<IQtFramework>();
 
 	impl_->qtConnections_ += QObject::connect(this, &WGListModel::sourceChanged, this, &WGListModel::onSourceChanged);
 	impl_->qtConnections_ += QObject::connect(this, &WGListModel::headerDataChangedThread, this,
@@ -160,7 +160,6 @@ QVariant WGListModel::data(const QModelIndex& index, QString roleName) const
 void WGListModel::registerExtension(IModelExtensionOld* extension)
 {
 	beginResetModel();
-	extension->init(impl_->qtFramework_);
 	impl_->qtConnections_ += QObject::connect(this, &WGListModel::itemDataAboutToBeChanged, extension,
 	                                          &IModelExtensionOld::onDataAboutToBeChanged);
 	impl_->qtConnections_ +=
@@ -253,7 +252,7 @@ QVariant WGListModel::headerData(int section, Qt::Orientation orientation, int r
 		return QVariant::Invalid;
 	}
 
-	return QtHelpers::toQVariant(model->getData(section, roleId), const_cast<WGListModel*>(this));
+	return impl_->get<IQtHelpers>()->toQVariant(model->getData(section, roleId), const_cast<WGListModel*>(this));
 }
 
 QVariant WGListModel::headerData(int column, QString roleName) const
@@ -276,7 +275,7 @@ QVariant WGListModel::data(const QModelIndex& index, int role) const
 		return QVariant(QVariant::Invalid);
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	auto item = reinterpret_cast<IItem*>(index.internalPointer());
 
 	switch (role)
@@ -289,7 +288,7 @@ QVariant WGListModel::data(const QModelIndex& index, int role) const
 		if (thumbnail != nullptr)
 		{
 			auto qtImageProvider = dynamic_cast<QtImageProviderOld*>(
-			impl_->qtFramework_->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
+			impl_->get<IQtFramework>()->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
 			if (qtImageProvider != nullptr)
 			{
 				auto imagePath = qtImageProvider->encodeImage(thumbnail);
@@ -372,7 +371,12 @@ void WGListModel::onSourceChanged()
 	IListModel* source = nullptr;
 	impl_->ownedModel_.reset();
 
-	Variant variant = QtHelpers::toVariant(getSource());
+	auto qtHelpers = impl_->get<IQtHelpers>();
+	if (qtHelpers == nullptr && impl_->model_ == nullptr)
+	{
+		return;
+	}
+	Variant variant = qtHelpers->toVariant(getSource());
 	if (variant.typeIs<IListModel>())
 	{
 		source = const_cast<IListModel*>(variant.cast<const IListModel*>());
@@ -459,14 +463,14 @@ void WGListModel::onDestructing()
 void WGListModel::onModelDataChanged(int column, ItemRole::Id roleId, const Variant& data)
 {
 	auto model = getModel();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 	changeHeaderData(Qt::Orientation::Horizontal, column, column);
 }
 
 void WGListModel::onPreItemDataChanged(const IItem* item, int column, ItemRole::Id roleId, const Variant& data)
 {
 	auto model = getModel();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 	if (item == nullptr)
 	{
 		return;
@@ -479,14 +483,14 @@ void WGListModel::onPreItemDataChanged(const IItem* item, int column, ItemRole::
 	}
 
 	auto index = Impl::calculateModelIndex(*this, item, column);
-	auto value = QtHelpers::toQVariant(data, this);
+	auto value = impl_->get<IQtHelpers>()->toQVariant(data, this);
 	this->beginChangeData(index, role, value);
 }
 
 void WGListModel::onPostItemDataChanged(const IItem* item, int column, ItemRole::Id roleId, const Variant& data)
 {
 	auto model = getModel();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 	if (item == nullptr)
 	{
 		return;
@@ -499,13 +503,13 @@ void WGListModel::onPostItemDataChanged(const IItem* item, int column, ItemRole:
 	}
 
 	auto index = Impl::calculateModelIndex(*this, item, column);
-	auto value = QtHelpers::toQVariant(data, this);
+	auto value = impl_->get<IQtHelpers>()->toQVariant(data, this);
 	this->endChangeData(index, role, value);
 }
 
 void WGListModel::onPreItemsInserted(size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);
 	this->beginInsertRows(QModelIndex(), first, last);
@@ -513,7 +517,7 @@ void WGListModel::onPreItemsInserted(size_t index, size_t count)
 
 void WGListModel::onPostItemsInserted(size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);
 	this->endInsertRows(QModelIndex(), first, last);
@@ -521,7 +525,7 @@ void WGListModel::onPostItemsInserted(size_t index, size_t count)
 
 void WGListModel::onPreItemsRemoved(size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);
 	this->beginRemoveRows(QModelIndex(), first, last);
@@ -529,7 +533,7 @@ void WGListModel::onPreItemsRemoved(size_t index, size_t count)
 
 void WGListModel::onPostItemsRemoved(size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);
 	this->endRemoveRows(QModelIndex(), first, last);

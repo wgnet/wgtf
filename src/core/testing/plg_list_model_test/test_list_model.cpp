@@ -17,6 +17,13 @@
 
 namespace wgt
 {
+namespace TestListModelDetails
+{
+static const std::string s_RolesArr[] = { ItemRole::valueName, ItemRole::headerTextName, ItemRole::footerTextName };
+static const std::vector<std::string> s_RolesVec(&s_RolesArr[0],
+                                                 &s_RolesArr[0] + std::extent<decltype(s_RolesArr)>::value);
+} // end namespace TestListModelDetails
+
 struct TestListModel::Implementation
 {
 	Implementation(TestListModel& self, bool shortList);
@@ -313,15 +320,22 @@ bool TestListModel::moveRows(int sourceRow, int count, int destinationRow)
 	return true;
 }
 
-std::vector<std::string> TestListModel::roles() const
+//------------------------------------------------------------------------------
+void TestListModel::iterateRoles(const std::function<void(const char*)>& iterFunc) const
 {
-	std::vector<std::string> roles;
-	roles.push_back(ItemRole::valueName);
-	roles.push_back(ItemRole::headerTextName);
-	roles.push_back(ItemRole::footerTextName);
-	return roles;
+	for (auto&& role : TestListModelDetails::s_RolesVec)
+	{
+		iterFunc(role.c_str());
+	}
 }
 
+//------------------------------------------------------------------------------
+std::vector<std::string> TestListModel::roles() const
+{
+	return TestListModelDetails::s_RolesVec;
+}
+
+//------------------------------------------------------------------------------
 Connection TestListModel::connectPreItemDataChanged(DataCallback callback) /* override */
 {
 	return impl_->preDataChanged_.connect(callback);

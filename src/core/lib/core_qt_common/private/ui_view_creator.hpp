@@ -16,8 +16,6 @@ class IUIFramework;
 class UIViewCreator : public Implements<IViewCreator>, public Depends<IUIFramework, IUIApplication>
 {
 public:
-	UIViewCreator(IComponentContext& context);
-
 	wg_future<std::unique_ptr<IView>> createView(const char* path, const Variant& context,
 	                                             const char* uniqueName) override;
 

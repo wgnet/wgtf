@@ -1,0 +1,100 @@
+#include "core_reflection/reflected_property.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+#include "core_reflection/utilities/reflection_method_utilities.hpp"
+#include "core_reflection/reflection_macros.hpp"
+
+#include "../test_objects.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(TestDefinitionObject, MetaDescription(L"TestDefinitionObject"))
+EXPOSE("counter", counter_)
+EXPOSE("text", text_)
+EXPOSE("functional counter", getCounter, setCounter, MetaGroup(L"Group"))
+EXPOSE("functional text", getText, setText, MetaGroup(L"Group"))
+EXPOSE("functional ints", getInts, setInts, MetaGroup(L"Group"))
+EXPOSE("functional string", getString, MetaGroup(L"Group"))
+EXPOSE("counter getter", getCounter)
+EXPOSE("text getter", getText)
+EXPOSE("link", getLink, setLink, MetaGroup(L"Group"))
+EXPOSE("raw string", raw_string_)
+EXPOSE("string", string_)
+EXPOSE("strings", strings_, MetaInPlace() + MetaCollectionItemMeta(MetaUrl(true)))
+EXPOSE("raw wstring", raw_wstring_)
+EXPOSE("wstring", wstring_)
+EXPOSE("wstrings", wstrings_)
+EXPOSE("exposed structure", exposedStruct_)
+EXPOSE("exposed structures", exposedStructs_)
+EXPOSE("exposed object", exposedObject_)
+EXPOSE("exposed objects", exposedObjects_)
+EXPOSE("boolean", boolean_)
+EXPOSE("booleans", booleans_)
+EXPOSE("uint32", uint32_)
+EXPOSE("uint32s", uint32s_)
+EXPOSE("int32", int32_)
+EXPOSE("int32s", int32s_)
+EXPOSE("uint64", uint64_)
+EXPOSE("uint64s", uint64s_)
+EXPOSE("float", float_)
+EXPOSE("floats", floats_)
+EXPOSE("vector3", vector3_)
+EXPOSE("vector3s", vector3s_)
+EXPOSE("vector4", vector4_)
+EXPOSE("vector4s", vector4s_)
+EXPOSE("binary", binary_)
+EXPOSE("binaries", binaries_)
+EXPOSE("multidimensional", multidimensional_)
+EXPOSE_CALLABLE("string lambda", [](SelfType* object) { return object->string_; },
+                [](SelfType* object, std::string value) { object->string_ = std::move(value); }, 
+                MetaGroup(L"Group"))
+EXPOSE_CALLABLE("strings lambda", [](SelfType* object) { return object->strings_; },
+                [](SelfType* object, std::vector<std::string> value) { object->strings_ = std::move(value); },
+                MetaGroup(L"Group"))
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestDefinitionDerivedObject, TestDefinitionObject, MetaNone())
+EXPOSE("some integer", someInteger_)
+EXPOSE("some float", someFloat_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestStructure2, MetaNone())
+EXPOSE("name", name_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestPolyStruct2, MetaNone())
+EXPOSE("name", name_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestMetaDataObject, 
+    MetaHidden() + 
+    MetaReadOnly())
+EXPOSE("noMetaData", noMetaData_, MetaNone())
+EXPOSE("hasMetaData", hasMetaData_,
+    MetaGroup(L"group") + 
+    MetaDecimals(1) + 
+    MetaMinMax(-100, 100) + 
+    MetaDescription(L"description") + 
+    MetaReadOnly() + 
+    MetaStepSize(0.0001f) +
+    MetaEnum(L"A=0|B|C") +
+    MetaSlider() +
+    MetaAttributeDisplayName("name") +
+    MetaDisplayName(L"name") +
+    MetaNoNull() +
+    MetaColor() +
+	MetaComponent("component") +
+	/* All MetaData inheriting from MetaComponent must come after this as the
+	   unit tests rely are specifically testing for the first
+	   MetaComponent object.*/
+    MetaHDRColor() +
+    MetaHidden() +
+    MetaThumbnail(100, 100) +
+    MetaInPlace() +
+    MetaSelected("selected") +
+    MetaNoSerialization() +
+    MetaDirectInvoke() +
+    MetaTime())
+END_EXPOSE()
+
+}

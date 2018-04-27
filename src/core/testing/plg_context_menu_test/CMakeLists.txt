@@ -3,7 +3,7 @@ PROJECT( plg_context_menu_test )
 
 INCLUDE( WGToolsCoreProject )
 
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 REMOVE_DEFINITIONS( /WX )
 ADD_DEFINITIONS( -D_CRT_SECURE_NO_WARNINGS )

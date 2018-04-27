@@ -11,11 +11,11 @@ namespace wgt
 class TestTreeItem : public AbstractTreeItem
 {
 public:
-	explicit TestTreeItem(const std::string& name, const AbstractTreeItem* parent);
+	explicit TestTreeItem(const std::string& name, const TestTreeItem* parent);
 	virtual ~TestTreeItem();
 
-	const AbstractTreeItem* getParent() const;
-	void setParent(AbstractTreeItem* parent);
+	const TestTreeItem* getParent() const;
+	void setParent(TestTreeItem* parent);
 
 	virtual Variant getData(int column, ItemRole::Id roleId) const override;
 	virtual bool setData(int column, ItemRole::Id roleId, const Variant& data) override;

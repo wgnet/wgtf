@@ -51,14 +51,12 @@ SET( ALL_SRCS
 	private/commands/metadata/set_model_data_command_arg.mpp
 	private/item_model_controller.cpp
 	private/item_model_controller.hpp
-	private/item_model_types.cpp
-	private/item_model_types.hpp
 )
 
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )

@@ -101,6 +101,25 @@ public:
 		return fullPath_.substr(0, pos + 1);
 	}
 
+	/*! Gets the parent folder of this path. */
+	std::string getParentFolder()
+	{
+		size_t last = fullPath_.length() - 1;
+
+		if (last == std::string::npos)
+		{
+			return "";
+		}
+
+		if (fullPath_[last] == directorySeparator_)
+		{
+			--last;
+		}
+
+		size_t directoryEndPosition = fullPath_.find_last_of(directorySeparator_, last);
+		return fullPath_.substr(0, directoryEndPosition + 1);
+	}
+
 	/*! Gets the file of the path including the extension
 	*/
 	std::string getFileWithExtension() const
@@ -130,6 +149,31 @@ public:
 		return file.substr(0, pos + 1);
 	}
 
+	/*! Gets the parent folder of this path. */
+	static std::string getParentFolder(const::std::string& path)
+	{
+		size_t last = path.length() - 1;
+
+		if (last == std::string::npos)
+		{
+			return "";
+		}
+
+		if (path[last] == kDirectorySeparator || path[last] == kAltDirectorySeparator)
+		{
+			--last;
+		}
+
+		size_t directoryEndPosition = path.find_last_of(kDirectorySeparator, last);
+
+		if (directoryEndPosition == std::string::npos)
+		{
+			directoryEndPosition = path.find_last_of(kAltDirectorySeparator, last);
+		}
+
+		return path.substr(0, directoryEndPosition + 1);
+	}
+
 	/*! Gets the file of the path including the extension
 	*/
 	static std::string getFileWithExtension(const std::string& file)
@@ -154,6 +198,14 @@ public:
 		startPos += 1;
 		auto endPos = file.rfind(kExtensionSeparator);
 		return file.substr(startPos, endPos != std::string::npos ? endPos - startPos : std::string::npos);
+	}
+
+	/*! Gets the extension of this path without the separator
+	*/
+	static std::string getExtension(const std::string& file)
+	{
+		auto pos = file.rfind(kExtensionSeparator);
+		return std::string::npos == pos ? "" : file.substr(pos + 1);
 	}
 
 	/*! Appends the path to the end of this file path

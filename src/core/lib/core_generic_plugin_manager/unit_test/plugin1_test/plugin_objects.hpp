@@ -8,6 +8,13 @@
 
 namespace wgt
 {
+class TestPlugin1TestObject;
+class TestPlugin1Interface;
+typedef ObjectHandleT<TestPlugin1TestObject> TestPlugin1TestObjectPtr;
+typedef ManagedObject<TestPlugin1TestObject> TestPlugin1TestObjectObj;
+typedef ObjectHandleT<TestPlugin1Interface> TestPlugin1InterfacePtr;
+typedef ManagedObject<TestPlugin1Interface> TestPlugin1InterfaceObj;
+
 //------------------------------------------------------------------------------
 class TestPlugin1TestObject
 {
@@ -50,15 +57,13 @@ public:
 	}
 };
 
-typedef ObjectHandleT<TestPlugin1TestObject> TestPlugin1TestObjectPtr;
-
 class ITestPlugin1
 {
 public:
 	virtual ~ITestPlugin1()
 	{
 	}
-	virtual TestPlugin1TestObjectPtr getObject(IDefinitionManager& defManager) = 0;
+	virtual TestPlugin1TestObjectPtr getObject() = 0;
 	virtual TestPlugin2TestObjectPtr getObjectFromPlugin2() = 0;
 	virtual void setObjectFromPlugin2(TestPlugin2TestObjectPtr obj) = 0;
 };
@@ -69,21 +74,16 @@ class TestPlugin1Interface : public Implements<ITestPlugin1>
 	DECLARE_REFLECTED
 
 public:
-	TestPlugin1Interface() : object_(NULL)
-	{
-	}
+    TestPlugin1Interface() = default;
+    virtual ~TestPlugin1Interface() = default;
 
-	virtual ~TestPlugin1Interface()
+	TestPlugin1TestObjectPtr getObject()
 	{
-	}
-
-	TestPlugin1TestObjectPtr getObject(IDefinitionManager& defManager)
-	{
-		if (object_ == NULL)
+		if (object_ == nullptr)
 		{
-			object_ = defManager.create<TestPlugin1TestObject>();
+			object_ = TestPlugin1TestObjectObj::make();
 		}
-		return object_;
+        return object_.getHandleT();
 	}
 
 	TestPlugin2TestObjectPtr getObjectFromPlugin2()
@@ -97,10 +97,9 @@ public:
 	}
 
 private:
-	TestPlugin1TestObjectPtr object_;
+    TestPlugin1TestObjectObj object_;
 	TestPlugin2TestObjectPtr object2_;
 };
 
-typedef ObjectHandleT<TestPlugin1Interface> TestPlugin1InterfacePtr;
 } // end namespace wgt
 #endif // PLUGIN1_OBJECTS_HPP

@@ -6,14 +6,14 @@ PROJECT( core_data_model )
 
 SET( ALL_SRCS
 	metadata/i_active_filters_model.mpp
-	metadata/i_breadcrumbs_model.mpp
+	asset_browser/metadata/asset_browser_dialog_model.mpp
 	asset_browser/metadata/i_asset_browser_model20.mpp
-	asset_browser/metadata/i_asset_browser_event_model.mpp
-	asset_browser/metadata/i_asset_browser_model.mpp
-	asset_browser/metadata/i_asset_browser_view_model.mpp
-	dialog/dialog_model.mpp
+    asset_browser/metadata/i_asset_preview.mpp
+	dialog/metadata/dialog_model.mpp
+    dialog/metadata/reflected_dialog_model.mpp    
 	abstract_item.hpp
 	abstract_item_model.hpp
+	abstract_item_model.cpp
 	collection_model.cpp
 	collection_model.hpp
 	collection_model_old.cpp
@@ -30,7 +30,6 @@ SET( ALL_SRCS
 	generic_tree_item.cpp
 	generic_tree_item.hpp
 	i_active_filters_model.hpp
-	i_breadcrumbs_model.hpp
 	i_list_model.cpp
 	i_list_model.hpp
 	i_tree_model.cpp
@@ -39,8 +38,9 @@ SET( ALL_SRCS
 	i_item_role.cpp
 	i_item_role.hpp
 	i_selection_handler.hpp
-	simple_active_filters_model.cpp
-	simple_active_filters_model.hpp
+	i_model_extension.cpp
+	i_model_extension.hpp
+	i_model_extension.mpp
 	value_change_notifier.hpp
 	selection_handler.cpp
 	selection_handler.hpp
@@ -75,16 +75,8 @@ SET( ALL_SRCS
 	reflection/reflected_tree_model_new.hpp
 	reflection/reflected_list.cpp
 	reflection/reflected_list.hpp
-	reflection/reflected_property_model.hpp
-	reflection/reflected_property_model.cpp
-	reflection/default_property_model_extensions.cpp
-	reflection/default_property_model_extensions.hpp
-	reflection/property_model_extensions.hpp
-	reflection/property_model_extensions.cpp
 	reflection/reflected_collection_item.hpp
 	reflection/reflected_collection_item.cpp
-	reflection/child_creator.hpp
-	reflection/child_creator.cpp
 	reflection/reflected_collection.cpp
 	reflection/reflected_collection.hpp
 	reflection_proto/property_list_model.cpp
@@ -95,31 +87,19 @@ SET( ALL_SRCS
 	reflection_proto/reflected_tree_model.hpp
 	reflection_proto/reflected_property_item.cpp
 	reflection_proto/reflected_property_item.hpp
-	asset_browser/asset_browser_breadcrumbs_model.cpp
-	asset_browser/asset_browser_breadcrumbs_model.hpp
-	asset_browser/asset_browser_event_model.cpp
-	asset_browser/asset_browser_event_model.hpp
-	asset_browser/asset_browser_view_model.cpp
-	asset_browser/asset_browser_view_model.hpp
-	asset_browser/asset_list_model.cpp
-	asset_browser/asset_list_model.hpp
-	asset_browser/base_asset_object_item.cpp
-	asset_browser/base_asset_object_item.hpp
 	asset_browser/asset_browser_model20.cpp
 	asset_browser/asset_browser_model20.hpp
-	asset_browser/file_system_asset_browser_model.cpp
-	asset_browser/file_system_asset_browser_model.hpp
-	asset_browser/file_system_asset_presentation_provider.cpp
-	asset_browser/file_system_asset_presentation_provider.hpp
-	asset_browser/folder_tree_model.cpp
-	asset_browser/folder_tree_model.hpp
-	asset_browser/i_asset_object_item.hpp
-	asset_browser/i_asset_browser_event_model.hpp
-	asset_browser/i_asset_browser_model.hpp
-	asset_browser/i_asset_browser_view_model.hpp
-	asset_browser/i_asset_presentation_provider.hpp
+	asset_browser/asset_browser_dialog_model.cpp
+	asset_browser/asset_browser_dialog_model.hpp
+	asset_browser/image_preview.cpp
+	asset_browser/image_preview.hpp
+	asset_browser/i_asset_browser_model20.hpp
+	asset_browser/i_asset_preview.hpp
+	asset_browser/i_asset_preview_provider.hpp
 	dialog/dialog_model.hpp
 	dialog/dialog_model.cpp
+    dialog/reflected_dialog_model.hpp
+    dialog/reflected_dialog_model.cpp
 	filtering/i_item_filter.hpp
 	filtering/string_filter.hpp
 	filtering/string_filter.cpp
@@ -133,7 +113,7 @@ FILE( GLOB LIBRARY_RESOURCES asset_browser/resources/* )
 
 WG_AUTO_SOURCE_GROUPS(${ALL_SRCS})
 
-BW_BLOB_SOURCES( BLOB_SRCS 
+WG_BLOB_SOURCES( BLOB_SRCS 
 	${ALL_SRCS}
 	${LIBRARY_RESOURCES} 
 )

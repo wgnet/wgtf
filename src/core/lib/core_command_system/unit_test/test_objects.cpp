@@ -1,15 +1,11 @@
 #include "pch.hpp"
 
 #include "core_command_system/i_command_manager.hpp"
+#include "core_common/assert.hpp"
 #include "core_reflection/interfaces/i_class_definition.hpp"
-#include "core_reflection/reflected_property.hpp"
-#include "core_reflection/function_property.hpp"
-#include "core_reflection/reflected_object.hpp"
-#include "core_reflection/reflection_macros.hpp"
+
 #include "core_reflection/property_accessor.hpp"
-#include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 
 #include "wg_types/binary_block.hpp"
@@ -20,34 +16,10 @@
 
 namespace wgt
 {
-BEGIN_EXPOSE(TestCommandObject, MetaNone())
-EXPOSE("counter", counter_)
-EXPOSE("text", text_)
-EXPOSE("functional counter", getCounter, setCounter, MetaNone())
-EXPOSE("functional text", getText, setText, MetaNone())
-EXPOSE("string", string_)
-EXPOSE("strings", strings_)
-EXPOSE("wstring", wstring_)
-EXPOSE("wstrings", wstrings_)
-EXPOSE("boolean", boolean_)
-EXPOSE("booleans", booleans_)
-EXPOSE("uint32", uint32_)
-EXPOSE("uint32s", uint32s_)
-EXPOSE("int32", int32_)
-EXPOSE("int32s", int32s_)
-EXPOSE("uint64", uint64_)
-EXPOSE("uint64s", uint64s_)
-EXPOSE("float", float_)
-EXPOSE("floats", floats_)
-EXPOSE("binary", binary_)
-EXPOSE("binaries", binaries_)
-EXPOSE_METHOD("incrementCounter", incrementCounter, undo, redo)
-END_EXPOSE()
 
 TestCommandFixture::TestCommandFixture()
 {
 	IDefinitionManager& definitionManager = getDefinitionManager();
-	REGISTER_DEFINITION(TestCommandObject);
 	klass_ = definitionManager.getDefinition<TestCommandObject>();
 
 	// Register all the required test commands
@@ -223,12 +195,12 @@ TestThreadCommand::TestThreadCommand(CommandThreadAffinity threadAffinity)
 }
 
 //------------------------------------------------------------------------------
-ObjectHandle TestThreadCommand::execute(const ObjectHandle& arguments) const
+Variant TestThreadCommand::execute(const ObjectHandle& arguments) const
 {
 	// TODO assert current thread is expected thread
 	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-	return ObjectHandle();
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 //------------------------------------------------------------------------------
@@ -263,13 +235,13 @@ TestCompoundCommand::TestCompoundCommand(int depth, CommandThreadAffinity thread
 }
 
 //------------------------------------------------------------------------------
-ObjectHandle TestCompoundCommand::execute(const ObjectHandle& arguments) const
+Variant TestCompoundCommand::execute(const ObjectHandle& arguments) const
 {
 	// TODO assert current thread is expected thread
 	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	if (depth_ == 0)
 	{
-		return ObjectHandle();
+		return CommandErrorCode::COMMAND_NO_ERROR;
 	}
 
 	auto commandManager = getCommandSystemProvider();
@@ -278,22 +250,22 @@ ObjectHandle TestCompoundCommand::execute(const ObjectHandle& arguments) const
 	auto recursiveCommand =
 	commandManager->queueCommand(TestCompoundCommand::generateId(depth_ - 1, threadAffinity_).c_str());
 	commandManager->waitForInstance(recursiveCommand);
-	assert(recursiveCommand->isComplete());
+	TF_ASSERT(recursiveCommand->isComplete());
 
 	// generate root commands and wait for them
 	auto rootCommand1 = commandManager->queueCommand(TestCompoundCommand::generateId(0, threadAffinity_).c_str());
 	auto rootCommand2 = commandManager->queueCommand(TestCompoundCommand::generateId(0, threadAffinity_).c_str());
 	commandManager->waitForInstance(rootCommand1);
-	assert(rootCommand1->isComplete());
+	TF_ASSERT(rootCommand1->isComplete());
 	auto rootCommand3 = commandManager->queueCommand(TestCompoundCommand::generateId(0, threadAffinity_).c_str());
 	commandManager->waitForInstance(rootCommand3);
-	assert(rootCommand2->isComplete());
-	assert(rootCommand3->isComplete());
+	TF_ASSERT(rootCommand2->isComplete());
+	TF_ASSERT(rootCommand3->isComplete());
 
 	// generate a recursive command and allow the command system to automatically execute on completion of this command
 	commandManager->queueCommand(TestCompoundCommand::generateId(depth_ - 1, threadAffinity_).c_str());
 
-	return ObjectHandle();
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 //------------------------------------------------------------------------------
@@ -331,13 +303,13 @@ TestAlternatingCompoundCommand::TestAlternatingCompoundCommand(int depth, Comman
 }
 
 //------------------------------------------------------------------------------
-ObjectHandle TestAlternatingCompoundCommand::execute(const ObjectHandle& arguments) const
+Variant TestAlternatingCompoundCommand::execute(const ObjectHandle& arguments) const
 {
 	// TODO assert current thread is expected thread
 	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	if (depth_ == 0)
 	{
-		return ObjectHandle();
+		return CommandErrorCode::COMMAND_NO_ERROR;
 	}
 
 	auto commandManager = getCommandSystemProvider();
@@ -350,7 +322,7 @@ ObjectHandle TestAlternatingCompoundCommand::execute(const ObjectHandle& argumen
 	auto anyThreadCommand = commandManager->queueCommand(
 	TestAlternatingCompoundCommand::generateId(depth_ - 1, CommandThreadAffinity::ANY_THREAD).c_str());
 
-	return ObjectHandle();
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 //------------------------------------------------------------------------------

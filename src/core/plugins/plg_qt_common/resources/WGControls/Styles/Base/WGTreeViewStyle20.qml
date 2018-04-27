@@ -8,20 +8,16 @@ import WGControls.Styles 2.0
 \ingroup wgcontrols */
 WGItemViewStyle {
     WGComponent { type: "WGTreeViewStyle20" }
-    
+
+    property Component group: Item {}
+
     rowBackground: Item {
         Rectangle {
             id: backgroundArea
             anchors.fill: parent
             color: palette.highlightShade
             opacity: isSelected ? 1 : 0.5
-            visible: hoverArea.containsMouse || isSelected
-        }
-
-        MouseArea {
-            id: hoverArea
-            anchors.fill: backgroundArea
-            hoverEnabled: true
+            visible: isHovered || isSelected
         }
 
         Rectangle {
@@ -63,8 +59,9 @@ WGItemViewStyle {
                 objectName: "ExpandMouseArea"
                 anchors.fill: parent
                 enabled: hasChildren
+                cursorShape: Qt.PointingHandCursor
                 onPressed: {
-                    itemData.expanded = !itemData.expanded;
+                    view.viewExtension.toggle(itemData.modelIndex, (mouse.modifiers & Qt.ShiftModifier))
                 }
             }
         }

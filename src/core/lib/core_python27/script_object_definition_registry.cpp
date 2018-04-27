@@ -17,16 +17,54 @@ const char* g_reflectionDefinition = "__reflectionDefinition";
  */
 typedef struct
 {
-	PyObject_HEAD std::weak_ptr<IClassDefinition> definition_;
-	RefObjectId id_;
+    PyObject_HEAD
+private:
+    class Objects
+    {
+    public:
+        Objects(const std::shared_ptr<IClassDefinition>& definition, const RefObjectId& id):
+            definition_(definition),
+            id_(id)
+        {}
+    
+        const std::weak_ptr<IClassDefinition> definition_;
+        const RefObjectId id_;
+
+    private:
+        Objects();
+
+    } objects_;
+
+public:
+    void init(const std::shared_ptr<IClassDefinition>& definition, RefObjectId& id) 
+    { 
+        new(&objects_) Objects(definition, id); 
+    }
+
+    void fini()
+    {
+        (&objects_)->~Objects();
+    }
+
+    const std::weak_ptr<IClassDefinition>& getDefinition() const { return objects_.definition_; }
+    const RefObjectId& getId() const { return objects_.id_; }
+
 } PyDefinitionObject;
+
+
+static void PyDefinitionObject_dealloc(PyDefinitionObject* self)
+{
+    self->fini();
+    self->ob_type->tp_free(self);
+}
+
 
 static PyTypeObject Definition_Type = {
 	PyObject_HEAD_INIT(nullptr) 0, /* ob_size */
 	"Reflection.DefinitionType", /* tp_name */
 	sizeof(PyDefinitionObject), /* tp_basicsize */
 	0, /* tp_itemsize */
-	0, /* tp_dealloc */
+	(destructor)PyDefinitionObject_dealloc, /* tp_dealloc */
 	0, /* tp_print */
 	0, /* tp_getattr */
 	0, /* tp_setattr */
@@ -138,28 +176,20 @@ bool PairMatch<PAIR_T>::operator()(const PAIR_T& entry) const
 	return result;
 }
 
-ScriptObjectDefinitionRegistry::ScriptObjectDefinitionRegistry(IComponentContext& context)
-    : context_(context), definitionManager_(context)
-{
-}
-
 ScriptObjectDefinitionRegistry::~ScriptObjectDefinitionRegistry()
 {
 }
 
 void ScriptObjectDefinitionRegistry::init()
 {
-	assert(definitionManager_ != nullptr);
-
 	definitionHelper_.reset(new ReflectedPython::DefinitionHelper);
-	definitionManager_->registerDefinitionHelper(*definitionHelper_);
+	get<IDefinitionManager>()->registerDefinitionHelper(*definitionHelper_);
 	initDefinitionType();
 }
 
 void ScriptObjectDefinitionRegistry::fini()
 {
-	assert(definitionManager_ != nullptr);
-	definitionManager_->deregisterDefinitionHelper(*definitionHelper_);
+	get<IDefinitionManager>()->deregisterDefinitionHelper(*definitionHelper_);
 	definitionHelper_.reset();
 }
 
@@ -167,7 +197,6 @@ std::shared_ptr<IClassDefinition> ScriptObjectDefinitionRegistry::findOrCreateDe
 const PyScript::ScriptObject& object)
 {
 	assert(object.exists());
-	assert(definitionManager_ != nullptr);
 
 	// Check if definition is attached to object
 	// Rather than searching through list
@@ -182,7 +211,7 @@ const PyScript::ScriptObject& object)
 			if (typeMatches)
 			{
 				auto definitionType = reinterpret_cast<PyDefinitionObject*>(definitionObject.get());
-				auto pointer = definitionType->definition_.lock();
+				auto pointer = definitionType->getDefinition().lock();
 				if (pointer != nullptr)
 				{
 					return pointer;
@@ -192,11 +221,11 @@ const PyScript::ScriptObject& object)
 					std::string definitionName = ReflectedPython::DefinitionDetails::generateName(object);
 					assert(!definitionName.empty());
 
-					auto definition = definitionManager_->getDefinition(definitionName.c_str());
+					auto definition = get<IDefinitionManager>()->getDefinition(definitionName.c_str());
 					assert(definition != nullptr);
 					if (definition != nullptr)
 					{
-						definitionManager_->deregisterDefinition(definition);
+						get<IDefinitionManager>()->deregisterDefinition(definition);
 					}
 				}
 			}
@@ -215,17 +244,17 @@ const PyScript::ScriptObject& object)
 		const auto isClass = PyScript::ScriptClass::check(object);
 		if (canSet && !isType && !isClass)
 		{
-			auto definition = definitionManager_->registerDefinition(
-			std::unique_ptr<IClassDefinitionDetails>(new ReflectedPython::DefinitionDetails(context_, object)));
+			auto definition = get<IDefinitionManager>()->registerDefinition(
+			std::unique_ptr<IClassDefinitionDetails>(new ReflectedPython::DefinitionDetails(object)));
 			assert(definition != nullptr);
 
-			std::shared_ptr<IClassDefinition> pointer(definition, ScriptObjectDefinitionDeleter(object, *this));
+            std::shared_ptr<IClassDefinition> pointer( definition, ScriptObjectDefinitionDeleter( object, *this ) );
 
-			definitionObject = PyScript::ScriptObject(definitionType.genericAlloc(PyScript::ScriptErrorPrint()),
-			                                          PyScript::ScriptObject::FROM_NEW_REFERENCE);
-			auto definitionType = reinterpret_cast<PyDefinitionObject*>(definitionObject.get());
-			definitionType->definition_ = pointer;
-			definitionType->id_ = RefObjectId::generate();
+            definitionObject = PyScript::ScriptObject( definitionType.genericAlloc( PyScript::ScriptErrorPrint() ),
+                                                       PyScript::ScriptObject::FROM_NEW_REFERENCE );
+            auto definitionType = reinterpret_cast<PyDefinitionObject*>(definitionObject.get());
+
+            definitionType->init(pointer, RefObjectId::generate());
 
 			const auto success =
 			object.setAttribute(g_reflectionDefinition, definitionObject, PyScript::ScriptErrorClear());
@@ -256,13 +285,13 @@ const PyScript::ScriptObject& object)
 		std::string definitionName = ReflectedPython::DefinitionDetails::generateName(object);
 		assert(!definitionName.empty());
 
-		auto definition = definitionManager_->getDefinition(definitionName.c_str());
+		auto definition = get<IDefinitionManager>()->getDefinition(definitionName.c_str());
 		assert(definition != nullptr);
-		definitionManager_->deregisterDefinition(definition);
+		get<IDefinitionManager>()->deregisterDefinition(definition);
 	}
 
-	auto definition = definitionManager_->registerDefinition(
-	std::unique_ptr<IClassDefinitionDetails>(new ReflectedPython::DefinitionDetails(context_, object)));
+	auto definition = get<IDefinitionManager>()->registerDefinition(
+	std::unique_ptr<IClassDefinitionDetails>(new ReflectedPython::DefinitionDetails(object)));
 	assert(definition != nullptr);
 
 	std::shared_ptr<IClassDefinition> pointer(definition, ScriptObjectDefinitionDeleter(object, *this));
@@ -285,7 +314,7 @@ std::shared_ptr<IClassDefinition> ScriptObjectDefinitionRegistry::findDefinition
 		if (typeMatches)
 		{
 			auto definitionType = reinterpret_cast<PyDefinitionObject*>(definitionObject.get());
-			return definitionType->definition_.lock();
+			return definitionType->getDefinition().lock();
 		}
 		else
 		{
@@ -319,8 +348,7 @@ void ScriptObjectDefinitionRegistry::removeDefinition(const PyScript::ScriptObje
 			const auto deleted = object.delAttribute(g_reflectionDefinition, PyScript::ScriptErrorClear());
 			assert(deleted);
 
-			assert(definitionManager_ != nullptr);
-			const bool deregistered = definitionManager_->deregisterDefinition(definition);
+			const bool deregistered = get<IDefinitionManager>()->deregisterDefinition(definition);
 			assert(deregistered);
 			return;
 		}
@@ -341,8 +369,7 @@ void ScriptObjectDefinitionRegistry::removeDefinition(const PyScript::ScriptObje
 	assert(idItr != ids_.cend());
 	ids_.erase(idItr);
 
-	assert(definitionManager_ != nullptr);
-	const bool success = definitionManager_->deregisterDefinition(definition);
+	const bool success = get<IDefinitionManager>()->deregisterDefinition(definition);
 	assert(success);
 }
 
@@ -361,7 +388,7 @@ const RefObjectId& ScriptObjectDefinitionRegistry::getID(const PyScript::ScriptO
 			if (typeMatches)
 			{
 				auto definitionType = reinterpret_cast<PyDefinitionObject*>(definitionObject.get());
-				return definitionType->id_;
+				return definitionType->getId();
 			}
 		}
 	}

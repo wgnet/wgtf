@@ -7,12 +7,15 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #include "perforce_depot_view.hpp"
+
 #include "perforce_result.hpp"
+#include "core_common/assert.hpp"
 #include "core_logging/logging.hpp"
 #include "core_string_utils/file_path.hpp"
 
 #include <sstream>
 #include <regex>
+#include <mutex>
 
 #pragma warning(push)
 #pragma warning(disable : 4267 4244)
@@ -159,8 +162,10 @@ private:
 struct PerforceDepotView::PerforceDepotViewImplementation
 {
 	PerforceDepotViewImplementation(ClientApiPtr clientApi, const char* depotPath, const char* clientPath)
-	    : clientApi_(std::move(clientApi)), depotPath_(depotPath), clientPath_(clientPath)
+	    : clientApi_(std::move(clientApi)), depotPath_(depotPath)
 	{
+		FilePath filePath(clientPath, FilePath::kDirectorySeparator);
+		clientPath_ = filePath.str();
 	}
 
 	~PerforceDepotViewImplementation()
@@ -171,6 +176,7 @@ struct PerforceDepotView::PerforceDepotViewImplementation
 	ClientApiPtr clientApi_;
 	std::string depotPath_;
 	std::string clientPath_;
+	std::mutex perforceMutex_;
 };
 
 PerforceDepotView::PerforceDepotView(ClientApiPtr clientApi, const char* depotPath, const char* clientPath)
@@ -364,6 +370,13 @@ IResultPtr PerforceDepotView::revert(const PathList& filePaths)
 	return RunCommand(command);
 }
 
+IResultPtr PerforceDepotView::revertUnchanged( const PathList& filePaths )
+{
+	std::string command( "revert -a " );
+	command += EscapePaths( filePaths );
+	return RunCommand( command );
+}
+
 IResultPtr PerforceDepotView::get(const PathList& filePaths, Revision revision)
 {
 	std::stringstream command;
@@ -375,6 +388,16 @@ IResultPtr PerforceDepotView::get(const PathList& filePaths, Revision revision)
 	{
 		command << "sync -f " << EscapeRevisionPaths(filePaths, revision);
 	}
+	return RunCommand(command.str());
+}
+
+IResultPtr PerforceDepotView::getRevisionBetween(const PathList& filePaths, int fromChangelist, int toChangelist)
+{
+	// This function will attempt to sync a list of files to a specified changelist range
+	// Directories and wildcards are NOT currently supported.
+	// toChangelist == 0 means head revision
+	std::stringstream command;
+	command << "sync -f " << EscapePathsBetween(filePaths, fromChangelist, toChangelist);
 	return RunCommand(command.str());
 }
 
@@ -390,17 +413,39 @@ IResultPtr PerforceDepotView::status(const PathList& filePaths)
 	return RunCommand(command);
 }
 
+IResultPtr PerforceDepotView::querySubDirs(const char* parentDir/* = ""*/)
+{
+	//empty parent means root
+	PathList filePaths;
+	std::string folderToQuery("");
+	if (folderToQuery == parentDir)
+	{
+		folderToQuery = impl_->depotPath_;
+	}
+	else
+	{
+		folderToQuery = parentDir;
+	}
+	filePaths.push_back(folderToQuery);
+	std::stringstream command;
+	command << "dirs " << EscapeDepotDirQueryPaths(filePaths);
+	return RunCommand(command.str());
+}
+
 IResultPtr PerforceDepotView::submit(const PathList& filePaths, const char* description /*= ""*/,
                                      bool bKeepCheckedOut /*= false*/)
 {
+	std::string desc = description;
+	bool bCheckout = bKeepCheckedOut;
+	PathList filesToCheckIn = filePaths;
 	ChangeListId changelist;
-	auto result = createChangeList(description, changelist);
+	auto result = createChangeList(desc.c_str(), changelist);
 	if (!result->hasErrors())
 	{
-		result = reopen(filePaths, changelist);
+		result = reopen(filesToCheckIn, changelist);
 		if (!result->hasErrors())
 		{
-			return submit(changelist, bKeepCheckedOut);
+			return submit(changelist, bCheckout);
 		}
 	}
 	return result;
@@ -465,6 +510,12 @@ IResultPtr PerforceDepotView::deleteEmptyChangeList(ChangeListId changeListId)
 	return RunCommand(command.str());
 }
 
+IResultPtr PerforceDepotView::getTicket() 
+{
+	std::string command("login -s");
+	return RunCommand(command);
+}
+
 std::vector<char*> SplitParams(std::string& command)
 {
 	std::regex paramSplit("[^\\s\"']+|\"[^\"]*\"|'[^']*'");
@@ -513,8 +564,47 @@ const char* PerforceDepotView::getUser() const
 	return impl_->clientApi_->GetUser().Text();
 }
 
+std::string PerforceDepotView::getClientRoot()
+{
+	auto clientInfo = GetClientInfo();
+	return clientInfo["clientRoot"];
+}
+
+std::string PerforceDepotView::getDepotRoot()
+{
+	auto clientRoot = getClientRoot();
+	return GetRootDepotPath(clientRoot);
+}
+
+std::vector<std::string> PerforceDepotView::getClientNames()
+{
+	std::vector<std::string> clientNames;
+
+	std::stringstream cmd;
+	cmd << "clients -u " << impl_->clientApi_->GetUser().Text();
+	auto commandResult = RunCommand(cmd.str());
+
+	auto host = impl_->clientApi_->GetHost().Text();
+
+	for (auto result : commandResult->results())
+	{
+		auto clientName = result["client"];
+		auto hostName = result["Host"];
+
+		// Filter out auto-created swarm clients and clients for different host computers
+		if (!clientName.empty() && clientName.find("swarm") != 0 &&
+			(stricmp(hostName.c_str(), host) == 0 || hostName == ""))
+		{
+			clientNames.push_back(clientName);
+		}
+	}
+
+	return clientNames;
+}
+
 IResultPtr PerforceDepotView::RunCommand(std::string& command, const std::string& input)
 {
+	std::lock_guard< std::mutex > guard(impl_->perforceMutex_);
 	auto params = SplitParams(command);
 	if (params.size() > 0)
 	{
@@ -562,14 +652,34 @@ std::string& PerforceDepotView::toPath(std::string& path)
 	// If no depot path or client path has been specified the path must be fully qualified
 	if (impl_->depotPath_.empty() && impl_->clientPath_.empty())
 		return path;
-
+	FilePath filePath(path.c_str(), FilePath::kDirectorySeparator);
 	// Is the path already a depot path?
-	if (!path.compare(0, impl_->depotPath_.size(), impl_->depotPath_))
+	if (!filePath.str().compare(0, impl_->depotPath_.size(), impl_->depotPath_))
 		return path;
 
 	// Is the path already a client path?
-	if (impl_->clientPath_.size() > 0 && !path.compare(0, impl_->clientPath_.size(), impl_->clientPath_))
+	if (impl_->clientPath_.size() > 0 && !filePath.str().compare(0, impl_->clientPath_.size(), impl_->clientPath_))
 		return path;
+
+	// Assume the path is relative to the depot path
+	return path = FilePath(impl_->depotPath_, path, FilePath::kDirectorySeparator).str();
+}
+
+std::string& PerforceDepotView::toDepotDirQueryPath(std::string& path)
+{
+	// If no depot path or client path has been specified the path must be fully qualified
+	if (impl_->depotPath_.empty() && impl_->clientPath_.empty())
+		return path;
+	FilePath filePath(path.c_str(), FilePath::kDirectorySeparator);
+	// Is the path already a depot path?
+	if (!filePath.str().compare(0, impl_->depotPath_.size(), impl_->depotPath_))
+		return path;
+
+	// Is the path already a client path?
+	if (impl_->clientPath_.size() > 0 && !filePath.str().compare(0, impl_->clientPath_.size(), impl_->clientPath_))
+	{
+		path = path.substr(path.find(impl_->clientPath_));
+	}
 
 	// Assume the path is relative to the depot path
 	return path = FilePath(impl_->depotPath_, path, FilePath::kDirectorySeparator).str();
@@ -585,12 +695,75 @@ std::string PerforceDepotView::EscapePaths(const PathList& filePaths)
 	return escapedPaths.str();
 }
 
+std::string PerforceDepotView::EscapeDepotDirQueryPaths(const PathList& filePaths)
+{
+	std::stringstream escapedPaths;
+	for (auto path : filePaths)
+	{
+		ReplaceChars(toDepotDirQueryPath(path));
+		if (path.empty())
+		{
+			continue;
+		}
+		auto ch = path[path.size() - 1];
+		if (ch != '/')
+		{
+			path += '/';
+		}
+		path += '*';
+		escapedPaths << '"' << path << '"';
+	}
+	return escapedPaths.str();
+}
+
 std::string PerforceDepotView::EscapeRevisionPaths(const PathList& filePaths, const Revision revision)
 {
 	std::stringstream escapedPaths;
 	for (auto path : filePaths)
 	{
 		escapedPaths << '"' << ReplaceChars(toPath(path)) << "#" << revision << '"';
+	}
+	return escapedPaths.str();
+}
+
+std::string PerforceDepotView::EscapePathsBetween(const PathList& cleanPaths, int fromChange, int toChange)
+{
+	// Formats a list of file paths to be sent with p4 commands w/ changelist ranges
+	std::stringstream escapedPaths;
+	time_t nowTime = time(nullptr);
+	tm* now = localtime(&nowTime);
+	TF_ASSERT(now != nullptr);
+	for (PathList::const_iterator it = cleanPaths.begin(); it != cleanPaths.end(); ++it)
+	{
+		auto path = *it;
+		if (!escapedPaths.str().empty())
+		{
+			escapedPaths << ' '; // separator
+		}
+		escapedPaths << '"';
+		escapedPaths << ReplaceChars(toPath(path));
+		escapedPaths << '@';
+		escapedPaths << fromChange;
+		escapedPaths << ',';
+		if (toChange == 0)
+		{
+			escapedPaths << now->tm_year + 1900;
+			escapedPaths << '/';
+			escapedPaths << now->tm_mon + 1;
+			escapedPaths << '/';
+			escapedPaths << now->tm_mday;
+			escapedPaths << ':';
+			escapedPaths << now->tm_hour;
+			escapedPaths << ':';
+			escapedPaths << now->tm_min;
+			escapedPaths << ':';
+			escapedPaths << now->tm_sec;
+		}
+		else
+		{
+			escapedPaths << toChange;
+		}
+		escapedPaths << '"';
 	}
 	return escapedPaths.str();
 }

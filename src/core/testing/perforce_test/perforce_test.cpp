@@ -21,11 +21,11 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 namespace UnitTests
 {
 /*! As far as I can tell Visual Studio's CppUnitTestFramework doesn't like what we are doing with our allocator
-        In order to improve the results we store our data in a separate object and use TEST_CLASS_INITIALIZE/CLEANUP
-        This at least allows the framework to return whether or not the test passed in a Release build (Debug works)
-        In Release the framework hangs for a while and eventually complains after the tests complete running.
-        When in Debug there are first chance exceptions but it appears to shutdown
-    */
+    In order to improve the results we store our data in a separate object and use TEST_CLASS_INITIALIZE/CLEANUP
+    This at least allows the framework to return whether or not the test passed in a Release build (Debug works)
+    In Release the framework hangs for a while and eventually complains after the tests complete running.
+    When in Debug there are first chance exceptions but it appears to shutdown
+*/
 struct PerforceUnitTestData
 {
 	GenericPluginManager pluginManager;
@@ -33,9 +33,8 @@ struct PerforceUnitTestData
 	std::string tempFile;
 	IVersionControl* versionControl;
 	IDepotViewPtr depotView;
-	std::wstring_convert<Utf16to8Facet> converter;
 
-	PerforceUnitTestData() : converter(Utf16to8Facet::create())
+	PerforceUnitTestData()
 	{
 		// Grab this file's location for later testing purposes
 		thisFile = __FILE__;
@@ -80,7 +79,7 @@ struct PerforceUnitTestData
 		versionControl = pluginManager.getContextManager().getGlobalContext()->queryInterface<IVersionControl>();
 		Assert::IsNotNull(versionControl, L"Failed to get IVersionControl Interface");
 		auto result = versionControl->initialize("", port, user, client, password);
-		Assert::IsTrue(!result->hasErrors(), converter.from_bytes(result->errors()).c_str());
+		Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 		// Create a view of the depot
 		depotView = versionControl->createDepotView("", "");
@@ -107,11 +106,11 @@ TEST_METHOD(CreateChangeList)
 	// Create an empty changelist
 	IDepotView::ChangeListId changelist;
 	auto result = d->depotView->createChangeList("Multi\rLine\nTest\r\nChangelist", changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Delete the change list
 	result = d->depotView->deleteEmptyChangeList(changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 }
 
 TEST_METHOD(AddAndRevertFile)
@@ -119,21 +118,21 @@ TEST_METHOD(AddAndRevertFile)
 	// Create an empty changelist
 	IDepotView::ChangeListId changelist;
 	auto result = d->depotView->createChangeList("Multi\rLine\nTest\r\nChangelist", changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Add the temp file to the newly created change list
 	IDepotView::PathList paths;
 	paths.emplace_back(d->tempFile);
 	result = d->depotView->add(paths, changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Revert the file
 	result = d->depotView->revert(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Delete the change list
 	result = d->depotView->deleteEmptyChangeList(changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 }
 
 TEST_METHOD(CheckoutFile)
@@ -141,7 +140,7 @@ TEST_METHOD(CheckoutFile)
 	IDepotView::PathList paths;
 	paths.emplace_back(d->thisFile);
 	auto result = d->depotView->status(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	Assert::IsTrue(std::string(result->output()).find("action") == std::string::npos,
 	               L"Can't complete test, file already checked out");
@@ -149,20 +148,20 @@ TEST_METHOD(CheckoutFile)
 	// Create an empty changelist
 	IDepotView::ChangeListId changelist;
 	result = d->depotView->createChangeList("Unit Test Checkout", changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Checkout the file
 	result = d->depotView->checkout(paths, changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 	Assert::IsTrue(std::string(result->output()).find("action edit") != std::string::npos);
 
 	// Revert the file
 	result = d->depotView->revert(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Delete the change list
 	result = d->depotView->deleteEmptyChangeList(changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 }
 
 TEST_METHOD(GetFileRevisions)
@@ -170,21 +169,21 @@ TEST_METHOD(GetFileRevisions)
 	IDepotView::PathList paths;
 	paths.emplace_back(d->thisFile);
 	auto result = d->depotView->status(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	Assert::IsTrue(std::string(result->output()).find("action") == std::string::npos,
 	               L"Can't complete test, file already checked out");
 
 	// Get the first version of this file
 	result = d->depotView->get(paths, 1);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 	result = d->depotView->status(paths);
 	Assert::IsTrue(std::string(result->output()).find("haveRev 1") != std::string::npos,
 	               L"Failed to retrieve version one");
 
 	// Get the latest version of this file
 	result = d->depotView->getLatest(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 	result = d->depotView->status(paths);
 	std::string status(result->output());
 	auto beginHead = status.find("headRev ");
@@ -203,7 +202,7 @@ TEST_METHOD(RenameFile)
 	IDepotView::PathList paths;
 	paths.emplace_back(d->thisFile);
 	auto result = d->depotView->status(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	Assert::IsTrue(std::string(result->output()).find("action") == std::string::npos,
 	               L"Can't complete test, file already checked out");
@@ -211,23 +210,23 @@ TEST_METHOD(RenameFile)
 	// Create an empty changelist
 	IDepotView::ChangeListId changelist;
 	result = d->depotView->createChangeList("Unit Test Rename", changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Rename the file
 	IDepotView::FilePairs pairs;
 	pairs[d->thisFile] = d->thisFile + "@test%rename#.cpp";
 	result = d->depotView->rename(pairs, changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Revert the file
 	paths.clear();
 	paths.emplace_back(pairs[d->thisFile]);
 	result = d->depotView->revert(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Delete the change list
 	result = d->depotView->deleteEmptyChangeList(changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 }
 
 TEST_METHOD(RemoveFile)
@@ -235,7 +234,7 @@ TEST_METHOD(RemoveFile)
 	IDepotView::PathList paths;
 	paths.emplace_back(d->thisFile);
 	auto result = d->depotView->status(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	Assert::IsTrue(std::string(result->output()).find("action") == std::string::npos,
 	               L"Can't complete test, file already checked out");
@@ -243,19 +242,19 @@ TEST_METHOD(RemoveFile)
 	// Create an empty changelist
 	IDepotView::ChangeListId changelist;
 	result = d->depotView->createChangeList("Unit Test Remove", changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Remove the file
 	result = d->depotView->remove(paths, changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Revert the file
 	result = d->depotView->revert(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Delete the change list
 	result = d->depotView->deleteEmptyChangeList(changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 }
 
 TEST_METHOD(ReopenFile)
@@ -263,7 +262,7 @@ TEST_METHOD(ReopenFile)
 	IDepotView::PathList paths;
 	paths.emplace_back(d->thisFile);
 	auto result = d->depotView->status(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	Assert::IsTrue(std::string(result->output()).find("action") == std::string::npos,
 	               L"Can't complete test, file already checked out");
@@ -271,23 +270,23 @@ TEST_METHOD(ReopenFile)
 	// Create an empty changelist
 	IDepotView::ChangeListId changelist;
 	result = d->depotView->createChangeList("Unit Test Reopen", changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Open the file in changelist
 	result = d->depotView->checkout(paths, changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Reopen the file in the default changelist
 	result = d->depotView->reopen(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Revert the file
 	result = d->depotView->revert(paths);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Delete the change list
 	result = d->depotView->deleteEmptyChangeList(changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 }
 
 TEST_METHOD(SubmitFile)
@@ -303,15 +302,15 @@ TEST_METHOD(SubmitFile)
 	// Create an empty changelist
 	IDepotView::ChangeListId changelist;
 	result = d->depotView->createChangeList("[NGT] [Perforce] Unit Test Submit", changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Reopen the file in changelist
 	result = d->depotView->reopen(paths, changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 
 	// Submit the file
 	result = d->depotView->submit(changelist);
-	Assert::IsTrue(!result->hasErrors(), d->converter.from_bytes(result->errors()).c_str());
+	Assert::IsTrue(!result->hasErrors(), StringUtils::to_wstring(result->errors()).c_str());
 }
 
 TEST_METHOD(GetMultiFileStatus)
@@ -330,6 +329,48 @@ TEST_METHOD(GetMultiFileStatus)
 		return _stricmp(result["clientFile"].c_str(), d->thisFile.c_str()) == 0;
 	});
 	Assert::IsTrue(found != results.end());
+}
+
+TEST_METHOD(RevertUnchanged)
+{
+	IDepotView::PathList paths;
+	paths.emplace_back(d->thisFile);
+
+	// Is this file has already checked out
+	auto result = d->depotView->status( paths );
+	Assert::IsTrue( !result->hasErrors(), StringUtils::to_wstring( result->errors() ).c_str() );
+
+	// If this file already has an "action" if is already checked out
+	bool checkedOut = std::string( result->output() ).find( "action" ) != std::string::npos;
+
+	if(!checkedOut)
+	{
+		// Checkout this file
+		result = d->depotView->checkout(paths);
+		Assert::IsTrue( !result->hasErrors(), StringUtils::to_wstring( result->errors() ).c_str() );
+	}
+
+	// We should have an edit action
+	result = d->depotView->status(paths);
+	Assert::IsTrue(result->results().size() > 0 && result->results()[0].find("action") != result->results()[0].end());
+
+	// Revert unchanged files
+	d->depotView->revertUnchanged(paths);
+
+	// Get the status after reverting unchanged files
+	result = d->depotView->status( paths );
+	if(checkedOut)
+	{
+		// If the file was already checked out it should be modified, and would not get reverted
+		Assert::IsTrue( std::string( result->output() ).find( "action" ) != std::string::npos,
+			L"File was already checked out and was reverted, this indicates it had no changes!" );
+	}
+	else
+	{
+		// If the file was not already checked out it should not be modified, and would have been reverted
+		Assert::IsTrue( std::string( result->output() ).find( "action" ) == std::string::npos,
+			L"File was not reverted, could it possible have been modified");
+	}
 }
 };
 }

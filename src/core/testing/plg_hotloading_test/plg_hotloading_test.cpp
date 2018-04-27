@@ -7,12 +7,15 @@
 #include "core_ui_framework/i_view.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/qml_view.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_string_utils/file_path.hpp"
+#include "core_object/managed_object.hpp"
 #include "hotloading_panel.hpp"
+#include "core_serialization/i_file_system.hpp"
 #include "metadata/hotloading_panel.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 #include <memory>
 #include <QFileSystemWatcher>
@@ -29,16 +32,20 @@ namespace wgt
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class HotloadingTestPlugin : public PluginMain
+class HotloadingTestPlugin : public PluginMain, Depends<IQtFramework>
 {
 public:
 	HotloadingTestPlugin(IComponentContext& componentContext)
 	{
+		registerCallback([](IDefinitionManager & defManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
 
 	bool PostLoad(IComponentContext& componentContext) override
 	{
-		auto qtFramework = componentContext.queryInterface<IQtFramework>();
+		auto qtFramework = get<IQtFramework>();
 		auto qmlEngine = qtFramework->qmlEngine();
 		qmlEngine->addImportPath(QString(PROJECT_RESOURCE_FOLDER));
 		return true;
@@ -47,18 +54,14 @@ public:
 	void Initialise(IComponentContext& componentContext) override
 	{
 		IDefinitionManager& definitionManager = *componentContext.queryInterface<IDefinitionManager>();
-		REGISTER_DEFINITION(HotloadingPanel);
-		auto hotloadingPanel = definitionManager.create<HotloadingPanel>();
+		hotloadingPanel_ = ManagedObject<HotloadingPanel>::make();
+        hotloadingPanel_->initialise();
 
 		auto qtFramework = componentContext.queryInterface<IQtFramework>();
-		auto fileSystem = componentContext.queryInterface<IFileSystem>();
-		auto qmlEngine = qtFramework->qmlEngine();
-		hotloadingPanel->initialise(*qmlEngine, *fileSystem);
-
 		auto viewCreator = componentContext.queryInterface<IViewCreator>();
-		if (viewCreator != nullptr)
+		if (viewCreator != nullptr && qtFramework != nullptr)
 		{
-			auto onViewLoad = [qtFramework, hotloadingPanel, this](IView& view) {
+			auto onViewLoad = [qtFramework, this](IView& view) {
 				std::vector<std::string> files;
 				files.push_back("WGHotloadingPanel.qml");
 				files.push_back("WGHotloadingBase.qml");
@@ -69,7 +72,7 @@ public:
 				assert(watchingFiles);
 				if (!watchingFiles)
 				{
-					hotloadingPanel->setErrorText("ERROR: Was not watching required files for hotloading");
+                    hotloadingPanel_->setErrorText("ERROR: Was not watching required files for hotloading");
 				}
 
 				std::vector<std::string> components;
@@ -81,13 +84,13 @@ public:
 				assert(watchingComponents);
 				if (!watchingComponents)
 				{
-					hotloadingPanel->setErrorText("ERROR: Was not watching required components for hotloading");
+                    hotloadingPanel_->setErrorText("ERROR: Was not watching required components for hotloading");
 				}
 			};
 
 			std::string path(PROJECT_RESOURCE_FOLDER);
 			path += "WGHotloadingPanel.qml";
-			hotloadingView_ = viewCreator->createView(path.c_str(), hotloadingPanel, onViewLoad);
+			hotloadingView_ = viewCreator->createView(path.c_str(), hotloadingPanel_.getHandleT(), onViewLoad);
 		}
 	}
 
@@ -106,6 +109,7 @@ public:
 			view = nullptr;
 		}
 
+        hotloadingPanel_ = nullptr;
 		return true;
 	}
 
@@ -153,6 +157,7 @@ private:
 	}
 
 	wg_future<std::unique_ptr<IView>> hotloadingView_;
+    ManagedObject<HotloadingPanel> hotloadingPanel_;
 };
 
 PLG_CALLBACK_FUNC(HotloadingTestPlugin)

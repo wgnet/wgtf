@@ -8,51 +8,82 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #include "i_menu_handler.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_action.hpp"
-#include <assert.h>
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
-IMenuHandler::IMenuHandler(IComponentContext& contextManager) : contextManager_(contextManager)
-{
-	auto uiFramework = contextManager_.queryInterface<IUIFramework>();
-	assert(uiFramework != nullptr);
 
-	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
-	assert(uiApplication != nullptr);
+struct IMenuHandler::Impl
+	: Depends< IUIFramework, IUIApplication >
+{
+	Impl()
+	{}
+
+	Actions actions_;
+};
+
+
+//==============================================================================
+IMenuHandler::IMenuHandler()
+	: impl_( new Impl() )
+{
 }
 
 IMenuHandler::~IMenuHandler()
 {
 	// Actions clean up
-	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
-	assert(uiApplication != nullptr);
+	auto uiApplication = impl_->get<IUIApplication>();
+	TF_ASSERT(uiApplication != nullptr);
 
 	if (!uiApplication)
 		return;
 
-	for (auto itr = actions_.begin(); itr != actions_.end(); ++itr)
+	for (auto itr = impl_->actions_.begin(); itr != impl_->actions_.end(); ++itr)
 	{
 		uiApplication->removeAction(**itr);
 		(*itr).reset();
 	}
 }
 
+void IMenuHandler::setActionsVisible(bool show)
+{
+	auto uiApplication = impl_->get<IUIApplication>();
+	TF_ASSERT(uiApplication != nullptr);
+
+	if (!uiApplication)
+		return;
+
+	for (auto itr = impl_->actions_.begin(); itr != impl_->actions_.end(); ++itr)
+	{
+		uiApplication->removeAction(**itr);
+	}
+	if (show)
+	{
+		for (auto itr = impl_->actions_.begin(); itr != impl_->actions_.end(); ++itr)
+		{
+			uiApplication->addAction(**itr);
+		}
+	}
+}
+
 void IMenuHandler::registerActions()
 {
-	auto uiFramework = contextManager_.queryInterface<IUIFramework>();
-	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
-	assert(uiFramework != nullptr && uiApplication != nullptr);
+	auto uiFramework = impl_->get<IUIFramework>();
+	auto uiApplication = impl_->get<IUIApplication>();
+	TF_ASSERT(uiFramework != nullptr && uiApplication != nullptr);
 
 	if (!uiFramework || !uiApplication)
 		return;
 
-	registerActions(*uiFramework, actions_);
+	registerActions(*uiFramework, impl_->actions_);
 
-	for (auto itr = actions_.cbegin(); itr != actions_.cend(); ++itr)
+	for (auto itr = impl_->actions_.cbegin(); itr != impl_->actions_.cend(); ++itr)
 	{
 		// Remove the action from the application in case is has already been added
 		uiApplication->removeAction(**itr);
@@ -63,32 +94,32 @@ void IMenuHandler::registerActions()
 
 void IMenuHandler::addAction(std::unique_ptr<IAction> action)
 {
-	actions_.emplace_back(std::move(action));
+	impl_->actions_.emplace_back(std::move(action));
 
-	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
+	auto uiApplication = impl_->get<IUIApplication>();
 	if (uiApplication)
 	{
 		// Add the action to the application
-		uiApplication->addAction(**actions_.rbegin());
+		uiApplication->addAction(**impl_->actions_.rbegin());
 	}
 }
 
 void IMenuHandler::removeAction(IAction& action)
 {
-	auto found = std::find_if(actions_.begin(), actions_.end(),
+	auto found = std::find_if(impl_->actions_.begin(), impl_->actions_.end(),
 	                          [&action](const std::unique_ptr<IAction>& cur) { return cur.get() == &action; });
 
-	if (found == actions_.end())
+	if (found == impl_->actions_.end())
 		return;
 
-	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
+	auto uiApplication = impl_->get<IUIApplication>();
 	if (uiApplication)
 	{
 		// Remove the action from the application
 		uiApplication->removeAction(action);
 	}
 
-	actions_.erase(found);
+	impl_->actions_.erase(found);
 }
 
 } // end namespace wgt

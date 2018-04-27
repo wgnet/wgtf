@@ -104,36 +104,6 @@ WGExpandingRowLayout {
     /*! \internal */
     property bool __loaded: false
 
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( mainFrame.value )
-            }
-
-            onDataPasted : {
-                // readonly control
-                console.log("ReadOnly Control " + label);
-                //mainFrame.value_ = data
-            }
-        }
-
-        onSelectedChanged : {
-            if(selected)
-            {
-                selectControl( copyableObject )
-            }
-            else
-            {
-                deselectControl( copyableObject )
-            }
-        }
-    }
-
     /*! \internal */
     function checkColor(){
         for (var i = 0; i < mainFrame.ranges.length; i++)
@@ -149,7 +119,6 @@ WGExpandingRowLayout {
     Component.onCompleted: {
         __loaded = true
         checkColor();
-        copyableControl.disableChildrenCopyable( mainFrame );
     }
 
     //If the value_ is less than a ranges_ index, set the colour to the same index.

@@ -7,6 +7,7 @@ WGGradientSliderStyle 2.0 Base/WGGradientSliderStyle20.qml
 WGGridViewStyle 2.0 Base/WGGridViewStyle20.qml
 WGItemViewStyle 2.0 Base/WGItemViewStyle20.qml
 WGListViewStyle 2.0 Base/WGListViewStyle20.qml
+WGPropertyTreeViewStyle 2.0 Base/WGPropertyTreeViewStyle20.qml
 WGScrollViewStyle 2.0 Base/WGScrollViewStyle20.qml
 WGTableViewStyle 2.0 Base/WGTableViewStyle20.qml
 WGTimelineBarSliderStyle 2.0 Base/WGTimelineBarSliderStyle20.qml

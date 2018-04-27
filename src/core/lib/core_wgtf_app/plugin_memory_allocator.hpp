@@ -13,14 +13,14 @@ public:
 	~PluginMemoryAllocator();
 
 	void fini() override;
-	void* mem_new(size_t size);
-	void* mem_new(size_t size, const std::nothrow_t& throwable);
-	void* mem_new_array(size_t size);
-	void* mem_new_array(size_t size, const std::nothrow_t& throwable);
-	void mem_delete(void* ptr);
-	void mem_delete(void* ptr, const std::nothrow_t& throwable);
-	void mem_delete_array(void* ptr);
-	void mem_delete_array(void* ptr, const std::nothrow_t& throwable);
+	void* mem_new(size_t size) override;
+	void* mem_new(size_t size, const std::nothrow_t& throwable) override;
+	void* mem_new_array(size_t size) override;
+	void* mem_new_array(size_t size, const std::nothrow_t& throwable) override;
+	void mem_delete(void* ptr) override;
+	void mem_delete(void* ptr, const std::nothrow_t& throwable) override;
+	void mem_delete_array(void* ptr) override;
+	void mem_delete_array(void* ptr, const std::nothrow_t& throwable) override;
 
 private:
 	void* memoryContext_;

@@ -2,9 +2,8 @@
 
 namespace wgt
 {
-DialogModel::DialogModel()
+DialogModel::DialogModel(): title_(""), result_(IDialog::INVALID_RESULT), useStoredTitle_(false)
 {
-	result_ = IDialog::INVALID_RESULT;
 }
 
 DialogModel::~DialogModel()
@@ -14,6 +13,11 @@ DialogModel::~DialogModel()
 IDialog::Result DialogModel::result() const
 {
 	return result_;
+}
+
+bool DialogModel::canClose() const
+{
+	return true;
 }
 
 IDialog::Result DialogModel::closeResult() const
@@ -28,18 +32,40 @@ void DialogModel::setResult(IDialog::Result result)
 
 void DialogModel::onClose(IDialog::Result result)
 {
+	setResult(result);
 }
 
 void DialogModel::onShow()
 {
 }
 
-void DialogModel::onFocusIn()
+const char* DialogModel::getUrl() const
 {
+	return url_.c_str();
 }
 
-void DialogModel::onFocusOut(bool isChildStealingFocus)
+void DialogModel::setURL(const char* url)
 {
+	url_ = url ? url : "";
+}
+
+const char* DialogModel::getTitle() const
+{
+	if (useStoredTitle_)
+	{
+		return title_.c_str();
+	}
+	return nullptr;
+}
+
+void DialogModel::setTitle(const char* title)
+{
+	if (title == nullptr)
+	{
+		return;
+	}
+	useStoredTitle_ = true;
+	title_ = title;
 }
 
 } // end namespace wgt

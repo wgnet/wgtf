@@ -1,4 +1,6 @@
 #include "AddIntegerNode.h"
+#include "core_object\managed_object.hpp"
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
@@ -8,25 +10,42 @@ const std::string ADD_INTEGER_NODE_ICON = "images/model_16x16.png";
 const std::string ADD_INTEGER_NODE_COLOR = "green";
 
 AddIntegerNode::AddIntegerNode(const std::string& nodeClass)
-    : m_x(0.0f), m_y(0.0f), m_class(nodeClass), m_title(ADD_INTEGER_NODE_TITLE), m_subTitle(ADD_INTEGER_NODE_SUBTITLE),
-      m_icon(ADD_INTEGER_NODE_ICON), m_color(ADD_INTEGER_NODE_COLOR), m_enabled(true), m_minimized(false)
+	: m_x(0.0f), m_y(0.0f), m_class(nodeClass), m_title(ADD_INTEGER_NODE_TITLE), m_subTitle(ADD_INTEGER_NODE_SUBTITLE),
+	m_icon(ADD_INTEGER_NODE_ICON), m_color(ADD_INTEGER_NODE_COLOR), m_enabled(true), m_minimized(false)
 {
-	m_id = reinterpret_cast<size_t>(this);
-
-	for (int i = 0; i < 2; ++i)
-	{
-		m_inputSlotsModel.push_back(new IntegerSlot(this, true));
-		std::string label("i");
-		label += std::to_string(i);
-		m_inputSlotsModel.back()->setLabel(label);
-	}
-
-	m_outputSlotsModel.push_back(new IntegerSlot(this, false));
-	m_outputSlotsModel.back()->setLabel("res");
 }
 
 AddIntegerNode::~AddIntegerNode()
 {
+}
+
+void AddIntegerNode::Init()
+{
+	m_id = reinterpret_cast<size_t>(this);
+
+	inputSlotsModel_.setSource(Collection(inputSlots_));
+	Collection& inputSlotsCollection = inputSlotsModel_.getSource();
+
+	outputSlotsModel_.setSource(Collection(outputSlots_));
+	Collection& outputSlotsCollection = outputSlotsModel_.getSource();
+
+	for (int i = 0; i < 2; ++i)
+	{
+		std::string label("i");
+		label += std::to_string(i);
+
+		ownedSlots_.emplace_back(std::unique_ptr<ISlot>( new IntegerSlot(getThis(), true)));
+		auto integerSlot = ownedSlots_.back().getHandleT();
+		integerSlot->setLabel(label);
+
+		inputSlotsCollection.insertValue(inputSlotsCollection.size(), integerSlot);
+	}
+
+	ownedSlots_.emplace_back(std::unique_ptr<ISlot>(new IntegerSlot(getThis(), false)));
+	auto integerSlot = ownedSlots_.back().getHandleT();
+	integerSlot->setLabel("res");
+
+	outputSlotsCollection.insertValue(outputSlotsCollection.size(), integerSlot);
 }
 
 void AddIntegerNode::SetPos(float x, float y)
@@ -38,19 +57,19 @@ void AddIntegerNode::SetPos(float x, float y)
 ObjectHandleT<ISlot> AddIntegerNode::GetSlotById(size_t slotId) const
 {
 	auto inputSlotPos =
-	std::find_if(m_inputSlotsModel.begin(), m_inputSlotsModel.end(),
+	std::find_if(inputSlots_.begin(), inputSlots_.end(),
 	             [slotId](const ObjectHandleT<ISlot>& inputSlot) { return slotId == inputSlot->Id(); });
 
-	if (inputSlotPos != m_inputSlotsModel.end())
+	if (inputSlotPos != inputSlots_.end())
 	{
 		return *inputSlotPos;
 	}
 
 	auto outputSlotPos =
-	std::find_if(m_outputSlotsModel.begin(), m_outputSlotsModel.end(),
+	std::find_if(outputSlots_.begin(), outputSlots_.end(),
 	             [slotId](const ObjectHandleT<ISlot>& outputSlot) { return slotId == outputSlot->Id(); });
 
-	if (outputSlotPos != m_outputSlotsModel.end())
+	if (outputSlotPos != outputSlots_.end())
 	{
 		return *outputSlotPos;
 	}
@@ -65,7 +84,7 @@ bool AddIntegerNode::CanConnect(ObjectHandleT<ISlot> mySlot, ObjectHandleT<ISlot
 
 	while (true)
 	{
-		ObjectHandleT<INode> otherNode = otherSlot->Node();
+		auto otherNode = otherSlot->Node();
 		if (this == otherNode.get())
 			break;
 
@@ -78,10 +97,13 @@ bool AddIntegerNode::CanConnect(ObjectHandleT<ISlot> mySlot, ObjectHandleT<ISlot
 		if (mySlot->Color() != otherSlot->Color())
 			break;
 
-		auto connectedSlots = mySlot->GetConnectedSlots();
-		result = (std::find_if(connectedSlots->begin(), connectedSlots->end(), [&otherSlot](const ISlot* slot) {
-			          return otherSlot->Id() == slot->Id();
-			      }) == connectedSlots->end());
+		auto connectedSlots = mySlot->GetConnectedSlots()->getSource();
+		auto callback = [&otherSlot](const Variant& slotVariant) {
+			auto slot = slotVariant.value<ObjectHandleT<ISlot>>();
+			return otherSlot->Id() == slot->Id();
+		};
+
+		result = (std::find_if(connectedSlots.begin(), connectedSlots.end(), callback) == connectedSlots.end());
 		break;
 	}
 

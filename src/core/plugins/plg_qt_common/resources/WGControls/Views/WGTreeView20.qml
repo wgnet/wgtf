@@ -74,22 +74,22 @@ WGTreeViewBase {
     id: treeView
     objectName: "WGTreeView"
     WGComponent { type: "WGTreeView20" }
-    
-	boundsBehavior : Flickable.StopAtBounds
+
+    boundsBehavior : Flickable.StopAtBounds
     contentItem.x: -originX
     contentItem.y: -originY
     clip: true
     view: itemView
     internalModel: itemView.extendedModel
 
-	// HACK: temporary fix to erractic scroll behaviour due to an unstable contentHeight
-	// This loads all the items at the root item of a tree - even if they arent visible
-	cacheBuffer: 2000000000
+    // HACK: temporary fix to erractic scroll behaviour due to an unstable contentHeight
+    // This loads all the items at the root item of a tree - even if they arent visible
+    cacheBuffer: 2000000000
 
     /** The style component to allow custom view appearance.*/
     property alias style: itemView.style
     /** Default role for the value used in a cell component.*/
-	property alias columnRole: itemView.columnRole
+    property alias columnRole: itemView.columnRole
     /** Specific value roles per index to expose to cell components, overriding the default columnRole.*/
     property alias columnRoles: itemView.columnRoles
     /** Default cell component used in the rows of the view body.*/
@@ -110,10 +110,10 @@ WGTreeViewBase {
     property alias internalModel: treeView.model
     /** The data model providing the view with information to display.*/
     property alias model: itemView.model
-	/** The object used for sorting operations.*/
-	property alias sortObject: itemView.sortObject
-	/** The object used for filtering logic.*/
-	property alias filterObject: itemView.filterObject
+    /** The object used for sorting operations.*/
+    property alias sortObject: itemView.sortObject
+    /** The object used for filtering logic.*/
+    property alias filterObject: itemView.filterObject
     /** Optional specific header cell components, overriding the default header cell component.*/
     property alias headerDelegates: itemView.headerDelegates
     /** Optional specific footer cell components, overriding the default footer cell component.*/
@@ -126,6 +126,7 @@ WGTreeViewBase {
     property alias clamp: itemView.clamp
     /** The model containing the selected items/indices.*/
     property alias selectionModel: itemView.selectionModel
+	property alias internalSelectionModel: itemView.internalSelectionModel
     /** A replacement for ListView's currentIndex that uses a QModelIndex from the selection model.*/
     property var currentIndex: itemView.selectionModel.currentIndex
     /** The combined common and view extensions.*/
@@ -133,30 +134,38 @@ WGTreeViewBase {
     /** The last selected item from all subtrees of type WGTreeItem */
     property var currentItem: null
 
-    signal selectionChanged(var selected, var deselected)
+    /*Specifies if tree view needs to support multiple selection, default value is true*/
+    property alias supportMultiSelect: itemView.supportMultiSelect
+    /*! Override this for determine if the node can be selected */
+    property var allowSelect: function(rowIndexToBeSelected, exisingSelectedIndexes, modifiers) {
+        return true;
+    } 
 
-	function expand(index) { treeExtension.expand(index); }
-	function collapse(index) { treeExtension.collapse(index); }
-	function toggle(index) { treeExtension.toggle(index); }
+    signal selectionChanged()
+
+    function expandRecursive(index, recursiveExpand) { view.viewExtension.expand(index, recursiveExpand); }
+    function expand(index) { view.viewExtension.expand(index, false); }
+    function collapse(index) { view.viewExtension.collapse(index); }
+    function toggle(index, recursiveExpand) { view.viewExtension.toggle(index, recursiveExpand); }
 
     onCurrentItemChanged: {
         updateScrollPosition();
     }
 
     onCurrentIndexChanged: {
-        itemView.selectionModel.setCurrentIndex( currentIndex, itemView.selectionModel.NoUpdate );
+		if (itemView.selectionModel.currentIndex != currentIndex && currentIndex != null) {
+			itemView.selectionModel.setCurrentIndex( currentIndex, itemView.selectionModel.NoUpdate );
+		}
     }
 
     Connections {
-        target: itemView.selectionModel
+        target: itemView
 
-        onSelectionChanged: selectionChanged(selected, deselected)
+        onSelectionChanged: selectionChanged()
         onCurrentChanged: {
-            if (current != previous) {
-                currentIndex = current;
-				var parentIndex = itemView.getParent(currentIndex);
-				expand(parentIndex);
-            }
+            currentIndex = itemView.selectionModel.currentIndex;
+            var parentIndex = itemView.getParent(currentIndex);
+            expand(parentIndex);
         }
     }
 
@@ -182,29 +191,36 @@ WGTreeViewBase {
                 return;
             }
         }
-
         itemView.select(mouse, rowIndex);
-		forceActiveFocus();
+        if(currentItem != null) {
+            currentItem.forceActiveFocus();
+        }
     }
     onItemClicked: {
         if ( __skippedPress ) {
             itemView.select(mouse, rowIndex);
-			forceActiveFocus();
+            if(currentItem != null) {
+                currentItem.forceActiveFocus();
+            }
         }
         __skippedPress = false;
     }
-	onItemDoubleClicked: {
-        toggle(rowIndex);
+    onItemDoubleClicked: {
+        toggle(rowIndex, (mouse.modifiers & Qt.ShiftModifier));
+    }
+
+    function createExtension(name)
+    {
+        return view.createExtension(name);
     }
 
     /** Common view code. */
     WGItemViewCommon {
         id: itemView
-		style: WGTreeViewStyle {}
-        viewExtension: treeExtension
-
-        TreeExtension {
-            id: treeExtension
+        style: WGTreeViewStyle {}
+        viewExtension: createExtension("TreeExtension")
+        allowSelect: function(rowIndexToBeSelected, exisingSelectedIndexes, modifiers) {
+            return treeView.allowSelect(rowIndexToBeSelected, exisingSelectedIndexes, modifiers);
         }
     }
 
@@ -243,7 +259,7 @@ WGTreeViewBase {
             var treeItemsEnd = contentItem.height - borderHeight;
             itemCurrentTop = ( itemCurrentTop * ( scrollDifference / treeItemsEnd ) ) + scrollStart;
             itemCurrentBottom = ( itemCurrentBottom * ( scrollDifference / treeItemsEnd ) ) + scrollStart;
-        
+
             // Determine whether to scroll up or down
             var scrollVisibleStart = contentY;
             var scrollVisibleHeight = scrollHeight - borderHeight;

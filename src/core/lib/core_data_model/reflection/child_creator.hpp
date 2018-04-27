@@ -10,10 +10,10 @@
 
 namespace wgt
 {
-class ChildCreator
+class ChildCreator : Depends<IDefinitionManager>
 {
 public:
-	ChildCreator(IComponentContext& context);
+	ChildCreator();
 	~ChildCreator();
 
 	std::shared_ptr<const PropertyNode> createRoot(const ObjectHandle& handle);
@@ -31,7 +31,6 @@ public:
 
 private:
 	std::shared_ptr<ChildCreatorExtension> extensions;
-	Depends<IDefinitionManager> interfaceHolder;
 
 	std::unordered_map<std::shared_ptr<const PropertyNode>, std::vector<std::shared_ptr<const PropertyNode>>>
 	propertiesIndex;

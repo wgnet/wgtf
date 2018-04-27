@@ -35,7 +35,9 @@ private:
 	virtual IResultPtr rename(const FilePairs& filePairs, ChangeListId changeListId) override;
 	virtual IResultPtr move(const char* srcFile, const char* dstFile, ChangeListId changeListId) override;
 	virtual IResultPtr revert(const PathList& filePaths) override;
+	virtual IResultPtr revertUnchanged(const PathList& filePaths) override;
 	virtual IResultPtr get(const PathList& filePaths, Revision revision) override;
+	virtual IResultPtr getRevisionBetween(const PathList& filePaths, int fromChangelist, int toChangelist) override;
 	virtual IResultPtr getLatest(const PathList& filePaths) override;
 	virtual IResultPtr status(const PathList& filePaths) override;
 	virtual IResultPtr submit(const PathList& filePaths, const char* description = "",
@@ -44,18 +46,27 @@ private:
 	virtual IResultPtr reopen(const PathList& filePaths, ChangeListId changeListId) override;
 	virtual IResultPtr createChangeList(const char* description, ChangeListId& rChangeListId) override;
 	virtual IResultPtr deleteEmptyChangeList(ChangeListId changeListId) override;
+	virtual IResultPtr querySubDirs(const char* parentDir = "") override;
+	virtual IResultPtr getTicket() override;
 
 	virtual const char* getClient() const override;
 	virtual const char* getDepot() const override;
 	virtual const char* getPassword() const override;
 	virtual const char* getUser() const override;
+	virtual std::string getClientRoot() override;
+	virtual std::string getDepotRoot() override;
+
+	virtual std::vector<std::string> getClientNames() override;
 
 	IResultPtr RunCommand(std::string& command, const std::string& input = std::string());
 
 	std::string& toPath(std::string& path);
+	std::string& toDepotDirQueryPath(std::string& path);
 
 	std::string EscapePaths(const PathList& filePaths);
+	std::string EscapeDepotDirQueryPaths(const PathList& filePaths);
 	std::string EscapeRevisionPaths(const PathList& filePaths, const Revision revision);
+	std::string EscapePathsBetween(const PathList& cleanPaths, int fromChange, int toChange);
 	ResultsInfo ParseResults(const std::string& output) const;
 
 	ResultsInfo GetClientInfo();

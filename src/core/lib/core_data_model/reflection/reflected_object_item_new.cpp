@@ -1,13 +1,16 @@
 #include "reflected_object_item_new.hpp"
+
 #include "reflected_group_item_new.hpp"
 #include "reflected_property_item_new.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/common_data_roles.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
-#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/metadata/meta_base.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_reflection/property_accessor.hpp"
+#include "core_reflection/interfaces/i_base_property.hpp"
 
 #include "core_string_utils/string_utils.hpp"
 
@@ -25,24 +28,23 @@ bool compareWStrings(const wchar_t* a, const wchar_t* b)
 
 } // namespace
 
-class ReflectedObjectItemNew::Implementation
+class ReflectedObjectItemNew::Implementation : public Depends<IDefinitionManager>
 {
 public:
-	Implementation(IComponentContext& contextManager, const ObjectHandle& object);
+	Implementation(const ObjectHandle& object);
 
 	typedef std::set<const wchar_t*, bool (*)(const wchar_t*, const wchar_t*)> Groups;
 
 	const Groups& getGroups(const ReflectedObjectItemNew& self);
 
-	IComponentContext& contextManager_;
 	ObjectHandle object_;
 	std::string displayName_;
 	std::vector<std::unique_ptr<ReflectedTreeItemNew>> children_;
 	Groups groups_;
 };
 
-ReflectedObjectItemNew::Implementation::Implementation(IComponentContext& contextManager, const ObjectHandle& object)
-    : contextManager_(contextManager), object_(object), groups_(compareWStrings)
+ReflectedObjectItemNew::Implementation::Implementation(const ObjectHandle& object)
+    : object_(object), groups_(compareWStrings)
 {
 }
 
@@ -55,7 +57,7 @@ const ReflectedObjectItemNew& self)
 		return groups_;
 	}
 
-	auto pDefinitionManager = self.getDefinitionManager();
+	auto pDefinitionManager = self.impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return groups_;
@@ -64,27 +66,25 @@ const ReflectedObjectItemNew& self)
 	auto& parent = const_cast<ReflectedObjectItemNew&>(self);
 	self.enumerateVisibleProperties(
 	[this, &self, &parent, pDefinitionManager](const IBasePropertyPtr& property, const std::string& inPlacePath) {
-		const MetaGroupObj* groupObj = findFirstMetaData<MetaGroupObj>(*property, *pDefinitionManager);
-		if (groupObj != nullptr && groups_.insert(groupObj->getGroupName()).second)
+		auto groupObj = findFirstMetaData<MetaGroupObj>(*property, *pDefinitionManager);
+		if (groupObj != nullptr && groups_.insert(groupObj->getGroupName(parent.getObject())).second)
 		{
 			children_.emplace_back(
-			new ReflectedGroupItemNew(contextManager_, groupObj, &parent, children_.size(), inPlacePath));
+				new ReflectedGroupItemNew(
+					property->getMetaData(), groupObj, &parent, children_.size(), inPlacePath));
 		}
 		return true;
 	});
 	return groups_;
 }
 
-ReflectedObjectItemNew::ReflectedObjectItemNew(IComponentContext& contextManager, const ObjectHandle& object,
-                                               const ReflectedTreeModelNew& model)
-    : ReflectedTreeItemNew(contextManager, model), impl_(new Implementation(contextManager, object))
+ReflectedObjectItemNew::ReflectedObjectItemNew(const ObjectHandle& object, const ReflectedTreeModelNew& model)
+    : ReflectedTreeItemNew(model), impl_(new Implementation(object))
 {
 }
 
-ReflectedObjectItemNew::ReflectedObjectItemNew(IComponentContext& contextManager, const ObjectHandle& object,
-                                               ReflectedTreeItemNew* parent, size_t index)
-    : ReflectedTreeItemNew(contextManager, parent, index, parent ? parent->getPath() + "." : ""),
-      impl_(new Implementation(contextManager, object))
+ReflectedObjectItemNew::ReflectedObjectItemNew(const ObjectHandle& object, ReflectedTreeItemNew* parent, size_t index)
+    : ReflectedTreeItemNew(parent, index, parent ? parent->getPath() + "." : ""), impl_(new Implementation(object))
 {
 }
 
@@ -106,21 +106,19 @@ Variant ReflectedObjectItemNew::getData(int column, ItemRole::Id roleId) const /
 				{
 					return "";
 				}
-				auto pDefinitionManager = this->getDefinitionManager();
+				auto pDefinitionManager = impl_->get<IDefinitionManager>();
 				if (pDefinitionManager == nullptr)
 				{
 					return "";
 				}
-				const MetaDisplayNameObj* displayName =
-				findFirstMetaData<MetaDisplayNameObj>(*definition, *pDefinitionManager);
+				auto displayName = findFirstMetaData<MetaDisplayNameObj>(*definition, *pDefinitionManager);
 				if (displayName == nullptr)
 				{
 					impl_->displayName_ = definition->getName();
 				}
 				else
 				{
-					std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
-					impl_->displayName_ = conversion.to_bytes(displayName->getDisplayName(impl_->object_));
+					impl_->displayName_ = StringUtils::to_string(displayName->getDisplayName(impl_->object_));
 				}
 			}
 			return impl_->displayName_.c_str();
@@ -172,15 +170,15 @@ bool ReflectedObjectItemNew::setData(int column, ItemRole::Id roleId, const Vari
 		return false;
 	}
 
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
 	}
 
 	auto obj = this->getRootObject();
-	auto definition = obj.getDefinition(*pDefinitionManager);
-	auto otherDef = other.getDefinition(*pDefinitionManager);
+	auto definition = pDefinitionManager->getDefinition(obj);
+	auto otherDef = pDefinitionManager->getDefinition(other);
 	if (definition != otherDef)
 	{
 		return false;
@@ -192,7 +190,7 @@ bool ReflectedObjectItemNew::setData(int column, ItemRole::Id roleId, const Vari
 		auto otherAccessor = definition->bindProperty(prop->getName(), other);
 		if (accessor.canSetValue())
 		{
-			assert(otherAccessor.canGetValue());
+			TF_ASSERT(otherAccessor.canGetValue());
 			accessor.setValue(otherAccessor.getValue());
 		}
 	}
@@ -218,12 +216,12 @@ const ObjectHandle& ReflectedObjectItemNew::getObject() const /* override */
 
 const IClassDefinition* ReflectedObjectItemNew::getDefinition() const
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return nullptr;
 	}
-	return impl_->object_.getDefinition(*pDefinitionManager);
+	return pDefinitionManager->getDefinition(impl_->object_);
 }
 
 ReflectedTreeItemNew* ReflectedObjectItemNew::getChild(size_t index) const
@@ -376,7 +374,7 @@ void ReflectedObjectItemNew::enumerateChildren(const ReflectedItemCallback& call
 		}
 	}
 
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return;
@@ -392,8 +390,8 @@ void ReflectedObjectItemNew::enumerateChildren(const ReflectedItemCallback& call
 			// Skip already iterated children
 			if (--skipChildCount < 0)
 			{
-				impl_->children_.emplace_back(new ReflectedPropertyItemNew(impl_->contextManager_, property, parent,
-				                                                           impl_->children_.size(), inPlacePath));
+				impl_->children_.emplace_back(
+				new ReflectedPropertyItemNew(property, parent, impl_->children_.size(), inPlacePath));
 				return callback(*impl_->children_.back().get());
 			}
 		}

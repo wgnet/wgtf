@@ -6,15 +6,17 @@ Connection::Connection()
 {
 }
 
-Connection::Connection(SignalHolderPtr entry) : entry_(entry)
+Connection::Connection(SignalHolderPtr entry, std::weak_ptr<DisconnectSig> disconnectSig)
+    : entry_(entry), disconnectSig_(disconnectSig)
 {
 }
 
-Connection::Connection(const Connection& other) : entry_(other.entry_)
+Connection::Connection(const Connection& other) : entry_(other.entry_), disconnectSig_(other.disconnectSig_)
 {
 }
 
-Connection::Connection(Connection&& other) : entry_(std::move(other.entry_))
+Connection::Connection(Connection&& other)
+    : entry_(std::move(other.entry_)), disconnectSig_(std::move(other.disconnectSig_))
 {
 }
 
@@ -25,12 +27,14 @@ Connection::~Connection()
 Connection& Connection::operator=(const Connection& other)
 {
 	entry_ = other.entry_;
+	disconnectSig_ = other.disconnectSig_;
 	return *this;
 }
 
 Connection& Connection::operator=(Connection&& other)
 {
 	entry_ = std::move(other.entry_);
+	disconnectSig_ = std::move(other.disconnectSig_);
 	return *this;
 }
 
@@ -52,9 +56,10 @@ void Connection::disable()
 
 void Connection::disconnect()
 {
-	if (entry_)
+	auto disconnectSig = disconnectSig_.lock();
+	if (disconnectSig)
 	{
-		entry_->expired_ = true;
+		(*disconnectSig)(*this);
 	}
 }
 
@@ -72,14 +77,7 @@ bool Connection::enabled() const
 
 bool Connection::connected() const
 {
-	if (entry_)
-	{
-		return !entry_->expired_;
-	}
-	else
-	{
-		return false;
-	}
+	return entry_ != nullptr;
 }
 
 ConnectionHolder::ConnectionHolder()

@@ -1,11 +1,14 @@
 #ifndef LINEAR_CONTAINER_COLLECTION_HPP
 #define LINEAR_CONTAINER_COLLECTION_HPP
 
+#include "core_common/assert.hpp"
+
 #include <vector>
 #include <deque>
 #include <array>
-#include <cassert>
 #include <utility>
+#include "core_variant/variant.hpp"
+#include "core_common/signal.hpp"
 
 namespace wgt
 {
@@ -77,9 +80,14 @@ public:
 		return SetImpl<can_set>::setValue(this, v);
 	}
 
-	void inc() override
+    bool setValue(ManagedObjectPtr & v) const override
+    {
+        return SetImpl<can_set>::setValue(this, std::move(v));
+    }
+
+	void inc( size_t incAmount ) override
 	{
-		index_ += 1;
+		index_ += incAmount;
 	}
 
 	bool equals(const CollectionIteratorImplBase& that) const override
@@ -172,6 +180,15 @@ private:
 			return (bool)impl->container()[impl->index_];
 		}
 	};
+
+    template <typename Dummy>
+    struct GetImpl<ManagedObjectPtr, Dummy>
+    {
+        static Variant value(const this_type* impl)
+        {
+            return impl->container()[impl->index_]->getVariant();
+        }
+    };
 
 	// GetTypeImpl
 	template <typename T, typename Dummy = void>
@@ -474,19 +491,24 @@ public:
 		onPreInsert_(notifyPos, count);
 		const auto success = linear_collection_container_traits<can_set, container_type>::insertValueAt(
 		container_, container_.begin() + i, value);
+		if (!success)
+		{
+			linear_collection_container_traits<can_set, container_type>::insertDefaultAt(container_,
+			                                                                             container_.begin() + i);
+		}
 		// Iterator may be invalidated if vector reallocated
 		notifyPos = makeIterator(i);
 		onPostInserted_(notifyPos, count);
 
-		return success ? notifyPos : makeIterator(container_.size());
+		return notifyPos;
 	}
 
 	CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) override
 	{
 		iterator_impl_type* ii = dynamic_cast<iterator_impl_type*>(pos.get());
-		assert(ii);
-		assert(&ii->container() == &container_);
-		assert(ii->index() < container_.size());
+		TF_ASSERT(ii);
+		TF_ASSERT(&ii->container() == &container_);
+		TF_ASSERT(ii->index() < container_.size());
 
 		onPreErase_(pos, 1);
 
@@ -524,14 +546,19 @@ public:
 	{
 		iterator_impl_type* ii_first = dynamic_cast<iterator_impl_type*>(first.get());
 		iterator_impl_type* ii_last = dynamic_cast<iterator_impl_type*>(last.get());
-		assert(ii_first);
-		assert(ii_last);
-		assert(&ii_first->container() == &container_);
-		assert(&ii_last->container() == &container_);
-		assert(ii_last->index() <= container_.size());
-		assert(ii_first->index() <= ii_last->index());
+		TF_ASSERT(ii_first);
+		TF_ASSERT(ii_last);
+		TF_ASSERT(&ii_first->container() == &container_);
+		TF_ASSERT(&ii_last->container() == &container_);
+		TF_ASSERT(ii_last->index() <= container_.size());
+		TF_ASSERT(ii_first->index() <= ii_last->index());
 
 		auto count = ii_last->index() - ii_first->index();
+		if (count == 0)
+		{
+			return last;
+		}
+
 		onPreErase_(first, count);
 
 		auto r = container_.erase(container_.begin() + ii_first->index(), container_.begin() + ii_last->index());

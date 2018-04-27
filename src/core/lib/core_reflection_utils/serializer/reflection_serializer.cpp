@@ -9,6 +9,7 @@
 #include "core_command_system/i_command_manager.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_serialization/serializer/i_serialization_manager.hpp"
 
 namespace wgt
@@ -49,7 +50,7 @@ bool ReflectionSerializer::write(IDataStream* dataStream, const Variant& variant
 		if (provider.isValid())
 		{
 			provider = reflectedRoot(provider, defManager_);
-			const auto classDef = provider.getDefinition(defManager_);
+			const auto classDef = defManager_.getDefinition(provider);
 			if (classDef == nullptr)
 			{
 				curDataStream_->write("");
@@ -83,7 +84,7 @@ bool ReflectionSerializer::write(IDataStream* dataStream, const Variant& variant
 
 void ReflectionSerializer::writeProperties(const ObjectHandle& provider)
 {
-	const auto classDef = provider.getDefinition(defManager_);
+	const auto classDef = defManager_.getDefinition(provider);
 	assert(classDef);
 	const PropertyIteratorRange& props = classDef->allProperties();
 	std::vector<PropertyAccessor> pas;
@@ -215,7 +216,7 @@ bool ReflectionSerializer::read(IDataStream* dataStream, Variant& variant)
 			}
 			else
 			{
-				auto polyStruct = objManager_.create(classDefName.c_str());
+				auto polyStruct = objManager_.createObject(classDefName);
 				readProperties(polyStruct);
 				variant = polyStruct;
 			}
@@ -247,7 +248,7 @@ void ReflectionSerializer::readProperty(const ObjectHandle& provider)
 	std::string propName;
 	curDataStream_->read(propName);
 
-	PropertyAccessor prop = provider.getDefinition(defManager_)->bindProperty(propName.c_str(), provider);
+	PropertyAccessor prop = defManager_.getDefinition(provider)->bindProperty(propName.c_str(), provider);
 	assert(prop.isValid());
 
 	std::string valueType;
@@ -292,7 +293,7 @@ void ReflectionSerializer::readCollection(const PropertyAccessor& prop)
 		propName += ']';
 
 		// TODO: Allow iteration to next element in collection.
-		PropertyAccessor pa = baseProvider.getDefinition(defManager_)->bindProperty(propName.c_str(), baseProvider);
+		PropertyAccessor pa = defManager_.getDefinition(baseProvider)->bindProperty(propName.c_str(), baseProvider);
 		assert(pa.isValid());
 		valueType.clear();
 		curDataStream_->read(valueType);

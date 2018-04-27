@@ -91,14 +91,14 @@ WGPanel {
                     maximumValue: 1.0
                     stepSize: 0.01
                     label: "X:"
-                    value: 0.1
+                    value: canvas2d.imageOffsetX
 
-                    onValueChanged: {
-                        canvas2d.imageOffsetX = value;
+                    onChangeValue: {
+                        canvas2d.imageOffsetX = val;
                     }
 
                     Component.onCompleted: {
-                        canvas2d.imageOffsetX = value;
+                        canvas2d.imageOffsetX = 0.1;
                     }
                 }
 
@@ -109,14 +109,14 @@ WGPanel {
                     maximumValue: 1.0
                     stepSize: 0.01
                     label: "Y:"
-                    value: 0.25
+                    value: canvas2d.imageOffsetY
 
-                    onValueChanged: {
-                        canvas2d.imageOffsetY = value;
+                    onChangeValue: {
+                        canvas2d.imageOffsetY = val;
                     }
 
                     Component.onCompleted: {
-                        canvas2d.imageOffsetY = value;
+                        canvas2d.imageOffsetY = 0.25;
                     }
                 }
             }

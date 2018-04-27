@@ -7,8 +7,8 @@ import WGControls.Layouts 2.0
 
 WGPanel {
     color: palette.mainWindowColor
-    property string title: panelName
-    property var layoutHints: { 'test': 0.1 }
+    title: panelName
+    layoutHints: { 'test': 0.1 }
     property int topControlsHeight: 20
     property var source: sourceModel
 
@@ -39,7 +39,7 @@ WGPanel {
                     runTestScript();
                 }
             }
-            
+
             WGLabel {
                 Layout.preferredHeight: topControlsHeight
                 Layout.fillWidth: true

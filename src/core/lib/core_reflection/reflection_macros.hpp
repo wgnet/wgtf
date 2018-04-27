@@ -2,32 +2,65 @@
 #define REFLECTION_MACROS_HPP
 
 #include "base_property_with_metadata.hpp"
+#include "lambda_property.hpp"
 #include "type_class_definition.hpp"
 #include "utilities/reflection_method_utilities.hpp"
-#include "lambda_property.hpp"
+#include "utilities/counter_helper.hpp"
+#include "i_definition_manager.hpp" 
+#include "metadata/meta_utilities.hpp"
+
+//Default fallback that does nothing
+namespace wgt
+{
+
+class IDefinitionManager;
+
+template< size_t >
+struct ReflectionCreatorHelper
+{
+	static wgt::IClassDefinition * autoRegister(IDefinitionManager & definitionManager)
+	{
+		//Do nothing	
+		return nullptr;
+	}
+};
+
+} //end namespace wgt
+
+//Specialize a creator for this type based on compile-time generated id
+#define EXPOSE_CREATOR( type ) \
+template<>\
+struct ::wgt::ReflectionCreatorHelper< ::wgt::ReflectionAutoRegistration::next() >\
+{\
+	static wgt::IClassDefinition * autoRegister(::wgt::IDefinitionManager & definitionManager)\
+	{\
+		return definitionManager.registerDefinition< ::wgt::TypeClassDefinition< type > >( ); \
+	}\
+};
+
+#define BEGIN_EXPOSE_1(baseSpace)		                                                                 \
+	EXPOSE_CREATOR( baseSpace )																			 \
+	template <>                                                                                          \
+	::wgt::TypeClassDefinition<baseSpace>::TypeClassDefinition() : metaData_(nullptr)					 \
+	{
 
 #define BEGIN_EXPOSE_2(baseSpace, meta)                                                                  \
+	EXPOSE_CREATOR( baseSpace )																			 \
 	template <>                                                                                          \
-	void* ::wgt::TypeClassDefinition<baseSpace>::upCast(void* object) const                              \
-	{                                                                                                    \
-		return nullptr;                                                                                  \
-	}                                                                                                    \
-                                                                                                         \
-	template <>                                                                                          \
-	::wgt::TypeClassDefinition<baseSpace>::TypeClassDefinition() : metaData_(meta), parentName_(nullptr) \
+	::wgt::TypeClassDefinition<baseSpace>::TypeClassDefinition() : metaData_(meta)						 \
 	{
-#define BEGIN_EXPOSE_3(baseSpace, base, meta)                               \
-	template <>                                                             \
-	void* ::wgt::TypeClassDefinition<baseSpace>::upCast(void* object) const \
-	{                                                                       \
-		return static_cast<base*>(reinterpret_cast<baseSpace*>(object));    \
-	}                                                                       \
-                                                                            \
-	template <>                                                             \
-	::wgt::TypeClassDefinition<baseSpace>::TypeClassDefinition()            \
-	    : metaData_(meta), parentName_(getClassIdentifier<base>())          \
-	{                                                                       \
-		parentName_ = strcmp(getClassIdentifier<baseSpace>(), parentName_) == 0 ? nullptr : parentName_;
+
+
+//Only for backward compatibility
+#define BEGIN_EXPOSE_3(baseSpace, base, meta)										\
+	EXPOSE_CREATOR( baseSpace )														\
+	template <>																		\
+	::wgt::TypeClassDefinition<baseSpace>::TypeClassDefinition()					\
+	    : metaData_(meta)															\
+	{																				\
+			metaData_ += MetaBasesHolder(											\
+				std::unique_ptr< IDirectBaseHelper >(								\
+					new DirectBaseHelperT< baseSpace, base >()));					\
 
 #define EXPOSE_METHOD_2(name, method) \
 	properties_.addProperty(          \
@@ -116,14 +149,10 @@
 #define MACRO_CHOOSER_2(N) BEGIN_EXPOSE_(N)
 #define BEGIN_EXPOSE(...) EXPAND_(MACRO_CHOOSER_2(EXPAND_(NUM_ARGS_(__VA_ARGS__)))(__VA_ARGS__)) // Real macro arguments
 
-#define END_EXPOSE() } /* End definition */
+#define END_EXPOSE() }; /* End definition */
 
-#define REGISTER_DEFINITION(type) definitionManager.registerDefinition<::wgt::TypeClassDefinition<type>>();
-
-#define DEREGISTER_DEFINITION(type)                                                           \
-	{                                                                                         \
-		const auto pDefinition = definitionManager.getDefinition(getClassIdentifier<type>()); \
-		definitionManager.deregisterDefinition(pDefinition);                                  \
-	}
+#define BEGIN_EXPOSE_ENUM(TEnum) \
+	const std::map<typename std::underlying_type<TEnum>::type, std::string> wgt::EnumGenerator<TEnum, true>::enums_	 = \
+	(std::map<typename std::underlying_type<TEnum>::type, std::string>&&) std::map<TEnum, std::string>{
 
 #endif // REFLECTION_MACROS_HPP

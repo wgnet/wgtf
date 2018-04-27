@@ -9,9 +9,9 @@ WGPanel {
     id: testListPanel
 
     property var sourceModel: WGColumnLayoutProxy {
-		sourceModel: source
-		columnSequence: [0,0,0,0,0,0,0,0,0,0,0,0,0]
-	}
+        sourceModel: source
+        columnSequence: [0,0,0,0,0,0,0,0,0,0,0,0,0]
+    }
 
     title: "Async Loader ListModel Test 2.0"
     layoutHints: { 'default': 0.1 }
@@ -56,7 +56,7 @@ WGPanel {
                 Component {
                     id: numberDelegate
                     WGNumberBox {
-                        number: itemData.number
+                        value: itemData.number
                         minimumValue: 0
                         maximumValue: 100
                         stepSize: 1

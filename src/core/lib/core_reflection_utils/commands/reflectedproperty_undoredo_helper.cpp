@@ -1,4 +1,6 @@
 #include "reflectedproperty_undoredo_helper.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_reflection/property_accessor_listener.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/i_object_manager.hpp"
@@ -6,7 +8,9 @@
 #include "core_reflection/utilities/reflection_utilities.hpp"
 #include "core_reflection/utilities/reflection_method_utilities.hpp"
 #include "core_reflection/reflected_method.hpp"
+#include "core_reflection/interfaces/i_class_definition.hpp"
 #include "core_serialization/serializer/i_serializer.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_logging/logging.hpp"
 #include <thread>
 
@@ -58,7 +62,7 @@ public:
 
 	std::unique_ptr<RPURU::ReflectedClassMemberUndoRedoHelper>& getNext() override
 	{
-		assert(itr_ != propertyCache_.end());
+		TF_ASSERT(itr_ != propertyCache_.end());
 		auto& helper = (*itr_);
 		++itr_;
 		return helper;
@@ -161,7 +165,7 @@ bool loadReflectedProperties(PropertyCacheFiller& outPropertyCache, ISerializer&
 			else if (helper->isMethod())
 			{
 				loadReflectedPropertyError(helper, propertySetter, "invalid header");
-				return true;
+				return false;
 			}
 		}
 		else if (methodHeader)
@@ -173,13 +177,13 @@ bool loadReflectedProperties(PropertyCacheFiller& outPropertyCache, ISerializer&
 			else if (!helper->isMethod())
 			{
 				loadReflectedPropertyError(helper, propertySetter, "invalid header");
-				return true;
+				return false;
 			}
 		}
 		else
 		{
 			loadReflectedPropertyError(helper, propertySetter, "invalid header");
-			return true;
+			return false;
 		}
 
 		// read root object id
@@ -189,7 +193,7 @@ bool loadReflectedProperties(PropertyCacheFiller& outPropertyCache, ISerializer&
 		if (id.empty())
 		{
 			loadReflectedPropertyError(helper, propertySetter, "invalid ID");
-			return true;
+			return false;
 		}
 
 		helper->objectId_ = RefObjectId(id);
@@ -202,15 +206,15 @@ bool loadReflectedProperties(PropertyCacheFiller& outPropertyCache, ISerializer&
 		if (!object.isValid())
 		{
 			loadReflectedPropertyError(helper, propertySetter, "invalid object");
-			return true;
+			return false;
 		}
 
-		PropertyAccessor pa = object.getDefinition(definitionManager)->bindProperty(fullPath.c_str(), object);
+		PropertyAccessor pa = definitionManager.getDefinition(object)->bindProperty(fullPath.c_str(), object);
 
 		if (!pa.isValid())
 		{
 			loadReflectedPropertyError(helper, propertySetter, "invalid property");
-			return true;
+			return false;
 		}
 
 		if (propertyHeader)
@@ -236,12 +240,6 @@ bool loadReflectedProperties(PropertyCacheFiller& outPropertyCache, ISerializer&
 		{
 			size_t parameterCount;
 			serializer.deserialize(parameterCount);
-
-			if (parameterCount > MAX_REFLECTED_METHOD_PARAMETER_COUNT)
-			{
-				loadReflectedPropertyError(helper, propertySetter, "invalid number of method parameters");
-				return true;
-			}
 
 			auto methodHelper = static_cast<RPURU::ReflectedMethodUndoRedoHelper*>(helper.get());
 			std::string parameterType;
@@ -294,9 +292,9 @@ bool applyReflectedProperties(const RPURU::UndoRedoHelperList& propertyCache, Pr
 			NGT_TRACE_MSG("Failed to apply reflected property - object is null\n");
 			return false;
 		}
-		PropertyAccessor pa(object.getDefinition(definitionManager)->bindProperty(fullPath.c_str(), object));
+		PropertyAccessor pa(definitionManager.getDefinition(object)->bindProperty(fullPath.c_str(), object));
 
-		assert(pa.isValid());
+		TF_ASSERT(pa.isValid());
 
 		if (helper->isMethod())
 		{
@@ -320,14 +318,14 @@ bool performReflectedUndoRedo(ISerializer& serializer, PropertyGetter propertyGe
 {
 	std::string formatHeader;
 	serializer.deserialize(formatHeader);
-	assert(formatHeader == expectedFormatHeader);
+	TF_ASSERT(formatHeader == expectedFormatHeader);
 
 	RPURU::UndoRedoHelperList propertyCache;
 	PropertyCacheCreator creator(propertyCache);
 	const bool loaded = loadReflectedProperties(creator, serializer, propertySetter, objectManager, definitionManager);
-	const bool applied =
+	const bool applied = loaded &&
 	applyReflectedProperties(propertyCache, propertyGetter, objectManager, definitionManager, undo);
-	return (loaded && applied);
+	return applied;
 }
 
 } // end namespace
@@ -336,7 +334,7 @@ bool performReflectedUndoRedo(ISerializer& serializer, PropertyGetter propertyGe
 void RPURU::resolveProperty(const ObjectHandle& handle, const IClassDefinition& classDef, const char* propertyPath,
                             PropertyAccessor& o_Pa, IDefinitionManager& definitionManager)
 {
-	o_Pa = handle.getDefinition(definitionManager)->bindProperty(propertyPath, handle);
+	o_Pa = definitionManager.getDefinition(handle)->bindProperty(propertyPath, handle);
 	if (o_Pa.isValid())
 	{
 		return;
@@ -346,7 +344,7 @@ void RPURU::resolveProperty(const ObjectHandle& handle, const IClassDefinition& 
 	{
 		std::string parentPath = pi->getName();
 		const PropertyAccessor& prop = classDef.bindProperty(parentPath.c_str(), handle);
-		assert(prop.isValid());
+		TF_ASSERT(prop.isValid());
 		if (prop.getProperty()->isMethod())
 		{
 			continue;
@@ -356,14 +354,14 @@ void RPURU::resolveProperty(const ObjectHandle& handle, const IClassDefinition& 
 		{
 			ObjectHandle subHandle;
 			bool isOk = value.tryCast(subHandle);
-			assert(isOk);
-			if ((subHandle == nullptr) || (subHandle.getDefinition(definitionManager) == nullptr))
+			TF_ASSERT(isOk);
+			if ((subHandle == nullptr) || (definitionManager.getDefinition(subHandle) == nullptr))
 			{
 				continue;
 			}
 			parentPath = parentPath + "." + propertyPath;
 
-			resolveProperty(subHandle, *subHandle.getDefinition(definitionManager), parentPath.c_str(), o_Pa,
+			resolveProperty(subHandle, *definitionManager.getDefinition(subHandle), parentPath.c_str(), o_Pa,
 			                definitionManager);
 
 			if (o_Pa.isValid())
@@ -422,9 +420,9 @@ bool RPURU::loadReflectedProperties(UndoRedoHelperList& outPropertyCache, ISeria
 std::string RPURU::resolveContextObjectPropertyPath(const ObjectHandle& contextObject, const char* propertyPath,
                                                     IDefinitionManager& definitionManager)
 {
-	assert(contextObject != nullptr);
-	const auto classDef = contextObject.getDefinition(definitionManager);
-	assert(classDef != nullptr);
+	TF_ASSERT(contextObject != nullptr);
+	const auto classDef = definitionManager.getDefinition(contextObject);
+	TF_ASSERT(classDef != nullptr);
 	std::string tmp = propertyPath;
 	std::vector<std::string> paths;
 	paths.push_back(tmp);

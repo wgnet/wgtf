@@ -15,13 +15,7 @@ WGItemViewStyle {
 			anchors.fill: parent
 			color: palette.highlightShade
 			opacity: isSelected ? 1 : 0.5
-			visible: hoverArea.containsMouse || isSelected
-		}
-
-		MouseArea {
-			id: hoverArea
-			anchors.fill: backgroundArea
-			hoverEnabled: true
+			visible: isHovered || isSelected
 		}
 
 		Rectangle {

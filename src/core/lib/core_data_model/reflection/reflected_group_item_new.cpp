@@ -1,15 +1,21 @@
 #include "reflected_group_item_new.hpp"
+
 #include "reflected_property_item_new.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/common_data_roles.hpp"
+#include "core_reflection/interfaces/i_base_property.hpp"
+#include "core_reflection/object/object_handle.hpp"
+#include "core_reflection/property_accessor.hpp"
 
 #include "core_reflection/metadata/meta_impl.hpp"
-#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/metadata/meta_base.hpp"
 
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
 
 #include "core_string_utils/string_utils.hpp"
+#include "core_dependency_system/depends.hpp"
 
 #include <codecvt>
 
@@ -17,44 +23,46 @@ namespace wgt
 {
 namespace
 {
-bool isSameGroup(const MetaGroupObj* pItemGroup, const MetaGroupObj* pFoundGroup)
+bool isSameGroup(ObjectHandleT<MetaGroupObj> pItemGroup, ObjectHandleT<MetaGroupObj> pFoundGroup, const ObjectHandle& object)
 {
 	return (pItemGroup != nullptr) && (pFoundGroup != nullptr) &&
-	(pFoundGroup == pItemGroup || (pFoundGroup->getGroupNameHash() == pItemGroup->getGroupNameHash()));
+	(pFoundGroup == pItemGroup || (pFoundGroup->getGroupNameHash(object) == pItemGroup->getGroupNameHash(object)));
 }
 
 } // namespace
 
-class ReflectedGroupItemNew::Implementation
+class ReflectedGroupItemNew::Implementation : public Depends<IReflectionController, IDefinitionManager>
 {
 public:
-	Implementation(IComponentContext& contextManager, const MetaGroupObj* groupObj);
+	Implementation(const MetaData & metaData, ObjectHandleT<MetaGroupObj> groupObj);
 
-	IComponentContext& contextManager_;
-	const MetaGroupObj* groupObj_;
+	ObjectHandleT<MetaGroupObj> groupObj_;
 	std::string displayName_;
 	std::vector<std::unique_ptr<ReflectedTreeItemNew>> children_;
+	const MetaData * metaData_;
 };
 
-ReflectedGroupItemNew::Implementation::Implementation(IComponentContext& contextManager, const MetaGroupObj* groupObj)
-    : contextManager_(contextManager), groupObj_(groupObj)
+ReflectedGroupItemNew::Implementation::Implementation(
+	const MetaData & metaData, ObjectHandleT<MetaGroupObj> groupObj)
+	: groupObj_(groupObj)
+	, metaData_( &metaData )
 {
 }
 
-ReflectedGroupItemNew::ReflectedGroupItemNew(IComponentContext& contextManager, const MetaGroupObj* groupObj,
-                                             ReflectedTreeItemNew* parent, size_t index, const std::string& inplacePath)
-    : ReflectedTreeItemNew(contextManager, parent, index, inplacePath),
-      impl_(new Implementation(contextManager, groupObj))
+ReflectedGroupItemNew::ReflectedGroupItemNew(
+	const MetaData & metaData, ObjectHandleT<MetaGroupObj> groupObj, 
+	ReflectedTreeItemNew* parent, size_t index, const std::string& inplacePath)
+    : ReflectedTreeItemNew(parent, index, inplacePath)
+	, impl_(new Implementation( metaData, groupObj))
 {
-	assert(impl_->groupObj_ != nullptr);
-	std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
+	TF_ASSERT(impl_->groupObj_ != nullptr);
 	if (impl_->groupObj_ == nullptr)
 	{
 		impl_->displayName_.clear();
 	}
 	else
 	{
-		impl_->displayName_ = conversion.to_bytes(impl_->groupObj_->getGroupName());
+		impl_->displayName_ = StringUtils::to_string(impl_->groupObj_->getGroupName(getObject()));
 	}
 	HashUtilities::combine(id_, impl_->displayName_);
 }
@@ -113,24 +121,27 @@ Variant ReflectedGroupItemNew::getData(int column, ItemRole::Id roleId) const /*
 	{
 		return TypeId::getType<Collection>().getName();
 	}
+	else if (roleId == ItemRole::tooltipId)
+	{
+		auto definitionManager = impl_->get<IDefinitionManager>();
+		auto tooltipObj = findFirstMetaData<MetaTooltipObj>(*impl_->metaData_, *definitionManager);
+		if (tooltipObj != nullptr)
+		{
+			return tooltipObj->getTooltip(nullptr);
+		}
+	}
 	return Variant();
 }
 
 bool ReflectedGroupItemNew::setData(int column, ItemRole::Id roleId, const Variant& data) /* override */
 {
-	auto controller = this->getController();
-	if (controller == nullptr)
-	{
-		return false;
-	}
-
 	auto object = this->getObject();
 	if (object == nullptr)
 	{
 		return false;
 	}
 
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
@@ -157,12 +168,20 @@ bool ReflectedGroupItemNew::setData(int column, ItemRole::Id roleId, const Varia
 		}
 
 		auto pFoundGroupObj = findFirstMetaData<MetaGroupObj>(*property, *pDefinitionManager);
-		if (isSameGroup(impl_->groupObj_, pFoundGroupObj))
+		if (isSameGroup(impl_->groupObj_, pFoundGroupObj, object))
 		{
 			const Variant& value = *iter++;
 			auto path = inPlacePath + property->getName();
 			auto propertyAccessor = definition->bindProperty(path.c_str(), object);
-			controller->setValue(propertyAccessor, value);
+			auto controller = impl_->get<IReflectionController>();
+			if (controller)
+			{
+				controller->setValue(propertyAccessor, value);
+			}
+			else
+			{
+				propertyAccessor.setValue(value);
+			}
 		}
 		return true;
 	});
@@ -193,7 +212,7 @@ ReflectedTreeItemNew* ReflectedGroupItemNew::getChild(size_t index) const /* ove
 		return child;
 	}
 
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return nullptr;
@@ -204,13 +223,13 @@ ReflectedTreeItemNew* ReflectedGroupItemNew::getChild(size_t index) const /* ove
 	this->enumerateVisibleProperties([this, parent, &child, &skipChildren, pDefinitionManager](
 	const IBasePropertyPtr& property, const std::string& inPlacePath) {
 		auto groupObj = findFirstMetaData<MetaGroupObj>(*property, *pDefinitionManager);
-		if ((property != nullptr) && isSameGroup(impl_->groupObj_, groupObj))
+		if ((property != nullptr) && isSameGroup(impl_->groupObj_, groupObj, parent->getObject()))
 		{
 			// Skip already iterated children
 			if (--skipChildren < 0)
 			{
-				impl_->children_.emplace_back(new ReflectedPropertyItemNew(impl_->contextManager_, property, parent,
-				                                                           impl_->children_.size(), inPlacePath));
+				impl_->children_.emplace_back(
+				new ReflectedPropertyItemNew(property, parent, impl_->children_.size(), inPlacePath));
 				child = impl_->children_.back().get();
 				return false;
 			}
@@ -223,7 +242,7 @@ ReflectedTreeItemNew* ReflectedGroupItemNew::getChild(size_t index) const /* ove
 
 int ReflectedGroupItemNew::rowCount() const /* override */
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return 0;
@@ -233,7 +252,7 @@ int ReflectedGroupItemNew::rowCount() const /* override */
 	this->enumerateVisibleProperties(
 	[this, &count, pDefinitionManager](const IBasePropertyPtr& property, const std::string&) {
 		auto groupObj = findFirstMetaData<MetaGroupObj>(*property, *pDefinitionManager);
-		count += isSameGroup(impl_->groupObj_, groupObj);
+		count += isSameGroup(impl_->groupObj_, groupObj, getObject());
 		return true;
 	});
 
@@ -355,13 +374,13 @@ void ReflectedGroupItemNew::getChildValues(Variants& outChildValues) const
 		return;
 	}
 
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return;
 	}
 
-	auto definition = object.getDefinition(*pDefinitionManager);
+	auto definition = pDefinitionManager->getDefinition(object);
 	if (definition == nullptr)
 	{
 		return;
@@ -370,11 +389,12 @@ void ReflectedGroupItemNew::getChildValues(Variants& outChildValues) const
 	this->enumerateVisibleProperties([&](const IBasePropertyPtr& property, const std::string& inplacePath) {
 		// Check if this property is a part of this group
 		const auto pFoundGroupObj = findFirstMetaData<MetaGroupObj>(*property, *pDefinitionManager);
-		if (isSameGroup(impl_->groupObj_, pFoundGroupObj))
+		if (isSameGroup(impl_->groupObj_, pFoundGroupObj, object))
 		{
 			auto path = inplacePath + property->getName();
 			auto propertyAccessor = definition->bindProperty(path.c_str(), object);
-			Variant value = controller_->getValue(propertyAccessor);
+			auto controller = impl_->get<IReflectionController>();
+			Variant value = controller ? controller->getValue(propertyAccessor) : propertyAccessor.getValue();
 			outChildValues.emplace_back(value);
 		}
 		return true;

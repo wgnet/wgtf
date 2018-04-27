@@ -113,9 +113,13 @@ Item {
         borderColor: parentSlider.enabled ? palette.darkerShade : palette.darkShade
         highlightColor: parentSlider.hoveredHandle === handleIndex ? palette.lighterShade : "transparent"
         innerBorderColor: parentSlider.__activeHandle === handleIndex && parentSlider.activeFocus ? palette.highlightShade : "transparent"
-        implicitWidth: Math.round(defaultSpacing.minimumRowHeight * 0.75)
-        implicitHeight: Math.round(defaultSpacing.minimumRowHeight * 0.75)
+        implicitWidth: handleWidth
+        implicitHeight: handleHeight
     }
+
+    property int handleWidth: Math.round(defaultSpacing.minimumRowHeight * 0.75)
+
+    property int handleHeight: Math.round(defaultSpacing.minimumRowHeight * 0.75)
 
     /*! \internal */
     property bool __horizontal: parentSlider.__horizontal

@@ -11,8 +11,8 @@ namespace wgt
 ITEMROLE(key)
 ITEMROLE(keyType)
 
-QtCollectionModel::QtCollectionModel(IComponentContext& context, std::unique_ptr<CollectionModel>&& source)
-    : QtListModel(context, *source.get()), model_(std::move(source))
+QtCollectionModel::QtCollectionModel(std::unique_ptr<CollectionModel>&& source)
+    : QtItemModel<QtListModel>(*source.get()), model_(std::move(source))
 {
 }
 
@@ -41,7 +41,8 @@ bool QtCollectionModel::insertRows(int row, int count, const QModelIndex& parent
 	auto& collectionModel = this->source();
 
 	// Item already uses the Command System or the Command System is not available
-	const auto useController = (!collectionModel.hasController() && (itemModelController_ != nullptr));
+	auto itemModelController = get<IItemModelController>();
+	const auto useController = (!collectionModel.hasController() && (itemModelController != nullptr));
 	if (!useController)
 	{
 		// Set property directly
@@ -50,15 +51,16 @@ bool QtCollectionModel::insertRows(int row, int count, const QModelIndex& parent
 
 	// Queue with Command System, to register undo/redo data
 	auto pParent = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
-	return itemModelController_->insertRows(collectionModel, row, count, pParent);
+	return itemModelController->insertRows(collectionModel, row, count, pParent);
 }
 
 bool QtCollectionModel::removeRows(int row, int count, const QModelIndex& parent)
 {
 	auto& collectionModel = this->source();
 
+	auto itemModelController = get<IItemModelController>();
 	// Item already uses the Command System or the Command System is not available
-	const auto useController = (!collectionModel.hasController() && (itemModelController_ != nullptr));
+	const auto useController = (!collectionModel.hasController() && (itemModelController != nullptr));
 	if (!useController)
 	{
 		// Set property directly
@@ -67,28 +69,45 @@ bool QtCollectionModel::removeRows(int row, int count, const QModelIndex& parent
 
 	// Queue with Command System, to register undo/redo data
 	auto pParent = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
-	return itemModelController_->removeRows(collectionModel, row, count, pParent);
+	return itemModelController->removeRows(collectionModel, row, count, pParent);
 }
 
-QObject* QtCollectionModel::item(const QVariant& key) const
+QVariant QtCollectionModel::value(const QVariant& key) const
 {
 	const auto& collectionModel = this->source();
-	const auto variantKey = QtHelpers::toVariant(key);
+	auto qtHelpers = get<IQtHelpers>();
+	const auto variantKey = qtHelpers->toVariant(key);
 
 	const auto pItem = collectionModel.find(variantKey);
-	const auto value = pItem->getData(0 /* row */, 0 /* column */, ValueRole::roleId_);
+	const auto value = pItem ? pItem->getData(0 /* row */, 0 /* column */, ValueRole::roleId_) : Variant();
 
-	auto qValue = QtHelpers::toQVariant(value, const_cast<QtCollectionModel*>(this));
-	return qValue.value<QObject*>();
+	return qtHelpers->toQVariant(value, const_cast<QtCollectionModel*>(this));
+}
+
+QVariantList QtCollectionModel::values() const
+{
+	QVariantList items;
+	const auto& collectionModel = this->source();
+	auto qtHelpers = get<IQtHelpers>();
+	auto count = collectionModel.rowCount();
+	for (int i = 0; i < count; ++i)
+	{
+		const auto pItem = collectionModel.item(i);
+		const auto value = pItem ? pItem->getData(0,0,ValueRole::roleId_) : Variant();
+		items << qtHelpers->toQVariant(value, const_cast<QtCollectionModel*>(this));
+	}
+	return items;
 }
 
 bool QtCollectionModel::insertItem(const QVariant& key)
 {
 	auto& collectionModel = this->source();
-	const auto variantKey = QtHelpers::toVariant(key);
+	auto qtHelpers = get<IQtHelpers>();
+	const auto variantKey = qtHelpers->toVariant(key);
 
 	// Item already uses the Command System or the Command System is not available
-	const auto useController = (!collectionModel.hasController() && (itemModelController_ != nullptr));
+	auto itemModelController = get<IItemModelController>();
+	const auto useController = (!collectionModel.hasController() && (itemModelController != nullptr));
 
 	if (!useController)
 	{
@@ -99,17 +118,19 @@ bool QtCollectionModel::insertItem(const QVariant& key)
 	// Queue with Command System, to register undo/redo data
 	const int count = 1;
 	const AbstractItem* pParent = nullptr;
-	return itemModelController_->insertItem(collectionModel, variantKey);
+	return itemModelController->insertItem(collectionModel, variantKey);
 }
 
-bool QtCollectionModel::insertItemValue(const QVariant& key, const QVariant& value)
+bool QtCollectionModel::insertValue(const QVariant& key, const QVariant& value)
 {
 	auto& collectionModel = this->source();
-	const auto variantKey = QtHelpers::toVariant(key);
-	const auto variantValue = QtHelpers::toVariant(value);
+	auto qtHelpers = get<IQtHelpers>();
+	const auto variantKey = qtHelpers->toVariant(key);
+	const auto variantValue = qtHelpers->toVariant(value);
 
+	auto itemModelController = get<IItemModelController>();
 	// Item already uses the Command System or the Command System is not available
-	const auto useController = (!collectionModel.hasController() && (itemModelController_ != nullptr));
+	const auto useController = (!collectionModel.hasController() && (itemModelController != nullptr));
 	if (!useController)
 	{
 		// Set property directly
@@ -117,16 +138,18 @@ bool QtCollectionModel::insertItemValue(const QVariant& key, const QVariant& val
 	}
 
 	// Queue with Command System, to register undo/redo data
-	return itemModelController_->insertItem(collectionModel, variantKey, variantValue);
+	return itemModelController->insertItem(collectionModel, variantKey, variantValue);
 }
 
 bool QtCollectionModel::removeItem(const QVariant& key)
 {
 	auto& collectionModel = this->source();
-	const auto variantKey = QtHelpers::toVariant(key);
+	auto qtHelpers = get<IQtHelpers>();
+	const auto variantKey = qtHelpers->toVariant(key);
 
+	auto itemModelController = get<IItemModelController>();
 	// Item already uses the Command System or the Command System is not available
-	const auto useController = (!collectionModel.hasController() && (itemModelController_ != nullptr));
+	const auto useController = (!collectionModel.hasController() && (itemModelController != nullptr));
 	if (!useController)
 	{
 		// Set property directly
@@ -134,7 +157,7 @@ bool QtCollectionModel::removeItem(const QVariant& key)
 	}
 
 	// Queue with Command System, to register undo/redo data
-	return itemModelController_->removeItem(collectionModel, variantKey);
+	return itemModelController->removeItem(collectionModel, variantKey);
 }
 
 bool QtCollectionModel::isMapping() const

@@ -10,6 +10,9 @@
 #include "core_reflection/property_accessor.hpp"
 #include "type_converters/converters.hpp"
 #include "wg_pyscript/py_script_object.hpp"
+#include "core_python27/defined_instance.hpp"
+#include "core_python27/interfaces/i_python_obj_manager.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 
 namespace wgt
 {
@@ -66,7 +69,7 @@ static PyObject* wrap_setattr(PyObject* self, PyObject* args, void* wrapped)
 	// -- Check if listeners need to be notified
 	assert(g_pHookContext != nullptr);
 	auto& context = (*g_pHookContext);
-	auto handle = ReflectedPython::DefinedInstance::find(context, selfObject);
+	auto handle = context.queryInterface<IPythonObjManager>()->find(selfObject);
 
 	// selfObject should always be found in the reflection system
 	// because the hook should be attached & detached when the object
@@ -141,10 +144,10 @@ static PyObject* wrap_setattr(PyObject* self, PyObject* args, void* wrapped)
 	const bool isValidProperty = propertyAccessor.isValid();
 
 	Variant variantValue;
-	const bool success = pTypeConverters->toVariant(valueObject, variantValue, selfObject, childPath);
+	const bool success = pTypeConverters->toVariant(valueObject, variantValue, handle, childPath);
 	assert(success);
 
-	auto& listeners = pDefinitionManager->getPropertyAccessorListeners();
+	auto listeners = pDefinitionManager->getPropertyAccessorListeners();
 	const auto itBegin = listeners.cbegin();
 	const auto itEnd = listeners.cend();
 
@@ -152,7 +155,7 @@ static PyObject* wrap_setattr(PyObject* self, PyObject* args, void* wrapped)
 	{
 		for (auto it = itBegin; it != itEnd; ++it)
 		{
-			auto listener = it->lock();
+			auto listener = *it;
 			assert(listener != nullptr);
 			listener->preSetValue(propertyAccessor, variantValue);
 		}
@@ -168,7 +171,7 @@ static PyObject* wrap_setattr(PyObject* self, PyObject* args, void* wrapped)
 	{
 		for (auto it = itBegin; it != itEnd; ++it)
 		{
-			auto listener = it->lock();
+			auto listener = *it;
 			assert(listener != nullptr);
 			listener->postSetValue(propertyAccessor, variantValue);
 		}

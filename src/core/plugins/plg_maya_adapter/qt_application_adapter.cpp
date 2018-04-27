@@ -6,7 +6,7 @@
 
 namespace wgt
 {
-QtApplicationAdapter::QtApplicationAdapter(IComponentContext& context) : QtApplication(context, __argc, __argv)
+QtApplicationAdapter::QtApplicationAdapter() : QtApplication(__argc, __argv)
 {
 	QObject::connect(QGuiApplication::instance(), SIGNAL(applicationStateChanged(Qt::ApplicationState)), this,
 	                 SLOT(applicationStateChanged(Qt::ApplicationState)));

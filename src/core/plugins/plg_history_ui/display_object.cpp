@@ -1,4 +1,6 @@
 #include "display_object.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/generic/generic_object.hpp"
@@ -17,7 +19,7 @@ DisplayObject::DisplayObject() : data_(nullptr)
 //==============================================================================
 void DisplayObject::init(IDefinitionManager& defManager, const CommandInstancePtr& instance)
 {
-	assert(instance != nullptr);
+	TF_ASSERT(instance != nullptr);
 	data_ = instance->getCommandDescription();
 }
 

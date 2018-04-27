@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <cstdio>
 #include "core_common/ngt_windows.hpp"
+#include "wg_memory/allocator.hpp"
 
 #define USE_CPP_UNIT_LITE
 #ifdef USE_CPP_UNIT_LITE
@@ -29,6 +30,14 @@
 
 namespace wgt
 {
+struct DisableAllocatorLogging
+{
+	DisableAllocatorLogging()
+	{
+		NGTAllocator::enableLogging(false);
+	}
+} disableAllocatorLogging;
+
 namespace BWUnitTest
 {
 #ifdef USE_CPP_UNIT_LITE

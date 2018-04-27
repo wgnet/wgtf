@@ -77,15 +77,15 @@ Labs.ComboBox {
     /*! The string for the tooltip popup
 
         By default this is the textRole of the currentIndex*/
-    property string tooltip: model.count > 0 && textRole && control.currentIndex >= 0 ? model.get(currentIndex)[textRole] : ""
+    property string tooltip: modelValid && textRole && currentIndex >= 0 && typeof control.model.get(currentIndex) != "undefined" ? control.model.get(currentIndex)[textRole] : ""
 
     /*! The QtObject for the icon/image in the dropDownBox
         By default this is an image that points to the imageRole URL but can be made any Item based QML object.
     */
-    property Component imageDelegate: Image {
+    property Component imageDelegate: WGImage {
         id: imageDelegate
         objectName: "dropDownCurrentImage"
-        source: control.imageRole && model.count > 0 && control.currentIndex >= 0 ? model.get(control.currentIndex)[control.imageRole] : ""
+        source: control.imageRole && control.modelValid && control.currentIndex >= 0  ? model.get(control.currentIndex)[control.imageRole] : ""
         height: sourceSize.height < control.imageMaxHeight ? sourceSize.height : control.imageMaxHeight
         width: sourceSize.width < control.imageMaxHeight ? sourceSize.width : control.imageMaxHeight
         fillMode: Image.PreserveAspectFit
@@ -101,8 +101,12 @@ Labs.ComboBox {
         width: paintedWidth
     }
 
+    readonly property bool modelValid: typeof control.model != "undefined" && control.model != null && control.model.count > 0 && control.currentIndex >= 0
+
     property alias multiValueTextMeasurement: multiValueTextMeasurement
     property alias maxTextString: maxTextString
+
+    textRole: Array.isArray(control.model) == false ? "label" : ""
 
     /*! \internal */
     // helper property for text color so states can all be in the background object
@@ -118,6 +122,7 @@ Labs.ComboBox {
     implicitWidth: labelMaxWidth + defaultSpacing.doubleMargin + defaultSpacing.minimumRowHeight
                    + (imageRole ? control.height + defaultSpacing.standardMargin : 0)
                    + (showDropDownIndicator ? defaultSpacing.doubleMargin + defaultSpacing.standardMargin : 0)
+
     TextMetrics {
         id: maxTextString
         text: ""
@@ -128,35 +133,7 @@ Labs.ComboBox {
         text: __multipleValuesString
     }
 
-    // This is a hack to fix a bad state the Labs ComboBox gets into when pressing Enter to open.
-    // TODO: Remove this hack if the original Qt bug is fixed.
-    // \/\/\/\/\/
-
-    onHighlighted: {
-        currentIndex = highlightedIndex
-    }
-
     // /\/\/\/\/\
-
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( control.currentIndex )
-            }
-
-            onDataPasted : {
-                control.currentIndex = data
-            }
-        }
-
-        onSelectedChanged : selected ? selectControl( copyableObject ) : deselectControl( copyableObject )
-    }
-
     delegate: WGDropDownDelegate {
         id: listDelegate
         objectName: "DropDownDelegate_" + index + "_" + text
@@ -185,8 +162,7 @@ Labs.ComboBox {
         }
     }
 
-    contentItem: Item {
-            objectName: "DropDownContentItem"
+    property Component contentItemDelegateComponent: Item {
             Item {
                 id: contentImage
                 objectName: "ContentImage"
@@ -210,11 +186,18 @@ Labs.ComboBox {
                 anchors.leftMargin: contentImage.visible ? defaultSpacing.standardMargin : 0
 
                 text: control.multipleValues ? __multipleValuesString : control.currentText
+                color: control.__textColor
                 font.italic: control.multipleValues ? true : false
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignLeft
                 verticalAlignment: Text.AlignVCenter
             }
+    }
+
+    contentItem: Loader {
+        id: contentItemLoader
+        property var indicatorWidth: expandIcon.width
+        sourceComponent: contentItemDelegateComponent
     }
 
     background: WGButtonFrame {
@@ -277,13 +260,56 @@ Labs.ComboBox {
         topMargin: defaultSpacing.standardMargin
         bottomMargin: defaultSpacing.standardMargin
 
+        /*! A readonly property that tries to show the space available for the popup from the controls left margin to parentFrame's right margin.
+          Won't give a good result if it can't find a parentFrame that is wider than the control.
+        */
+        readonly property int popupXSpace: parentFrame && parentFrame != null ? parentFrame.width - control.mapToItem(parentFrame, defaultSpacing.standardMargin, 0).x : 0
+
+        /*! The best 'visual' parent frame the popup can find when it appears by walking up the tree.
+        */
+        property var parentFrame: control.parent
+
+        onVisibleChanged: {
+            if (visible)
+            {
+                var topParent = parentFrame
+                var maxWidthParent = parentFrame
+
+                while (typeof topParent.parent != "undefined" && topParent.parent != null)
+                {
+                    if (topParent.parent.width > maxWidthParent.width)
+                    {
+                        maxWidthParent = topParent.parent
+                    }
+                    topParent = topParent.parent
+                }
+                parentFrame = maxWidthParent
+            }
+        }
+
+        // changes the popup's horizontal alignment if there is not enough popupXSpace in it's parent to the right of it.
+        x: {
+            if (parentFrame && parentFrame != null && parentFrame.width >= popupbox.width)
+            {
+                return popupXSpace < popupbox.width ? control.width - popupbox.width : 0
+            }
+            else
+            {
+                // if there is no parentFrame wide enough for the popup anyway just left align. Means it won't behave weirdly if the parent is not a 'good' visual frame.
+                return 0
+            }
+        }
+
         closePolicy: T.Popup.OnPressOutside | T.Popup.OnPressOutsideParent | T.Popup.OnEscape
 
         contentItem: ListView {
             id: listview
             objectName: "PopupListView"
             clip: true
+
+            /** Avoid modifying this as it can cause crashes: see TITAN-1468/TITAN-1226 */
             model: control.popup.visible ? control.delegateModel : null
+            
             currentIndex: control.highlightedIndex
 
             T.ScrollIndicator.vertical: Labs.ScrollIndicator { id: scrollIndicator }
@@ -332,12 +358,10 @@ Labs.ComboBox {
 
     }
 
-    MouseArea {
+    WGToolTip {
         id: wheelMouseArea
-        anchors.fill: parent
-        acceptedButtons: Qt.NoButton
-        hoverEnabled: true
         objectName: "DropDownWheelArea"
+        propagateComposedEvents: (!control.activeFocus && !control.popup.visible)
         onWheel: {
             if (control.activeFocus || control.popup.visible)
                 {
@@ -348,16 +372,12 @@ Labs.ComboBox {
                 {
                     control.currentIndex += 1
                 }
+            } else
+            {
+                wheel.accepted = false
             }
         }
-        onExited: Tooltip.hideText()
-        onCanceled: Tooltip.hideText()
-
-        Timer {
-            interval: 1000
-            running: control.enabled && wheelMouseArea.containsMouse && !control.pressed && tooltip.length
-            onTriggered: Tooltip.showText(wheelMouseArea, Qt.point(wheelMouseArea.mouseX, wheelMouseArea.mouseY), control.tooltip)
-        }
+        text: control.tooltip
     }
 
 

@@ -1,12 +1,15 @@
 #include "remove_rows_command.hpp"
+
 #include "remove_rows_command_arg.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_data_model/abstract_item_model.hpp"
 #include "core_reflection/generic/generic_object.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_variant/variant.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -96,9 +99,9 @@ bool restoreRows(int startPos, RemoveRowsCommandArgument::Type type, int count, 
 	bool setOk = true;
 	for (const auto& extractedRows : itemData)
 	{
-		assert(isIndexInRange(startPos, type, count, extractedRows.index_));
+		TF_ASSERT(isIndexInRange(startPos, type, count, extractedRows.index_));
 		const auto pItem = o_model.item(extractedRows.index_);
-		assert(pItem != nullptr);
+		TF_ASSERT(pItem != nullptr);
 
 		Collection collection;
 		if (extractedRows.data_.tryCast(collection))
@@ -134,7 +137,7 @@ bool restoreRows(int startPos, RemoveRowsCommandArgument::Type type, int count, 
 
 } // end namespace RemoveRowsCommand_Detail
 
-RemoveRowsCommand::RemoveRowsCommand(IComponentContext& context) : definitionManager_(context)
+RemoveRowsCommand::~RemoveRowsCommand()
 {
 }
 
@@ -169,7 +172,7 @@ bool RemoveRowsCommand::undo(const ObjectHandle& arguments) const /* override */
 	const auto& itemData = (pCommandArgs->itemData_);
 
 	const bool inserted = RemoveRowsCommand_Detail::restoreRows(startPos, type, count, pParent, itemData, model);
-	assert(inserted && "Item data was not restored correctly");
+	TF_ASSERT(inserted && "Item data was not restored correctly");
 	return inserted;
 }
 
@@ -199,31 +202,31 @@ bool RemoveRowsCommand::redo(const ObjectHandle& arguments) const /* override */
 	return model.removeColumns(startPos, count, pParent);
 }
 
-ObjectHandle RemoveRowsCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
+CommandDescription RemoveRowsCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
-	auto handle = GenericObject::create(*definitionManager_);
-	assert(handle.get() != nullptr);
-	auto& genericObject = (*handle);
+    auto object = GenericObject::create();
 
 	if (!arguments.isValid())
 	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Remove");
-		return ObjectHandle(std::move(handle));
+		object->set("Name", "Invalid");
+		object->set("Type", "Remove");
 	}
+    else
+    {
+        auto pCommandArgs = arguments.getBase<RemoveRowsCommandArgument>();
+        if (!RemoveRowsCommand_Detail::isValid(pCommandArgs))
+        {
+            object->set("Name", "Invalid");
+            object->set("Type", "Remove");
+        }
+        else
+        {
+            object->set("Name", "Remove");
+            object->set("Type", "Remove");
+        }
+    }
 
-	auto pCommandArgs = arguments.getBase<RemoveRowsCommandArgument>();
-	if (!RemoveRowsCommand_Detail::isValid(pCommandArgs))
-	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Remove");
-		return ObjectHandle(std::move(handle));
-	}
-
-	genericObject.set("Name", "Remove");
-	genericObject.set("Type", "Remove");
-
-	return ObjectHandle(std::move(handle));
+    return std::move(object);
 }
 
 const char* RemoveRowsCommand::getId() const /* override */
@@ -238,7 +241,7 @@ bool RemoveRowsCommand::validateArguments(const ObjectHandle& arguments) const /
 	return RemoveRowsCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle RemoveRowsCommand::execute(const ObjectHandle& arguments) const /* override */
+Variant RemoveRowsCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<RemoveRowsCommandArgument>();
 	if (!RemoveRowsCommand_Detail::isValid(pCommandArgs))
@@ -272,4 +275,8 @@ CommandThreadAffinity RemoveRowsCommand::threadAffinity() const /* override */
 	return CommandThreadAffinity::UI_THREAD;
 }
 
+ManagedObjectPtr RemoveRowsCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<RemoveRowsCommandArgument>(arguments);
+}
 } // end namespace wgt

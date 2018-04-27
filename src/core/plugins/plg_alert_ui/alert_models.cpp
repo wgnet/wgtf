@@ -1,6 +1,10 @@
 #include "alert_models.hpp"
-#include "core_data_model/variant_list.hpp"
+
+#include "core_common/assert.hpp"
+#include "core_data_model/collection_model.hpp"
 #include "core_reflection/i_definition_manager.hpp"
+#include "core_object/managed_object.hpp"
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
@@ -13,30 +17,14 @@ struct AlertObjectModel::Implementation
 };
 
 AlertObjectModel::Implementation::Implementation(AlertObjectModel& self, const char* message)
-    : self_(self), message_(message)
+    : self_(self)
+    , message_(message)
 {
 }
 
-AlertObjectModel::AlertObjectModel() : impl_(new Implementation(*this, ""))
+AlertObjectModel::AlertObjectModel(const char* message)
+    : impl_(new Implementation(*this, message))
 {
-}
-
-AlertObjectModel::AlertObjectModel(const AlertObjectModel& rhs)
-    : impl_(new Implementation(*this, rhs.impl_->message_.c_str()))
-{
-}
-
-AlertObjectModel::AlertObjectModel(const char* message) : impl_(new Implementation(*this, message))
-{
-}
-
-AlertObjectModel::~AlertObjectModel()
-{
-}
-
-void AlertObjectModel::init(const char* message)
-{
-	impl_->message_ = message;
 }
 
 const char* AlertObjectModel::getMessage() const
@@ -44,57 +32,39 @@ const char* AlertObjectModel::getMessage() const
 	return impl_->message_.c_str();
 }
 
-struct AlertPageModel::Implementation
+struct AlertPageModel::Implementation : Depends<IDefinitionManager>
 {
 	Implementation(AlertPageModel& self);
 
 	AlertPageModel& self_;
-	IDefinitionManager* definitionManager_;
-	VariantList alerts_;
+    std::vector<Variant> alerts_;
+	std::vector<ManagedObjectPtr> alertObjs_;
+	CollectionModel alertsModel_;
 	int currentSelectedRowIndex_;
 };
 
 AlertPageModel::Implementation::Implementation(AlertPageModel& self)
-    : self_(self), definitionManager_(nullptr), currentSelectedRowIndex_(-1)
+    : self_(self)
+    , currentSelectedRowIndex_(-1)
 {
 }
 
-AlertPageModel::AlertPageModel() : impl_(new Implementation(*this))
+AlertPageModel::AlertPageModel() 
+    : impl_(new Implementation(*this))
 {
-}
-
-AlertPageModel::AlertPageModel(const AlertPageModel& rhs) : impl_(new Implementation(*this))
-{
-	impl_->definitionManager_ = rhs.impl_->definitionManager_;
-
-	for (auto itr = rhs.impl_->alerts_.cbegin(); itr != rhs.impl_->alerts_.cend(); ++itr)
-	{
-		impl_->alerts_.push_back(*itr);
-	}
-}
-
-AlertPageModel::~AlertPageModel()
-{
-}
-
-void AlertPageModel::init(IComponentContext& contextManager)
-{
-	impl_->definitionManager_ = contextManager.queryInterface<IDefinitionManager>();
-	assert(impl_->definitionManager_ != nullptr);
+	impl_->alertsModel_.setSource(Collection(impl_->alerts_));
 }
 
 void AlertPageModel::addAlert(const char* message)
 {
-	ObjectHandle object = impl_->definitionManager_->create<AlertObjectModel>(false);
-
-	object.getBase<AlertObjectModel>()->init(message);
-
-	impl_->alerts_.push_back(object);
+    impl_->alertObjs_.push_back(ManagedObject<AlertObjectModel>::make_unique(message));
+	Collection& collection = impl_->alertsModel_.getSource();
+	collection.insertValue(collection.size(), impl_->alertObjs_.back()->getHandle());
 }
 
-const IListModel* AlertPageModel::getAlerts() const
+const AbstractListModel* AlertPageModel::getAlerts() const
 {
-	return &impl_->alerts_;
+	return &impl_->alertsModel_;
 }
 
 ObjectHandle AlertPageModel::removeAlert() const
@@ -104,20 +74,23 @@ ObjectHandle AlertPageModel::removeAlert() const
 		return nullptr;
 	}
 
-	int selectedIndex = impl_->currentSelectedRowIndex_;
+	const int selectedIndex = impl_->currentSelectedRowIndex_;
 
-	auto selectedItem = impl_->alerts_[selectedIndex];
+    Collection& collection = impl_->alertsModel_.getSource();
+    TF_ASSERT(selectedIndex < (int)collection.size());
+    TF_ASSERT(collection.size() == impl_->alertObjs_.size());
+    TF_ASSERT(collection.size() == impl_->alerts_.size());
 
-	for (auto alertIter = impl_->alerts_.begin(); alertIter != impl_->alerts_.end(); alertIter++)
-	{
-		auto tempItem = *alertIter;
-		if (tempItem == selectedItem)
-		{
-			impl_->alerts_.erase(alertIter);
-			break;
-		}
-	}
+    auto collectionItr = collection.begin();
+    std::advance(collectionItr, selectedIndex);
+    collection.erase(collectionItr);
 
+    auto objIter = impl_->alertObjs_.begin();
+    std::advance(objIter, selectedIndex);
+    impl_->alertObjs_.erase(objIter);
+
+    TF_ASSERT(collection.size() == impl_->alertObjs_.size());
+    TF_ASSERT(collection.size() == impl_->alerts_.size());
 	return nullptr;
 }
 

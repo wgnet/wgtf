@@ -7,7 +7,10 @@
 namespace wgt
 {
 BEGIN_EXPOSE(TestUIContext, MetaNone())
-EXPOSE("treeModel", treeModel, MetaNoSerialization())
+EXPOSE("treeVisible", treeVisible_)
+EXPOSE_METHOD("getTreeModel", getTreeModel)
 EXPOSE_METHOD("runTestScript", updateValues, undoUpdateValues, redoUpdateValues, MetaDescription(L"Run Test Script"))
+EXPOSE_METHOD("reloadEnvironment", reloadEnvironment, MetaDirectInvoke())
+EXPOSE_METHOD("toggleReadOnly", toggleReadOnly, MetaDirectInvoke())
 END_EXPOSE()
 } // end namespace wgt

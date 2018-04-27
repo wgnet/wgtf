@@ -1,5 +1,6 @@
 #include "wg_context_menu.hpp"
-#include "core_dependency_system/di_ref.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_logging/logging.hpp"
 #include "core_reflection/object_handle.hpp"
@@ -7,8 +8,9 @@
 #include "core_ui_framework/i_menu.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_window.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/qt_context_menu.hpp"
+#include "core_dependency_system/depends.hpp"
 #include <QMenu>
 #include <QString>
 #include <QVariant>
@@ -17,9 +19,9 @@
 
 namespace wgt
 {
-struct WGContextMenu::Implementation
+struct WGContextMenu::Implementation : Depends<IQtHelpers, IUIApplication>
 {
-	Implementation(WGContextMenu& self) : self_(self), pContext_(nullptr), view_(nullptr)
+	Implementation(WGContextMenu& self) : self_(self), view_(nullptr)
 	{
 	}
 
@@ -31,17 +33,9 @@ struct WGContextMenu::Implementation
 	void onComponentComplete(WGContextMenu* contextMenu)
 	{
 		auto context = QQmlEngine::contextForObject(contextMenu);
-		assert(context != nullptr);
+		TF_ASSERT(context != nullptr);
 
-		auto componentContextProperty = context->contextProperty("componentContext");
-		assert(componentContextProperty.isValid());
-		auto componentContextVariant = QtHelpers::toVariant(componentContextProperty);
-		assert(!componentContextVariant.isVoid());
-		auto componentContext = componentContextVariant.value<IComponentContext*>();
-		assert(componentContext != nullptr);
-		pContext_ = componentContext;
-
-		auto viewProperty = context->contextProperty("View");
+		auto viewProperty = context->contextProperty("viewWidget");
 		if (viewProperty.isValid())
 		{
 			view_ = qvariant_cast<QQuickWidget*>(viewProperty);
@@ -60,17 +54,13 @@ struct WGContextMenu::Implementation
 
 	void createMenu()
 	{
-		if (pContext_ == nullptr)
-		{
-			return;
-		}
-		auto uiApplication = pContext_->queryInterface<IUIApplication>();
+		auto uiApplication = get<IUIApplication>();
 		if (uiApplication == nullptr)
 		{
 			return;
 		}
 
-		assert(qMenu_ == nullptr);
+		TF_ASSERT(qMenu_ == nullptr);
 
 		qMenu_.reset(new QMenu());
 		qMenu_->setProperty("path", QString(path_.c_str()));
@@ -79,18 +69,14 @@ struct WGContextMenu::Implementation
 		connections_ +=
 		QObject::connect(qApp, &QApplication::paletteChanged, [&]() { qtContextMenu_->onPaletteChanged(); });
 
-		assert(qtContextMenu_ == nullptr);
+		TF_ASSERT(qtContextMenu_ == nullptr);
 		qtContextMenu_.reset(new QtContextMenu(*qMenu_, view_, windowId_.c_str()));
 		uiApplication->addMenu(*qtContextMenu_);
 	}
 
 	void destroyMenu()
 	{
-		if (pContext_ == nullptr)
-		{
-			return;
-		}
-		auto uiApplication = pContext_->queryInterface<IUIApplication>();
+		auto uiApplication = get<IUIApplication>();
 		if (uiApplication == nullptr)
 		{
 			return;
@@ -139,6 +125,24 @@ struct WGContextMenu::Implementation
 		return true;
 	}
 
+	QObject* find(const QString& actionId) const
+	{
+		if( qtContextMenu_ == nullptr )
+		{
+			return nullptr;
+		}
+
+		for (const auto& action_qAction : qtContextMenu_->getActions())
+		{
+			const auto& action = action_qAction.first;
+			if(action->id() == actionId)
+			{
+				return action_qAction.second.data();
+			}
+		}
+		return nullptr;
+	}
+
 	QString getPath() const
 	{
 		return path_.c_str();
@@ -156,12 +160,12 @@ struct WGContextMenu::Implementation
 
 	QVariant getContextObject() const
 	{
-		return QtHelpers::toQVariant(contextObject_, const_cast<WGContextMenu*>(&this->self_));
+		return get<IQtHelpers>()->toQVariant(contextObject_, const_cast<WGContextMenu*>(&this->self_));
 	}
 
 	void setContextObject(const QVariant& object)
 	{
-		contextObject_ = QtHelpers::toVariant(object);
+		contextObject_ = get<IQtHelpers>()->toVariant(object);
 		emit self_.contextObjectChanged();
 
 		prepareMenu();
@@ -169,7 +173,6 @@ struct WGContextMenu::Implementation
 
 private:
 	WGContextMenu& self_;
-	IComponentContext* pContext_;
 	QQuickWidget* view_;
 	std::string windowId_;
 
@@ -203,6 +206,11 @@ void WGContextMenu::popup()
 	{
 		emit opened();
 	}
+}
+
+QObject* WGContextMenu::find(const QString& actionId) const
+{
+	return impl_->find(actionId);
 }
 
 QString WGContextMenu::getPath() const

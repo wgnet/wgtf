@@ -1,0 +1,3 @@
+#include "core_data_model/reflection_auto_reg.mpp"
+#include "core_view_model/reflection_auto_reg.mpp"
+#include "core_ui_framework/reflection_auto_reg.mpp"

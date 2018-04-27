@@ -26,7 +26,7 @@ class ContextMenuTest : public PluginMain, public Depends<IViewCreator>
 {
 public:
 	//==========================================================================
-	ContextMenuTest(IComponentContext& contextManager) : Depends(contextManager)
+	ContextMenuTest(IComponentContext& contextManager)
 	{
 	}
 

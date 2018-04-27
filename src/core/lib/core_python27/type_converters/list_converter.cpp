@@ -13,8 +13,7 @@ namespace wgt
 {
 namespace PythonType
 {
-ListConverter::ListConverter(IComponentContext& context, const Converters& typeConverters)
-    : IParentConverter(), context_(context), typeConverters_(typeConverters)
+ListConverter::ListConverter(const Converters& typeConverters) : IParentConverter(), typeConverters_(typeConverters)
 {
 }
 
@@ -26,7 +25,7 @@ bool ListConverter::toVariant(const PyScript::ScriptObject& inObject, Variant& o
 		return false;
 	}
 	PyScript::ScriptList scriptList(inObject.get(), PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
-	auto listHandle = ReflectedPython::DefinedInstance::findOrCreate(context_, scriptList, parentHandle, childPath);
+	auto listHandle = get<IPythonObjManager>()->findOrCreate(scriptList, parentHandle, childPath);
 	assert(listHandle.isValid());
 
 	auto collectionHolder = std::make_shared<Sequence<PyScript::ScriptList>>(scriptList, listHandle, typeConverters_);

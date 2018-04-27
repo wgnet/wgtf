@@ -1,8 +1,11 @@
 #include "reflected_property_item.hpp"
+
 #include "reflected_object_item.hpp"
 #include "reflected_enum_model.hpp"
 #include "class_definition_model.hpp"
 
+#include "core_common/assert.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_data_model/generic_tree_model.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_reflection/interfaces/i_base_property.hpp"
@@ -11,6 +14,7 @@
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_logging/logging.hpp"
 #include "core_string_utils/string_utils.hpp"
+#include "core_data_model/common_data_roles.hpp"
 #include <memory>
 #include <codecvt>
 #include <limits>
@@ -105,8 +109,8 @@ ReflectedPropertyItem::ReflectedPropertyItem(const IBasePropertyPtr& property, R
     : ReflectedItem(parent, std::string(inplacePath) + property->getName())
 {
 	// Must have a parent
-	assert(parent != nullptr);
-	assert(!path_.empty());
+	TF_ASSERT(parent != nullptr);
+	TF_ASSERT(!path_.empty());
 }
 
 ReflectedPropertyItem::ReflectedPropertyItem(const std::string& propertyName, std::string displayName,
@@ -114,8 +118,8 @@ ReflectedPropertyItem::ReflectedPropertyItem(const std::string& propertyName, st
     : ReflectedItem(parent, parent ? parent->getPath() + propertyName : ""), displayName_(std::move(displayName))
 {
 	// Must have a parent
-	assert(parent != nullptr);
-	assert(!path_.empty());
+	TF_ASSERT(parent != nullptr);
+	TF_ASSERT(!path_.empty());
 }
 
 ReflectedPropertyItem::~ReflectedPropertyItem()
@@ -125,7 +129,7 @@ ReflectedPropertyItem::~ReflectedPropertyItem()
 const char* ReflectedPropertyItem::getDisplayText(int column) const
 {
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*getDefinitionManager())->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = getDefinitionManager()->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	auto displayName = findFirstMetaData<MetaDisplayNameObj>(propertyAccessor, *getDefinitionManager());
 	if (displayName == nullptr)
@@ -134,8 +138,7 @@ const char* ReflectedPropertyItem::getDisplayText(int column) const
 	}
 	else
 	{
-		std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
-		displayName_ = conversion.to_bytes(displayName->getDisplayName(propertyAccessor.getObject()));
+		displayName_ = StringUtils::to_string(displayName->getDisplayName(propertyAccessor.getObject()));
 	}
 
 	return displayName_.c_str();
@@ -144,7 +147,7 @@ const char* ReflectedPropertyItem::getDisplayText(int column) const
 ThumbnailData ReflectedPropertyItem::getThumbnail(int column) const
 {
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*getDefinitionManager())->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = getDefinitionManager()->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (findFirstMetaData<MetaThumbnailObj>(propertyAccessor, *getDefinitionManager()) == nullptr)
 	{
@@ -152,20 +155,20 @@ ThumbnailData ReflectedPropertyItem::getThumbnail(int column) const
 	}
 
 	// Should not have a MetaThumbObj for properties that do not have a value
-	assert(propertyAccessor.canGetValue());
+	TF_ASSERT(propertyAccessor.canGetValue());
 
 	ThumbnailData thumbnail;
 	Variant value = propertyAccessor.getValue();
 	bool ok = false;
 	ok = value.tryCast(thumbnail);
-	assert(ok);
+	TF_ASSERT(ok);
 	return thumbnail;
 }
 
 Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 {
-	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*getDefinitionManager())->bindProperty(path_.c_str(), obj);
+	const auto& obj = getObject();
+	auto propertyAccessor = getDefinitionManager()->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (roleId == IndexPathRole::roleId_)
 	{
@@ -193,6 +196,15 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		if (descObj != nullptr)
 		{
 			return descObj->getDescription();
+		}
+		return nullptr;
+	}
+	else if (roleId == ItemRole::tooltipId)
+	{
+		auto tooltipObj = findFirstMetaData<MetaTooltipObj>(propertyAccessor, *getDefinitionManager());
+		if (tooltipObj != nullptr)
+		{
+			return tooltipObj->getTooltip(propertyAccessor.getObject());
 		}
 		return nullptr;
 	}
@@ -311,7 +323,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == EnumModelRole::roleId_)
 	{
 		auto enumObj = findFirstMetaData<MetaEnumObj>(propertyAccessor, *getDefinitionManager());
-		if (enumObj)
+		if (enumObj != nullptr)
 		{
 			if (getObject().isValid() == false)
 			{
@@ -333,8 +345,8 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		variant.tryCast(provider);
 		provider = reflectedRoot(provider, *getDefinitionManager());
 		auto definition =
-		const_cast<IClassDefinition*>(provider.isValid() ? provider.getDefinition(*getDefinitionManager()) : nullptr);
-		return ObjectHandle(definition);
+		const_cast<IClassDefinition*>(provider.isValid() ? getDefinitionManager()->getDefinition(provider) : nullptr);
+		return definition;
 	}
 	else if (roleId == DefinitionModelRole::roleId_)
 	{
@@ -404,9 +416,9 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	{
 		TypeId typeId = propertyAccessor.getType();
 		auto readonly = findFirstMetaData<MetaReadOnlyObj>(propertyAccessor, *getDefinitionManager());
-		if (readonly)
+		if (readonly != nullptr)
 		{
-			return true;
+			return readonly->isReadOnly(propertyAccessor.getObject());
 		}
 		return false;
 	}
@@ -430,8 +442,8 @@ bool ReflectedPropertyItem::setData(int column, ItemRole::Id roleId, const Varia
 		return false;
 	}
 
-	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*getDefinitionManager())->bindProperty(path_.c_str(), obj);
+	const auto& obj = getObject();
+	auto propertyAccessor = getDefinitionManager()->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (roleId == ValueRole::roleId_)
 	{
@@ -452,20 +464,18 @@ bool ReflectedPropertyItem::setData(int column, ItemRole::Id roleId, const Varia
 			return false;
 		}
 
-		ObjectHandle provider;
-		if (!data.tryCast<ObjectHandle>(provider))
+		IClassDefinition* valueDefinition = nullptr;
+		if (!data.tryCast<IClassDefinition*>(valueDefinition))
 		{
 			return false;
 		}
 
-		auto valueDefinition = provider.getBase<IClassDefinition>();
 		if (valueDefinition == nullptr)
 		{
 			return false;
 		}
 
-		ObjectHandle value;
-		value = valueDefinition->create();
+		auto value = valueDefinition->createShared();
 		controller->setValue(propertyAccessor, value);
 		return true;
 	}
@@ -490,7 +500,7 @@ GenericTreeItem* ReflectedPropertyItem::getChild(size_t index) const
 	}
 
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*getDefinitionManager())->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = getDefinitionManager()->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (!propertyAccessor.canGetValue())
 	{
@@ -515,28 +525,8 @@ GenericTreeItem* ReflectedPropertyItem::getChild(size_t index) const
 		}
 
 		{
-			// FIXME NGT-1603: Change to actually get the proper key type
-
-			// Attempt to use an index into the collection
-			// Defaults to i
-			size_t indexKey = i;
-			const bool isIndex = it.key().tryCast(indexKey);
-
-			// Default to using an index
-			std::string propertyName = "[" + std::to_string(static_cast<int>(indexKey)) + "]";
+			std::string propertyName = it.indexer();
 			std::string displayName = propertyName;
-
-			// If the item isn't an index
-			if (!isIndex)
-			{
-				// Try to cast the key to a string
-				const bool isString = it.key().tryCast(displayName);
-				if (isString)
-				{
-					// Strings must be quoted to work with TextStream
-					propertyName = "[\"" + displayName + "\"]";
-				}
-			}
 
 			child =
 			new ReflectedPropertyItem(propertyName, std::move(displayName), const_cast<ReflectedPropertyItem*>(this));
@@ -562,7 +552,7 @@ GenericTreeItem* ReflectedPropertyItem::getChild(size_t index) const
 bool ReflectedPropertyItem::empty() const
 {
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*getDefinitionManager())->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = getDefinitionManager()->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (!propertyAccessor.canGetValue())
 	{
@@ -583,7 +573,7 @@ bool ReflectedPropertyItem::empty() const
 	if (isObjectHandle)
 	{
 		handle = reflectedRoot(handle, *getDefinitionManager());
-		auto def = handle.getDefinition(*getDefinitionManager());
+		auto def = getDefinitionManager()->getDefinition(handle);
 
 		if (def != nullptr)
 		{
@@ -598,7 +588,7 @@ bool ReflectedPropertyItem::empty() const
 size_t ReflectedPropertyItem::size() const
 {
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*getDefinitionManager())->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = getDefinitionManager()->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (!propertyAccessor.canGetValue())
 	{
@@ -618,7 +608,7 @@ size_t ReflectedPropertyItem::size() const
 	if (isObjectHandle)
 	{
 		handle = reflectedRoot(handle, *getDefinitionManager());
-		auto def = handle.getDefinition(*getDefinitionManager());
+		auto def = getDefinitionManager()->getDefinition(handle);
 		if (def != nullptr)
 		{
 			return 1;
@@ -646,9 +636,9 @@ bool ReflectedPropertyItem::preSetValue(const PropertyAccessor& accessor, const 
 			ObjectHandle handle;
 			if (value.tryCast(handle))
 			{
-				definition = handle.getDefinition(*getDefinitionManager());
+				definition = getDefinitionManager()->getDefinition(handle);
 			}
-			getModel()->signalPreItemDataChanged(this, 0, DefinitionRole::roleId_, ObjectHandle(definition));
+			getModel()->signalPreItemDataChanged(this, 0, DefinitionRole::roleId_, definition);
 			return true;
 		}
 
@@ -689,10 +679,10 @@ bool ReflectedPropertyItem::postSetValue(const PropertyAccessor& accessor, const
 			ObjectHandle handle;
 			if (value.tryCast(handle))
 			{
-				definition = handle.getDefinition(*getDefinitionManager());
+				definition = getDefinitionManager()->getDefinition(handle);
 			}
 			children_.clear();
-			getModel()->signalPostItemDataChanged(this, 0, DefinitionRole::roleId_, ObjectHandle(definition));
+			getModel()->signalPostItemDataChanged(this, 0, DefinitionRole::roleId_, definition);
 			return true;
 		}
 

@@ -5,17 +5,20 @@
 #include <type_traits>
 #include <memory>
 
-#include "core_common/signal.hpp"
+#include "core_common/assert.hpp"
 #include "core_variant/type_id.hpp"
-#include "core_variant/variant.hpp"
-
+#include "core_reflection/interfaces/i_managed_object.hpp"
 #include "variant_dll.hpp"
 
 namespace wgt
 {
+
+class Connection;
+class Variant;
+
 /** Collection iterator implementations base. */
-class CollectionIteratorImplBase;
-typedef std::shared_ptr<CollectionIteratorImplBase> CollectionIteratorImplPtr;
+typedef std::shared_ptr<class CollectionIteratorImplBase> CollectionIteratorImplPtr;
+typedef std::unique_ptr<class IManagedObject> ManagedObjectPtr;
 
 class VARIANT_DLL CollectionIteratorImplBase
 {
@@ -45,16 +48,29 @@ public:
 	with another key. */
 	virtual bool setValue(const Variant& v) const = 0;
 
+    /** Set new element value. Will own the managed object.
+    Note that you can't change element key once it's inserted into Collection.
+    The only way to change element key is to delete it and re-add the same value
+    with another key. */
+    virtual bool setValue(ManagedObjectPtr & v) const
+    {
+        TF_ASSERT(!"Not supported for Managed Objects");
+        return false;
+    }
+
 	/** Advance iterator one step forward.
-	Note that Collection iterators are forward-only - you can't step backwards
-	or advance by multiple steps at once. Indexing is not supported as well. */
-	virtual void inc() = 0;
+	Note that Collection iterators are forward-only - you can't step backwards.
+	Indexing is not supported as well. */
+	virtual void inc(size_t incAmount = 1) = 0;
 
 	/** Check two iterators for equality. */
 	virtual bool equals(const CollectionIteratorImplBase& that) const = 0;
 
 	/** Create a new copy of this iterator. */
 	virtual CollectionIteratorImplPtr clone() const = 0;
+
+	/** Gets the indexer as a string used as part of a property path (i.e. [0] or ["key"]) */
+	virtual std::string indexer() const;
 };
 
 /** Collection implementations base. */
@@ -157,35 +173,12 @@ public:
 	/** Return combination of Flag values that describe some Collection properties. */
 	virtual int flags() const = 0;
 
-	virtual Connection connectPreInsert(ElementRangeCallback callback)
-	{
-		return Connection();
-	}
-
-	virtual Connection connectPostInserted(ElementRangeCallback callback)
-	{
-		return Connection();
-	}
-
-	virtual Connection connectPreErase(ElementRangeCallback callback)
-	{
-		return Connection();
-	}
-
-	virtual Connection connectPostErased(ElementRangeCallback callback)
-	{
-		return Connection();
-	}
-
-	virtual Connection connectPreChange(ElementPreChangeCallback callback)
-	{
-		return Connection();
-	}
-
-	virtual Connection connectPostChanged(ElementPostChangedCallback callback)
-	{
-		return Connection();
-	}
+	virtual Connection connectPreInsert(ElementRangeCallback callback);
+	virtual Connection connectPostInserted(ElementRangeCallback callback);
+	virtual Connection connectPreErase(ElementRangeCallback callback);
+	virtual Connection connectPostErased(ElementRangeCallback callback);
+	virtual Connection connectPreChange(ElementPreChangeCallback callback);
+	virtual Connection connectPostChanged(ElementPostChangedCallback callback);
 };
 
 typedef std::shared_ptr<CollectionImplBase> CollectionImplPtr;
@@ -239,6 +232,11 @@ createCollectionImpl(T& container)
 class VARIANT_DLL Collection
 {
 public:
+	static const char getIndexOpen();
+	static const char getIndexClose();
+	static const char * getIndexOpenStr();
+	static const char * getIndexCloseStr();
+
 	/** Proxy value that provides transparent read-write access to element value. */
 	class VARIANT_DLL ValueRef
 	{
@@ -279,7 +277,7 @@ public:
 		template <typename T>
 		ValueRef& operator=(const T& v)
 		{
-			impl_->setValue(v);
+			impl_->setValue(std::move(v));
 			return *this;
 		}
 
@@ -346,6 +344,11 @@ public:
 			return impl_->value();
 		}
 
+		std::string indexer() const
+		{
+			return impl_->indexer();
+		}
+
 		const CollectionIteratorImplPtr& impl() const
 		{
 			return impl_;
@@ -357,13 +360,8 @@ public:
 		}
 
 		ConstIterator& operator++();
-
-		ConstIterator operator++(int)
-		{
-			ConstIterator tmp = *this;
-			++(*this);
-			return tmp;
-		}
+		ConstIterator operator++(int);
+		ConstIterator& operator+=(size_t advAmount);
 
 		bool operator==(const ConstIterator& that) const;
 
@@ -378,10 +376,19 @@ public:
 		CollectionIteratorImplPtr impl_;
 	};
 
+	class VARIANT_DLL IteratorImpl
+		: public ConstIterator
+	{
+	protected:
+		IteratorImpl(const CollectionIteratorImplPtr & impl);
+	public:
+		bool setValue(ManagedObjectPtr & v) const;
+	};
+
 	/** Read-write forward iterator to collection element.
 	@note This iterator implementation doesn't conform fully to standard
 	iterator requirements. */
-	class VARIANT_DLL Iterator : public ConstIterator
+	class VARIANT_DLL Iterator : public IteratorImpl
 	{
 	public:
 		typedef ConstIterator base;
@@ -393,7 +400,8 @@ public:
 		typedef ValueRef reference;
 		typedef void pointer;
 
-		Iterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr()) : base(impl)
+		Iterator(const CollectionIteratorImplPtr& impl = CollectionIteratorImplPtr())
+			: IteratorImpl(impl)
 		{
 		}
 
@@ -443,6 +451,8 @@ public:
 	typedef std::function<ElementPreChangeCallbackSignature> ElementPreChangeCallback;
 	typedef std::function<ElementPostChangedCallbackSignature> ElementPostChangedCallback;
 
+	static Variant parseKey(const MetaType* keyType, const char*& propOperator);
+
 	/** Construct Collection using given implementation. */
 	explicit Collection(const CollectionImplPtr& impl = CollectionImplPtr()) : impl_(impl)
 	{
@@ -464,6 +474,9 @@ public:
 
 	/** Return TypeId of collection value */
 	const TypeId& valueType() const;
+
+	/** Clears the collection using erase(begin(), end()) if the collection can be cleared */
+	void clear();
 
 	/** Try to cast underlying container pointer.
 	@note cv-qualifiers are not checked, so casting to non-const
@@ -572,6 +585,8 @@ public:
 	/** Test two collections equality. */
 	bool operator==(const Collection& that) const;
 
+	bool operator<(const Collection& that) const;
+
 	/** Return combination of Flag values that describe some Collection properties. */
 	int flags() const;
 
@@ -592,6 +607,8 @@ public:
 	{
 		return testFlags(CollectionImplBase::RESIZABLE);
 	}
+
+	uint64_t getHashcode() const;
 
 	const CollectionImplPtr& impl() const
 	{
@@ -652,6 +669,7 @@ private:
 } // end namespace wgt
 
 META_TYPE_NAME(wgt::Collection, "Collection")
+DEFINE_CUST_HASH(wgt::Collection, getHashcode)
 
 namespace std
 {

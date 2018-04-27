@@ -9,6 +9,8 @@ ADD_DEFINITIONS( -D_CRT_SECURE_NO_WARNINGS )
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+INCLUDE_DIRECTORIES( ${BW_SOURCE_DIR}/wgs/interfaces)
+
 SET( ALL_SRCS
 	plg_curve_editor_test.cpp
 )

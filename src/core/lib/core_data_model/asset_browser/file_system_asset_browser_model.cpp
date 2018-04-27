@@ -15,7 +15,6 @@
 #include "core_data_model/variant_list.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/i_tree_model.hpp"
-#include "core_data_model/value_change_notifier.hpp"
 #include "core_data_model/simple_active_filters_model.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
@@ -32,11 +31,10 @@ static const int NO_SELECTION = -1;
 struct FileSystemAssetBrowserModel::FileSystemAssetBrowserModelImplementation
 {
 	FileSystemAssetBrowserModelImplementation(FileSystemAssetBrowserModel& self, IFileSystem& fileSystem,
-	                                          IDefinitionManager& definitionManager,
 	                                          IAssetPresentationProvider& presentationProvider)
-	    : self_(self), folders_(nullptr), activeFiltersModel_(nullptr), definitionManager_(definitionManager),
+	    : self_(self), folders_(nullptr), activeFiltersModel_(new SimpleActiveFiltersModel("AssetBrowserFilter")),
 	      presentationProvider_(presentationProvider), fileSystem_(fileSystem), folderContentsFilter_(""),
-	      contentFilterIndexNotifier_(NO_SELECTION), currentCustomFilterIndex_(-1), iconSize_(64)
+	      currentCustomFilterIndex_(-1), iconSize_(64)
 	{
 	}
 
@@ -65,22 +63,20 @@ struct FileSystemAssetBrowserModel::FileSystemAssetBrowserModelImplementation
 	std::shared_ptr<ITreeModel> folders_;
 	std::unique_ptr<IActiveFiltersModel> activeFiltersModel_;
 
-	IDefinitionManager& definitionManager_;
 	IAssetPresentationProvider& presentationProvider_;
 	IFileSystem& fileSystem_;
 	AssetPaths assetPaths_;
 	std::string folderContentsFilter_;
 
-	ValueChangeNotifier<int> contentFilterIndexNotifier_;
 	int currentCustomFilterIndex_;
 	int iconSize_;
 };
 
 FileSystemAssetBrowserModel::FileSystemAssetBrowserModel(const AssetPaths& assetPaths,
                                                          const CustomContentFilters& customContentFilters,
-                                                         IFileSystem& fileSystem, IDefinitionManager& definitionManager,
+                                                         IFileSystem& fileSystem,
                                                          IAssetPresentationProvider& presentationProvider)
-    : impl_(new FileSystemAssetBrowserModelImplementation(*this, fileSystem, definitionManager, presentationProvider))
+    : impl_(new FileSystemAssetBrowserModelImplementation(*this, fileSystem, presentationProvider))
 {
 	for (auto& path : assetPaths)
 	{
@@ -125,14 +121,6 @@ void FileSystemAssetBrowserModel::addAssetPath(const std::string& path)
 void FileSystemAssetBrowserModel::addCustomContentFilter(const std::string& filter)
 {
 	impl_->customContentFilters_.push_back(filter.c_str());
-}
-
-void FileSystemAssetBrowserModel::initialise(IComponentContext& contextManager, IDefinitionManager& definitionManager)
-{
-	auto uiFramework = contextManager.queryInterface<IUIFramework>();
-
-	impl_->activeFiltersModel_ = std::unique_ptr<IActiveFiltersModel>(
-	new SimpleActiveFiltersModel("AssetBrowserFilter", definitionManager, *uiFramework));
 }
 
 const AssetPaths& FileSystemAssetBrowserModel::assetPaths() const
@@ -217,7 +205,6 @@ const int& FileSystemAssetBrowserModel::currentCustomContentFilter() const
 void FileSystemAssetBrowserModel::currentCustomContentFilter(const int& index)
 {
 	impl_->currentCustomFilterIndex_ = index;
-	impl_->contentFilterIndexNotifier_.value(index);
 }
 
 IActiveFiltersModel* FileSystemAssetBrowserModel::getActiveFiltersModel() const
@@ -238,11 +225,6 @@ const int& FileSystemAssetBrowserModel::getIconSize() const
 void FileSystemAssetBrowserModel::setIconSize(const int& size)
 {
 	impl_->iconSize_ = size;
-}
-
-IValueChangeNotifier* FileSystemAssetBrowserModel::customContentFilterIndexNotifier() const
-{
-	return &impl_->contentFilterIndexNotifier_;
 }
 
 void FileSystemAssetBrowserModel::addFolderItems(const AssetPaths& paths)

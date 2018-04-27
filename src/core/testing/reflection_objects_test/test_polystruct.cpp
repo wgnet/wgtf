@@ -6,23 +6,15 @@ namespace wgt
 //==============================================================================
 TestPolyStruct::TestPolyStruct() INIT_DATA()
 {
-}
-
-//==============================================================================
-void TestPolyStruct::init(const IDefinitionManager& definitionManager)
-{
+    const IDefinitionManager& definitionManager = *Depends::get<IDefinitionManager>();
 	INIT_COL_PRE(definitionManager);
 }
 
 //==============================================================================
 TestInheritedPolyStruct::TestInheritedPolyStruct() INIT_DATA_INHERITS()
 {
-}
-
-//==============================================================================
-void TestInheritedPolyStruct::init(const IDefinitionManager& definitionManager)
-{
-	TestPolyStruct::init(definitionManager);
+    const IDefinitionManager& definitionManager = *Depends::get<IDefinitionManager>();
 	INIT_COL_PRE_DERIVED(definitionManager);
 }
+
 } // end namespace wgt

@@ -3,9 +3,9 @@
 
 #include "core_ui_framework/i_window.hpp"
 #include "core_ui_framework/layout_hint.hpp"
-#include <memory>
 #include <QObject>
 #include <QQuickWindow>
+#include <memory>
 
 class QUrl;
 class QQmlContext;
@@ -24,7 +24,7 @@ class QmlWindow : public QObject, public IWindow
 {
 	Q_OBJECT
 public:
-	QmlWindow(IComponentContext& context, QQmlEngine& qmlEngine);
+	QmlWindow(QQmlEngine& qmlEngine);
 	virtual ~QmlWindow();
 
 	const char* id() const override;
@@ -52,11 +52,17 @@ public:
 
 	bool eventFilter(QObject* object, QEvent* event) override;
 
+	virtual IView* getFocusedView() const override;
+	virtual void setFocusedView(IView* view) override;
+
+	bool resetLayout() override;
+	bool savePreference() override;
+	bool loadPreference() override;
+
+	virtual uintptr_t getNativeWindowHandle() override;
+
 public Q_SLOTS:
 	void error(QQuickWindow::SceneGraphError error, const QString& message);
-
-Q_SIGNALS:
-	void windowClosed();
 
 private slots:
 	void onPrePreferencesChanged();
@@ -65,7 +71,6 @@ private slots:
 
 private:
 	void waitForWindowExposed();
-	void savePreference();
 
 	struct Impl;
 	std::unique_ptr<Impl> impl_;

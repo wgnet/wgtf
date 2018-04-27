@@ -7,6 +7,7 @@
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_variant/variant.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -28,7 +29,11 @@ bool isValid(const SetModelDataCommandArgument* pCommandArgs)
 }
 } // end namespace SetModelDataCommand_Detail
 
-SetModelDataCommand::SetModelDataCommand(IComponentContext& context) : definitionManager_(context)
+SetModelDataCommand::SetModelDataCommand()
+{
+}
+
+SetModelDataCommand::~SetModelDataCommand()
 {
 }
 
@@ -86,36 +91,36 @@ bool SetModelDataCommand::redo(const ObjectHandle& arguments) const /* override 
 	return model.setData(row, column, roleId, newValue);
 }
 
-ObjectHandle SetModelDataCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
+CommandDescription SetModelDataCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
-	auto handle = GenericObject::create(*definitionManager_);
-	assert(handle.get() != nullptr);
-	auto& genericObject = (*handle);
+    auto object = GenericObject::create();
 
 	if (!arguments.isValid())
 	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Data");
-		return ObjectHandle(std::move(handle));
+		object->set("Name", "Invalid");
+		object->set("Type", "Data");
 	}
+    else
+    {
+        auto pCommandArgs = arguments.getBase<SetModelDataCommandArgument>();
+        if (!SetModelDataCommand_Detail::isValid(pCommandArgs))
+        {
+            object->set("Name", "Invalid");
+            object->set("Type", "Data");
+        }
+        else
+        {
+            object->set("Name", "Data");
+            object->set("Type", "Data");
 
-	auto pCommandArgs = arguments.getBase<SetModelDataCommandArgument>();
-	if (!SetModelDataCommand_Detail::isValid(pCommandArgs))
-	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Data");
-		return ObjectHandle(std::move(handle));
-	}
+            const auto& oldValue = (pCommandArgs->oldValue_);
+            const auto& newValue = (pCommandArgs->newValue_);
+            object->set("PreValue", oldValue);
+            object->set("PostValue", newValue);
+        }
+    }
 
-	genericObject.set("Name", "Data");
-	genericObject.set("Type", "Data");
-
-	const auto& oldValue = (pCommandArgs->oldValue_);
-	const auto& newValue = (pCommandArgs->newValue_);
-	genericObject.set("PreValue", oldValue);
-	genericObject.set("PostValue", newValue);
-
-	return ObjectHandle(std::move(handle));
+    return std::move(object);
 }
 
 const char* SetModelDataCommand::getId() const /* override */
@@ -130,7 +135,7 @@ bool SetModelDataCommand::validateArguments(const ObjectHandle& arguments) const
 	return SetModelDataCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle SetModelDataCommand::execute(const ObjectHandle& arguments) const /* override */
+Variant SetModelDataCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<SetModelDataCommandArgument>();
 	if (!SetModelDataCommand_Detail::isValid(pCommandArgs))
@@ -155,4 +160,8 @@ CommandThreadAffinity SetModelDataCommand::threadAffinity() const /* override */
 	return CommandThreadAffinity::UI_THREAD;
 }
 
+ManagedObjectPtr SetModelDataCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<SetModelDataCommandArgument>(arguments);
+}
 } // end namespace wgt

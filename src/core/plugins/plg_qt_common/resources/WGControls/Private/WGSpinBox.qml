@@ -386,10 +386,6 @@ Control {
         }
     }
 
-    Component.onCompleted: {
-        copyableControl.disableChildrenCopyable( spinbox );
-    }
-
     //object properties
 
     /*!
@@ -462,8 +458,6 @@ Control {
 
         selectTextOnAccepted: true
 
-        assetBrowserContextMenu: false
-
         activeFocusOnTab: true
 
         horizontalAlignment: spinbox.horizontalAlignment
@@ -474,42 +468,6 @@ Control {
 
         // sends through up/down input events
         Keys.forwardTo: [input, spinbox]
-
-        // support copy&paste
-        WGCopyable {
-            id: copyableControl
-
-            WGCopyController {
-                id: copyableObject
-
-                onDataCopied : {
-                    setValue( validator.value )
-                }
-
-                onDataPasted : {
-                    setValueHelper( validator, "value", data );
-                    if(validator.value != data)
-                    {
-                        pasted = false;
-                    }
-                    else
-                    {
-                        editingFinished();
-                    }
-                }
-            }
-
-            onSelectedChanged : {
-                if(selected)
-                {
-                    selectControl( copyableObject )
-                }
-                else
-                {
-                    deselectControl( copyableObject )
-                }
-            }
-        }
 
         validator: SpinBoxValidator {
             id: validator

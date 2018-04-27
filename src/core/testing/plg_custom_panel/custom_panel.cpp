@@ -7,10 +7,6 @@
 
 namespace wgt
 {
-CustomPanel::CustomPanel(IComponentContext& context) : Depends(context)
-{
-}
-
 bool CustomPanel::addPanel()
 {
 	auto viewCreator = this->get<IViewCreator>();

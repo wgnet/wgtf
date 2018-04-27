@@ -6,56 +6,33 @@
 #define DECLARE_QT_MEMORY_HANDLER                                 \
 	\
 public:                                                           \
-	\
-void* operator new(size_t s)                               \
-	\
-{                                                          \
+	void* operator new(size_t s)                                  \
+	{                                                             \
 		return ::operator new(s);                                 \
-	\
-}                                                          \
-	\
-\
-void operator delete(void* ptr)                                   \
-	\
-{                                                          \
-		auto findIt = wgt::getQtInPlaceNewCollection().find(ptr); \
-		if (findIt != wgt::getQtInPlaceNewCollection().end())     \
-		{                                                         \
-			wgt::getQtInPlaceNewCollection().erase(findIt);       \
-			if (wgt::getQtInPlaceNewCollection().empty())         \
-			{                                                     \
-				wgt::releaseQtInPlaceNewCollection();             \
-			}                                                     \
-			return;                                               \
-		}                                                         \
-		::operator delete(ptr);                                   \
-	\
-}                                                          \
-	\
-\
-void* operator new(size_t s, void* at)                  \
-	\
-{                                                          \
-		wgt::getQtInPlaceNewCollection().insert(at);              \
+	}                                                             \
+                                                                  \
+	void operator delete(void* ptr)                               \
+	{                                                             \
+        if(!wgt::eraseItemQtInPlaceNewCollection(ptr))            \
+        {                                                         \
+            ::operator delete(ptr);                               \
+        }                                                         \
+	}                                                             \
+                                                                  \
+	void* operator new(size_t s, void* at)                        \
+	{                                                             \
+		wgt::insertItemQtInPlaceNewCollection(at);                \
 		return at;                                                \
-	\
-}                                                          \
-	\
-\
-void operator delete(void* p, void*)                              \
-	\
-{                                                          \
-		wgt::getQtInPlaceNewCollection().erase(p);                \
-		if (wgt::getQtInPlaceNewCollection().empty())             \
-		{                                                         \
-			wgt::releaseQtInPlaceNewCollection();                 \
-		}                                                         \
-	\
-};
+	}                                                             \
+                                                                  \
+	void operator delete(void* p, void*)                          \
+	{                                                             \
+        wgt::eraseItemQtInPlaceNewCollection(p);                  \
+	}                                                             \
 
 namespace wgt
 {
-std::set<void*>& getQtInPlaceNewCollection();
-void releaseQtInPlaceNewCollection();
+void insertItemQtInPlaceNewCollection(void* ptr);
+bool eraseItemQtInPlaceNewCollection(void* ptr);
 } // end namespace wgt
 #endif // QT_NEW_HANDLER

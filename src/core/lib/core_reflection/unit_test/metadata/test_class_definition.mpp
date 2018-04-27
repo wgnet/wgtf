@@ -1,0 +1,26 @@
+#include "../test_class_definition.hpp"
+#include "core_reflection/reflected_property.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/reflected_object.hpp"
+
+namespace wgt
+{
+
+BEGIN_EXPOSE(TestBaseObject)
+EXPOSE("value", value_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestDerivedObject, MetaDirectBases( TestBaseObject) )
+EXPOSE("number", number_ )
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestDeepObject, MetaDirectBases( TestDerivedObject))
+EXPOSE("deep", deep_ )
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestRandomObject, MetaDirectBases( TestBaseObject))
+// EXPOSE("random",random_) // Cannot expose constant variables
+EXPOSE("random()", random )
+END_EXPOSE()
+
+}

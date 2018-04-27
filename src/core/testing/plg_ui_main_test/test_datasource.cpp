@@ -1,6 +1,6 @@
 #include "test_datasource.hpp"
 #include "pages/test_page.hpp"
-#include "core_serialization/serializer/xml_serializer.hpp"
+#include "core_serialization_xml/xml_serializer.hpp"
 #include "core_serialization/i_file_system.hpp"
 #include "core_serialization/resizing_memory_stream.hpp"
 #include "wg_types/binary_block.hpp"
@@ -11,7 +11,7 @@ namespace wgt
 {
 namespace
 {
-static const char* s_objectVersion = "ui_main_ver_1_0_14.";
+static const char* s_objectVersion = "ui_main_ver_1_0_17.";
 static const char* s_objectFile = "generic_app_test_";
 
 std::string genTestObjFileName(int id)
@@ -24,8 +24,11 @@ std::string genTestObjFileName(int id)
 }
 
 TestDataSource::TestDataSource(TestDataSourceManager& dataSrcMgr, int id)
-    : dataSrcMgr_(dataSrcMgr), testPageId_(""), testPageId2_(""),
-      description_(std::string("TestDataSource_") + std::to_string(id)), testPage_(nullptr), testPage2_(nullptr)
+    : dataSrcMgr_(dataSrcMgr)
+	, testPageId_("")
+	, description_(std::string("TestDataSource_") + std::to_string(id))
+	, testPage_(nullptr)
+	, testPageHandle_(nullptr)
 {
 }
 
@@ -53,70 +56,49 @@ void TestDataSource::init(IComponentContext& contextManager, int id)
 			fileSystem->readFile(objectFile.c_str(), std::ios::in | std::ios::binary);
 			XMLSerializer serializer(*fileStream, *defManager);
 
-			bool br = serializer.deserialize(testPageId_);
-			assert(br);
-			br = serializer.deserialize(testPageId2_);
-			assert(br);
-			testPage_ = safeCast<TestPage>(objManager->getObject(testPageId_));
-			testPage2_ = safeCast<TestPage2>(objManager->getObject(testPageId2_));
+			bool br = serializer.deserialize(testPage_);
+			if (br)
+			{
+				testPageHandle_ = testPage_.getHandleT();
+			}
 		}
 	}
 	objManager->registerListener(&dataSrcMgr_);
-	if (testPage_ == nullptr)
+	if (testPageHandle_ == nullptr)
 	{
-		testPage_ = defManager->create<TestPage>();
-		testPage_->init(*defManager);
-		RefObjectId id;
-		bool ok = testPage_.getId(id);
-		assert(ok);
+		testPage_ = ManagedObject<TestPage>::make();
+		testPageHandle_ = testPage_.getHandleT();
+		RefObjectId id = testPageHandle_.id();
+		assert(id != RefObjectId::zero());
 		testPageId_ = id.toString();
-	}
-	if (testPage2_ == nullptr)
-	{
-		testPage2_ = defManager->create<TestPage2>();
-		testPage2_->init(*defManager);
-		RefObjectId id;
-		bool ok = testPage2_.getId(id);
-		assert(ok);
-		testPageId2_ = id.toString();
 	}
 	objManager->deregisterListener(&dataSrcMgr_);
 }
 
 void TestDataSource::fini(IComponentContext& contextManager, int id)
 {
-	auto objManager = contextManager.queryInterface<IObjectManager>();
 	auto defManager = contextManager.queryInterface<IDefinitionManager>();
 	auto fileSystem = contextManager.queryInterface<IFileSystem>();
-	if (objManager && defManager && fileSystem)
-	{
-		// save objects data
-		{
-			ResizingMemoryStream stream;
-			XMLSerializer serializer(stream, *defManager);
-			// save objects' ids which help to restore to the member when loading back
-			serializer.serialize(testPageId_);
-			serializer.serialize(testPageId2_);
-			std::string objectFile = genTestObjFileName(id);
-			serializer.sync();
-			fileSystem->writeFile(objectFile.c_str(), stream.buffer().c_str(), stream.buffer().size(),
-			                      std::ios::out | std::ios::binary);
-		}
-	}
-	else
-	{
-		assert(false);
-	}
+	assert(defManager && fileSystem);
+	
+	// save objects data
+	ResizingMemoryStream stream;
+	XMLSerializer serializer(stream, *defManager);
+
+	// save objects' ids which help to restore to the member when loading back
+	serializer.serialize(testPage_);
+	std::string objectFile = genTestObjFileName(id);
+	serializer.sync();
+	fileSystem->writeFile(objectFile.c_str(), stream.buffer().c_str(), stream.buffer().size(),
+			              std::ios::out | std::ios::binary);
+	
+	testPageHandle_ = nullptr;
+	testPage_ = nullptr;
 }
 
 const ObjectHandleT<TestPage>& TestDataSource::getTestPage() const
 {
-	return testPage_;
-}
-
-const ObjectHandleT<TestPage2>& TestDataSource::getTestPage2() const
-{
-	return testPage2_;
+	return testPageHandle_;
 }
 
 const char* TestDataSource::description() const
@@ -199,18 +181,16 @@ std::shared_ptr<BinaryBlock> TestDataSourceManager::getThumbnailImage()
 	return std::make_shared<BinaryBlock>(buffer.get(), filesize, false);
 }
 
-void TestDataSourceManager::onObjectRegistered(const ObjectHandle& pObj)
+void TestDataSourceManager::onObjectRegistered(const ObjectHandle& obj)
 {
-	RefObjectId id;
-	bool ok = pObj.getId(id);
-	assert(ok);
-	loadedObj_.insert(std::make_pair(id, pObj));
+	RefObjectId id = obj.id();
+	assert(id != RefObjectId::zero());
+	loadedObj_.insert(std::make_pair(id, obj));
 }
 void TestDataSourceManager::onObjectDeregistered(const ObjectHandle& obj)
 {
-	RefObjectId id;
-	bool ok = obj.getId(id);
-	assert(ok);
+    RefObjectId id = obj.id();
+    assert(id != RefObjectId::zero());
 	auto findIt = loadedObj_.find(id);
 	if (findIt != loadedObj_.end())
 	{
@@ -225,28 +205,46 @@ void TestDataSourceManager::init(IComponentContext& contextManager)
 	auto objManager = contextManager.queryInterface<IObjectManager>();
 	auto fileSystem = contextManager.queryInterface<IFileSystem>();
 
-	std::string objectFile = s_objectFile;
-	objectFile += s_objectVersion;
+	const std::string objectFile = std::string(s_objectFile) + s_objectVersion;
+	const std::string objectFileTemp = objectFile + "in";
 
 	if (fileSystem && objManager && defManager)
 	{
 		if (fileSystem->exists(objectFile.c_str()))
 		{
-			IFileSystem::IStreamPtr fileStream =
-			fileSystem->readFile(objectFile.c_str(), std::ios::in | std::ios::binary);
-			XMLSerializer serializer(*fileStream, *defManager);
-
-			// read version
-			std::string version;
-			serializer.deserialize(version);
-			if (version == s_objectVersion)
+			if (fileSystem->exists(objectFileTemp.c_str()))
 			{
-				// load objects
-				loadedObj_.clear();
-				objManager->registerListener(this);
-				defManager->deserializeDefinitions(serializer);
-				bool br = objManager->loadObjects(serializer);
-				objManager->deregisterListener(this);
+				bool br = fileSystem->remove(objectFileTemp.c_str());
+				assert(br);
+			}
+
+			bool br = fileSystem->copy(objectFile.c_str(), objectFileTemp.c_str());
+			assert(br);
+			assert(fileSystem->exists(objectFileTemp.c_str()));
+
+			{
+				IFileSystem::IStreamPtr fileStream =
+				fileSystem->readFile(objectFileTemp.c_str(), std::ios::in | std::ios::binary);
+				XMLSerializer serializer(*fileStream, *defManager);
+
+				// read version
+				std::string version;
+				serializer.deserialize(version);
+				if (version == s_objectVersion)
+				{
+					// load objects
+					loadedObj_.clear();
+					objManager->registerListener(this);
+					defManager->deserializeDefinitions(serializer);
+					br = objManager->loadObjects(serializer);
+					objManager->deregisterListener(this);
+					assert(br);
+				}
+			}
+
+			if (fileSystem->exists(objectFileTemp.c_str()))
+			{
+				br = fileSystem->remove(objectFileTemp.c_str());
 				assert(br);
 			}
 		}
@@ -263,9 +261,19 @@ void TestDataSourceManager::fini()
 	auto objManager = contextManager_->queryInterface<IObjectManager>();
 	auto defManager = contextManager_->queryInterface<IDefinitionManager>();
 	auto fileSystem = contextManager_->queryInterface<IFileSystem>();
+
+	// TODO remove these three lines once serialization of test data is updated.
+	sources_.resize(0);
+	id_ = 0;
+	return;
+
 	if (objManager && defManager && fileSystem)
 	{
 		// save objects data
+		const std::string objectFile = std::string(s_objectFile) + s_objectVersion;
+		const std::string objectFileTemp = objectFile + "out";
+		bool br = false;
+
 		{
 			ResizingMemoryStream stream;
 			XMLSerializer serializer(stream, *defManager);
@@ -274,14 +282,28 @@ void TestDataSourceManager::fini()
 
 			// save objects
 			defManager->serializeDefinitions(serializer);
-			bool br = objManager->saveObjects(*defManager, serializer);
+			br = objManager->saveObjects(serializer);
 			assert(br);
-			std::string objectFile = s_objectFile;
-			objectFile += s_objectVersion;
-			;
+
 			serializer.sync();
-			fileSystem->writeFile(objectFile.c_str(), stream.buffer().c_str(), stream.buffer().size(),
-			                      std::ios::out | std::ios::binary);
+			br = fileSystem->writeFile(objectFileTemp.c_str(), stream.buffer().c_str(), stream.buffer().size(),
+			                           std::ios::out | std::ios::binary);
+			assert(br);
+		}
+
+		if (fileSystem->exists(objectFile.c_str()))
+		{
+			br = fileSystem->remove(objectFile.c_str());
+			assert(br);
+		}
+
+		br = fileSystem->copy(objectFileTemp.c_str(), objectFile.c_str());
+		assert(br);
+
+		if (fileSystem->exists(objectFileTemp.c_str()))
+		{
+			br = fileSystem->remove(objectFileTemp.c_str());
+			assert(br);
 		}
 	}
 	else

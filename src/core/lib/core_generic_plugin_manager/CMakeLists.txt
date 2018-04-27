@@ -15,13 +15,15 @@ SET( ALL_SRCS
 	generic_plugin_manager.cpp
 	plugin_context_manager.hpp
 	plugin_context_manager.cpp
+	plugin_static_initializer.hpp
+	plugin_static_initializer.cpp
 	notify_plugin.hpp
 	notify_plugin.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_LIBRARY( core_generic_plugin_manager ${BLOB_SRCS} )

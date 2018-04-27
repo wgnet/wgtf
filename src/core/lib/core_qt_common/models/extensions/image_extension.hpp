@@ -1,11 +1,11 @@
 #ifndef IMAGE_EXTENSION_HPP
 #define IMAGE_EXTENSION_HPP
 
-#include "i_model_extension.hpp"
+#include "qt_model_extension.hpp"
 
 namespace wgt
 {
-class ImageExtension : public IModelExtension
+class ImageExtension : public QtModelExtension
 {
 public:
 	ImageExtension();

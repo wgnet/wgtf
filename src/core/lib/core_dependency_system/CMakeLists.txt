@@ -5,15 +5,17 @@ INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
 SET( ALL_SRCS
+	context_callback_helper.hpp
 	i_interface.hpp
 	interface_helpers.hpp
-	di_ref.hpp
-	di_ref.cpp
 	depends.hpp
+	depends.cpp
+	wgt_static_init.hpp
+	wgt_static_init.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS 
+WG_BLOB_SOURCES( BLOB_SRCS 
 	${ALL_SRCS} 
 )
 BW_ADD_LIBRARY( core_dependency_system ${BLOB_SRCS} )

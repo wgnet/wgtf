@@ -4,14 +4,17 @@
 #include "core_dependency_system/i_interface.hpp"
 #include "plugins/plg_node_editor/interfaces/i_slot.hpp"
 #include "plugins/plg_node_editor/interfaces/i_connection.hpp"
+#include "core_object/i_object_manager.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_reflection/utilities/object_handle_reflection_utils.hpp"
 
 namespace wgt
 {
-class EventSlot : public Implements<ISlot>
+class EventSlot : public Implements<ISlot>, public Depends<IObjectManager, IDefinitionManager>
 {
     DECLARE_REFLECTED
 public:
-    EventSlot(INode *node, bool isInput);
+    EventSlot(ObjectHandleT<INode> node, bool isInput);
     virtual ~EventSlot(){}
 
     size_t Id() const override { return m_id; }
@@ -20,13 +23,13 @@ public:
     std::string Color() const override;
     MetaType* Type() const override;
     bool Editable() const override;
-    INode* Node() const override;
+	ObjectHandleT<INode> Node() const override;
 
     std::string Label() const override;
     void setLabel(const std::string &label) override;
 
     const std::set<size_t>* GetConnectionIds() const  override { return &m_connectionIds; }
-    const GenericListT<ISlot*>* GetConnectedSlots() const override;
+    const CollectionModel* GetConnectedSlots() const override;
 
     bool CanConnect(ObjectHandleT<ISlot> slot) override;
     bool IsConnected() const override { return !m_connectedSlots.empty(); }
@@ -34,6 +37,22 @@ public:
     bool Connect(size_t connectionID, ObjectHandleT<ISlot> slot) override;
     bool Disconnect(size_t connectionID, ObjectHandleT<ISlot> slot) override;
 private:
+
+	mutable ObjectHandleT<ISlot> thisSlot_;
+	ObjectHandleT<ISlot> getThis() const
+	{
+		if (thisSlot_ != nullptr)
+		{
+			return thisSlot_;
+		}
+
+		auto thisObject = get<IObjectManager>()->getObject(this);
+		assert(thisObject != nullptr);
+		thisSlot_ = reflectedCast<ISlot>(thisObject, *get<IDefinitionManager>());
+		assert(thisSlot_ != nullptr);
+		return thisSlot_;
+	}
+
     size_t m_id;
     std::string m_label;
     std::string m_icon;
@@ -42,9 +61,10 @@ private:
     bool m_editable;
     bool m_isInput;
 
-    INode *m_pNode;
+	ObjectHandleT<INode> m_pNode;
     std::set<size_t> m_connectionIds;
-    GenericListT<ISlot*> m_connectedSlots;
+    std::vector<ObjectHandleT<ISlot>> m_connectedSlots;
+	CollectionModel connectedSlotsModel;
 };
 } // end namespace wgt
 #endif //__EVENT_SLOT_H__

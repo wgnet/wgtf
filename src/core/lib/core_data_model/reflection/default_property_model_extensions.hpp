@@ -10,16 +10,13 @@ namespace wgt
 class IDefinitionManager;
 class IReflectionController;
 class DefaultSetterGetterExtension : public SetterGetterExtension
+								   , Depends<IReflectionController>
 {
 public:
-	DefaultSetterGetterExtension(IComponentContext& context);
 	Variant getValue(const RefPropertyItem* item, int column, ItemRole::Id roleId,
 	                 IDefinitionManager& defMng) const override;
 	bool setValue(RefPropertyItem* item, int column, ItemRole::Id roleId, const Variant& data,
 	              IDefinitionManager& definitionManager, ICommandManager& commandManager) const;
-
-private:
-	Depends<IReflectionController> reflectionControllerHolder;
 };
 
 class UrlGetterExtension : public SetterGetterExtension

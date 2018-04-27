@@ -4,18 +4,17 @@
 #include "core_serialization/resizing_memory_stream.hpp"
 #include "core_serialization/text_stream.hpp"
 #include "core_serialization/text_stream_manip.hpp"
-#include "core_serialization/serializer/xml_serializer.hpp"
+#include "core_serialization_xml/xml_serializer.hpp"
 #include "core_variant/variant.hpp"
 #include "core_variant/collection.hpp"
-#include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/reflection_macros.hpp"
-#include "core_reflection/class_definition.hpp"
+#include "core_reflection/interfaces/i_class_definition.hpp"
 #include "core_reflection/function_property.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
-#include "core_reflection/reflected_types.hpp"
+#include "core_unit_test/test_framework.hpp"
+#include "core_object/managed_object.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -42,15 +41,15 @@ const IClassDefinition* classDefinition()
 }
 
 template <typename T>
-ObjectHandleT<T> createObject()
+ManagedObject<T> createObject()
 {
-	return ObjectHandleT<T>(std::unique_ptr<T>(new T()), classDefinition<T>());
+	return ManagedObject<T>(std::make_unique<T>());
 }
 
 template <typename T, typename Arg0>
-ObjectHandleT<T> createObject(Arg0&& arg0)
+ManagedObject<T> createObject(Arg0&& arg0)
 {
-	return ObjectHandleT<T>(std::unique_ptr<T>(new T(std::forward<Arg0>(arg0))), classDefinition<T>());
+	return ManagedObject<T>(std::make_unique<T>(std::forward<Arg0>(arg0)));
 }
 
 class SimpleTestObject
@@ -120,52 +119,57 @@ class ComplexTestObject
 public:
 	ComplexTestObject()
 	{
-		obj_ = createObject<SimpleTestObject>("default");
 	}
 
-	void init()
+	void init(const ManagedObject<SimpleTestObject>& linkTo)
 	{
-		obj_ = createObject<SimpleTestObject>("obj_");
-		s_ = "ololo";
+		linkedObject_ = linkTo.getHandle();
+		object_ = SimpleTestObject("obj_");
+		string_ = "ololo";
 
-		xobj_.clear();
-		xobj_.push_back(SimpleTestObject("object 0"));
-		xobj_.push_back(SimpleTestObject("object 1"));
-		xobj_.push_back(SimpleTestObject("object 2"));
+		objectVector_.clear();
+		objectVector_.push_back(SimpleTestObject("object 0"));
+		objectVector_.push_back(SimpleTestObject("object 1"));
+		objectVector_.push_back(SimpleTestObject("object 2"));
 
-		s_i_.clear();
-		s_i_["0 zero"] = 0;
-		s_i_["1 one"] = 1;
-		s_i_["2 two"] = 2;
+		stringIntMap_.clear();
+		stringIntMap_["0 zero"] = 0;
+		stringIntMap_["1 one"] = 1;
+		stringIntMap_["2 two"] = 2;
 
-		xs_obj_.clear();
+		stringObjectMapVector_.clear();
 
-		std::map<std::string, ObjectHandle> map;
-		map["obj0"] = createObject<SimpleTestObject>("value 0.0");
-		map["obj1"] = createObject<SimpleTestObject>("value 0.1");
-		map["obj2"] = createObject<SimpleTestObject>("value 0.2");
-		xs_obj_.push_back(std::move(map));
+		std::map<std::string, SimpleTestObject> map;
+		map.emplace("obj0", SimpleTestObject("value 0.0"));
+		map.emplace("obj1", SimpleTestObject("value 0.1"));
+		map.emplace("obj2", SimpleTestObject("value 0.2"));
+		stringObjectMapVector_.push_back(std::move(map));
 
-		map["obj0"] = createObject<SimpleTestObject>("value 1.0");
-		map["obj1"] = createObject<SimpleTestObject>("value 1.1");
-		map["obj2"] = createObject<SimpleTestObject>("value 1.2");
-		xs_obj_.push_back(std::move(map));
+		map.emplace("obj0", SimpleTestObject("value 1.0"));
+		map.emplace("obj1", SimpleTestObject("value 1.1"));
+		map.emplace("obj2", SimpleTestObject("value 1.2"));
+		stringObjectMapVector_.push_back(std::move(map));
 	}
 
 	bool operator==(const ComplexTestObject& that) const
 	{
-		if (*obj_ != *that.obj_ || s_ != that.s_ || xobj_ != that.xobj_ || s_i_ != that.s_i_)
+		if (object_ != that.object_ || string_ != that.string_ || objectVector_ != that.objectVector_ || stringIntMap_ != that.stringIntMap_)
 		{
 			return false;
 		}
 
-		if (xs_obj_.size() != that.xs_obj_.size())
+		if (stringObjectMapVector_.size() != that.stringObjectMapVector_.size())
+		{
+			return false;
+		}
+
+		if (linkedObject_.getBase<SimpleTestObject>() != that.linkedObject_.getBase<SimpleTestObject>())
 		{
 			return false;
 		}
 
 		// vi = vector iterator, tvi = that vector iterator
-		for (auto vi = xs_obj_.begin(), tvi = that.xs_obj_.begin(); vi != xs_obj_.end(); ++vi, ++tvi)
+		for (auto vi = stringObjectMapVector_.begin(), tvi = that.stringObjectMapVector_.begin(); vi != stringObjectMapVector_.end(); ++vi, ++tvi)
 		{
 			if (vi->size() != tvi->size())
 			{
@@ -180,8 +184,8 @@ public:
 					return false;
 				}
 
-				auto* p = mi->second.getBase<SimpleTestObject>();
-				auto* tp = tmi->second.getBase<SimpleTestObject>();
+				auto* p = &mi->second;
+				auto* tp = &tmi->second;
 
 				if (!p || !tp || *p != *tp)
 				{
@@ -198,28 +202,23 @@ public:
 		return !(*this == that);
 	}
 
-	ObjectHandleT<SimpleTestObject> obj_;
-	std::string s_;
-	std::vector<SimpleTestObject> xobj_;
-	std::map<std::string, int> s_i_;
-	std::vector<std::map<std::string, ObjectHandle>> xs_obj_;
+	ObjectHandle linkedObject_;
+	SimpleTestObject object_;
+
+	std::string string_;
+	std::vector<SimpleTestObject> objectVector_;
+	std::map<std::string, int> stringIntMap_;
+	std::vector<std::map<std::string, SimpleTestObject>> stringObjectMapVector_;
 };
 
 IDefinitionManager& definitionManager()
 {
-	static IDefinitionManager* s_managerPtr = nullptr;
-	if (!s_managerPtr)
+	static std::unique_ptr<TestFramework> s_framework = nullptr;
+	if (!s_framework)
 	{
-		static ObjectManager s_objectManager;
-		static DefinitionManager s_definitionManager(s_objectManager);
-
-		s_objectManager.init(&s_definitionManager);
-
-		Reflection::initReflectedTypes(s_definitionManager);
-
-		s_managerPtr = &s_definitionManager;
+        s_framework = std::make_unique<TestFramework>();
 	}
-	return *s_managerPtr;
+	return s_framework->getDefinitionManager();
 }
 
 BEGIN_EXPOSE(SimpleTestObject, MetaNone())
@@ -229,11 +228,12 @@ EXPOSE("real", d_)
 END_EXPOSE()
 
 BEGIN_EXPOSE(ComplexTestObject, MetaNone())
-EXPOSE("object", obj_)
-EXPOSE("string", s_)
-EXPOSE("objects", xobj_)
-EXPOSE("map_string_to_int", s_i_)
-EXPOSE("maps_string_to_obj", xs_obj_)
+EXPOSE("object", object_)
+EXPOSE("link", linkedObject_)
+EXPOSE("string", string_)
+EXPOSE("objects", objectVector_)
+EXPOSE("map_string_to_int", stringIntMap_)
+EXPOSE("maps_string_to_obj", stringObjectMapVector_)
 END_EXPOSE()
 
 TEST(XMLSerializer_simple)
@@ -282,31 +282,37 @@ TEST(XMLSerializer_reflected)
 	ResizingMemoryStream dataStream;
 	XMLSerializer serializer(dataStream, definitionManager());
 	// serializer.setFormat( XMLSerializer::Format::Unformatted() );
-
-	auto srcObjectT = createObject<ComplexTestObject>();
-	srcObjectT->init();
-	CHECK(serializer.serialize(srcObjectT));
-
+	classDefinition<SimpleTestObject>();
+	classDefinition<ComplexTestObject>();
+	auto linkToObject_ = createObject<SimpleTestObject>("default");
+	auto srcObject = createObject<ComplexTestObject>();
+	auto srcObjectHandle = srcObject.getHandleT();
+	srcObjectHandle->init(linkToObject_);
+	CHECK(serializer.serialize(srcObjectHandle));
+	auto srcData = *srcObjectHandle.get();
 	CHECK(serializer.sync());
 	CHECK_EQUAL(0, dataStream.seek(0));
+	srcObject = nullptr;
 
-	Variant dst;
-	CHECK(serializer.deserialize(dst));
-	ObjectHandle dstObj;
-	RETURN_ON_FAIL_CHECK(dst.tryCast(dstObj));
-	ComplexTestObject* dstTestObj = dstObj.getBase<ComplexTestObject>();
-	RETURN_ON_FAIL_CHECK(dstTestObj != nullptr);
+	ManagedObject<ComplexTestObject> dstObject;
+	auto dstObjectHandle = dstObject.getHandleT();
+	CHECK(dstObjectHandle.get() == nullptr);
+	CHECK(serializer.deserialize(dstObject));
+	dstObjectHandle = dstObject.getHandleT();
+	ComplexTestObject* dstTestObject = dstObjectHandle.get();
+	RETURN_ON_FAIL_CHECK(dstTestObject != nullptr);
 
-	CHECK(*dstTestObj == *srcObjectT);
+	CHECK(*dstTestObject == srcData);
 
-	auto tmpTestObj = createObject<ComplexTestObject>();
-	CHECK(*dstTestObj != *tmpTestObj);
+	auto tmpTestObject = createObject<ComplexTestObject>();
+	auto tmpTestObjectHandle = tmpTestObject.getHandleT();
+	CHECK(*dstTestObject != *tmpTestObject.getHandleT());
 
-	tmpTestObj->init();
-	CHECK(*dstTestObj == *tmpTestObj);
+	tmpTestObjectHandle->init(linkToObject_);
+	CHECK(*dstTestObject == *tmpTestObjectHandle);
 
-	tmpTestObj->xs_obj_[1]["obj1"] = createObject<SimpleTestObject>("value 1.1 modified");
-	CHECK(*dstTestObj != *tmpTestObj);
+	tmpTestObjectHandle->stringObjectMapVector_[1]["obj1"] = SimpleTestObject("value 1.1 modified");
+	CHECK(*dstTestObject != *tmpTestObjectHandle);
 }
 } // end namespace wgt
 META_TYPE(wgt::SimpleTestObject)

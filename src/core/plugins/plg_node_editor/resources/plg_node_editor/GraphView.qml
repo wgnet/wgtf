@@ -5,6 +5,7 @@ import QtQuick.Dialogs 1.2
 
 import WGControls 2.0
 import WGControls.Canvas 2.0
+import WGControls.Global 2.0
 
 
 Item
@@ -12,17 +13,20 @@ Item
     id: graphView
     WGComponent { type: componentType }
     property var componentType: "GraphView"
-    
+
     anchors.fill: parent
 
     property var nodesModel
     property var connectionsModel
     property var nodeClassesModel
     property var groupModel
-    
+
     property alias contextMenu: graphContextMenu
     property alias contextArea: graphContextArea
-    
+
+    /*! internal */
+    property var __dialogInstance: null
+
     signal redrawGraph();
 
     function getNodeViewById(nodeId)
@@ -98,27 +102,34 @@ Item
         createGroup(groupModel, rectangleVector, name, colorVector);
     }
 
-    WGListModel
-    {
-        id: nodesListModel
-        source: nodesModel
-
-        ValueExtension {}
+    /*! This function opens the desired dialog box.
+    */
+    function openColorDialog(curColor) {
+        __dialogInstance = WGDialogs.customColorPickerDialog
+        if(typeof viewId != "undefined")
+        {
+            __dialogInstance.viewId = viewId
+        }
+        if(typeof viewPreference != "undefined")
+        {
+            __dialogInstance.viewPreference = viewPreference
+        }
+        __dialogInstance.modality = Qt.ApplicationModal
+        __dialogInstance.showAlphaChannel = false
+        __dialogInstance.open(600, 380, curColor)
     }
 
-    WGListModel
-    {
-        id: connectionsListModel
-        source: connectionsModel
-
-        ValueExtension {}
+    /*! This function closes the desired dialog box depending on whether useAssetBrowser == true or not.
+    */
+    function closeColorDialog() {
+        __dialogInstance.close()
     }
-    
+
     MouseArea {
         id: graphContextArea
         anchors.fill: parent
         acceptedButtons: Qt.RightButton;
-        
+
         onClicked: {
             contextMenu.contextObject = graphView;
             contextMenu.popupPointX = mouse.x;
@@ -126,7 +137,7 @@ Item
             contextMenu.popup();
         }
     }
-    
+
     ContextMenu {
         id: graphContextMenu
         path: "NodeEditorMenu"
@@ -152,6 +163,8 @@ Item
         property color creatingColor: "#000000"
         property var currentConnectionSlot: null
         property var creatingNode: null
+
+        property var colorEditingIndex
 
         signal updateConnections()
 
@@ -291,7 +304,7 @@ Item
         Repeater
         {
             id: connectionRepeater
-            model: connectionsListModel
+            model: connectionsModel
             delegate: ConnectionNodes
             {
                 connectionObj: value
@@ -321,16 +334,16 @@ Item
                 {
                     groupTitle: typeof value !== "undefined" ? value.name : "No name"
                     groupColor: {
-                        // Lookup value.color from the model once
+                        // Lookup value color from the model once
                         var vector = value.color;
-                        return Qt.rgba(vector.x, vector.y, vector.z, vector.w);
+                        return Qt.vector4d(vector.x, vector.y, vector.z, vector.w)
                     }
                     x: typeof value !== "undefined" ? value.rectangle.x : 0
                     y: typeof value !== "undefined" ? value.rectangle.y : 0
                     z: -1
                     width: typeof value !== "undefined" ? value.rectangle.z : 100
-                    height: typeof value !== "undefined" ? value.rectangle.w : 100      
-                    
+                    height: typeof value !== "undefined" ? value.rectangle.w : 100
+
                     onChangeTitle: {
                         if (typeof value == "undefined") {
                             return;
@@ -340,9 +353,8 @@ Item
 
                     onChangeColor: {
                         beginUndoFrame()
-                        colorDialog.color = groupColor
-                        colorDialog.index = index
-                        colorDialog.open()
+                        canvasContainer.colorEditingIndex = index
+                        openColorDialog(groupColor)
                     }
 
                     onSetPosition: {
@@ -387,7 +399,7 @@ Item
             Repeater
             {
                 id: nodeRepeater
-                model: nodesListModel
+                model: nodesModel
                 delegate: Node
                 {
                     id: nodeContainer
@@ -413,19 +425,21 @@ Item
         }
     }
 
-    ColorDialog {
-        id: colorDialog
-        property int index
-        title: "Please choose a color"
-        showAlphaChannel: false
+    Connections {
+        target: __dialogInstance
+        ignoreUnknownSignals: true
 
         onAccepted: {
-            var item = groupModel.item(index);
-            item.color = Qt.vector4d(color.r, color.g, color.b, color.a);
+            groupModel.item(canvasContainer.colorEditingIndex).value.color = selectedValue
             endUndoFrame();
         }
+
         onRejected: {
             abortUndoFrame();
+        }
+
+        onClosed: {
+            __dialogInstance = null
         }
     }
 

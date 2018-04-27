@@ -6,10 +6,12 @@
 #include "wg_types/vector2.hpp"
 #include "wg_types/vector3.hpp"
 #include "wg_types/vector4.hpp"
+#include "wg_types/shared_string.hpp"
 
 META_TYPE_NAME(wgt::BinaryBlock, "BinaryBlock")
 META_TYPE_NAME(wgt::Vector2, "Vector2")
 META_TYPE_NAME(wgt::Vector3, "Vector3")
 META_TYPE_NAME(wgt::Vector4, "Vector4")
+META_TYPE_NAME(wgt::SharedString, "SharedString")
 
 #endif

@@ -9,10 +9,11 @@ WGPanel {
     id: propertyTreeTest20Panel
     objectName: "propertyTreeTest20Panel"
     color: palette.mainWindowColor
-    property string title: "PropertyTree Test"
-    property var layoutHints: { 'test': 0.1 }
+    title: "PropertyTree Test"
+    layoutHints: { 'test': 0.1 }
     property int topControlsHeight: 20
-
+	property var source: self
+	
     // TODO NGT-2493 ScrollView steals keyboard focus
     Keys.forwardTo: [testTreeView]
     focus: true
@@ -26,13 +27,33 @@ WGPanel {
             id: topControls
             objectName: "topControls"
             height: topControlsHeight
+			
             WGPushButton {
                 id: testButton
                 objectName: "testButton"
                 text: "Run Test Script"
-
                 onClicked: {
                     runTestScript();
+                }
+            }
+			
+            WGPushButton {
+                id: reloadButton
+                objectName: "reloadButton"
+                text: "Reload"
+                onClicked: {
+                    reloadEnvironment();
+                }
+            }
+
+            WGPushButton {
+                id: readOnlyButton
+                objectName: "readOnlyButton"
+                text: "Read Only"
+                onClicked: {
+                    toggleReadOnly();
+					testTreeView.model = null;
+					testTreeView.model = getTreeModel();
                 }
             }
 
@@ -45,7 +66,12 @@ WGPanel {
             WGTextBox {
                 id: searchBox
                 Layout.fillWidth: true
-                onTextChanged: mainColumnLayout.setFilter(text);
+
+                onEditAccepted: {
+                    mainColumnLayout.setFilter(text);
+                    searchBox.focus = true;
+                    deselect();
+                }
             }
         }
 
@@ -60,19 +86,31 @@ WGPanel {
             property var filter: /.*/
 
             function filterAcceptsItem(item) {
-                var value = (item.column == 0 ? item.display : item.value);
-                return filter.test(value);
+                return item.column == 0 && filter.test(item.display);
             }
         }
-
-        WGPropertyTreeView {
-            id: testTreeView
-            objectName: "testTreeView"
+		
+		Connections {
+			target: source
+			onTreeVisibleChanged: {
+				testTreeView.visible = treeVisible;
+			}
+		}
+		
+        WGScrollView {
+            anchors.margins: 10
             Layout.fillHeight: true
-            Layout.fillWidth: true
-            model: treeModel
-            clamp: true
-            filterObject: mainColumnLayout.filterObject
-        }
+            Layout.fillWidth: true		
+			WGPropertyTreeView {
+				id: testTreeView
+				objectName: "testTreeView"
+				Layout.fillHeight: true
+				Layout.fillWidth: true
+				model: getTreeModel()
+				clamp: true
+                visible: false
+				filterObject: mainColumnLayout.filterObject
+			}
+		}
     }
 }

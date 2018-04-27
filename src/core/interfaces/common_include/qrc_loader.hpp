@@ -2,7 +2,7 @@
 #define QRC_LOADER_HPP
 #include "qrc_loader_helper.hpp"
 #include "env_pointer.hpp"
-#include <cassert>
+#include "core_common/assert.hpp"
 
 // Macro provide qrc resources loading for other plugins in WGTF, and a plugin which use this macro needs to link to
 // QtCore
@@ -87,7 +87,7 @@ uintptr_t**                                                                     
 			if (s_qtHooks == nullptr)                                                                                \
 			{                                                                                                        \
 				s_qtHooks = getPointerT<uintptr_t*>(QT_HOOK_ENV);                                                    \
-				assert(s_qtHooks != nullptr);                                                                        \
+				TF_ASSERT(s_qtHooks != nullptr);                                                                        \
 			}                                                                                                        \
 			return s_qtHooks;                                                                                        \
 		\

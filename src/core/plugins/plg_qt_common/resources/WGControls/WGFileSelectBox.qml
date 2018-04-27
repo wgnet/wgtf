@@ -61,9 +61,9 @@ WGExpandingRowLayout {
 
     /*! Whether the dialog should be shown modal with respect to the window containing the dialog's parent Item,
         modal with respect to the whole application, or non-modal.
-        The default value is Qt.WindowModal
+        The default value is Qt.ApplicationModal
     */
-    property var modality: Qt.WindowModal
+    property var modality: Qt.ApplicationModal
 
     /*! This array contains a list of filename Filters in the format:
       \code{.js}
@@ -114,7 +114,9 @@ WGExpandingRowLayout {
     /*! This function opens the desired dialog box.
     */
     function openDialog() {
-        __dialogInstance.open(dialogWidth, dialogHeight,textField.text)
+        if(!readOnly) {
+            __dialogInstance.open(dialogWidth, dialogHeight,textField.text)
+        }
     }
 
     /*! This function closes the desired dialog box depending on whether useAssetBrowser == true or not.
@@ -131,7 +133,7 @@ WGExpandingRowLayout {
                                                    "selectedNameFilter": fileComponent.selectedNameFilter,
                                                    "title": fileComponent.title
                                                });
-        openButton.enabled = true
+        openButton.enabled = Qt.binding(function() { return !textField.readOnly; });
     }
 
     Connections {
@@ -151,6 +153,7 @@ WGExpandingRowLayout {
         DropArea {
             anchors.fill:parent
             keys: ["text/uri-list"]
+            enabled: !textField.readOnly
             onDropped: {
                 if (drop.hasUrls)
                 {

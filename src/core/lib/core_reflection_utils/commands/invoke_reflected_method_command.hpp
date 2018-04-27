@@ -20,17 +20,14 @@ public:
 	virtual ~ReflectedMethodCommandParameters();
 
 	const RefObjectId& getId() const;
-	const char* getPath() const;
+	const std::string& getPath() const;
 	const ReflectedMethodParameters& getParameters() const;
 	ReflectedMethodParameters& getParametersRef() const;
+	Collection getParameterList() const;
 
 	void setId(const RefObjectId& id);
-	void setPath(const char* path);
+	void setPath(const std::string& path);
 	void setParameters(const ReflectedMethodParameters& parameters);
-
-	static const char* idName();
-	static const char* pathName();
-	static const char* parametersName();
 
 private:
 	struct Implementation;
@@ -46,11 +43,13 @@ public:
 	virtual ~InvokeReflectedMethodCommand();
 
 	const char* getId() const override;
+	const char* getName() const override;
 	bool validateArguments(const ObjectHandle& arguments) const override;
-	ObjectHandle execute(const ObjectHandle& arguments) const override;
+	virtual Variant execute(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
 	bool canUndo(const ObjectHandle& arguments) const override;
-	virtual ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
+	virtual CommandDescription getCommandDescription(const ObjectHandle& arguments) const override;
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override;
 
 private:
 	struct Implementation;

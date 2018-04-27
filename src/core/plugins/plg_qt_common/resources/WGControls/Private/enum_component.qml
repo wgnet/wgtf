@@ -6,7 +6,7 @@ import WGControls 1.0
 WGDropDownBox {
     id: combobox
     objectName: typeof itemData.indexPath == "undefined" ? "enum_component" : itemData.indexPath
-    enabled: itemData.enabled && !itemData.readOnly
+    enabled: itemData.enabled && !itemData.readOnly && (typeof readOnlyComponent == "undefined" || !readOnlyComponent)
     multipleValues: itemData.multipleValues
 
     Component.onCompleted: {

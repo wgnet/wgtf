@@ -8,9 +8,10 @@
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 
 #include "core_data_model/reflection/reflected_list.hpp"
-#include "core_data_model/reflection/reflected_tree_model.hpp"
+#include "core_data_model/reflection_proto/reflected_tree_model.hpp"
 
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_view.hpp"
@@ -140,10 +141,11 @@ public:
 	template <typename T>
 	void addItem(T&& t)
 	{
-		gl_.emplace_back(t);
+		Collection& collection = gl_.getSource();
+		collection.insertValue(collection.size(), t);
 	}
 
-	const IListModel* getList() const
+	const AbstractListModel* getList() const
 	{
 		return &gl_;
 	}
@@ -163,10 +165,6 @@ private:
 class TestObjHandlePlugin : public PluginMain, public Depends<IViewCreator>
 {
 public:
-	TestObjHandlePlugin(IComponentContext& contextManager) : Depends(contextManager)
-	{
-	}
-
 	bool PostLoad(IComponentContext& contextManager) override
 	{
 		if (IDefinitionManager* dm = contextManager.queryInterface<IDefinitionManager>())
@@ -197,11 +195,10 @@ public:
 
 		viewGL_ = viewCreator->createView("plg_list_model_test/test_list_panel.qml", glist_->getList());
 
-		test_ = std::unique_ptr<Test3>(new Test3(3));
-		auto model = std::unique_ptr<ITreeModel>(new ReflectedTreeModel(
-		ObjectHandle(*test_, def3_), *defManager, contextManager.queryInterface<IReflectionController>()));
+		test_ = ManagedObject<Test3>(std::unique_ptr<Test3>(new Test3(3)));
+		auto model = std::shared_ptr<AbstractTreeModel>(new proto::ReflectedTreeModel(test_.getHandle()));
 
-		viewTest_ = viewCreator->createView("plg_tree_model_test/test_tree_panel.qml", ObjectHandle(std::move(model)));
+		viewTest_ = viewCreator->createView("plg_tree_model_test/test_tree_panel.qml", model);
 	}
 
 	bool Finalise(IComponentContext& contextManager) override
@@ -235,7 +232,7 @@ private:
 
 	std::unique_ptr<GListTest> glist_;
 	wg_future<std::unique_ptr<IView>> viewGL_;
-	std::unique_ptr<Test3> test_;
+	ManagedObject<Test3> test_;
 	wg_future<std::unique_ptr<IView>> viewTest_;
 };
 

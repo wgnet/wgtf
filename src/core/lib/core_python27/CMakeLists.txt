@@ -1,10 +1,11 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 3.2.3 )
 PROJECT( core_python27 )
 
+INCLUDE( WGPython27Project )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
+INCLUDE( WGTFMacros )
 INCLUDE( WGMacros )
-INCLUDE( WGPython27Project )
 
 IF( NOT PYTHON_FOUND )
 	RETURN()
@@ -56,11 +57,14 @@ SET( ALL_SRCS
 	i_script_object_definition_registry.hpp
 	script_object_definition_registry.cpp
 	script_object_definition_registry.hpp
+	python_obj_manager.hpp
+	python_obj_manager.cpp
+	interfaces/i_python_obj_manager.hpp
 )
 
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )
@@ -68,10 +72,11 @@ BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} INTERFACE
 	core_dependency_system
 	core_reflection
-	wg_types
+	wgtf_types
 	wg_pyscript
 )
-WG_TARGET_LINK_PYTHON()
 
-BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
+WGTF_TARGET_LINK_PYTHON( ${PROJECT_NAME} )
+
+WG_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "WGT Libs" )

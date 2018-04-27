@@ -14,14 +14,14 @@ public:
     virtual ~CustomConnection();
 
     size_t Id() const override { return m_id; }
-    ISlot* Input() const override;
-    ISlot* Output() const override;
+	ObjectHandleT<ISlot> Input() const override;
+	ObjectHandleT<ISlot> Output() const override;
     bool Bind(ObjectHandleT<ISlot> outputSlot, ObjectHandleT<ISlot> inputSlot) override;
     bool UnBind() override;
 private:
     size_t m_id;
-    ISlot *m_inputSlot;
-    ISlot *m_outputSlot;
+    ObjectHandleT<ISlot> m_inputSlot;
+	ObjectHandleT<ISlot> m_outputSlot;
 
     bool isConnected;
 };

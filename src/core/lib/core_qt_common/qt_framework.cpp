@@ -1,9 +1,11 @@
 #include "qt_framework.hpp"
+
 #include "qt_preferences.hpp"
+#include "qml_component_manager.hpp"
+
 #include "core_data_model/i_item_role.hpp"
 
 #include "core_qt_common/qt_types.hpp"
-#include "core_qt_common/i_qt_type_converter.hpp"
 #include "core_qt_common/qml_component.hpp"
 #include "core_qt_common/qml_view.hpp"
 #include "core_qt_common/qt_view.hpp"
@@ -14,17 +16,19 @@
 #include "core_qt_common/qt_window.hpp"
 #include "core_qt_common/qml_window.hpp"
 #include "core_qt_common/qml_dialog.hpp"
-#include "core_qt_common/string_qt_type_converter.hpp"
-#include "core_qt_common/vector_qt_type_converter.hpp"
+#include "core_qt_common/qt_exe_icon_provider.hpp"
 #include "core_qt_common/qt_image_provider.hpp"
 #include "core_qt_common/qt_image_provider_old.hpp"
 #include "core_qt_common/shared_controls.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
-#include "core_qt_common/helpers/qml_component_loader_helper.hpp"
 #include "core_qt_common/qt_scripting_engine.hpp"
 #include "core_qt_common/qt_script_object.hpp"
-#include "core_common/platform_env.hpp"
+#include "core_qt_common/qt_framework_common.hpp"
 #include "core_qt_common/qt_progress_dialog.hpp"
+#include "core_qt_common/qt_system_tray_icon.hpp"
+#include "core_qt_common/models/extensions/model_extension_manager.hpp"
+
+#include "core_common/assert.hpp"
+#include "core_common/platform_env.hpp"
 
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_generic_plugin/interfaces/i_plugin_context_manager.hpp"
@@ -39,17 +43,23 @@
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_component_provider.hpp"
 #include "core_ui_framework/generic_component_provider.hpp"
+
+#include "core_logging/logging.hpp"
+#include "core_logging_system/interfaces/i_logging_system.hpp"
+
 #include "qt_action_manager.hpp"
 
-#include "core_data_model/i_tree_model.hpp"
-#include "core_data_model/i_list_model.hpp"
-#include "core_data_model/i_item.hpp"
 #include "core_data_model/dialog/dialog_model.hpp"
+#include "core_object/managed_object.hpp"
 
 #include "wg_types/string_ref.hpp"
 #include "core_common/ngt_windows.hpp"
 
 #include "private/qt_ui_worker.hpp"
+
+#include "core_dependency_system/context_callback_helper.hpp"
+#include "core_qt_common/reflection_auto_reg.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 #include <thread>
 #include <array>
@@ -63,10 +73,16 @@
 #include <QQuickWidget>
 #include <QString>
 #include <QWidget>
-#include <QDir>
 #include <QMessageBox>
 #include <QQmlIncubationController>
 #include <QFileSystemWatcher>
+#include <QProcess>
+#include <QClipboard>
+#include <QDesktopServices>
+#include <QSystemTrayIcon>
+#include "core_serialization_xml/simple_api_for_xml.hpp"
+#include "qt_thumbnail_provider.hpp"
+#include "core_ui_framework/i_thumbnail_provider.hpp"
 
 #ifdef QT_NAMESPACE
 namespace QT_NAMESPACE
@@ -84,6 +100,7 @@ using namespace QT_NAMESPACE;
 
 namespace wgt
 {
+
 namespace QtFramework_Locals
 {
 // Temporary command event listener to handle process events when the command
@@ -96,14 +113,185 @@ public:
 		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 	}
 };
+
+std::string searchInDirectory(const QStringList& execs, QString directory)
+{
+	const QChar slash = QLatin1Char('/');
+	if (directory.isEmpty())
+		return "";
+	// Avoid turing / into // on windows which triggers windows to check
+	// for network drives!
+	if (!directory.endsWith(slash))
+		directory += slash;
+
+	foreach (const QString& exec, execs)
+	{
+		QFileInfo fi(directory + exec);
+		if (fi.exists() && fi.isFile() && fi.isExecutable())
+			return fi.absoluteFilePath().toUtf8().constData();
+	}
+	return "";
 }
 
-// Temporary Dialog accessor
-enum TemporaryDialogType
+std::string explorerPath()
+{
+	QMap<QString, QString> values_map;
+	auto values = QProcessEnvironment::systemEnvironment().toStringList();
+	foreach (const QString& s, values)
+	{
+		int i = s.indexOf(QLatin1Char('='), 1);
+		if (i >= 0)
+		{
+			values_map.insert(s.left(i).toUpper(), s.mid(i + 1));
+		}
+	}
+
+	QString exec = QDir::cleanPath(QLatin1String("explorer.exe"));
+	QFileInfo fi(exec);
+
+	QStringList execs(exec);
+	// Check all the executable extensions on windows:
+	// PATHEXT is only used if the executable has no extension
+	if (fi.suffix().isEmpty())
+	{
+		QStringList extensions = values_map.value(QLatin1String("PATHEXT")).split(QLatin1Char(';'));
+
+		foreach (const QString& ext, extensions)
+		{
+			QString tmp = "explorer.exe" + ext.toLower();
+			if (fi.isAbsolute())
+			{
+				if (QFile::exists(tmp))
+					return tmp.toUtf8().constData();
+			}
+			else
+			{
+				execs << tmp;
+			}
+		}
+	}
+
+	if (fi.isAbsolute())
+		return exec.toUtf8().constData();
+
+	QSet<QString> alreadyChecked;
+	QStringList list = values_map.value(QLatin1String("PATH")).split(";", QString::SkipEmptyParts);
+	foreach (const QString& p, list)
+	{
+		if (alreadyChecked.contains(p))
+			continue;
+		alreadyChecked.insert(p);
+		std::string tmp = searchInDirectory(execs, QDir::fromNativeSeparators(p));
+		if (!tmp.empty())
+			return tmp;
+	}
+	return "";
+}
+
+const std::string ROOT = "Icons";
+const std::string ICON = "icon";
+
+struct IconData
+{
+	std::string id_;
+	std::string icon_;
+};
+
+class IconsReader : private SimpleApiForXml
+{
+	typedef SimpleApiForXml base;
+
+public:
+	IconsReader(TextStream& stream, std::unordered_map<std::string, std::unique_ptr<IconData>>& iconData, QtImageProvider& imageProvider)
+		: base(stream), iconData_(iconData), imageProvider_(imageProvider)
+	{
+	}
+	bool read()
+	{
+		return parse();
+	}
+	virtual void elementStart(const char* elementName, const char* const* attributes) override
+	{
+		if (elementName == ROOT)
+		{
+			return;
+		}
+
+		std::string id(elementName);
+		std::transform(id.begin(), id.end(), id.begin(), ::tolower);
+		IconData* iconData = nullptr;
+		auto it = iconData_.find(id);
+		if (it == iconData_.end())
+		{
+			iconData = new IconData;
+			iconData_[id] = std::unique_ptr<IconData>(iconData);
+		}
+		else
+		{
+			iconData = it->second.get();
+		}
+		iconData->id_ = elementName;
+		std::string tmp;
+		// parse attributes
+		for (auto attribute = attributes; *attribute; attribute += 2)
+		{
+			const char* attributeName = attribute[0];
+			const char* attributeValue = attribute[1];
+
+			if (attributeName == ICON)
+			{
+				auto imagePath = imageProvider_.encode(attributeValue);
+				iconData->icon_ = imagePath.toUtf8().constData();
+			}
+			else
+			{
+				// ignore unknown attributes
+				NGT_WARNING_MSG("Warning: unknown icon data attribute \"%s\".\n", attributeName);
+			}
+		}
+	}
+
+private:
+	std::unordered_map<std::string, std::unique_ptr<IconData>>& iconData_;
+	QtImageProvider& imageProvider_;
+};
+
+
+}
+
+// Modeless Dialog accessor
+enum ModelessDialogType
 {
 	DIALOG,
 	CLOSED,
 	CONNECTION
+};
+
+struct QtFramework::Impl : public Depends<ICommandManager, IUIApplication, IViewCreator,
+                                          IPluginContextManager, IUIFramework, IDefinitionManager, ILoggingSystem>
+	, public ContextCallBackHelper
+{
+	Impl()
+	{
+		registerCallback([ this ](IDefinitionManager & defManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+			actionManager_ = std::make_unique<QtActionManager>();
+		});
+	}
+
+	void finalise()
+	{
+		actionManager_.reset();
+		iconData_.clear();
+		thumbnailProviders_.clear();
+		thumbnailCache_.clear();
+	}
+
+	std::unique_ptr<ActionManager> actionManager_;
+	std::unordered_map<std::string, std::unique_ptr<QtFramework_Locals::IconData>> iconData_;
+	std::set<std::weak_ptr<IThumbnailProvider>, std::owner_less<std::weak_ptr<IThumbnailProvider>>> thumbnailProviders_;
+	QHash<QString, QImage> thumbnailCache_;
 };
 
 //// Ensure the QtFileDialogOptions enumeration matches so we can do a simple cast
@@ -124,65 +312,15 @@ static_assert(IUIFramework::QtFileDialogOptions::HideNameFilterDetails == QFileD
 static_assert(IUIFramework::QtFileDialogOptions::DontUseCustomDirectoryIcons ==
               QFileDialog::DontUseCustomDirectoryIcons,
               "QtFileDialogOptions::DontUseCustomDirectoryIcons must match QFileDialog::DontUseCustomDirectoryIcons");
-std::vector<int> QtFramework::ComponentVersion::tokenise(const char* version)
-{
-	static const size_t bufferSize = 256;
-
-	std::vector<int> tokens;
-
-	auto len = strlen(version);
-	if (len >= bufferSize)
-	{
-		return tokens;
-	}
-
-	char buffer[bufferSize];
-	strcpy(buffer, version);
-	auto tok = strtok(buffer, ".");
-	while (tok != nullptr)
-	{
-		tokens.push_back(strtol(tok, nullptr, 0));
-		tok = strtok(nullptr, ".");
-	}
-	return tokens;
-}
-
-bool QtFramework::ComponentVersion::operator()(const std::vector<int>& a, const std::vector<int>& b) const
-{
-	auto count = std::min(a.size(), b.size());
-	for (size_t i = 0; i < count; ++i)
-	{
-		if (a[i] == b[i])
-		{
-			continue;
-		}
-
-		return a[i] < b[i];
-	}
-	return a.size() < b.size();
-}
 
 QtFramework::QtFramework(IComponentContext& contextManager)
-    : Depends(contextManager), qmlEngine_(new QQmlEngine()), qmlWatcher_(new QFileSystemWatcher()),
-      scriptingEngine_(new QtScriptingEngine()), palette_(new QtPalette()), defaultQmlSpacing_(new QtDefaultSpacing()),
-      globalQmlSettings_(new QtGlobalSettings()), actionManager_(new QtActionManager(contextManager)),
-      context_(contextManager), worker_(new QtUIWorker()), incubationTime_(50),
-      incubationController_(new QQmlIncubationController), preferences_(nullptr), useAsyncViewLoading_(true)
+    : impl_(new Impl()), qmlWatcher_(new QFileSystemWatcher()), context_(contextManager), worker_(new QtUIWorker())
 {
-	char wgtHome[MAX_PATH];
-	if (Environment::getValue<MAX_PATH>("WGT_HOME", wgtHome))
-	{
-		qmlEngine_->addPluginPath(wgtHome);
-		qmlEngine_->addImportPath(wgtHome);
-	}
+	qtFrameworkBase_.reset(new QtFrameworkCommon(std::make_unique<QQmlEngine>(), std::make_unique<QtScriptingEngine>(),
+	                                             impl_->get<IDefinitionManager>()));
 
-	// Search Qt resource path or Url by default
-	qmlEngine_->addImportPath("qrc:/");
-	qmlEngine_->addImportPath(":/");
-	qmlEngine_->setIncubationController(incubationController_.get());
-
-	qRegisterMetaType<QtUIFunctionWrapper*>("QtUIFunctionWrapper*");
-	qRegisterMetaType<IDialog::Result>("IDialog::Result");
+	interfaces_.push_back(contextManager.registerInterface(new QtHelpers));
+	interfaces_.push_back(contextManager.registerInterface(impl_->actionManager_.get(), false));
 }
 
 QtFramework::~QtFramework()
@@ -193,49 +331,51 @@ void QtFramework::initialise(IComponentContext& contextManager)
 {
 	// This needs to be set after qtFramework has been constructed and QmlEngine has been created.
 	// This will only occur when running from a plugin scenario such as Maya.
-	IPluginContextManager* pPluginContextManager = contextManager.queryInterface<IPluginContextManager>();
+	auto pPluginContextManager = impl_->get<IPluginContextManager>();
 	if (pPluginContextManager && pPluginContextManager->getExecutablePath())
 	{
-		qmlEngine_->addPluginPath(pPluginContextManager->getExecutablePath());
-		qmlEngine_->addImportPath(pPluginContextManager->getExecutablePath());
+		qmlEngine()->addPluginPath(pPluginContextManager->getExecutablePath());
+		qmlEngine()->addImportPath(pPluginContextManager->getExecutablePath());
 	}
 
 	SharedControls::init();
 
 	registerReloadableFiles();
-	registerDefaultComponents();
-	registerDefaultComponentProviders();
-	registerDefaultTypeConverters();
 
-	scriptingEngine_->initialise(*this, contextManager);
+	qtFrameworkBase_->initialise();
 
-	auto rootContext = qmlEngine_->rootContext();
-	rootContext->setContextObject(scriptingEngine_.get());
-	rootContext->setContextProperty("palette", palette_.get());
-	rootContext->setContextProperty("defaultSpacing", defaultQmlSpacing_.get());
-	rootContext->setContextProperty("globalSettings", globalQmlSettings_.get());
-
+	auto rootContext = qmlEngine()->rootContext();
 	Variant obj = &contextManager;
-	rootContext->setContextProperty("componentContext", QtHelpers::toQVariant(obj, rootContext));
+	rootContext->setContextProperty("componentContext", toQVariant(obj, rootContext));
 
-	qmlEngine_->addImageProvider(QtImageProvider::providerId(), new QtImageProvider());
-	qmlEngine_->addImageProvider(QtImageProviderOld::providerId(), new QtImageProviderOld());
+	qmlEngine()->addImageProvider(QtImageProvider::providerId(), new QtImageProvider());
+	qmlEngine()->addImageProvider(QtImageProviderOld::providerId(), new QtImageProviderOld());
+	qmlEngine()->addImageProvider(QtThumbnailProvider::providerId(), new QtThumbnailProvider(*this));
 
-	auto commandManager = get<ICommandManager>();
+#if defined( _WIN32 )
+	// QQmlEngine::addImageProvider takes ownership
+	auto pFileIconProvider = new QtExeIconProvider();
+	qmlEngine()->addImageProvider(QtExeIconProvider::providerId(), pFileIconProvider);
+#endif // defined( _WIN32 )
+
+	auto commandManager = impl_->get<ICommandManager>();
 	if (commandManager != nullptr)
 	{
 		commandEventListener_.reset(new QtFramework_Locals::QtCommandEventListener);
 		commandManager->registerCommandStatusListener(commandEventListener_.get());
 	}
 
-	preferences_ = contextManager.registerInterface(new QtPreferences(contextManager));
+	interfaces_.push_back(contextManager.registerInterface(new QtPreferences));
+#if defined( _WIN32 )
+	interfaces_.push_back(contextManager.registerInterface(pFileIconProvider,
+		false /* transferOwnership */));
+#endif // defined( _WIN32 )
 
-	auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
-	actionManager_->init();
-	SharedControls::initDefs(*definitionManager);
-	auto uiApplication = get<IUIApplication>();
-	assert(uiApplication != nullptr);
+	impl_->actionManager_->init();
+	auto uiApplication = impl_->get<IUIApplication>();
+	TF_ASSERT(uiApplication != nullptr);
 	connections_ += uiApplication->signalStartUp.connect(std::bind(&QtFramework::onApplicationStartUp, this));
+	connections_ += uiApplication->signalExit.connect(std::bind(&QtFramework::onApplicationExit, this));
 }
 
 QMetaObject* QtFramework::constructMetaObject(QMetaObject* original)
@@ -272,10 +412,10 @@ QMetaObject* QtFramework::constructMetaObject(QMetaObject* original)
 	return registeredTypes_.back().get();
 }
 
-void QtFramework::registerQmlType(ObjectHandle type)
+void QtFramework::registerQmlType(const ObjectHandle& type)
 {
 	QQmlPrivate::RegisterType* qtype = type.getBase<QQmlPrivate::RegisterType>();
-	assert(qtype != nullptr);
+	TF_ASSERT(qtype != nullptr);
 
 	if (qtype)
 	{
@@ -289,59 +429,86 @@ void QtFramework::registerQmlType(ObjectHandle type)
 
 void QtFramework::finalise()
 {
-	auto commandManager = get<ICommandManager>();
+	auto commandManager = impl_->get<ICommandManager>();
 	if (commandManager != nullptr)
 	{
 		commandManager->deregisterCommandStatusListener(commandEventListener_.get());
 	}
 	if (shortcutDialog_ != nullptr)
 	{
-		auto uiApplication = get<IUIApplication>();
-		assert(uiApplication != nullptr);
+		auto uiApplication = impl_->get<IUIApplication>();
+		TF_ASSERT(uiApplication != nullptr);
 		uiApplication->removeWindow(*shortcutDialog_);
 	}
 
+	unregisterResources();
+	impl_->actionManager_->fini();
+	shortcutDialog_ = nullptr;
+	qmlEngine()->removeImageProvider(QtThumbnailProvider::providerId());
+	qmlEngine()->removeImageProvider(QtImageProviderOld::providerId());
+	qmlEngine()->removeImageProvider(QtImageProvider::providerId());
+
+	for (auto i : interfaces_)
 	{
-		std::lock_guard<std::mutex> lock(temporaryDialogMutex_);
-
-		for (auto& tempDialog : temporaryDialogs_)
-		{
-			if (!std::get<CLOSED>(tempDialog))
-			{
-				std::get<CONNECTION>(tempDialog).disconnect();
-				std::get<DIALOG>(tempDialog)->close(IDialog::INVALID_RESULT);
-			}
-		}
-
-		temporaryDialogs_.clear();
+		context_.deregisterInterface(i.get());
 	}
 
-	unregisterResources();
-	actionManager_->fini();
-	shortcutDialog_ = nullptr;
-	qmlEngine_->removeImageProvider(QtImageProviderOld::providerId());
-	qmlEngine_->removeImageProvider(QtImageProvider::providerId());
-	scriptingEngine_->finalise();
-	qmlEngine_->setIncubationController(nullptr);
-	incubationController_ = nullptr;
-	globalQmlSettings_ = nullptr;
-	defaultQmlSpacing_ = nullptr;
-	palette_ = nullptr;
-	qmlEngine_.reset();
-	scriptingEngine_ = nullptr;
+#if defined( _WIN32 )
+	// QtExeIconProvider is one of the interfaces_ to be deregistered.
+	// Removing it before deregistration causes a use-after-free error.
+	qmlEngine()->removeImageProvider(QtExeIconProvider::providerId());
+#endif // defined( _WIN32 )
 
-	context_.deregisterInterface(preferences_);
-	preferences_ = nullptr;
-
-	defaultTypeConverters_.clear();
-	defaultComponentProviders_.clear();
-	defaultComponents_.clear();
+	interfaces_.clear();
 	connections_.clear();
+	qtFrameworkBase_->finalise();
+	impl_->finalise();
+}
+
+QImage QtFramework::requestThumbnail(const QString& filePath, const QSize& requestedSize)
+{
+	auto&& it = impl_->thumbnailCache_.find(filePath);
+	if (it != impl_->thumbnailCache_.end())
+	{
+		return requestedSize.isValid() ? it.value().scaled(requestedSize) : it.value();
+	}
+	
+	QImage image;
+	std::string path = filePath.toUtf8().constData();
+	bool bOk = false;
+	for (auto&& it : impl_->thumbnailProviders_)
+	{
+		if (it.expired())
+		{
+			continue;
+		}
+		auto provider = it.lock();
+		TF_ASSERT(provider != nullptr);
+		int width, height, rowPitch;
+		BinaryBlock imageBlock;
+		if (provider->getThumbnailData(path.c_str(), &width, &height, &rowPitch, &imageBlock))
+		{
+			bOk = true;
+			QImage img(reinterpret_cast<const uchar*>(imageBlock.data()), width, height, rowPitch, QImage::Format_RGB32);
+			image.swap(img);
+			break;
+		}
+	}
+	if (!bOk)
+	{
+		bOk = image.load(filePath);
+	}
+	if (!bOk)
+	{
+		return QImage(requestedSize.width(), requestedSize.height(), QImage::Format_ARGB32);
+	}
+	impl_->thumbnailCache_[filePath] = image;
+	return requestedSize.isValid() ? image.scaled(requestedSize) : image;
 }
 
 QQmlEngine* QtFramework::qmlEngine() const
 {
-	return qmlEngine_.get();
+	return qtFrameworkBase_->qmlEngine();
 }
 
 QFileSystemWatcher* QtFramework::qmlWatcher() const
@@ -351,36 +518,28 @@ QFileSystemWatcher* QtFramework::qmlWatcher() const
 
 void QtFramework::setIncubationTime(int msecs)
 {
-	incubationTime_ = msecs;
+	qtFrameworkBase_->setIncubationTime(msecs);
 }
 
 void QtFramework::incubate()
 {
-	if (qmlEngine_ == nullptr)
+	if (qmlEngine() == nullptr)
 	{
 		return;
 	}
-	auto incubationCtrl = qmlEngine_->incubationController();
+	auto incubationCtrl = qmlEngine()->incubationController();
 	if (incubationCtrl != nullptr)
 	{
 		if (incubationCtrl->incubatingObjectCount() > 0)
 		{
-			incubationCtrl->incubateFor(incubationTime_);
+			incubationCtrl->incubateFor(qtFrameworkBase_->incubationTime());
 		}
-		else
-		{
-			auto pAutomation = this->get<AutomationInterface>();
-			if (pAutomation)
-			{
-				pAutomation->notifyLoadingDone();
 			}
 		}
-	}
-}
 
-const QtPalette* QtFramework::palette() const
+QtPalette* QtFramework::palette() const
 {
-	return palette_.get();
+	return qtFrameworkBase_->palette();
 }
 
 void QtFramework::addImportPath(const QString& path)
@@ -388,23 +547,23 @@ void QtFramework::addImportPath(const QString& path)
 	QDir importPath(path);
 	if (importPath.exists() && importPath.isReadable())
 	{
-		qmlEngine_->addImportPath(path);
+		qtFrameworkBase_->qmlEngine()->addImportPath(path);
 	}
 }
 
 QtGlobalSettings* QtFramework::qtGlobalSettings() const
 {
-	return globalQmlSettings_.get();
+	return qtFrameworkBase_->qtGlobalSettings();
 }
 
 void QtFramework::registerTypeConverter(IQtTypeConverter& converter) /* override */
 {
-	typeConverters_.registerTypeConverter(converter);
+	qtFrameworkBase_->registerTypeConverter(converter);
 }
 
 void QtFramework::deregisterTypeConverter(IQtTypeConverter& converter) /* override */
 {
-	typeConverters_.deregisterTypeConverter(converter);
+	qtFrameworkBase_->deregisterTypeConverter(converter);
 }
 
 bool QtFramework::registerResourceData(const unsigned char* qrc_struct, const unsigned char* qrc_name,
@@ -421,28 +580,17 @@ bool QtFramework::registerResourceData(const unsigned char* qrc_struct, const un
 
 QVariant QtFramework::toQVariant(const Variant& variant, QObject* parent) const
 {
-	QVariant qVariant(QVariant::Invalid);
-	typeConverters_.toScriptType(variant, qVariant, parent);
-	return qVariant;
+	return qtFrameworkBase_->toQVariant(variant, parent);
 }
 
 Variant QtFramework::toVariant(const QVariant& qVariant) const
 {
-	Variant variant;
-	typeConverters_.toVariant(qVariant, variant);
-	return variant;
+	return qtFrameworkBase_->toVariant(qVariant);
 }
 
 QQmlComponent* QtFramework::toQmlComponent(IComponent& component)
 {
-	// TODO replace this with a proper UI adapter interface
-	auto qmlComponent = dynamic_cast<QmlComponent*>(&component);
-	if (qmlComponent != nullptr)
-	{
-		return qmlComponent->component();
-	}
-
-	return nullptr;
+	return qtFrameworkBase_->qmlComponentManager()->toQmlComponent(component);
 }
 
 QWidget* QtFramework::toQWidget(IView& view)
@@ -451,7 +599,7 @@ QWidget* QtFramework::toQWidget(IView& view)
 	auto qmlView = dynamic_cast<IQtView*>(&view);
 	if (qmlView != nullptr)
 	{
-		auto widget = qmlView->releaseView();
+		auto widget = qmlView->releaseWidget();
 		widget->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
 		widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 		widget->setFocusPolicy(Qt::StrongFocus);
@@ -473,23 +621,78 @@ void QtFramework::retainQWidget(IView& view)
 	auto qmlView = dynamic_cast<IQtView*>(&view);
 	if (qmlView != nullptr)
 	{
-		qmlView->retainView();
+		qmlView->retainWidget();
 	}
 }
 
-std::unique_ptr<IAction> QtFramework::createAction(const char* id, std::function<void(IAction*)> func,
-                                                   std::function<bool(const IAction*)> enableFunc,
-                                                   std::function<bool(const IAction*)> checkedFunc)
+QString QtFramework::resolveFilePath(const char* relativePath) const
 {
-	return actionManager_->createAction(id, func, enableFunc, checkedFunc);
+	return qtFrameworkBase_->resolveFilePath(relativePath);
 }
 
-std::unique_ptr<IAction> QtFramework::createAction(const char* id, const char* text, const char* path,
-                                                   std::function<void(IAction*)> func,
-                                                   std::function<bool(const IAction*)> enableFunc,
-                                                   std::function<bool(const IAction*)> checkedFunc, int actionOrder)
+QUrl QtFramework::resolveQmlPath(const char* relativePath) const
 {
-	return actionManager_->createAction(id, text, path, actionOrder, func, enableFunc, checkedFunc);
+	return qtFrameworkBase_->resolveQmlPath(relativePath);
+}
+
+QString QtFramework::resolveFilePath(const QQmlEngine& qmlEngine, const char* relativePath) const
+{
+	return qtFrameworkBase_->resolveFilePath(qmlEngine, relativePath);
+}
+
+QUrl QtFramework::resolveQmlPath(const QQmlEngine& qmlEngine, const char* relativePath) const
+{
+	return qtFrameworkBase_->resolveQmlPath(qmlEngine, relativePath);
+}
+
+std::unique_ptr<ISystemTrayIcon> QtFramework::createSystemTrayIcon(const char* iconPath)
+{
+	return std::make_unique<QtSystemTrayIcon>(iconPath);
+}
+
+std::unique_ptr<IAction> QtFramework::createAction(
+	const char* id, 
+	std::function<void(IAction*)> func,
+	std::function<bool(const IAction*)> enableFunc,
+	std::function<bool(const IAction*)> checkedFunc,
+	std::function<bool(const IAction*)> visibleFunc)
+{
+	return impl_->actionManager_->createAction(id, func, enableFunc, checkedFunc, visibleFunc);
+}
+
+std::unique_ptr<IAction> QtFramework::createAction(
+	const char* id, 
+	const char* text, 
+	const char* path,
+	std::function<void(IAction*)> func,
+	std::function<bool(const IAction*)> enableFunc,
+	std::function<bool(const IAction*)> checkedFunc,
+	std::function<bool(const IAction*)> visibleFunc, int actionOrder)
+{
+	return impl_->actionManager_->createAction(id, text, path, actionOrder, func, enableFunc, checkedFunc, visibleFunc);
+}
+
+std::unique_ptr<IAction> QtFramework::createAction(
+	const char* id,
+	const char* text,
+	const char* path,
+	std::function<void(IAction*)> func,
+	int actionOrder)
+{
+	return impl_->actionManager_->createAction(id, text, path, actionOrder, func, 
+		[](const IAction*) { return true; },
+		std::function<bool(const IAction*)>(nullptr),
+		[](const IAction*) { return true; });
+}
+
+std::unique_ptr<IAction> QtFramework::createSeperator(const char* id, const char* path, int actionOrder)
+{
+	return impl_->actionManager_->createSeperator(id, path, actionOrder);
+}
+
+std::unique_ptr<IAction> QtFramework::createSeperator(const char* id)
+{
+	return impl_->actionManager_->createSeperator(id);
 }
 
 std::unique_ptr<IComponent> QtFramework::createComponent(const char* resource, ResourceType type)
@@ -502,27 +705,16 @@ std::unique_ptr<IComponent> QtFramework::createComponent(const char* resource, R
 		break;
 
 	case IUIFramework::ResourceType::Url:
-		url = QtHelpers::resolveQmlPath(*qmlEngine_, resource);
+		url = resolveQmlPath(resource);
 		break;
 	}
 
-	auto qmlComponent = createComponent(url);
+	auto qmlComponent = qtFrameworkBase_->createComponent(url);
 	if (type == IUIFramework::ResourceType::Buffer)
 	{
 		qmlComponent->component()->setData(resource, QUrl());
 	}
 	return std::unique_ptr<IComponent>(qmlComponent);
-}
-
-QmlComponent* QtFramework::createComponent(const QUrl& resource)
-{
-	auto qmlComponent = new QmlComponent(*qmlEngine_);
-	if (!resource.isEmpty())
-	{
-		QmlComponentLoaderHelper helper(qmlComponent->component(), resource);
-		helper.load(true);
-	}
-	return qmlComponent;
 }
 
 //------------------------------------------------------------------------------
@@ -534,7 +726,7 @@ void QtFramework::enableAsynchronousViewCreation(bool enabled)
 //------------------------------------------------------------------------------
 std::unique_ptr<IView> QtFramework::createView(const char* resource, ResourceType type, const Variant& context)
 {
-	NGT_WARNING_MSG("Deprecated function call, please use async version instead");
+	NGT_DEBUG_MSG("Deprecated function call, please use async version instead");
 	auto returnView = createViewInternal(nullptr, resource, type, context,
 	                                     [](IView& view) {
 
@@ -547,7 +739,7 @@ std::unique_ptr<IView> QtFramework::createView(const char* resource, ResourceTyp
 std::unique_ptr<IView> QtFramework::createView(const char* uniqueName, const char* resource, ResourceType type,
                                                const Variant& context)
 {
-	NGT_WARNING_MSG("Deprecated function call, please use async version instead");
+	NGT_DEBUG_MSG("Deprecated function call, please use async version instead");
 	auto returnView = createViewInternal(uniqueName, resource, type, context, [](IView& view) {}, false);
 	return returnView.get();
 }
@@ -573,16 +765,21 @@ wg_future<std::unique_ptr<IView>> QtFramework::createViewInternal(const char* un
 	{
 		std::unique_ptr<QFile> device(new QFile(resource));
 		device->open(QFile::ReadOnly);
-		assert(device != nullptr);
-		auto view = new QtView(uniqueName ? uniqueName : resource, *this, *device);
+		TF_ASSERT(device != nullptr);
+		auto view = new QtView(uniqueName ? uniqueName : resource, *device);
 		device->close();
-		// 			std::unique_ptr< IView > localView( view );
+
 		std::promise<std::unique_ptr<IView>>* promise = new std::promise<std::unique_ptr<IView>>();
 		wg_future<std::unique_ptr<IView>> wgFuture(
 		promise->get_future(), []() { QApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 1); });
-		loadedHandler(*view);
 		promise->set_value(std::unique_ptr<IView>(view));
 		delete promise;
+
+		auto delayedLoadedHandler = [view, loadedHandler]() {
+			loadedHandler(*view);
+		};
+
+		callLater(delayedLoadedHandler);
 
 		return wgFuture;
 	}
@@ -590,9 +787,9 @@ wg_future<std::unique_ptr<IView>> QtFramework::createViewInternal(const char* un
 
 	case IUIFramework::ResourceType::Url:
 	{
-		qUrl = QtHelpers::resolveQmlPath(*qmlEngine_, resource);
-		auto view = new QmlView(uniqueName ? uniqueName : resource, *this, *qmlEngine_);
-		auto scriptObject = scriptingEngine_->createScriptObject(context, view->view());
+		qUrl = resolveQmlPath(resource);
+		auto view = new QmlView(uniqueName ? uniqueName : resource, *qmlEngine());
+		auto scriptObject = qtFrameworkBase_->scriptingEngine()->createScriptObject(context, view->widget());
 
 		if (scriptObject)
 		{
@@ -600,7 +797,7 @@ wg_future<std::unique_ptr<IView>> QtFramework::createViewInternal(const char* un
 		}
 		else
 		{
-			auto source = toQVariant(context, view->view());
+			auto source = toQVariant(context, view->widget());
 			view->setContextProperty(QString("source"), source);
 		}
 		std::promise<std::unique_ptr<IView>>* promise = new std::promise<std::unique_ptr<IView>>();
@@ -628,12 +825,12 @@ wg_future<std::unique_ptr<IView>> QtFramework::createViewInternal(const char* un
 
 QmlWindow* QtFramework::createQmlWindow()
 {
-	return new QmlWindow(context_, *qmlEngine());
+	return new QmlWindow(*qmlEngine());
 }
 
 QtWindow* QtFramework::createQtWindow(QIODevice& source)
 {
-	return new QtWindow(*this, source);
+	return new QtWindow(source);
 }
 
 //------------------------------------------------------------------------------
@@ -658,7 +855,7 @@ IProgressDialog* QtFramework::createModelessProgressDialog(const std::string& ti
                                                            ModelessProgressCallback callback)
 {
 	// Ensure there is a callback, otherwise no work can progress
-	assert(callback);
+	TF_ASSERT(callback);
 	if (!callback)
 		return nullptr;
 	// The progress dialog will be destroyed once the dialog is completed
@@ -712,7 +909,7 @@ const std::string QtFramework::showSelectDirectoryDialog(const std::string& capt
 //------------------------------------------------------------------------------
 std::unique_ptr<IWindow> QtFramework::createWindow(const char* resource, ResourceType type, const Variant& context)
 {
-	NGT_WARNING_MSG("Deprecated function call, please use async version instead\n");
+	NGT_DEBUG_MSG("Deprecated function call, please use async version instead\n");
 	std::unique_ptr<IWindow> returnWindow;
 	createWindowInternal(resource, type, context,
 	                     [&returnWindow](std::unique_ptr<IWindow>& window) { returnWindow = std::move(window); },
@@ -729,9 +926,9 @@ void QtFramework::createWindowInternal(const char* resource, ResourceType type, 
 	{
 	case IUIFramework::ResourceType::File:
 	{
-		const auto path = QtHelpers::resolveFilePath(*qmlEngine_, resource);
+		const auto path = resolveFilePath(resource);
 		std::unique_ptr<QFile> device(new QFile(path));
-		assert(device != nullptr);
+		TF_ASSERT(device != nullptr);
 		if (!device->open(QFile::ReadOnly))
 		{
 			NGT_WARNING_MSG("Could not open file %s", resource);
@@ -743,10 +940,10 @@ void QtFramework::createWindowInternal(const char* resource, ResourceType type, 
 	break;
 	case IUIFramework::ResourceType::Url:
 	{
-		QUrl qUrl = QtHelpers::resolveQmlPath(*qmlEngine_, resource);
+		QUrl qUrl = resolveQmlPath(resource);
 		auto qmlWindow = createQmlWindow();
 
-		auto scriptObject = scriptingEngine_->createScriptObject(context, qmlWindow->window());
+		auto scriptObject = qtFrameworkBase_->scriptingEngine()->createScriptObject(context, qmlWindow->window());
 
 		if (scriptObject)
 		{
@@ -772,7 +969,10 @@ void QtFramework::createWindowInternal(const char* resource, ResourceType type, 
 
 void QtFramework::loadActionData(const char* resource, ResourceType type)
 {
+	size_t bufferSize = 0;
+	const char* buffer = nullptr;
 	std::unique_ptr<QIODevice> device;
+	QByteArray data;
 
 	switch (type)
 	{
@@ -780,79 +980,53 @@ void QtFramework::loadActionData(const char* resource, ResourceType type)
 	{
 		device.reset(new QFile(resource));
 		device->open(QFile::ReadOnly);
+		TF_ASSERT(device != nullptr);
+		bufferSize = device->size();
+		data = device->readAll();
+		device->close();
+
+		if (data.isEmpty())
+		{
+			NGT_WARNING_MSG("Read action data error from %s.\n", resource);
+			return;
+		}
+
+		buffer = data.constData();
 	}
 	break;
+
+	case IUIFramework::ResourceType::Buffer:
+		bufferSize = strlen(resource);
+		buffer = resource;
+		break;
 
 	default:
 		return;
 	}
 
-	assert(device != nullptr);
-	auto size = device->size();
-	auto data = device->readAll();
-	device->close();
-	if (data.isEmpty())
-	{
-		NGT_WARNING_MSG("Read action data error from %s.\n", resource);
-		return;
-	}
-	auto buffer = data.constData();
-	FixedMemoryStream dataStream(buffer, size);
-	actionManager_->loadActionData(dataStream);
+	FixedMemoryStream dataStream(buffer, bufferSize);
+	impl_->actionManager_->loadActionData(dataStream);
 }
 
-void QtFramework::registerComponent(const char* id, const char* version, IComponent& component)
+void QtFramework::registerComponent(const char* id, const char* version, IComponent& component, bool supportsAsync)
 {
-	auto& components = components_[id];
-
-	auto tokens = ComponentVersion::tokenise(version);
-	auto it = components.find(tokens);
-	if (it != components.end())
-	{
-		return;
-	}
-
-	components[tokens] = &component;
+	qtFrameworkBase_->qmlComponentManager()->registerComponent(id, version, component, supportsAsync );
 }
 
 void QtFramework::registerComponentProvider(IComponentProvider& provider)
 {
-	componentProviders_.push_back(&provider);
+	qtFrameworkBase_->qmlComponentManager()->registerComponentProvider(provider);
 }
 
 IComponent* QtFramework::findComponent(const TypeId& typeId, std::function<bool(const ItemRole::Id&)>& predicate,
                                        const char* version) const
 {
-	auto tokens = ComponentVersion::tokenise(version);
+	return qtFrameworkBase_->qmlComponentManager()->findComponent(typeId, predicate, version);
+}
 
-	for (auto componentProviderIt = componentProviders_.rbegin(); componentProviderIt != componentProviders_.rend();
-	     ++componentProviderIt)
-	{
-		auto id = (*componentProviderIt)->componentId(typeId, predicate);
-		if (id == nullptr)
-		{
-			continue;
-		}
-
-		auto componentsIt = components_.find(id);
-		if (componentsIt == components_.end())
-		{
-			continue;
-		}
-
-		auto& components = componentsIt->second;
-
-		if (components.empty())
-		{
-			continue;
-		}
-
-		auto componentIt = components.upper_bound(tokens);
-		--componentIt;
-
-		return componentIt->second;
-	}
-	return nullptr;
+IComponent* QtFramework::findComponent(const char* componentId, const char* version) const
+{
+	return qtFrameworkBase_->qmlComponentManager()->findComponent(componentId, version);
 }
 
 void QtFramework::registerDialog(const char* id, const char* version, std::shared_ptr<IDialog> dialog)
@@ -860,7 +1034,7 @@ void QtFramework::registerDialog(const char* id, const char* version, std::share
 	auto& dialogs = dialogs_[id];
 	auto tokens = ComponentVersion::tokenise(version);
 	auto itr = dialogs.find(tokens);
-	assert(itr == dialogs.end());
+	TF_ASSERT(itr == dialogs.end());
 	dialogs[tokens] = dialog;
 }
 
@@ -887,6 +1061,13 @@ std::shared_ptr<IDialog> QtFramework::findDialog(const char* id, const char* ver
 	return dialogItr->second.lock();
 }
 
+void QtFramework::registerModelExtension(const char* id, const char* version, std::function<ManagedObjectPtr()> creator)
+{
+	TF_ASSERT(qtFrameworkBase_.get());
+	auto extensionManager = qtFrameworkBase_->modelExtensionManager();
+	extensionManager->registerExtension(id, version, creator);
+}
+
 void QtFramework::setPluginPath(const std::string& path)
 {
 	pluginPath_ = path;
@@ -897,52 +1078,155 @@ const std::string& QtFramework::getPluginPath() const
 	return pluginPath_;
 }
 
-int QtFramework::displayMessageBox(const char* title, const char* message, int buttons)
+namespace
 {
+	QMessageBox::Icon getQtMessageBoxIcon(IUIFramework::MessageBoxIcon icon)
+	{
+		switch (icon)
+		{
+		case IUIFramework::MessageBoxIcon::Information:
+			return QMessageBox::Icon::Information;
+		case IUIFramework::MessageBoxIcon::Question:
+			return QMessageBox::Icon::Question;
+		case IUIFramework::MessageBoxIcon::Warning:
+			return QMessageBox::Icon::Warning;
+		case IUIFramework::MessageBoxIcon::Error:
+			return QMessageBox::Icon::Critical;
+		default:
+			return QMessageBox::Icon::NoIcon;
+		};
+	}
+
 	struct MessageBoxQtMapping
 	{
-		MessageBoxButtons uiButton;
+		IUIFramework::MessageBoxButtons uiButton;
 		QMessageBox::StandardButton qtButton;
 	};
 
 	MessageBoxQtMapping buttonMappings[] = {
-		{ Ok, QMessageBox::StandardButton::Ok },     { Cancel, QMessageBox::StandardButton::Cancel },
-		{ Save, QMessageBox::StandardButton::Save }, { SaveAll, QMessageBox::StandardButton::SaveAll },
-		{ Yes, QMessageBox::StandardButton::Yes },   { No, QMessageBox::StandardButton::No },
+		{ IUIFramework::Ok,			QMessageBox::StandardButton::Ok },
+		{ IUIFramework::Cancel,		QMessageBox::StandardButton::Cancel },
+		{ IUIFramework::Save,		QMessageBox::StandardButton::Save },
+		{ IUIFramework::SaveAll,	QMessageBox::StandardButton::SaveAll },
+		{ IUIFramework::Yes,		QMessageBox::StandardButton::Yes },
+		{ IUIFramework::No,			QMessageBox::StandardButton::No },
+		{ IUIFramework::Discard,	QMessageBox::StandardButton::Discard },
 	};
 
-	size_t count = sizeof(buttonMappings) / sizeof(buttonMappings[0]);
-
-	int desiredButtons = 0;
-
-	for (size_t i = 0; i < count; ++i)
+	struct MappedQtButtons
 	{
-		if (buttons & buttonMappings[i].uiButton)
+		QMessageBox::StandardButton qtButtons = QMessageBox::StandardButton::NoButton;
+		int count = 0;	// The count of mapped buttons (not including NoButton)
+	};
+
+	MappedQtButtons getQtMessageBoxButtons(unsigned int buttonsBitfield)
+	{
+		MappedQtButtons out;
+		int outButtons = 0;
+		const size_t count = sizeof(buttonMappings) / sizeof(buttonMappings[0]);
+		for (size_t i = 0; i < count; ++i)
 		{
-			desiredButtons |= buttonMappings[i].qtButton;
+			if (buttonsBitfield & buttonMappings[i].uiButton)
+			{
+				outButtons |= buttonMappings[i].qtButton;
+				++out.count;
+			}
 		}
+		out.qtButtons = static_cast<QMessageBox::StandardButton>(outButtons);
+		return out;
 	}
 
-	assert(desiredButtons != 0);
-
-	QMessageBox messageBox(QMessageBox::Icon::NoIcon, title, message, (QMessageBox::StandardButton)desiredButtons);
-
-	int retValue = messageBox.exec();
-
-	int result = 0;
-
-	for (size_t i = 0; i < count; ++i)
+	IUIFramework::MessageBoxButtons getSingleIUIFrameworkButton(int clickedQtButton)
 	{
-		if (retValue == buttonMappings[i].qtButton)
+		const size_t count = sizeof(buttonMappings) / sizeof(buttonMappings[0]);
+		for (size_t i = 0; i < count; ++i)
 		{
-			result = buttonMappings[i].uiButton;
-			break;
+			if (clickedQtButton == buttonMappings[i].qtButton)
+			{
+				return buttonMappings[i].uiButton;
+			}
 		}
+
+		TF_ASSERT(false && "Could not find valid result");
+		return IUIFramework::MessageBoxButtons::Cancel;
 	}
 
-	assert(result != 0);
 
-	return result;
+} // end anonymous namespace
+
+void QtFramework::redirectMessageBoxToLog(bool redirect)
+{
+	redirectMessageBoxToLog_ = redirect;
+}
+
+bool QtFramework::shouldRedirectMessageBoxToLog() const
+{
+	return redirectMessageBoxToLog_;
+}
+
+IUIFramework::MessageBoxButtons QtFramework::displayMessageBox(const char* title, 
+															   const char* message,
+															   unsigned int buttons, 
+															   MessageBoxIcon icon,
+															   const char* detail,
+															   const char* customIcon,
+															   unsigned int defaultButton)
+{
+	if(redirectMessageBoxToLog_)
+	{
+		if(auto logger = impl_->get<ILoggingSystem>())
+		{
+			const LogLevel level = icon == MessageBoxIcon::Error ? LogLevel::LOG_ERROR : 
+				(icon == IUIFramework::MessageBoxIcon::Warning ? LogLevel::LOG_WARNING : LogLevel::LOG_INFO);
+			logger->log(level, "%s: %s %s", title, message, detail ? detail : "");
+		}
+		return IUIFramework::MessageBoxButtons::Cancel;
+	}
+	else
+	{
+		const MappedQtButtons desiredButtons = getQtMessageBoxButtons(buttons);
+		TF_ASSERT(desiredButtons.count > 0);
+
+		const QMessageBox::Icon qtIcon = getQtMessageBoxIcon(icon);
+	
+		QMessageBox messageBox(qtIcon, title, message, desiredButtons.qtButtons);
+
+		if (customIcon)
+		{
+			QPixmap customPixmap(customIcon);
+			messageBox.setIconPixmap(customPixmap);
+		}
+
+		if (detail)
+		{
+			messageBox.setDetailedText(detail);
+		}
+
+		if (defaultButton != MessageBoxButtons::NoButton)
+		{
+			// Default button should be contained in provided buttons bitfield.
+			TF_ASSERT(defaultButton & buttons);
+			const MappedQtButtons defaultQtButton = getQtMessageBoxButtons(defaultButton);
+			TF_ASSERT(defaultQtButton.count == 1);
+			messageBox.setDefaultButton(defaultQtButton.qtButtons);
+		}
+
+		int retValue = 0;
+
+		if (auto focusedWidget = QApplication::focusWidget())
+		{
+			bool focusWidgetBlocked = focusedWidget->signalsBlocked();
+			focusedWidget->blockSignals(true);
+			retValue = messageBox.exec();
+			focusedWidget->blockSignals(focusWidgetBlocked);
+		}
+		else
+		{
+			retValue = messageBox.exec();
+		}
+
+		return getSingleIUIFrameworkButton(retValue);
+	}
 }
 
 void QtFramework::findReloadableFiles(const QString& path, const QStringList& filter, QStringList& files)
@@ -969,10 +1253,10 @@ void QtFramework::findReloadableFiles(const QString& path, const QStringList& fi
 
 void QtFramework::registerReloadableFiles()
 {
-	auto clearCache = [this]() { qmlEngine_->clearComponentCache(); };
+	auto clearCache = [this]() { qmlEngine()->clearComponentCache(); };
 	QObject::connect(qmlWatcher_.get(), &QFileSystemWatcher::fileChanged, clearCache);
 
-	QStringList paths = qmlEngine_->importPathList();
+	QStringList paths = qmlEngine()->importPathList();
 	paths.removeAll(QDir::currentPath());
 	paths.removeAll("qrc:/");
 
@@ -989,96 +1273,6 @@ void QtFramework::registerReloadableFiles()
 	if (!files.isEmpty())
 	{
 		qmlWatcher_->addPaths(files);
-	}
-}
-
-void QtFramework::registerDefaultComponents()
-{
-	// Find all (type)_component[version].qml components located in the .qrc
-	QDir resources(":/WGControls/Private/");
-
-	std::string componentSuffix = "_component";
-	std::string dirPath("WGControls/Private/");
-	for (auto& resource : resources.entryList(QStringList("*_component*.qml")))
-	{
-		std::string pathStr = resource.toUtf8().constData();
-		QUrl url = QtHelpers::resolveQmlPath(*qmlEngine_, (dirPath + pathStr).c_str());
-		if (IComponent* component = createComponent(url))
-		{
-			defaultComponents_.emplace_back(component);
-			// Find the (type) from (type)_component[version].qml
-			auto componentType = pathStr.substr(0, pathStr.rfind("_"));
-			// Find the optional [version] from (type)_component[version].qml
-			auto version = pathStr.substr(pathStr.rfind(componentSuffix) + componentSuffix.size());
-			// Strip off the .qml part
-			version = version.substr(0, version.size() - 4);
-			// If there is a version the format is major followed by minor (only support for 0-9 minor version)
-			//	Version 2.0 => (type)_component20.qml
-			//	Version 2.5 => (type)_component25.qml
-			//	Version 25.0 => (type)_component250.qml
-			if (version.size() > 1)
-			{
-				version.insert(version.size() - 1, ".");
-			}
-			registerComponent(componentType.c_str(), version.c_str(), *component);
-		}
-	}
-}
-
-template <class TArray, size_t size>
-inline int countof(const TArray (&)[size])
-{
-	return size;
-};
-
-void QtFramework::registerDefaultComponentProviders()
-{
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<int8_t>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<uint8_t>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<short>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<unsigned short>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<int>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<unsigned int>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<long>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<unsigned long>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<long long>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<unsigned long long>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<float>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<double>("number"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<const char*>("string"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<const wchar_t*>("string"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<std::string>("string"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<std::wstring>("string"));
-
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<bool>("boolean"));
-
-	ItemRole::Id enumRoles[] = { IsEnumRole::roleId_ };
-	defaultComponentProviders_.emplace_back(new SimpleComponentProvider("enum", enumRoles, countof(enumRoles)));
-	ItemRole::Id thumbnailRoles[] = { IsThumbnailRole::roleId_ };
-	defaultComponentProviders_.emplace_back(
-	new SimpleComponentProvider("thumbnail", thumbnailRoles, countof(thumbnailRoles)));
-	ItemRole::Id sliderRoles[] = { IsSliderRole::roleId_ };
-	defaultComponentProviders_.emplace_back(new SimpleComponentProvider("slider", sliderRoles, countof(sliderRoles)));
-
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<Vector2>("vector2"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<Vector3>("vector3"));
-	defaultComponentProviders_.emplace_back(new GenericComponentProvider<Vector4>("vector4"));
-
-	ItemRole::Id colorRoles[] = { IsColorRole::roleId_ };
-	defaultComponentProviders_.emplace_back(
-	new GenericComponentProvider<Vector3>("color3", colorRoles, countof(colorRoles)));
-	defaultComponentProviders_.emplace_back(
-	new GenericComponentProvider<Vector4>("color4", colorRoles, countof(colorRoles)));
-
-	ItemRole::Id urlRoles[] = { IsUrlRole::roleId_ };
-	defaultComponentProviders_.emplace_back(new SimpleComponentProvider("file", urlRoles, countof(urlRoles)));
-
-	ItemRole::Id actionRoles[] = { IsActionRole::roleId_ };
-	defaultComponentProviders_.emplace_back(new SimpleComponentProvider("action", actionRoles, countof(actionRoles)));
-
-	for (auto& defaultComponentProvider : defaultComponentProviders_)
-	{
-		registerComponentProvider(*defaultComponentProvider);
 	}
 }
 
@@ -1105,34 +1299,13 @@ void QtFramework::registerDefaultDialogs()
 
 		auto modelItr = models.find(std::make_pair(type, version));
 		ObjectHandleT<DialogModel> model = modelItr == models.end() ? nullptr : modelItr->second;
-		std::shared_ptr<IDialog> dialog(createDialog(path.c_str(), model).release());
+		std::shared_ptr<IDialog> dialog(createDialog(path.c_str(), model));
 
 		if (dialog)
 		{
 			defaultDialogs_.emplace_back(dialog);
 			registerDialog(type.c_str(), version.c_str(), dialog);
 		}
-	}
-}
-
-void QtFramework::registerDefaultTypeConverters()
-{
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<Variant>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<bool>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<int>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<unsigned int>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<long int, qint64>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<long unsigned int, quint64>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<long long, qint64>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<unsigned long long, quint64>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<float>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<double>());
-	defaultTypeConverters_.emplace_back(new GenericQtTypeConverter<std::shared_ptr<BinaryBlock>>());
-	defaultTypeConverters_.emplace_back(new StringQtTypeConverter());
-	defaultTypeConverters_.emplace_back(new WGVectorQtTypeConverter());
-	for (auto& defaultTypeConverter : defaultTypeConverters_)
-	{
-		registerTypeConverter(*defaultTypeConverter);
 	}
 }
 
@@ -1159,6 +1332,11 @@ void QtFramework::doOnUIThread(std::function<void()> action)
 }
 
 //------------------------------------------------------------------------------
+void QtFramework::processEvents()
+{
+	QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+}
+
 void QtFramework::showShortcutConfig() const
 {
 	if (shortcutDialog_ == nullptr)
@@ -1169,35 +1347,96 @@ void QtFramework::showShortcutConfig() const
 }
 
 //------------------------------------------------------------------------------
-std::unique_ptr<IDialog> QtFramework::createDialog(const char* resource, ObjectHandleT<DialogModel> model)
+std::shared_ptr<IDialog> QtFramework::createDialog(const char* resource, ManagedObjectPtr model)
+{
+	if (resource != nullptr)
+	{
+		model->getHandleT<DialogModel>()->setURL(resource);
+	}
+	std::shared_ptr<IDialog> dialog(new QmlDialog(*qmlEngine()), [](IDialog* dialog) {static_cast<QmlDialog*>(dialog)->deleteLater();});
+	dialog->setModel(std::move(model));
+	return createDialogInternal(dialog);
+}
+
+//------------------------------------------------------------------------------
+std::shared_ptr<IDialog> QtFramework::createDialog(const char* resource, const char* title)
+{
+	auto model = ManagedObject<DialogModel>::make_unique();
+	if(title != nullptr)
+	{
+		model->getHandleT()->setTitle(title);
+	}
+	return createDialog(resource, std::move(model));
+}
+
+//------------------------------------------------------------------------------
+std::shared_ptr<IDialog> QtFramework::createDialog(const char* resource, ObjectHandleT<DialogModel> model)
+{
+	if(resource != nullptr)
+	{
+		model->setURL(resource);
+	}
+	std::shared_ptr<IDialog> dialog(new QmlDialog(*qmlEngine()), [](IDialog* dialog) {static_cast<QmlDialog*>(dialog)->deleteLater();});
+	dialog->setModel(model);
+	return createDialogInternal(dialog);
+}
+
+//------------------------------------------------------------------------------
+std::shared_ptr<IDialog> QtFramework::createDialogInternal(std::shared_ptr<IDialog> dialog)
 {
 	{
-		auto predicate = [](const TemporaryDialogData& dialog) -> bool { return std::get<CLOSED>(dialog); };
+		auto predicate = [](const ModelessDialogData& dialog) -> bool { return std::get<CLOSED>(dialog); };
 
-		std::lock_guard<std::mutex> lock(temporaryDialogMutex_);
-		auto eraseFrom = std::remove_if(temporaryDialogs_.begin(), temporaryDialogs_.end(), predicate);
-		temporaryDialogs_.erase(eraseFrom, temporaryDialogs_.end());
+		std::lock_guard<std::mutex> lock(modelessDialogMutex_);
+		auto eraseFrom = std::remove_if(modelessDialogs_.begin(), modelessDialogs_.end(), predicate);
+		modelessDialogs_.erase(eraseFrom, modelessDialogs_.end());
 	}
-
-	std::unique_ptr<IDialog> dialog(new QmlDialog(context_, *qmlEngine_, *this));
-	dialog->setModel(model);
-	dialog->load(resource);
-
+	dialog->load(dialog->model()->getUrl());
 	return dialog;
 }
 
 //------------------------------------------------------------------------------
-void QtFramework::showDialog(const char* resource, const IDialog::Mode mode, const IDialog::ClosedCallback& callback)
+void QtFramework::iterateDialogs(std::function<void(const IDialog& dialog)> fn)
 {
-	showDialog(resource, nullptr, mode, callback);
+	std::lock_guard<std::mutex> lock(modelessDialogMutex_);
+	for(const auto& dialogData : modelessDialogs_)
+	{
+		if(auto dialog = std::get<DIALOG>(dialogData))
+		{
+			if(dialog->isOpen())
+			{
+				fn(*dialog);
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
-void QtFramework::showDialog(const char* resource, ObjectHandleT<DialogModel> model, const IDialog::Mode mode,
-                             const IDialog::ClosedCallback& callback)
+std::shared_ptr<IDialog> QtFramework::showDialog(const char* resource, const IDialog::Mode mode,
+                                                 const IDialog::ClosedCallback& callback,
+                                                 const char* title)
 {
-	auto dialog = createDialog(resource, model);
+	return showDialogInternal(createDialog(resource, title), mode, callback);
+}
 
+//------------------------------------------------------------------------------
+std::shared_ptr<IDialog> QtFramework::showDialog(ObjectHandleT<DialogModel> model, const IDialog::Mode mode,
+                                                 const IDialog::ClosedCallback& callback)
+{
+	return showDialogInternal(createDialog(nullptr, model), mode, callback);
+}
+
+//------------------------------------------------------------------------------
+std::shared_ptr<IDialog> QtFramework::showDialog(ManagedObjectPtr model, const IDialog::Mode mode,
+                                                 const IDialog::ClosedCallback& callback)
+{
+	return showDialogInternal(createDialog(nullptr, std::move(model)), mode, callback);
+}
+
+//------------------------------------------------------------------------------
+std::shared_ptr<IDialog> QtFramework::showDialogInternal(std::shared_ptr<IDialog> dialog, const IDialog::Mode mode,
+													     const IDialog::ClosedCallback& callback)
+{
 	if (callback)
 	{
 		dialog->connectClosedCallback(callback);
@@ -1209,14 +1448,14 @@ void QtFramework::showDialog(const char* resource, ObjectHandleT<DialogModel> mo
 	{
 		auto markDialogClosedCallback = [this](IDialog& dialog) {
 			auto dialogPointer = &dialog;
-			auto predicate = [dialogPointer](const TemporaryDialogData& dialog) -> bool {
+			auto predicate = [dialogPointer](const ModelessDialogData& dialog) -> bool {
 				return std::get<DIALOG>(dialog).get() == dialogPointer;
 			};
 
-			std::lock_guard<std::mutex> lock(temporaryDialogMutex_);
-			auto itr = std::find_if(temporaryDialogs_.begin(), temporaryDialogs_.end(), predicate);
+			std::lock_guard<std::mutex> lock(modelessDialogMutex_);
+			auto itr = std::find_if(modelessDialogs_.begin(), modelessDialogs_.end(), predicate);
 
-			if (itr != temporaryDialogs_.end())
+			if (itr != modelessDialogs_.end())
 			{
 				std::get<CLOSED>(*itr) = true;
 			}
@@ -1224,38 +1463,244 @@ void QtFramework::showDialog(const char* resource, ObjectHandleT<DialogModel> mo
 
 		auto connection = dialog->connectClosedCallback(markDialogClosedCallback);
 
-		std::lock_guard<std::mutex> lock(temporaryDialogMutex_);
-		temporaryDialogs_.emplace_back(std::make_tuple(std::move(dialog), false, connection));
+		std::lock_guard<std::mutex> lock(modelessDialogMutex_);
+		modelessDialogs_.emplace_back(std::make_tuple(dialog, false, connection));
 	}
-}
 
-//------------------------------------------------------------------------------
-bool QtFramework::getWGCopyableEnableStatus() const
-{
-	assert(globalQmlSettings_ != nullptr);
-	return globalQmlSettings_->property("wgCopyableEnabled").toBool();
-}
-
-//------------------------------------------------------------------------------
-void QtFramework::setWGCopyableEnableStatus(bool enabled)
-{
-	assert(globalQmlSettings_ != nullptr);
-	globalQmlSettings_->setProperty("wgCopyableEnabled", enabled);
+	return dialog;
 }
 
 //------------------------------------------------------------------------------
 void QtFramework::onApplicationStartUp()
 {
-	auto context = actionManager_->getContextObject();
+	auto context = impl_->actionManager_->getContextObject();
 	createWindowInternal("private/shortcut_dialog.qml", IUIFramework::ResourceType::Url, context,
 	                     [this](std::unique_ptr<IWindow>& window) {
 		                     shortcutDialog_ = std::move(window);
 		                     if (shortcutDialog_ != nullptr)
 		                     {
 			                     shortcutDialog_->hide();
-			                     actionManager_->registerEventHandler(shortcutDialog_.get());
+			                     impl_->actionManager_->registerEventHandler(shortcutDialog_.get());
 		                     }
 		                 },
 	                     false);
 }
+
+//------------------------------------------------------------------------------
+void QtFramework::onApplicationExit()
+{
+	// Dialogs need to be closed before the qt application is closed
+	std::lock_guard<std::mutex> lock(modelessDialogMutex_);
+	for (auto& dialogData : modelessDialogs_)
+	{
+		if (!std::get<CLOSED>(dialogData))
+		{
+			std::get<CONNECTION>(dialogData).disconnect();
+			std::get<DIALOG>(dialogData)->close(IDialog::INVALID_RESULT);
+		}
+	}
+	modelessDialogs_.clear();
+}
+
+//------------------------------------------------------------------------------
+void QtFramework::callLater(std::function<void(void)> function) const
+{
+	class FunctionCallEvent : public QEvent {
+	public:
+		FunctionCallEvent(std::function<void(void)>&& fun)
+			: QEvent(QEvent::None)
+			, function_(std::move(fun))
+		{
+		}
+
+		~FunctionCallEvent() {
+			function_();
+		}
+
+	private:
+		std::function<void(void)> function_;
+	};
+
+	QCoreApplication::postEvent(qApp, new FunctionCallEvent(std::move(function)));
+}
+
+void QtFramework::openInGraphicalShell(const char* filePath)
+{
+	std::string pathIn = filePath;
+// Mac, Windows support folder or file.
+#if defined(Q_OS_WIN)
+	const QString explorer = QtFramework_Locals::explorerPath().c_str();
+	if (explorer.isEmpty())
+	{
+		NGT_ERROR_MSG("Cannot find explorer.exe.\n");
+		return;
+	}
+	QString param;
+	if (!QFileInfo(pathIn.c_str()).isDir())
+		param = QLatin1String("/select,");
+	param += QDir::toNativeSeparators(pathIn.c_str());
+	QString command = explorer + " " + param;
+	QProcess::startDetached(command);
+#elif defined(Q_OS_MAC)
+	QStringList scriptArgs;
+	scriptArgs << QLatin1String("-e")
+	           << QString::fromLatin1("tell application \"Finder\" to reveal POSIX file \"%1\"").arg(pathIn.c_str());
+	QProcess::execute(QLatin1String("/usr/bin/osascript"), scriptArgs);
+	scriptArgs.clear();
+	scriptArgs << QLatin1String("-e") << QLatin1String("tell application \"Finder\" to activate");
+	QProcess::execute("/usr/bin/osascript", scriptArgs);
+#else
+	TF_ASSERT(false);
+#endif
+}
+
+void QtFramework::copyTextToClipboard(const char* text)
+{
+	QClipboard* clipboard = QApplication::clipboard();
+	if (clipboard)
+	{
+		clipboard->setText(text);
+	}
+}
+
+void QtFramework::openInDefaultApp(const char* filePath)
+{
+	QFileInfo fi(filePath);
+	if (!fi.exists())
+	{
+		NGT_ERROR_MSG("file doesn't exist.\n");
+		return;
+	}
+	QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));
+}
+
+void QtFramework::loadIconData(const char* resource, ResourceType type)
+{
+	TF_ASSERT(resource != nullptr);
+	if (resource == nullptr)
+	{
+		return;
+	}
+	size_t bufferSize = 0;
+	const char* buffer = nullptr;
+	std::unique_ptr<QIODevice> device;
+	QByteArray data;
+
+	switch (type)
+	{
+	case IUIFramework::ResourceType::File:
+	{
+		device.reset(new QFile(resource));
+		device->open(QFile::ReadOnly);
+		TF_ASSERT(device != nullptr);
+		bufferSize = device->size();
+		data = device->readAll();
+		device->close();
+
+		if (data.isEmpty())
+		{
+			NGT_WARNING_MSG("Read icon data error from %s.\n", resource);
+			return;
+		}
+
+		buffer = data.constData();
+	}
+	break;
+
+	case IUIFramework::ResourceType::Buffer:
+		bufferSize = strlen(resource);
+		buffer = resource;
+		break;
+
+	default:
+		return;
+	}
+	auto imageProvider = dynamic_cast<QtImageProvider*>(qtFrameworkBase_->qmlEngine()->imageProvider(QtImageProvider::providerId()));
+	TF_ASSERT(imageProvider != nullptr);
+	FixedMemoryStream dataStream(buffer, bufferSize);
+	TextStream stream(dataStream);
+	QtFramework_Locals::IconsReader icons(stream, impl_->iconData_, *imageProvider);
+	if (!icons.read())
+	{
+		NGT_ERROR_MSG("Failed to parse actions\n");
+		return;
+	}
+}
+
+const char* QtFramework::getIconUrlFromImageProvider(const char* key) const
+{
+	std::string strKey = key;
+	std::transform(strKey.begin(), strKey.end(), strKey.begin(), ::tolower);
+	auto& found = impl_->iconData_.find(strKey);
+	if (found == impl_->iconData_.end())
+	{
+		return "";
+	}
+	return found->second->icon_.c_str();
+}
+
+Vector4 QtFramework::getPaletteColor(Palette::Color color) const
+{
+	const auto& c = palette()->getColor(color);
+	return Vector4(c.redF(), c.greenF(), c.blueF(), c.alphaF());
+}
+
+Palette::Theme QtFramework::getPaletteTheme() const
+{
+	return palette()->getTheme();
+}
+
+void QtFramework::setPaletteTheme(Palette::Theme theme)
+{
+	palette()->setTheme(theme);
+}
+
+Connection QtFramework::connectPaletteThemeChanged(PaletteThemeChangedCallback cb)
+{
+	return palette()->connectPaletteThemeChanged(cb);
+}
+
+void QtFramework::registerThumbnailProvider(std::shared_ptr<IThumbnailProvider> thumbnailProvider)
+{
+	if (impl_->thumbnailProviders_.find(thumbnailProvider) != impl_->thumbnailProviders_.end())
+	{
+		return;
+	}
+	impl_->thumbnailProviders_.insert(thumbnailProvider);
+}
+
+bool QtFramework::hasThumbnail(const char* filePath) const
+{
+	for (auto&& it : impl_->thumbnailProviders_)
+	{
+		if (it.expired())
+		{
+			continue;
+		}
+		auto provider = it.lock();
+		TF_ASSERT(provider != nullptr);
+		if (provider->getThumbnailData(filePath))
+		{
+			return true;
+		}
+	}
+
+	auto extension = FilePath::getExtension(filePath);
+	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+	static std::set<std::string> extensions = { "bmp", "gif", "jpg", "jpeg", "png", "pbm", "pgm", "ppm", "xbm", "xpm"};
+	if (extensions.find(extension) == extensions.end())
+	{
+		return false;
+	}
+	return QFile::exists(filePath);
+}
+
+void QtFramework::makeFakeMouseRelease()
+{
+	if (qtFrameworkBase_ != nullptr && qtFrameworkBase_->scriptingEngine() != nullptr)
+	{
+		qtFrameworkBase_->scriptingEngine()->makeFakeMouseRelease();
+	}
+}
+
 } // end namespace wgt

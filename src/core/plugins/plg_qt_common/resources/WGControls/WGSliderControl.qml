@@ -146,41 +146,7 @@ Item {
         setValueHelper(sliderValue, "value", sliderFrame.value);
     }
 
-    // support copy&paste
-    WGCopyable {
-        objectName: "copyableControl"
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( slider.value )
-            }
-
-            onDataPasted : {
-                setValueHelper(sliderFrame, "value", data)
-                if(sliderFrame.value != data)
-                {
-                    bPasted = false;
-                }
-            }
-        }
-
-        onSelectedChanged : {
-            if(selected)
-            {
-                selectControl( copyableObject )
-            }
-            else
-            {
-                deselectControl( copyableObject )
-            }
-        }
-    }
-
     Component.onCompleted: {
-        copyableControl.disableChildrenCopyable( sliderFrame );
         setValueHelper(slider, "value", sliderFrame.value);
         setValueHelper(sliderValue, "value", sliderFrame.value);
     }

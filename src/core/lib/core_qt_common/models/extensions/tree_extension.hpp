@@ -1,13 +1,15 @@
 #ifndef TREE_EXTENSION_HPP
 #define TREE_EXTENSION_HPP
 
-#include "i_model_extension.hpp"
+#include "qt_model_extension.hpp"
+
 #include <QItemSelection>
+
 #include <memory>
 
 namespace wgt
 {
-class TreeExtension : public IModelExtension
+class TreeExtension : public QtModelExtension
 {
 	Q_OBJECT
 
@@ -30,6 +32,7 @@ public:
 	                                  const QModelIndex& destinationParent, int destinationRow) override;
 	virtual void onRowsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
 	                         const QModelIndex& destinationParent, int destinationRow) override;
+	void onModelReset() override;
 
 	Q_INVOKABLE QItemSelection itemSelection(const QModelIndex& first, const QModelIndex& last) const;
 
@@ -75,11 +78,12 @@ public:
 	 */
 	Q_INVOKABLE QModelIndex getBackwardIndex(const QModelIndex& index, QAbstractItemModel* pModel) const;
 
-	Q_INVOKABLE void expand(const QModelIndex& index);
+	Q_INVOKABLE void expand(const QModelIndex& index, bool recursive);
 	Q_INVOKABLE void collapse(const QModelIndex& index);
-	Q_INVOKABLE void toggle(const QModelIndex& index);
+	Q_INVOKABLE void toggle(const QModelIndex& index, bool recursiveExpand);
 
 private:
+	void expandInternal(const QModelIndex& index, bool recursive);
 	struct Implementation;
 	std::unique_ptr<Implementation> impl_;
 };

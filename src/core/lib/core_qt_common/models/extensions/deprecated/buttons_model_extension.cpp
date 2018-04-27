@@ -1,6 +1,7 @@
 #include "buttons_model_extension.hpp"
 
-#include "helpers/qt_helpers.hpp"
+#include "core_common/assert.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_data_model/i_item.hpp"
 
 namespace wgt
@@ -22,7 +23,7 @@ QVariant ButtonsModelExtension::data(const QModelIndex& index, int role) const
 		return QVariant();
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	IItem* item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr)
 	{
@@ -33,7 +34,7 @@ QVariant ButtonsModelExtension::data(const QModelIndex& index, int role) const
 
 	if (std::find(std::begin(supportedRoles), std::end(supportedRoles), roleId) != std::end(supportedRoles))
 	{
-		return QtHelpers::toQVariant(item->getData(index.column(), roleId), nullptr);
+		return get<IQtHelpers>()->toQVariant(item->getData(index.column(), roleId), nullptr);
 	}
 
 	return QVariant();
@@ -47,7 +48,7 @@ bool ButtonsModelExtension::setData(const QModelIndex& index, const QVariant& va
 		return false;
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	IItem* item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr)
 	{
@@ -58,7 +59,7 @@ bool ButtonsModelExtension::setData(const QModelIndex& index, const QVariant& va
 
 	if (std::find(std::begin(supportedRoles), std::end(supportedRoles), roleId) != std::end(supportedRoles))
 	{
-		return item->setData(index.column(), roleId, QtHelpers::toVariant(value));
+		return item->setData(index.column(), roleId, get<IQtHelpers>()->toVariant(value));
 	}
 
 	return false;

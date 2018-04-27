@@ -15,6 +15,13 @@
 
 namespace wgt
 {
+namespace TestTableModelDetails
+{
+static const std::string s_RolesArr[] = { ItemRole::valueName, ItemRole::headerTextName, ItemRole::footerTextName };
+static const std::vector<std::string> s_RolesVec(&s_RolesArr[0],
+                                                 &s_RolesArr[0] + std::extent<decltype(s_RolesArr)>::value);
+} // end namespace TestTableModelDetails
+
 void TestTableModel::generateData()
 {
 	std::string dataString = dataSource_.next();
@@ -172,13 +179,19 @@ int TestTableModel::columnCount() const
 	return 4;
 }
 
+//------------------------------------------------------------------------------
+void TestTableModel::iterateRoles(const std::function<void(const char*)>& iterFunc) const
+{
+	for (auto&& role : TestTableModelDetails::s_RolesVec)
+	{
+		iterFunc(role.c_str());
+	}
+}
+
+//------------------------------------------------------------------------------
 std::vector<std::string> TestTableModel::roles() const
 {
-	std::vector<std::string> roles;
-	roles.push_back(ItemRole::valueName);
-	roles.push_back(ItemRole::headerTextName);
-	roles.push_back(ItemRole::footerTextName);
-	return roles;
+	return TestTableModelDetails::s_RolesVec;
 }
 
 Connection TestTableModel::connectPreItemDataChanged(DataCallback callback) /* override */

@@ -28,7 +28,7 @@ public:
 	bool PostLoad(IComponentContext& componentContext) override
 	{
 		// Create the panel
-		types_.push_back(componentContext.registerInterface(new HelloInterfaceImpl(componentContext)));
+		types_.push_back(componentContext.registerInterface(new HelloInterfaceImpl));
 		return true;
 	}
 
@@ -45,12 +45,12 @@ public:
 	{
 		for (auto type : types_)
 		{
-			componentContext.deregisterInterface(type);
+			componentContext.deregisterInterface(type.get());
 		}
 	}
 
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 };
 
 PLG_CALLBACK_FUNC(HelloInterfacePlugin)

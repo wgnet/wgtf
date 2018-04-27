@@ -8,6 +8,7 @@ SET( ALL_SRCS
 	i_version_control.hpp
 	i_depot_view.hpp
 	i_result.hpp
+    i_file_status_manager.hpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 

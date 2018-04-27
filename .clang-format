@@ -1,5 +1,5 @@
----
 Language:        Cpp
+SortIncludes: false
 AccessModifierOffset: -4
 AlignAfterOpenBracket: true
 AlignEscapedNewlinesLeft: true
@@ -16,12 +16,10 @@ AlwaysBreakTemplateDeclarations: true
 AlwaysBreakBeforeMultilineStrings: false
 BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: false
-BreakConstructorInitializersBeforeComma: true
+BreakConstructorInitializersBeforeComma: false
 BinPackParameters: true
 BinPackArguments: true
-ColumnLimit: 0
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-ConstructorInitializerIndentWidth: 4
+ColumnLimit: 120
 DerivePointerAlignment: false
 ExperimentalAutoDetectBinPacking: false
 IndentCaseLabels: false
@@ -59,6 +57,4 @@ ContinuationIndentWidth: 0
 CommentPragmas: ''
 ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
 SpaceBeforeParens: ControlStatements
-DisableFormat:   false
-...
-
+DisableFormat:   false 

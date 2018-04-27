@@ -21,7 +21,6 @@ class IAssetObjectItem;
 class IBreadcrumbsModel;
 class IListModel;
 class ISelectionHandler;
-class IValueChangeNotifier;
 
 //------------------------------------------------------------------------------
 // IAssetBrowserViewModelOld

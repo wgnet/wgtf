@@ -2,6 +2,7 @@
 #define BATCH_COMMAND_HPP
 
 #include "command.hpp"
+#include <string>
 
 namespace wgt
 {
@@ -20,12 +21,21 @@ enum class BatchCommandStage : uint8_t
 	Abort = 2,
 };
 
+class BatchCommandParameters
+{
+public:
+	BatchCommandStage stage_;
+	std::string description_;
+};
+
 class BatchCommand : public Command
 {
 public:
 	const char* getId() const override;
-	ObjectHandle execute(const ObjectHandle& arguments) const override;
+	Variant execute(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override;
+	CommandDescription getCommandDescription(const ObjectHandle& arguments) const override;
 
 private:
 	friend CommandManagerImpl;

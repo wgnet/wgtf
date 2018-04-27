@@ -2,18 +2,49 @@
 #include "interfaces/i_datasource.hpp"
 #include "pages/test_polymorphism.hpp"
 #include "core_reflection/i_object_manager.hpp"
+#include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
 #include "core_common/platform_path.hpp"
 #include "core_common/platform_dll.hpp"
+#include "core_variant/collection.hpp"
 #include "core_logging/logging.hpp"
+#include "wg_types/color_utilities.hpp"
+#include "core_string_utils/string_utils.hpp"
 #include <locale>
 #include <codecvt>
 
 namespace wgt
 {
+bool TestPage::readOnly_ = false;
+
 TestPage::TestPage()
-    : bChecked_(true), boolTest_(false), text_(L"Hello Test"), curSlideData_(0), curNum_(100), curSelected_(0),
-      enumValue_(0), vec3_(0.0f, 0.0f, 0.0f), vec4_(0.0f, 0.0f, 0.0f, 0.0f), color3_(192.0f, 192.0f, 192.0f),
-      color4_(127.0f, 127.0f, 127.0f, 127.0f), polyStruct_(nullptr), genericObj_(nullptr)
+    : bChecked_(true)
+	, boolTest_(false)
+	, text_(L"Hello Test")
+	, curSlideData_(0)
+	, curNum_(100)
+	, stringId_(0)
+	, curSelected_(0)
+	, enumValue_(0)
+	, colorEnumValue_(0)
+	, intValue_(7)
+	, int64Value_(9223372036854775807)
+	, uint64Value_(18446744073709551615)
+	, floatValue_(1)
+	, doubleValue_(1.23456)
+	, vec3_(0.0f, 0.0f, 0.0f)
+	, vec4_(0.0f, 0.0f, 0.0f, 0.0f)
+	, color3_(192.0f, 192.0f, 192.0f)
+	, color4_(127.0f, 127.0f, 127.0f, 127.0f)
+	, colorHDR_(ColorUtilities::makeHDRColor(0, 59, 180, -1.0f))
+	, colorKelvin_(5000)
+	, polyStruct_(nullptr)
+	, genericObject_(nullptr)
+	, angle_(90.0f)
+	, time_(10000.0f)
 {
 	for (auto i = 0; i < 10; ++i)
 	{
@@ -77,6 +108,10 @@ TestPage::TestPage()
 	testStringMap_["key b"] = "value b";
 	testStringMap_["key c"] = "value c";
 
+	testBoolMap_["True"] = true;
+	testBoolMap_["False"] = false;
+	testBoolMap_["Partial"] = Variant();
+
 	wchar_t path[MAX_PATH];
 	::GetModuleFileNameW(NULL, path, MAX_PATH);
 	::PathRemoveFileSpecW(path);
@@ -89,33 +124,51 @@ TestPage::TestPage()
 
 	fileUrl_ += "plugins_ui.txt";
 	assetUrl_ = "file:///sample.png";
+	
+	genericObject_ = GenericObject::create();
+    genericObject_->set("String", std::string("Wargaming"));
+    genericObject_->set("Integer", 100);
+
+	const int objectCount = 4;
+	for(int i = 0; i < objectCount; ++i)
+	{
+		objectVectorManaged_.push_back(ManagedObject<TestObject>::make(objectCount, i));
+		objectVector_.push_back(objectVectorManaged_.back().getHandle());
+	}
 }
 
 TestPage::~TestPage()
 {
 	polyStruct_ = nullptr;
+    genericObject_ = nullptr;
 }
 
-void TestPage::init(IDefinitionManager& defManager)
+std::string TestPage::objectDisplayName(std::string path, const ObjectHandle& handle)
 {
-	if (polyStruct_ == nullptr)
+	if(auto obj = handle.getBase<TestObject::Member>())
 	{
-		polyStruct_ = defManager.create<TestPolyStruct>(false);
-		if (polyStruct_ == nullptr)
+		// Path will be [i].Enabled
+		return path.substr(path.find(".") + 1);
+	}
+	else if(auto obj = handle.getBase<TestObject>())
+	{
+		// Path will be [i].Member[i]
+		const auto first = path.rfind(Collection::getIndexOpen());
+		const auto last = path.rfind(Collection::getIndexClose());
+		const int index = atoi(path.substr(first + 1, last).c_str());
+		return obj->membersManaged_.at(index)->name_;
+	}
+	else if (auto obj = handle.getBase<TestPage>())
+	{
+		// Path will be [i]
+		if(StringUtils::erase_string(path, Collection::getIndexOpen()) &&
+		   StringUtils::erase_string(path, Collection::getIndexClose()))
 		{
-			NGT_ERROR_MSG("TestPolyStruct type not registered\n");
-		}
-		else
-		{
-			polyStruct_->init(defManager);
+			const int index = atoi(path.c_str());
+			return obj->objectVectorManaged_.at(index)->name_;
 		}
 	}
-	if (genericObj_ == nullptr)
-	{
-		genericObj_ = GenericObject::create(defManager);
-		genericObj_->set("String", std::string("Wargaming"));
-		genericObj_->set("Integer", 100);
-	}
+	return path;
 }
 
 void TestPage::setCheckBoxState(const bool& bChecked)
@@ -138,24 +191,11 @@ void TestPage::getTextField(std::wstring* text) const
 
 void TestPage::setSlideData(const double& length)
 {
-	if ((length < this->getSlideMinData()) || (length > this->getSlideMaxData()))
-	{
-		return;
-	}
 	curSlideData_ = length;
 }
 void TestPage::getSlideData(double* length) const
 {
 	*length = curSlideData_;
-}
-
-int TestPage::getSlideMaxData()
-{
-	return 100;
-}
-int TestPage::getSlideMinData()
-{
-	return -100;
 }
 
 void TestPage::setNumber(const int& num)
@@ -165,6 +205,33 @@ void TestPage::setNumber(const int& num)
 void TestPage::getNumber(int* num) const
 {
 	*num = curNum_;
+}
+
+void TestPage::setStringId(const uint64_t& stringId)
+{
+	stringId_ = stringId;
+}
+void TestPage::getStringId(uint64_t* stringId) const
+{
+	*stringId = stringId_;
+}
+
+void TestPage::setAngle(const float& angle)
+{
+	angle_ = angle;
+}
+void TestPage::getAngle(float* angle) const
+{
+	*angle = angle_;
+}
+
+void TestPage::setTime(const float& time)
+{
+	time_ = time;
+}
+void TestPage::getTime(float* time) const
+{
+	*time = time_;
 }
 
 void TestPage::setSelected(const int& select)
@@ -232,21 +299,44 @@ void TestPage::getColor4(Vector4* color) const
 	color->w = color4_.w;
 }
 
+void TestPage::setHDRColor(const Vector4& color)
+{
+	colorHDR_.x = color.x;
+	colorHDR_.y = color.y;
+	colorHDR_.z = color.z;
+	colorHDR_.w = color.w;
+}
+void TestPage::getHDRColor(Vector4* color) const
+{
+	color->x = colorHDR_.x;
+	color->y = colorHDR_.y;
+	color->z = colorHDR_.z;
+	color->w = colorHDR_.w;
+}
+
+void TestPage::setKelvinColor(const unsigned int& color)
+{
+	colorKelvin_ = color;
+}
+void TestPage::getKelvinColor(unsigned int* color) const
+{
+	*color = colorKelvin_;
+}
+
 void TestPage::getThumbnail(std::shared_ptr<BinaryBlock>* thumbnail) const
 {
-	auto dataSrcMngr = Context::queryInterface<IDataSourceManager>();
+	auto dataSrcMngr = get<IDataSourceManager>();
 	assert(dataSrcMngr);
 	*thumbnail = dataSrcMngr->getThumbnailImage();
 }
 
 const GenericObjectPtr& TestPage::getGenericObject() const
 {
-	return genericObj_;
+	return genericObject_->handle();
 }
-
 void TestPage::setGenericObject(const GenericObjectPtr& genericObj)
 {
-	genericObj_ = genericObj;
+	*genericObject_ = genericObj;
 }
 
 void TestPage::setTestPolyStruct(const TestPolyStructPtr& testPolyStruct)
@@ -255,10 +345,19 @@ void TestPage::setTestPolyStruct(const TestPolyStructPtr& testPolyStruct)
 }
 const TestPolyStructPtr& TestPage::getTestPolyStruct() const
 {
-	return polyStruct_;
+    return polyStruct_;
 }
 
-void TestPage::generateEnumFunc(std::map<int, std::wstring>* o_enumMap) const
+void TestPage::generateEnumLargeFunc(std::map<int, Variant>* o_enumMap) const
+{
+	o_enumMap->clear();
+	for (int i = 0; i < 50; ++i)
+	{
+		o_enumMap->insert(std::make_pair(i, ("Value " + std::to_string(i)).c_str()));
+	}
+}
+
+void TestPage::generateEnumFunc(std::map<int, Variant>* o_enumMap) const
 {
 	// change the case just for the purpose of demonstrating dynamically generating dropdown list
 	// when users click on the dropdownbox
@@ -279,6 +378,16 @@ void TestPage::generateEnumFunc(std::map<int, std::wstring>* o_enumMap) const
 	o_enumMap->insert(std::make_pair(2, L"3rd Value"));
 	o_enumMap->insert(std::make_pair(3, L"4th Value"));
 	i = 0;
+}
+
+void TestPage::generateColorEnumFunc(std::map<int, Variant>* o_enumMap) const
+{
+	o_enumMap->clear();
+	o_enumMap->insert(std::make_pair(0, Vector3(255, 0, 0)));
+	o_enumMap->insert(std::make_pair(1, Vector3(0, 255, 0)));
+	o_enumMap->insert(std::make_pair(2, Vector3(0, 0, 255)));
+	o_enumMap->insert(std::make_pair(3, Vector3(255, 255, 255)));
+	return;
 }
 
 const std::string& TestPage::getFileUrl() const
@@ -306,30 +415,39 @@ void TestPage::methodOnly()
 	// Do nothing
 }
 
-TestPage2::TestPage2() : testPage_(nullptr)
+bool TestPage::getReadOnly(const ObjectHandle&)
 {
+	return readOnly_;
 }
 
-TestPage2::~TestPage2()
+void TestPage::toggleReadOnly()
 {
-	testPage_ = nullptr;
+	readOnly_ = !readOnly_;
 }
 
-void TestPage2::init(IDefinitionManager& defManager)
+const std::vector<std::vector<float>>& TestPage::getTestVector() const
 {
-	assert(testPage_ == nullptr);
-	testPage_ = defManager.create<TestPage>(false);
-	assert(testPage_ != nullptr);
-	testPage_->init(defManager);
+	return testVector_;
 }
 
-const ObjectHandleT<TestPage>& TestPage2::getTestPage() const
+void TestPage::getEnumFunc(int* o_EnumValue) const
 {
-	return testPage_;
+	*o_EnumValue = enumValue_;
 }
 
-void TestPage2::setTestPage(const ObjectHandleT<TestPage>& objHandle)
+void TestPage::setEnumFunc(const int& o_EnumValue)
 {
-	testPage_ = objHandle;
+	enumValue_ = o_EnumValue;
 }
+
+void TestPage::getColorEnumFunc(int* o_EnumValue) const
+{
+	*o_EnumValue = colorEnumValue_;
+}
+
+void TestPage::setColorEnumFunc(const int& o_EnumValue)
+{
+	colorEnumValue_ = o_EnumValue;
+}
+
 } // end namespace wgt

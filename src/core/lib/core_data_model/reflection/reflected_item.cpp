@@ -1,7 +1,13 @@
 #include "reflected_item.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_reflection/interfaces/i_class_definition.hpp"
-#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/interfaces/i_base_property.hpp"
+#include "core_reflection/metadata/meta_base.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/property_accessor.hpp"
+#include "core_reflection/utilities/object_handle_reflection_utils.hpp"
 
 namespace wgt
 {
@@ -71,20 +77,21 @@ bool ReflectedItem::EnumerateVisibleProperties(const PropertyCallback& callback)
 bool ReflectedItem::EnumerateVisibleProperties(ObjectHandle object, const IDefinitionManager& definitionManager,
                                                const std::string& inplacePath, const PropertyCallback& callback)
 {
-	auto definition = object.getDefinition(definitionManager);
+	auto definition = definitionManager.getDefinition(object);
 	if (definition == nullptr)
 		return true;
 
 	for (const auto& property : definition->allProperties())
 	{
-		assert(property != nullptr);
+		TF_ASSERT(property != nullptr);
 		if (property->isMethod() && !property->isValue())
 			continue;
+
+		auto propertyAccessor = definition->bindProperty(property->getName(), object);
+
 		auto inPlace = findFirstMetaData<MetaInPlaceObj>(*property, definitionManager);
 		if (inPlace != nullptr)
 		{
-			auto propertyAccessor = definition->bindProperty(property->getName(), object);
-
 			if (!propertyAccessor.canGetValue())
 			{
 				continue;
@@ -114,11 +121,19 @@ bool ReflectedItem::EnumerateVisibleProperties(ObjectHandle object, const IDefin
 			}
 			continue;
 		}
-		bool isHidden = findFirstMetaData<MetaHiddenObj>(*property, definitionManager) != nullptr;
-		if (isHidden)
+
+		auto hidden = false;
+		auto hiddenCallback = [&](const ObjectHandleT<MetaHiddenObj>& hiddenObj)
+		{
+			hidden |= hiddenObj->isHidden(propertyAccessor.getObject());
+		};
+		forEachMetaData<MetaHiddenObj>(propertyAccessor, definitionManager, hiddenCallback);
+
+		if(hidden)
 		{
 			continue;
 		}
+
 		if (!callback(property, inplacePath))
 			return false;
 	}

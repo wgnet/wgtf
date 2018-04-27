@@ -20,6 +20,7 @@ public:
 	void copy(void* dest, const void* src) const override;
 	void move(void* dest, void* src) const override;
 	void destroy(void* value) const override;
+	bool lessThan(const void* lhs, const void* rhs) const override;
 	bool equal(const void* lhs, const void* rhs) const override;
 
 	void streamOut(TextStream& stream, const void* value) const override;
@@ -28,12 +29,14 @@ public:
 	void streamIn(BinaryStream& stream, void* value) const override;
 
 	bool convertFrom(void* to, const MetaType* fromType, const void* from) const override;
+	uint64_t hashCode(const void * value) const override;
+
 };
 
 template <>
-class VARIANT_DLL MetaTypeImpl<uintmax_t> : public DefaultMetaTypeImpl<uintmax_t>
+class VARIANT_DLL MetaTypeImpl<uint32_t> : public DefaultMetaTypeImpl<uint32_t>
 {
-	typedef DefaultMetaTypeImpl<uintmax_t> base;
+	typedef DefaultMetaTypeImpl<uint32_t> base;
 
 public:
 	MetaTypeImpl();
@@ -42,9 +45,31 @@ public:
 };
 
 template <>
-class VARIANT_DLL MetaTypeImpl<intmax_t> : public DefaultMetaTypeImpl<intmax_t>
+class VARIANT_DLL MetaTypeImpl<int32_t> : public DefaultMetaTypeImpl<int32_t>
 {
-	typedef DefaultMetaTypeImpl<intmax_t> base;
+	typedef DefaultMetaTypeImpl<int32_t> base;
+
+public:
+	MetaTypeImpl();
+
+	bool convertFrom(void* to, const MetaType* fromType, const void* from) const override;
+};
+
+template <>
+class VARIANT_DLL MetaTypeImpl<uint64_t> : public DefaultMetaTypeImpl<uint64_t>
+{
+	typedef DefaultMetaTypeImpl<uint64_t> base;
+
+public:
+	MetaTypeImpl();
+
+	bool convertFrom(void* to, const MetaType* fromType, const void* from) const override;
+};
+
+template <>
+class VARIANT_DLL MetaTypeImpl<int64_t> : public DefaultMetaTypeImpl<int64_t>
+{
+	typedef DefaultMetaTypeImpl<int64_t> base;
 
 public:
 	MetaTypeImpl();

@@ -1,12 +1,12 @@
 #include "script_qt_type_converter.hpp"
 
-#include "qt_scripting_engine.hpp"
+#include "qt_scripting_engine_base.hpp"
 #include "qt_script_object.hpp"
 #include "core_reflection/object_handle.hpp"
 
 namespace wgt
 {
-ScriptQtTypeConverter::ScriptQtTypeConverter(QtScriptingEngine& scriptingEngine)
+ScriptQtTypeConverter::ScriptQtTypeConverter(QtScriptingEngineBase& scriptingEngine)
     : IQtTypeConverter(), scriptingEngine_(scriptingEngine)
 {
 }
@@ -31,26 +31,13 @@ bool ScriptQtTypeConverter::toVariant(const QVariant& qVariant, Variant& o_varia
 
 bool ScriptQtTypeConverter::toQVariant(const Variant& variant, QVariant& o_qVariant, QObject* parent) const
 {
-	auto typeId = variant.type()->typeId();
-	auto defManager = scriptingEngine_.getDefinitionManager();
-	assert(defManager != nullptr);
-	auto definition = defManager->getDefinition(typeId.getName());
-	if (definition != nullptr)
-	{
-		ObjectHandle obj(variant, definition);
-		return this->toQVariant(obj, o_qVariant, parent);
-	}
-	if (variant.typeIs<ObjectHandle>())
-	{
-		ObjectHandle provider;
-		if (!variant.tryCast(provider))
-		{
-			return false;
-		}
-		return this->toQVariant(provider, o_qVariant, parent);
-	}
-
-	return false;
+    auto scriptObject = scriptingEngine_.createScriptObject(variant, parent);
+    if (scriptObject != nullptr)
+    {
+        o_qVariant = QVariant::fromValue<QtScriptObject*>(scriptObject);
+        return true;
+    }
+    return false;
 }
 
 bool ScriptQtTypeConverter::toQVariant(const ObjectHandle& object, QVariant& o_qVariant, QObject* parent) const
@@ -60,14 +47,6 @@ bool ScriptQtTypeConverter::toQVariant(const ObjectHandle& object, QVariant& o_q
 		o_qVariant = QVariant::Invalid;
 		return true;
 	}
-
-	auto scriptObject = scriptingEngine_.createScriptObject(object, parent);
-	if (scriptObject == nullptr)
-	{
-		return false;
-	}
-
-	o_qVariant = QVariant::fromValue<QtScriptObject*>(scriptObject);
-	return true;
+    return toQVariant(Variant(object), o_qVariant, parent);
 }
 } // end namespace wgt

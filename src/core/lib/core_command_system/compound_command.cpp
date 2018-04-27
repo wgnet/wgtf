@@ -1,6 +1,7 @@
 #include "compound_command.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_command_system/i_command_manager.hpp"
-#include "macro_object.hpp"
 #include "command_instance.hpp"
 #include "batch_command.hpp"
 #include "core_reflection/i_definition_manager.hpp"
@@ -8,26 +9,16 @@
 //==============================================================================
 namespace wgt
 {
-CompoundCommand::CompoundCommand() : id_(""), macroObject_(nullptr)
+CompoundCommand::CompoundCommand(const char* id) : id_(id), name_(id)
 {
+	subCommands_ = Collection(subCommandHandles_);
 }
 
 //==============================================================================
 CompoundCommand::~CompoundCommand()
 {
-	subCommands_.clear();
-}
-
-//==============================================================================
-void CompoundCommand::initDisplayData(IDefinitionManager& defManager, IReflectionController* controller)
-{
-	auto cmdSysProvider = getCommandSystemProvider();
-	assert(cmdSysProvider != nullptr);
-	const auto pDefinition = defManager.getDefinition(getClassIdentifier<MacroObject>());
-	assert(pDefinition != nullptr);
-
-	macroObject_ = defManager.create<MacroObject>(false);
-	macroObject_->init(*cmdSysProvider, defManager, controller, id_.c_str());
+	subCommandStorage_.clear();
+	subCommandHandles_.clear();
 }
 
 //==============================================================================
@@ -37,9 +28,33 @@ const char* CompoundCommand::getId() const
 }
 
 //==============================================================================
+const char* CompoundCommand::getName() const
+{
+	return name_.c_str();
+}
+
+//==============================================================================
+bool CompoundCommand::customUndo() const
+{
+	return true;
+}
+
+//==============================================================================
 void CompoundCommand::addCommand(const char* commandId, const ObjectHandle& commandArguments)
 {
-	subCommands_.emplace_back(commandId, commandArguments);
+	ICommandManager* manager = getCommandSystemProvider();
+	TF_ASSERT(manager != nullptr);
+
+	if (manager == nullptr)
+	{
+		return;
+	}
+		
+	auto command = manager->findCommand(commandId);
+	auto arguments = command->copyArguments(commandArguments);
+	auto argumentsHandle = arguments ? arguments->getHandle() : ObjectHandle();
+	subCommandHandles_.emplace_back(commandId, argumentsHandle);
+	subCommandStorage_.emplace_back(commandId, std::move(arguments));
 }
 
 //==============================================================================
@@ -50,56 +65,33 @@ bool CompoundCommand::validateArguments(const ObjectHandle& arguments) const
 	{
 		return false;
 	}
-
-	MacroEditObject* ccArgs = arguments.getBase<MacroEditObject>();
-	if (ccArgs == nullptr)
-	{
-		return false;
-	}
-	if (ccArgs->getArgCount() != subCommands_.size())
-	{
-		return false;
-	}
-
-	for (SubCommandCollection::size_type i = 0; i < subCommands_.size(); ++i)
-	{
-		Command* command = cmdSysProvider->findCommand(subCommands_[i].first.c_str());
-
-		if (command == nullptr)
-		{
-			return false;
-		}
-		if (!command->validateArguments(ccArgs->getCommandArgument(i)))
-		{
-			return false;
-		}
-	}
-
 	return true;
 }
 
 //==============================================================================
-ObjectHandle CompoundCommand::execute(const ObjectHandle& arguments) const
+Variant CompoundCommand::execute(const ObjectHandle& arguments) const
 {
 	auto cmdSysProvider = getCommandSystemProvider();
-	assert(cmdSysProvider != nullptr);
-	MacroEditObject* ccArgs = arguments.getBase<MacroEditObject>();
-	assert(ccArgs);
+	TF_ASSERT(cmdSysProvider != nullptr);
 
-	std::vector<CommandInstance*> subInstances;
-	subInstances.reserve(subCommands_.size());
-	CommandInstancePtr instance;
+	subInstances_.clear();
+	subInstances_.reserve(subCommandHandles_.size());
 
-	for (SubCommandCollection::size_type i = 0; i < subCommands_.size(); ++i)
+	for (SubCommandHandles::size_type i = 0; i < subCommandHandles_.size(); ++i)
 	{
-		ccArgs->resolveDependecy(i, subInstances);
-		instance = cmdSysProvider->queueCommand(subCommands_[i].first.c_str(), ccArgs->getCommandArgument(i));
-		assert(instance != nullptr);
+		auto& subCommand = subCommandHandles_[i];
+		auto instance = cmdSysProvider->queueCommand(subCommand.first.c_str(), subCommand.second);
+		TF_ASSERT(instance != nullptr);
 		cmdSysProvider->waitForInstance(instance);
-		subInstances.push_back(instance.get());
+		auto errorCode = instance->getErrorCode();
+		if (errorCode != CommandErrorCode::COMMAND_NO_ERROR)
+		{
+			return errorCode;
+		}
+		subInstances_.push_back(instance);
 	}
 
-	return instance->getReturnValue();
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 //==============================================================================
@@ -109,45 +101,39 @@ CommandThreadAffinity CompoundCommand::threadAffinity() const
 }
 
 //==============================================================================
-ObjectHandle CompoundCommand::getMacroObject() const
+bool CompoundCommand::undo(const ObjectHandle& arguments) const
 {
-	return macroObject_;
+	for (auto& ins : subInstances_)
+	{
+		ins->undo();
+	}
+	return true;
 }
 
 //==============================================================================
-void CompoundCommand::setId(const char* id)
+bool CompoundCommand::redo(const ObjectHandle& arguments) const
 {
-	id_ = id;
+	for (auto& ins : subInstances_)
+	{
+		ins->redo();
+	}
+	return true;
 }
 
 //==============================================================================
-const CompoundCommand::SubCommandCollection& CompoundCommand::getSubCommands() const
+void CompoundCommand::setName(const char* name)
+{
+	name_ = name;
+}
+
+//==============================================================================
+const Collection& CompoundCommand::getSubCommands() const
 {
 	return subCommands_;
 }
 
-void CompoundCommand::serialize(ISerializer& serializer) const
+ManagedObjectPtr CompoundCommand::copyArguments(const ObjectHandle& arguments) const
 {
-	serializer.serialize(getId());
-	serializer.serialize(getSubCommands().size());
-	for (auto& c : getSubCommands())
-	{
-		serializer.serialize(c.first);
-	}
-	getMacroObject().getBase<MacroObject>()->serialize(serializer);
-}
-
-void CompoundCommand::deserialize(ISerializer& serializer)
-{
-	size_t size = 0;
-	serializer.deserialize(size);
-
-	std::string id;
-	for (size_t i = 0; i < size; ++i)
-	{
-		serializer.deserialize(id);
-		addCommand(id.c_str(), ObjectHandle());
-	}
-	getMacroObject().getBase<MacroObject>()->deserialize(serializer);
+	return nullptr;
 }
 } // end namespace wgt

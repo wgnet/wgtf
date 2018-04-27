@@ -28,13 +28,13 @@ namespace wgt
 class TreeModelTestPlugin : public PluginMain, Depends<IViewCreator, IUIFramework>
 {
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	wg_future<std::unique_ptr<IView>> treeView_;
 	std::shared_ptr<AbstractTreeModel> treeModel_;
 
 public:
 	//==========================================================================
-	TreeModelTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
+	TreeModelTestPlugin(IComponentContext& contextManager)
 	{
 	}
 
@@ -76,7 +76,7 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 };

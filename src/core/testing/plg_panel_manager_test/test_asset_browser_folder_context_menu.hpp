@@ -12,31 +12,30 @@
 #pragma once
 
 #include "core_ui_framework/i_menu_handler.hpp"
+#include "core_dependency_system/depends.hpp"
+
+class QString;
+class QStringList;
 
 namespace wgt
 {
-class TestAssetBrowserFolderContextMenu : public IMenuHandler
-{
-public:
-	TestAssetBrowserFolderContextMenu(IComponentContext& contextManager);
-
-private:
-	virtual void registerActions(IUIFramework& uiFramework, Actions& actions) override;
-
-	bool canCopyPath(const IAction* action) const;
-	void copyPath(IAction* action);
-};
+class IQtFramework;
+class IFileSystem;
 
 class TestAssetBrowserFolderContextMenu20 : public IMenuHandler
+	, Depends< IQtFramework, IFileSystem >
 {
 public:
-	TestAssetBrowserFolderContextMenu20(IComponentContext& contextManager);
+	TestAssetBrowserFolderContextMenu20();
 
 private:
 	virtual void registerActions(IUIFramework& uiFramework, Actions& actions) override;
 
 	bool canCopyPath(const IAction* action) const;
 	void copyPath(IAction* action);
+	bool canShow(const IAction* action) const;
+	void show(IAction* action);
+	void open(IAction* action);
 };
 }
 

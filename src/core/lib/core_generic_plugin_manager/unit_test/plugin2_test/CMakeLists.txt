@@ -18,11 +18,10 @@ SOURCE_GROUP( "MetaData" FILES ${METADATA_SRCS} )
 SET( ALL_SRCS
 	plg_plugin2_test.cpp
 	plugin_objects.hpp
-	plugin_objects.cpp
 )
 SOURCE_GROUP( "" FILES ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 	${METADATA_SRCS}
 )
@@ -33,5 +32,6 @@ BW_ADD_TOOL_TEST_PLUGIN( plg_plugin2_test SHARED
 BW_TARGET_LINK_LIBRARIES( plg_plugin2_test PRIVATE
 	core_generic_plugin
 	core_reflection
+	core_object
 )
 

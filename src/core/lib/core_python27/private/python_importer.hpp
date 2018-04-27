@@ -19,9 +19,6 @@ namespace wgt
 {
 struct PythonDependencies : public Depends<IResourceSystem>
 {
-	PythonDependencies(IComponentContext& context) : Depends(context)
-	{
-	}
 };
 extern std::unique_ptr<PythonDependencies> g_Deps;
 

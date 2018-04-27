@@ -1,0 +1,12 @@
+#include "../color_test_panel.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(ColorTestPanel, MetaNone())
+EXPOSE("getTreeModel", getTreeModel, MetaNone())
+END_EXPOSE()
+}

@@ -1,97 +1,19 @@
 #include "core_generic_plugin/generic_plugin.hpp"
-#include "core_generic_plugin/interfaces/i_component_context_creator.hpp"
-
+#include "core_dependency_system/wgt_static_init.hpp"
+#include "reflection_system_holder.hpp"
 #include "reflection_component_provider.hpp"
-#include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
-#include "core_reflection/reflected_types.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
-#include "context_definition_manager.hpp"
+#include "core_reflection/definition_manager.hpp"
+#include "core_object/object_manager.hpp"
 #include "core_serialization/serializer/i_serialization_manager.hpp"
-#include "core_reflection_utils/reflection_controller.hpp"
-#include "core_reflection_utils/serializer/reflection_serializer.hpp"
 #include "core_variant/variant.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_string_utils/string_utils.hpp"
+#include "core_reflection/meta_callback_property_accessor_listener.hpp"
 
 namespace wgt
 {
-//==============================================================================
-class ReflectionSystemContextManager : public Implements<IComponentContextCreator>
-{
-public:
-	//==========================================================================
-	const char* getType() const
-	{
-		return typeid(ContextDefinitionManager).name();
-	}
-
-	IInterface* createContext(const wchar_t* contextId);
-};
-
-//==============================================================================
-class ReflectionSystemHolder
-{
-public:
-	//==========================================================================
-	ReflectionSystemHolder()
-	    : objectManager_(new ObjectManager()), definitionManager_(new DefinitionManager(*objectManager_)),
-	      contextManager_(new ReflectionSystemContextManager), controller_(new ReflectionController)
-	{
-		objectManager_->init(definitionManager_.get());
-		s_definitionManager_ = definitionManager_.get();
-	}
-
-	//==========================================================================
-	~ReflectionSystemHolder()
-	{
-		objectManager_.reset();
-		s_definitionManager_ = nullptr;
-		definitionManager_.reset();
-		contextManager_.reset();
-		controller_.reset();
-	}
-
-	//==========================================================================
-	static IDefinitionManager* getGlobalDefinitionManager()
-	{
-		return s_definitionManager_;
-	}
-
-	//==========================================================================
-	DefinitionManager* getDefinitionManager()
-	{
-		return definitionManager_.get();
-	}
-
-	//==========================================================================
-	ObjectManager* getObjectManager()
-	{
-		return objectManager_.get();
-	}
-
-	//==========================================================================
-	ReflectionSystemContextManager* getContextManager()
-	{
-		return contextManager_.get();
-	}
-
-	//==========================================================================
-	ReflectionController* getController()
-	{
-		return controller_.get();
-	}
-
-private:
-	static IDefinitionManager* s_definitionManager_;
-	std::unique_ptr<ObjectManager> objectManager_;
-	std::unique_ptr<DefinitionManager> definitionManager_;
-	std::unique_ptr<ReflectionSystemContextManager> contextManager_;
-	std::unique_ptr<ReflectionController> controller_;
-};
-
-IDefinitionManager* ReflectionSystemHolder::s_definitionManager_ = nullptr;
 
 /**
  * Usage: {,,plg_reflection.dll} Reflection::inspect( <Address_to ObjectHandle > )
@@ -99,6 +21,10 @@ IDefinitionManager* ReflectionSystemHolder::s_definitionManager_ = nullptr;
  */
 namespace Reflection
 {
+static IComponentContext* s_ReflectionDebugContext = nullptr;
+
+WGTStaticExecutor s_Initializer([](IComponentContext& context) { s_ReflectionDebugContext = &context; });
+
 static std::pair<std::string, std::string> inspectVariant(const Variant* variant = nullptr);
 
 static std::map<std::string, std::pair<std::string, std::string>> inspect(const ObjectHandle* handle = nullptr)
@@ -109,13 +35,13 @@ static std::map<std::string, std::pair<std::string, std::string>> inspect(const 
 		debugData.insert(std::make_pair("Empty handle", std::make_pair("empty", "empty")));
 		return debugData;
 	}
-	auto defManager = Context::queryInterface<IDefinitionManager>();
+	auto defManager = s_ReflectionDebugContext->queryInterface<IDefinitionManager>();
 	if (defManager == nullptr)
 	{
 		debugData.insert(std::make_pair("Empty handle", std::make_pair("empty", "empty")));
 		return debugData;
 	}
-	auto definition = handle->getDefinition(*defManager);
+	auto definition = defManager->getDefinition(*handle);
 	if (definition == nullptr)
 	{
 		debugData.insert(std::make_pair("ObjectHandleT", std::make_pair(handle->type().getName(), "")));
@@ -162,11 +88,9 @@ bool outputTypeData<std::wstring>(const Variant& variant, std::pair<std::string,
 {
 	if (variant.typeIs<std::wstring>())
 	{
-		std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
-
 		std::wstring wString;
 		variant.tryCast<std::wstring>(wString);
-		auto output = conversion.to_bytes(wString.c_str());
+		auto output = StringUtils::to_string(wString);
 		o_Data = std::make_pair(typeid(std::wstring).name(), output);
 		return true;
 	}
@@ -202,16 +126,8 @@ std::pair<std::string, std::string> inspectVariant(const Variant* variant)
 }
 };
 
-//==========================================================================
-IInterface* ReflectionSystemContextManager::createContext(const wchar_t* contextId)
-{
-	auto contextManager = new ContextDefinitionManager(contextId);
-	contextManager->init(ReflectionSystemHolder::getGlobalDefinitionManager());
-	return new InterfaceHolder<ContextDefinitionManager>(contextManager, true);
-}
-
 /**
-* A plugin which registers an IDefinitionManager interface to allow reflection
+* A plugin which registers core reflection interfaces to allow reflection
 * on class members for easy and unified serialization of data and exposing to UI code
 *
 * @ingroup plugins
@@ -220,9 +136,10 @@ IInterface* ReflectionSystemContextManager::createContext(const wchar_t* context
 class ReflectionPlugin : public PluginMain
 {
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	std::unique_ptr<ReflectionComponentProvider> reflectionComponentProvider_;
 	std::unique_ptr<ReflectionSystemHolder> reflectionSystemHolder_;
+	std::shared_ptr<PropertyAccessorListener> metaCallbackListener_;
 
 public:
 	//==========================================================================
@@ -231,12 +148,21 @@ public:
 		// Force linkage
 		Reflection::inspect();
 		Reflection::inspectVariant();
+		ReflectionShared::initContext( contextManager );
 
-		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getObjectManager(), false));
-		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getDefinitionManager(), false));
-		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getContextManager(), false));
-		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getController(), false));
-		Reflection::initReflectedTypes(*reflectionSystemHolder_->getDefinitionManager());
+		auto* definitionManager = reflectionSystemHolder_->getGlobalDefinitionManager();
+
+		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getGlobalMetaTypeCreator(), false));
+		types_.push_back(contextManager.registerInterface(reflectionSystemHolder_->getGlobalObjectManager(), false));
+		ReflectionShared::initDefinitionManager(*definitionManager);
+		types_.push_back(contextManager.registerInterface(definitionManager, false));
+		types_.push_back(
+		contextManager.registerInterface(reflectionSystemHolder_->contextDefinitionManagerCreator(), false));
+		types_.push_back(
+		contextManager.registerInterface(reflectionSystemHolder_->contextObjectManagerCreator(), false));
+
+		metaCallbackListener_ = std::make_shared<MetaCallbackPropertyAccessorListener>();
+		definitionManager->registerPropertyAccessorListener(metaCallbackListener_);
 	}
 
 	//==========================================================================
@@ -246,29 +172,25 @@ public:
 		if (uiFramework)
 		{
 			reflectionComponentProvider_.reset(
-			new ReflectionComponentProvider(*reflectionSystemHolder_->getDefinitionManager()));
+			new ReflectionComponentProvider(*reflectionSystemHolder_->getGlobalDefinitionManager()));
 			uiFramework->registerComponentProvider(*reflectionComponentProvider_);
-		}
-		auto commandManager = contextManager.queryInterface<ICommandManager>();
-		if (commandManager)
-		{
-			reflectionSystemHolder_->getController()->init(*commandManager);
 		}
 	}
 
 	//==========================================================================
 	bool Finalise(IComponentContext& contextManager) override
 	{
-		reflectionSystemHolder_->getController()->fini();
 		return true;
 	}
 
 	//==========================================================================
 	void Unload(IComponentContext& contextManager) override
 	{
+        reflectionSystemHolder_->finalise(metaCallbackListener_);
+
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 };

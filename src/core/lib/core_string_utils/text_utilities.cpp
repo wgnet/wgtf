@@ -1,6 +1,8 @@
 #include "text_utilities.hpp"
+
+#include "core_common/assert.hpp"
+
 #include <math.h>
-#include <cassert>
 #include <algorithm>
 #include <cwchar>
 
@@ -134,7 +136,7 @@ void incrementNumber(std::wstring& text, int& currentPos, wchar_t decimalChar)
 			newLength = swprintf(&*text.begin(), capacity, formatStr, newIntValue);
 		}
 	}
-	assert(newLength >= 0);
+	TF_ASSERT(newLength >= 0);
 	text.resize(newLength);
 	int newCursorPosition = (int)(currentPos + (text.length() - prevLength));
 	if (floatTarget && currentPos == prevLength)

@@ -3,8 +3,12 @@
 // are changed infrequently
 //
 
-#ifdef _WIN32
 #pragma once
+#ifdef _WIN32
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif // NOMINMAX
 
 #include <stdio.h>
 #include <tchar.h>

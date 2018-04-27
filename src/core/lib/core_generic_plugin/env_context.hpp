@@ -1,24 +1,29 @@
 #ifndef ENV_CONTEXT_HPP
 #define ENV_CONTEXT_HPP
 
-#include "core_common/platform_env.hpp"
 #include "common_include/env_pointer.hpp"
+#include <functional>
 
 namespace wgt
 {
 class IComponentContext;
+
 namespace
 {
-const char* ENV_VAR_NAME = "PLUGIN_CONTEXT_PTR";
+const char* PLUGIN_INIT_VAR_NAME = "PLUGIN_INIT_DELEGATE";
 
-void setEnvContext(IComponentContext* context)
+typedef std::function<void(std::function<void(IComponentContext&)>)> PluginInitDelegate;
+
+//------------------------------------------------------------------------------
+void setPluginInitDelegate(PluginInitDelegate* initFunc)
 {
-	setPointer(ENV_VAR_NAME, context);
+	return setPointer(PLUGIN_INIT_VAR_NAME, initFunc);
 }
 
-IComponentContext* getEnvContext()
+//------------------------------------------------------------------------------
+PluginInitDelegate* getPluginInitDelegate()
 {
-	return getPointerT<IComponentContext>(ENV_VAR_NAME);
+	return getPointerT<PluginInitDelegate>(PLUGIN_INIT_VAR_NAME);
 }
 }
 } // end namespace wgt

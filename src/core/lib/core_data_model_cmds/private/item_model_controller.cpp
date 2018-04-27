@@ -17,59 +17,65 @@
 #include "commands/set_model_data_command.hpp"
 #include "commands/set_model_data_command_arg.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_command_system/i_command_manager.hpp"
-#include "core_reflection/i_definition_manager.hpp"
 
 namespace wgt
 {
-namespace ItemModelController_Detail
+struct ItemModelController::Impl : public Depends<ICommandManager>
 {
-bool insertRows(DIRef<ICommandManager>& commandManager, DIRef<IDefinitionManager>& definitionManager,
-                AbstractItemModel& model, int startPos, InsertRowsCommandArgument::Type type, int count,
-                const AbstractItem* pParent)
-{
-	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager->ownerThreadId());
-
-	const auto commandId = getClassIdentifier<InsertRowsCommand>();
-
-	const auto commandArgs = definitionManager->create<InsertRowsCommandArgument>();
-	commandArgs->setModel(model);
-	commandArgs->setStartPos(startPos, type);
-	commandArgs->setCount(count);
-	commandArgs->setParent(pParent);
-
-	auto command = commandManager->queueCommand(commandId, commandArgs);
-	// Failed to queue
-	if (command == nullptr)
+	bool insertRows(AbstractItemModel& model, int startPos, InsertRowsCommandArgument::Type type, int count,
+	                const AbstractItem* pParent)
 	{
-		return false;
-	}
+		auto commandManager = get<ICommandManager>();
 
-	// The thread affinity of SetReferenceCommand should cause
-	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+		// Access is only on the main thread
+		TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
 
-	// Completion is required to get the return value
-	return wgt::isCommandSuccess(command->getErrorCode());
+        auto commandArgs = ManagedObject<InsertRowsCommandArgument>::make_iunique_fn(
+            [&model, startPos, type, count, pParent](auto& commandArgs)
+        {
+            commandArgs.setModel(model);
+            commandArgs.setStartPos(startPos, type);
+            commandArgs.setCount(count);
+            commandArgs.setParent(pParent);
+        });
+
+        const auto commandId = getClassIdentifier<InsertRowsCommand>();
+		auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
+		// Failed to queue
+		if (command == nullptr)
+		{
+			return false;
+		}
+
+		// The thread affinity of SetReferenceCommand should cause
+		// queueCommand() to execute the command immediately
+		TF_ASSERT(command->isComplete());
+
+		// Completion is required to get the return value
+		return wgt::isCommandSuccess(command->getErrorCode());
 }
 
-bool removeRows(DIRef<ICommandManager>& commandManager, DIRef<IDefinitionManager>& definitionManager,
-                AbstractItemModel& model, int startPos, RemoveRowsCommandArgument::Type type, int count,
-                const AbstractItem* pParent)
+bool removeRows(AbstractItemModel& model, int startPos, RemoveRowsCommandArgument::Type type, int count,
+	            const AbstractItem* pParent)
 {
+	auto commandManager = get<ICommandManager>();
+
 	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager->ownerThreadId());
+	TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
+
+    auto commandArgs = ManagedObject<RemoveRowsCommandArgument>::make_iunique_fn(
+        [&model, startPos, type, count, pParent](auto& commandArgs)
+    {
+        commandArgs.setModel(model);
+        commandArgs.setStartPos(startPos, type);
+        commandArgs.setCount(count);
+        commandArgs.setParent(pParent);
+    });
 
 	const auto commandId = getClassIdentifier<RemoveRowsCommand>();
-
-	const auto commandArgs = definitionManager->create<RemoveRowsCommandArgument>();
-	commandArgs->setModel(model);
-	commandArgs->setStartPos(startPos, type);
-	commandArgs->setCount(count);
-	commandArgs->setParent(pParent);
-
-	auto command = commandManager->queueCommand(commandId, commandArgs);
+	auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
 	// Failed to queue
 	if (command == nullptr)
 	{
@@ -78,33 +84,39 @@ bool removeRows(DIRef<ICommandManager>& commandManager, DIRef<IDefinitionManager
 
 	// The thread affinity of SetReferenceCommand should cause
 	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+	TF_ASSERT(command->isComplete());
 
 	// Completion is required to get the return value
 	return wgt::isCommandSuccess(command->getErrorCode());
 }
+};
 
-} // end namespace ItemModelController_Detail
+ItemModelController::ItemModelController() : impl_(new Impl())
+{
+}
 
-ItemModelController::ItemModelController(IComponentContext& context)
-    : commandManager_(context), definitionManager_(context)
+ItemModelController::~ItemModelController()
 {
 }
 
 bool ItemModelController::setValue(AbstractItemModel& model, const AbstractItemModel::ItemIndex& index, size_t roleId,
                                    const Variant& data) /* override */
 {
+	auto commandManager = impl_->get<ICommandManager>();
+
 	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager_->ownerThreadId());
+	TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
+
+    auto commandArgs = ManagedObject<SetItemDataCommandArgument>::make_iunique_fn(
+        [&model, &data, index, roleId](auto& commandArgs)
+    {
+        commandArgs.setModel(model);
+        commandArgs.setIndex(index);
+        commandArgs.setValue(roleId, data);
+    });
 
 	const auto commandId = getClassIdentifier<SetItemDataCommand>();
-
-	const auto commandArgs = definitionManager_->create<SetItemDataCommandArgument>();
-	commandArgs->setModel(model);
-	commandArgs->setIndex(index);
-	commandArgs->setValue(roleId, data);
-
-	auto command = commandManager_->queueCommand(commandId, commandArgs);
+	auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
 	// Failed to queue
 	if (command == nullptr)
 	{
@@ -113,7 +125,7 @@ bool ItemModelController::setValue(AbstractItemModel& model, const AbstractItemM
 
 	// The thread affinity of SetReferenceCommand should cause
 	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+	TF_ASSERT(command->isComplete());
 
 	// Completion is required to get the return value
 	return wgt::isCommandSuccess(command->getErrorCode());
@@ -122,17 +134,21 @@ bool ItemModelController::setValue(AbstractItemModel& model, const AbstractItemM
 bool ItemModelController::setModelData(AbstractItemModel& model, int row, int column, size_t roleId,
                                        const Variant& data) /* override */
 {
+	auto commandManager = impl_->get<ICommandManager>();
+
 	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager_->ownerThreadId());
+	TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
+
+    auto commandArgs = ManagedObject<SetModelDataCommandArgument>::make_iunique_fn(
+        [&model, &data, row, column, roleId](auto& commandArgs)
+    {
+        commandArgs.setModel(model);
+        commandArgs.setIndex(row, column);
+        commandArgs.setValue(roleId, data);
+    });
 
 	const auto commandId = getClassIdentifier<SetModelDataCommand>();
-
-	const auto commandArgs = definitionManager_->create<SetModelDataCommandArgument>();
-	commandArgs->setModel(model);
-	commandArgs->setIndex(row, column);
-	commandArgs->setValue(roleId, data);
-
-	auto command = commandManager_->queueCommand(commandId, commandArgs);
+	auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
 	// Failed to queue
 	if (command == nullptr)
 	{
@@ -141,7 +157,7 @@ bool ItemModelController::setModelData(AbstractItemModel& model, int row, int co
 
 	// The thread affinity of SetReferenceCommand should cause
 	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+	TF_ASSERT(command->isComplete());
 
 	// Completion is required to get the return value
 	return wgt::isCommandSuccess(command->getErrorCode());
@@ -150,50 +166,49 @@ bool ItemModelController::setModelData(AbstractItemModel& model, int row, int co
 bool ItemModelController::insertRows(AbstractItemModel& model, int row, int count,
                                      const AbstractItem* pParent) /* override */
 {
-	return ItemModelController_Detail::insertRows(commandManager_, definitionManager_, model, row,
-	                                              InsertRowsCommandArgument::Type::ROW, count, pParent);
+	return impl_->insertRows(model, row, InsertRowsCommandArgument::Type::ROW, count, pParent);
 }
 
 bool ItemModelController::insertColumns(AbstractItemModel& model, int column, int count,
                                         const AbstractItem* pParent) /* override */
 {
-	return ItemModelController_Detail::insertRows(commandManager_, definitionManager_, model, column,
-	                                              InsertRowsCommandArgument::Type::COLUMN, count, pParent);
+	return impl_->insertRows(model, column, InsertRowsCommandArgument::Type::COLUMN, count, pParent);
 }
 
 bool ItemModelController::removeRows(AbstractItemModel& model, int row, int count,
                                      const AbstractItem* pParent) /* override */
 {
-	return ItemModelController_Detail::removeRows(commandManager_, definitionManager_, model, row,
-	                                              RemoveRowsCommandArgument::Type::ROW, count, pParent);
+	return impl_->removeRows(model, row, RemoveRowsCommandArgument::Type::ROW, count, pParent);
 }
 
 bool ItemModelController::removeColumns(AbstractItemModel& model, int column, int count,
                                         const AbstractItem* pParent) /* override */
 {
-	return ItemModelController_Detail::removeRows(commandManager_, definitionManager_, model, column,
-	                                              RemoveRowsCommandArgument::Type::COLUMN, count, pParent);
+	return impl_->removeRows(model, column, RemoveRowsCommandArgument::Type::COLUMN, count, pParent);
 }
 
 bool ItemModelController::moveRows(AbstractItemModel& model, const AbstractItem* sourceParent, int sourceRow, int count,
                                    const AbstractItem* destParent, int destRow) /* override */
 {
+	auto commandManager = impl_->get<ICommandManager>();
+
 	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager_->ownerThreadId());
+	TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
+
+    auto commandArgs = ManagedObject<MoveItemDataCommandArgument>::make_iunique_fn(
+        [&model, sourceParent, sourceRow, count, destRow, destParent](auto& commandArgs)
+    {
+        commandArgs.setDirection(MoveItemDataCommandArgument::Direction::ROW);
+        commandArgs.setModel(model);
+        commandArgs.setStartParent(sourceParent);
+        commandArgs.setStartPos(sourceRow);
+        commandArgs.setCount(count);
+        commandArgs.setEndPos(destRow);
+        commandArgs.setEndParent(destParent);
+    });
 
 	const auto commandId = getClassIdentifier<MoveItemDataCommand>();
-
-	const auto commandArgs = definitionManager_->create<MoveItemDataCommandArgument>();
-	commandArgs->setDirection(MoveItemDataCommandArgument::Direction::ROW);
-	commandArgs->setModel(model);
-	commandArgs->setStartParent(sourceParent);
-	commandArgs->setStartPos(sourceRow);
-	commandArgs->setCount(count);
-
-	commandArgs->setEndPos(destRow);
-	commandArgs->setEndParent(destParent);
-
-	auto command = commandManager_->queueCommand(commandId, commandArgs);
+	auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
 	// Failed to queue
 	if (command == nullptr)
 	{
@@ -202,7 +217,7 @@ bool ItemModelController::moveRows(AbstractItemModel& model, const AbstractItem*
 
 	// The thread affinity of SetReferenceCommand should cause
 	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+	TF_ASSERT(command->isComplete());
 
 	// Completion is required to get the return value
 	return wgt::isCommandSuccess(command->getErrorCode());
@@ -210,16 +225,20 @@ bool ItemModelController::moveRows(AbstractItemModel& model, const AbstractItem*
 
 bool ItemModelController::insertItem(CollectionModel& model, const Variant& key) /* override */
 {
+	auto commandManager = impl_->get<ICommandManager>();
+
 	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager_->ownerThreadId());
+	TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
+
+    auto commandArgs = ManagedObject<InsertDefaultCommandArgument>::make_iunique_fn(
+        [&model, &key](auto& commandArgs)
+    {
+        commandArgs.setModel(model);
+        commandArgs.setKey(key);
+    });
 
 	const auto commandId = getClassIdentifier<InsertDefaultCommand>();
-
-	const auto commandArgs = definitionManager_->create<InsertDefaultCommandArgument>();
-	commandArgs->setModel(model);
-	commandArgs->setKey(key);
-
-	auto command = commandManager_->queueCommand(commandId, commandArgs);
+	auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
 	// Failed to queue
 	if (command == nullptr)
 	{
@@ -228,7 +247,7 @@ bool ItemModelController::insertItem(CollectionModel& model, const Variant& key)
 
 	// The thread affinity of SetReferenceCommand should cause
 	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+	TF_ASSERT(command->isComplete());
 
 	// Completion is required to get the return value
 	return wgt::isCommandSuccess(command->getErrorCode());
@@ -236,17 +255,21 @@ bool ItemModelController::insertItem(CollectionModel& model, const Variant& key)
 
 bool ItemModelController::insertItem(CollectionModel& model, const Variant& key, const Variant& data) /* override */
 {
+	auto commandManager = impl_->get<ICommandManager>();
+
 	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager_->ownerThreadId());
+	TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
+
+    auto commandArgs = ManagedObject<InsertItemCommandArgument>::make_iunique_fn(
+        [&model, &key, &data](auto& commandArgs)
+    {
+        commandArgs.setModel(model);
+        commandArgs.setKey(key);
+        commandArgs.setValue(data);
+    });
 
 	const auto commandId = getClassIdentifier<InsertItemCommand>();
-
-	const auto commandArgs = definitionManager_->create<InsertItemCommandArgument>();
-	commandArgs->setModel(model);
-	commandArgs->setKey(key);
-	commandArgs->setValue(data);
-
-	auto command = commandManager_->queueCommand(commandId, commandArgs);
+	auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
 	// Failed to queue
 	if (command == nullptr)
 	{
@@ -255,7 +278,7 @@ bool ItemModelController::insertItem(CollectionModel& model, const Variant& key,
 
 	// The thread affinity of SetReferenceCommand should cause
 	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+	TF_ASSERT(command->isComplete());
 
 	// Completion is required to get the return value
 	return wgt::isCommandSuccess(command->getErrorCode());
@@ -263,16 +286,20 @@ bool ItemModelController::insertItem(CollectionModel& model, const Variant& key,
 
 bool ItemModelController::removeItem(CollectionModel& model, const Variant& key) /* override */
 {
+	auto commandManager = impl_->get<ICommandManager>();
+
 	// Access is only on the main thread
-	assert(std::this_thread::get_id() == commandManager_->ownerThreadId());
+	TF_ASSERT(std::this_thread::get_id() == commandManager->ownerThreadId());
+
+    auto commandArgs = ManagedObject<RemoveItemCommandArgument>::make_iunique_fn(
+        [&model, &key](auto& commandArgs)
+    {
+        commandArgs.setModel(model);
+        commandArgs.setKey(key);
+    });
 
 	const auto commandId = getClassIdentifier<RemoveItemCommand>();
-
-	const auto commandArgs = definitionManager_->create<RemoveItemCommandArgument>();
-	commandArgs->setModel(model);
-	commandArgs->setKey(key);
-
-	auto command = commandManager_->queueCommand(commandId, commandArgs);
+	auto command = commandManager->queueCommand(commandId, std::move(commandArgs));
 	// Failed to queue
 	if (command == nullptr)
 	{
@@ -281,7 +308,7 @@ bool ItemModelController::removeItem(CollectionModel& model, const Variant& key)
 
 	// The thread affinity of SetReferenceCommand should cause
 	// queueCommand() to execute the command immediately
-	assert(command->isComplete());
+	TF_ASSERT(command->isComplete());
 
 	// Completion is required to get the return value
 	return wgt::isCommandSuccess(command->getErrorCode());

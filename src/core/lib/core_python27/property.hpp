@@ -6,7 +6,6 @@
 
 namespace wgt
 {
-class IComponentContext;
 namespace PyScript
 {
 class ScriptObject;
@@ -27,11 +26,12 @@ public:
 	 *		to its own storage.
 	 *	@param attribute value of the attribute. Keeps a reference.
 	 */
-	Property(IComponentContext& context, const char* key, const PyScript::ScriptObject& pythonObject,
-	         MetaHandle metaData);
+	Property(const char* key, const PyScript::ScriptObject& pythonObject, MetaData metaData);
 
-	Property(IComponentContext& context, const char* key, const TypeId& typeId,
-	         const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
+	Property(const char* key, const TypeId& typeId, const PyScript::ScriptObject& pythonObject, MetaData metaData);
+
+	std::shared_ptr<IPropertyPath> generatePropertyName(
+		const std::shared_ptr<const IPropertyPath> & parent) const override;
 
 	const TypeId& getType() const override;
 
@@ -39,12 +39,14 @@ public:
 
 	uint64_t getNameHash() const override;
 
-	MetaHandle getMetaData() const override;
+	const MetaData & getMetaData() const override;
 
-	bool readOnly() const override;
+	bool readOnly(const ObjectHandle&) const override;
 
 	bool isMethod() const override;
 	bool isValue() const override;
+	bool isCollection() const override;
+	bool isByReference() const override;
 
 	bool set(const ObjectHandle& handle, const Variant& value,
 	         const IDefinitionManager& definitionManager) const override;
@@ -56,7 +58,7 @@ public:
 
 	size_t parameterCount() const override;
 
-	void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
+	void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaData metaData);
 
 private:
 	class Implementation;

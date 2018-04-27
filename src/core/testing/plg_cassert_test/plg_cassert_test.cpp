@@ -2,7 +2,7 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_dependency_system/i_interface.hpp"
 
-#include <cassert>
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
@@ -11,12 +11,35 @@ class CAssertTestPluginApplication : public Implements<IApplication>
 public:
 	int startApplication() override
 	{
-		assert(false && "This assert is meant to fail");
+		TF_ASSERT(false && "This assert is meant to fail");
 		return 0;
 	}
 
 	void quitApplication() override
 	{
+	}
+
+	TimerId startTimer(int, TimerCallback) override
+	{
+		TF_ASSERT(!"This assert is meant to fail");
+		return 0;
+	}
+
+	void killTimer(TimerId)
+	{
+		TF_ASSERT(!"This assert is meant to fail");
+	}
+
+	void setAppSettingsName(const char* appName) override
+	{
+		assert(!"This assert is meant to fail");
+	}
+
+	const char* getAppSettingsName() override
+	{
+		assert(!"This assert is meant to fail");
+		static const char name = '\0';
+		return name;
 	}
 };
 

@@ -5,17 +5,33 @@
 #include "core_reflection/object_handle.hpp"
 #include "wg_types/vector3.hpp"
 #include "wg_types/vector4.hpp"
-#include <string>
+#include "core_common/wg_future.hpp"
+#include "core_object/managed_object.hpp"
 #include "core_ui_framework/i_view.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_environment_system/i_env_system.hpp"
+#include <string>
+#include <unordered_map>
 
 namespace wgt
 {
-class IComponentContext;
+class AbstractTreeModel;
+class IEnvManager;
+class IViewCreator;
+class IDefinitionManager;
+class IFileSystem;
+class IUIFramework;
+class IUIApplication;
+class ICommandManager;
+class IPreferences;
+class IViewport;
+class ProjectData;
 
 class Project
+: Depends<IEnvManager, IViewCreator, IDefinitionManager, IFileSystem, IUIFramework, IUIApplication, ICommandManager>
 {
 public:
-	Project(IComponentContext& contextManager);
+	Project();
 	~Project();
 	bool init(const char* projectName, const char* dataFile = nullptr);
 	void fini();
@@ -24,18 +40,19 @@ public:
 	const ObjectHandle& getProjectData() const;
 
 private:
-	IComponentContext& contextManager_;
-	ObjectHandle projectData_;
+    ManagedObject<ProjectData> projectData_;
+    ObjectHandle projectHandle_;
 	std::string projectName_;
-	std::unique_ptr<IView> view_;
-	int envId_;
+	wg_future<std::unique_ptr<IView>> view_;
+	std::unique_ptr<AbstractTreeModel> model_;
+	std::unique_ptr<IViewport> viewport_;
 };
 
-class ProjectManager
+class ProjectManager : Depends<IDefinitionManager, IFileSystem, IUIFramework, IPreferences>
 {
 public:
 	ProjectManager();
-	void init(IComponentContext& contextManager);
+	void init();
 	void fini();
 
 	void createProject();
@@ -52,7 +69,6 @@ public:
 	void setOpenProjectFile(const Variant& strProjectFile);
 
 private:
-	IComponentContext* contextManager_;
 	std::unordered_map<std::string, Project*> projects_;
 	std::unique_ptr<Project> curProject_;
 	std::string newProjectName_;

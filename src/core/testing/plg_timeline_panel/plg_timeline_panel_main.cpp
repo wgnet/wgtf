@@ -38,7 +38,7 @@ public:
 		// Needs to be after plg_reflection Initialise to construct
 		// Variant( ObjectHandle )
 		// Create the panel
-		timelinePanel_.reset(new TimelinePanel(componentContext));
+		timelinePanel_.reset(new TimelinePanel);
 		timelinePanel_->addPanel();
 	}
 

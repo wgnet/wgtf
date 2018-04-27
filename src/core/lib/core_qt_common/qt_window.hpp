@@ -28,8 +28,8 @@ class QtWindow : public QObject, public IWindow
 {
 	Q_OBJECT
 public:
-	QtWindow(IComponentContext& context, QIODevice& source);
-	QtWindow(IComponentContext& context, std::unique_ptr<QMainWindow>&& mainWindow);
+	QtWindow(QIODevice& source);
+	QtWindow(std::unique_ptr<QMainWindow>&& mainWindow);
 	virtual ~QtWindow();
 
 	const char* id() const override;
@@ -52,6 +52,16 @@ public:
 	QMainWindow* releaseWindow();
 	bool isReady() const;
 	bool isLoadingPreferences() const;
+
+	virtual IView* getFocusedView() const override;
+	virtual void setFocusedView(IView* view) override;
+
+	bool resetLayout() override;
+	bool savePreference() override;
+	bool loadPreference() override;
+
+	virtual uintptr_t getNativeWindowHandle() override;
+
 signals:
 	void windowReady();
 

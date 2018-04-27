@@ -3,7 +3,7 @@ PROJECT( plg_splash_test )
 
 INCLUDE( WGToolsCoreProject )
 
-FIND_PACKAGE( QT5 )
+FIND_PACKAGE( QT5 ${QT_FIND_PACKAGE_VERSION})
 
 SET( ALL_SRCS
 	plg_splash_test.cpp
@@ -21,7 +21,7 @@ BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
 
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_generic_plugin
-	wg_types
+	wgtf_types
 )
 
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Plugins" )

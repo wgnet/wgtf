@@ -30,10 +30,12 @@ Rectangle {
         busyMessage: "WGBusyIndicator. This will disappear in 3 seconds."
     }
 
-    WGScrollPanel {
+    WGScrollView {
+        anchors.fill: parent
 
-        childObject :
-            WGDraggableColumn {
+        WGDraggableColumn {
+            width: mainWindow.width - defaultSpacing.doubleMargin * 2
+            x: defaultSpacing.doubleMargin
 
             WGSubPanel {
                 text: "Form Layout"
@@ -296,19 +298,19 @@ It is recommended to look at the generic_app_test to view other controls such as
 
                         WGGradientSliderHandle {
                             value: 0.2
-                            color: "#800000"
+                            color: Qt.vector4d(0.5,0,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.4
-                            color: "#FF0000"
+                            color: Qt.vector4d(1,0,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.6
-                            color: "#FFFF00"
+                            color: Qt.vector4d(1,1,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.8
-                            color: "#FFFFFF"
+                            color: Qt.vector4d(1,1,1,1)
                         }
                     }
                 }
@@ -410,8 +412,9 @@ It is recommended to look at the generic_app_test to view other controls such as
                 Tab {
                     title: "Test one"
                     WGScrollPanel{
-                        childObject:
+                        anchors.fill: parent
                             WGColumnLayout {
+                            width: parent.width - defaultSpacing.doubleMargin
                             WGInternalPanel{
                                 text: "Panel within a tab"
                                 clipContents: true
@@ -1219,15 +1222,15 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
 
                         WGGradientSliderHandle {
                             value: 0.25
-                            color: "red"
+                            color: Qt.vector4d(1,0,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.5
-                            color: "yellow"
+                            color: Qt.vector4d(1,1,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.75
-                            color: "white"
+                            color: Qt.vector4d(1,1,1,1)
                         }
                     }
                     WGGradientSlider {
@@ -1238,15 +1241,15 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
 
                         WGGradientSliderHandle {
                             value: 0.25
-                            color: "red"
+                            color: Qt.vector4d(1,0,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.5
-                            color: "yellow"
+                            color: Qt.vector4d(1,1,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.75
-                            color: "white"
+                            color: Qt.vector4d(1,1,1,1)
                         }
                     }
                     WGGradientSlider {
@@ -1257,15 +1260,15 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
 
                         WGGradientSliderHandle {
                             value: 0.25
-                            color: "red"
+                            color: Qt.vector4d(1,0,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.5
-                            color: "yellow"
+                            color: Qt.vector4d(1,1,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.75
-                            color: "white"
+                            color: Qt.vector4d(1,1,1,1)
                         }
                     }
                     WGGradientSlider {
@@ -1276,15 +1279,15 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
 
                         WGGradientSliderHandle {
                             value: 0.25
-                            color: "red"
+                            color: Qt.vector4d(1,0,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.5
-                            color: "yellow"
+                            color: Qt.vector4d(1,1,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.75
-                            color: "white"
+                            color: Qt.vector4d(1,1,1,1)
                         }
                     }
 
@@ -1306,7 +1309,7 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                             model: 3
                             WGGradientSliderHandle {
                                 value: 0.25 * index + 0.25
-                                color: Qt.rgba(Math.random(),Math.random(),Math.random(),1)
+                                color: Qt.vector4d(Math.random(),Math.random(),Math.random(),1)
                             }
                         }
                     }
@@ -1321,9 +1324,9 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.fillWidth: true
 
                         Component.onCompleted: {
-                            createColorHandle(.25,handleStyle,__handlePosList.length, "red")
-                            createColorHandle(.5,handleStyle,__handlePosList.length, "yellow")
-                            createColorHandle(.75,handleStyle,__handlePosList.length, "white")
+                            createColorHandle(.25,handleStyle,__handlePosList.length, Qt.vector4d(1,0,0,1))
+                            createColorHandle(.5,handleStyle,__handlePosList.length, Qt.vector4d(1,1,0,1))
+                            createColorHandle(.75,handleStyle,__handlePosList.length, Qt.vector4d(1,1,1,1))
                         }
                     }
                 }
@@ -1397,15 +1400,15 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
 
                         WGGradientSliderHandle {
                             value: 0.25
-                            color: "red"
+                            color: Qt.vector4d(1,0,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.5
-                            color: "yellow"
+                            color: Qt.vector4d(1,1,0,1)
                         }
                         WGGradientSliderHandle {
                             value: 0.75
-                            color: "white"
+                            color: Qt.vector4d(1,1,1,1)
                         }
                     }
                 }
@@ -1713,19 +1716,30 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
 
 
                 WGExpandingRowLayout {
+                    id: topRow
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: defaultSpacing.minimumRowHeight * 3
+
                     WGMultiLineText {
                         text: "WGDial20"
                     }
+
                     WGDial {
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
                         clockwise: true
                         zeroValue: 0
-                        snapToClick: false
+                        snapToClick: true
                         loopAtBounds: true
 
                         decimals: 0
@@ -1738,14 +1752,18 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         enabled: false
 
                         showValue: true
                         clockwise: true
                         zeroValue: 0
-                        snapToClick: false
+                        snapToClick: true
                         loopAtBounds: true
 
                         decimals: 0
@@ -1759,8 +1777,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 0
-
+                        property real angleValue: 0
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         minimumValue: -180
                         maximumValue: 180
@@ -1783,12 +1804,16 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
                         clockwise: false
                         zeroValue: 0
-                        snapToClick: false
+                        snapToClick: true
                         loopAtBounds: true
 
                         decimals: 0
@@ -1802,7 +1827,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
                         clockwise: true
@@ -1820,14 +1849,18 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         multipleValues: true
 
                         showValue: true
                         clockwise: true
                         zeroValue: 0
-                        snapToClick: false
+                        snapToClick: true
 
                         decimals: 0
                         stepSize: 1
@@ -1841,7 +1874,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         snapToClick: true
 
@@ -1863,7 +1900,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
 
                         unitString: "rad"
 
-                        value: Math.PI
+                        property real angleValue: Math.PI
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
 
@@ -1878,7 +1919,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         minimumValue: 0
                         maximumValue: Math.PI * 2
 
-                        value: Math.PI
+                        property real angleValue: Math.PI
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         loopAtBounds: false
 
@@ -1895,7 +1940,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
 
                         minimumValue: -90
@@ -1923,8 +1972,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                             height: defaultSpacing.minimumRowHeight * 3
                             width: defaultSpacing.minimumRowHeight * 3
 
-                            value: 5
-
+                            property real angleValue: 5
+                            value: angleValue
+                            onChangeValue: {
+                                if (angleValue != val) { angleValue = val }
+                            }
 
                             minimumValue: 0
                             maximumValue: 11
@@ -1943,33 +1995,17 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                             tickInterval: 36
                             minorTickInterval: 0
                         }
-
-                        Colorize {
-                            id: spinalTap
-                            anchors.fill: tapDial
-                            source: tapDial
-                            hue: 0.0
-                            saturation: 1
-                            lightness: 0
-                            visible: tapDial.value == 11
-                        }
-
-                        Timer {
-                            interval: 10
-                            repeat: true
-                            running: tapDial.value == 11
-                            onTriggered: {
-                                spinalTap.hue += 0.01
-                                if (spinalTap.hue > 1) spinalTap.hue = 0
-                            }
-                        }
                     }
 
                     WGDial {
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 0
+                        property real angleValue: 0
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         minimumValue: -180
                         maximumValue: 180
@@ -1992,7 +2028,11 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 0
+                        property real angleValue: 0
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         minimumValue: -180
                         maximumValue: 180
@@ -2013,12 +2053,16 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
                         clockwise: true
                         zeroValue: 180
-                        snapToClick: false
+                        snapToClick: true
                         loopAtBounds: true
 
                         decimals: 0
@@ -2032,12 +2076,16 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
                         clockwise: true
                         zeroValue: 270
-                        snapToClick: false
+                        snapToClick: true
                         loopAtBounds: true
 
                         decimals: 0
@@ -2053,12 +2101,16 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
                         clockwise: false
                         zeroValue: 180
-                        snapToClick: false
+                        snapToClick: true
                         loopAtBounds: true
 
                         decimals: 0
@@ -2072,12 +2124,16 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                         Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
                         Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
 
-                        value: 180
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
 
                         showValue: true
                         clockwise: false
                         zeroValue: 270
-                        snapToClick: false
+                        snapToClick: true
                         loopAtBounds: true
 
                         decimals: 0
@@ -2090,7 +2146,316 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                     Item {
                         Layout.fillWidth: true
                     }
+                }
 
+                WGExpandingRowLayout {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: topRow.bottom
+                    height: defaultSpacing.minimumRowHeight * 3
+
+                    WGMultiLineText {
+                        text: "WGDial20"
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 0
+                        snapToClick: true
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 0
+                        snapToClick: true
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        showValue: true
+                        clockwise: false
+                        zeroValue: 0
+                        snapToClick: true
+                        loopAtBounds: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        snapToClick: true
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 10
+                        minorTickInterval: 0
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        decimals: 3
+
+                        unitString: "rad"
+
+                        property real angleValue: Math.PI
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        minimumValue: Math.PI * -8
+                        maximumValue: Math.PI * 8
+                        minRotation: 0
+                        maxRotation: Math.PI * 2
+
+                        showValue: true
+
+                        tickInterval: 0
+                        minorTickInterval: 0
+                    }
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+                    Item {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 180
+                        snapToClick: true
+                        loopAtBounds: true
+
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        showValue: true
+                        clockwise: true
+                        zeroValue: 270
+                        snapToClick: true
+                        loopAtBounds: true
+
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        showValue: true
+                        clockwise: false
+                        zeroValue: 180
+                        snapToClick: true
+                        loopAtBounds: true
+
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    WGDial {
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+                        Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+                        property real angleValue: 180
+                        value: angleValue
+                        onChangeValue: {
+                            if (angleValue != val) { angleValue = val }
+                        }
+
+                        showValue: true
+                        clockwise: false
+                        zeroValue: 270
+                        snapToClick: true
+                        loopAtBounds: true
+
+
+                        minimumValue: -3600
+                        maximumValue: 3600
+                        minRotation: 0
+                        maxRotation: 360
+
+                        decimals: 0
+                        stepSize: 1
+
+                        tickInterval: 45
+                        minorTickInterval: 15
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
                 }
 
 
@@ -2632,6 +2997,276 @@ Write/Enabled, ReadOnly/Enabled, Write/Disabled, ReadOnly/Disabled | MultipleVal
                             model.append ({"label": "Option 2", "icon": Qt.resolvedUrl("icons/diffuse2.png")})
                             model.append ({"label": "Option 3", "icon": Qt.resolvedUrl("icons/diffuse3.png")})
                         }
+                    }
+                }
+
+                //Popups
+                ColumnLayout {
+                    anchors.fill: parent
+
+                    WGPushButton {
+                        text: "noAutoOpen"
+
+                        WGPopup {
+                            openPolicy: noAutoOpen
+                            height: 250
+                            width: 250
+                            Button {
+                                anchors.centerIn: parent
+                                text: "noAutoOpen Button"
+                            }
+                        }
+                    }
+
+                    WGPushButton {
+                        text: "openOnHover"
+
+                        WGPopup {
+                            openPolicy: openOnHover
+                            height: 250
+                            width: 250
+
+                            Button {
+                                anchors.centerIn: parent
+                                text: "openOnHover Button"
+                            }
+                        }
+                    }
+
+                    WGPushButton {
+                        text: "openOnPress"
+
+                        WGPopup {
+                            openPolicy: openOnPress
+                            height: 250
+                            width: 250
+                            Button {
+                                anchors.centerIn: parent
+                                text: "openOnPress Button"
+                            }
+                        }
+                    }
+
+                    WGPushButton {
+                        text: "openOnClick"
+
+                        WGPopup {
+                            openPolicy: openOnClick
+                            height: 250
+                            width: 250
+                            Button {
+                                anchors.centerIn: parent
+                                text: "openOnClick Button"
+                            }
+                        }
+                    }
+
+                    WGPushButton {
+                        text: "openOnDoubleClick"
+
+                        WGPopup {
+                            openPolicy: openOnDoubleClick
+                            height: 250
+                            width: 250
+                            Button {
+                                anchors.centerIn: parent
+                                text: "openOnDoubleClick Button"
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        color: "#66666666"
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                        Layout.preferredWidth: 100
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: palette.textColor
+                            text: "noAutoOpen"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            WGPopup {
+                                openPolicy: noAutoOpen
+                                height: 250
+                                width: 250
+                                Button {
+                                    anchors.centerIn: parent
+                                    text: "noAutoOpen MouseArea"
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        color: "#66666666"
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                        Layout.preferredWidth: 100
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: palette.textColor
+                            text: "openOnHover"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            WGPopup {
+                                openPolicy: openOnHover
+                                height: 250
+                                width: 250
+                                Button {
+                                    anchors.centerIn: parent
+                                    text: "openOnHover MouseArea"
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        color: "#66666666"
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                        Layout.preferredWidth: 100
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: palette.textColor
+                            text: "openOnPress"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            WGPopup {
+                                openPolicy: openOnPress
+                                height: 250
+                                width: 250
+                                Button {
+                                    anchors.centerIn: parent
+                                    text: "openOnPress MouseArea"
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        color: "#66666666"
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                        Layout.preferredWidth: 100
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: palette.textColor
+                            text: "openOnClick"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            WGPopup {
+                                openPolicy: openOnClick
+                                height: 250
+                                width: 250
+                                Button {
+                                    anchors.centerIn: parent
+                                    text: "openOnClick MouseArea"
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        color: "#66666666"
+                        Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                        Layout.preferredWidth: 100
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: palette.textColor
+                            text: "openOnDoubleClick"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            WGPopup {
+                                openPolicy: openOnDoubleClick
+                                height: 250
+                                width: 250
+                                Button {
+                                    anchors.centerIn: parent
+                                    text: "openOnDoubleClick MouseArea"
+                                }
+                            }
+                        }
+                    }
+
+                    WGPushButton {
+                        text: "noCloseOnMouseLeave"
+
+                        WGPopup {
+                            openPolicy: openOnClick
+                            height: 250
+                            width: 250
+
+                            closeOnMouseLeave: false
+
+                            Button {
+                                anchors.centerIn: parent
+                                text: "openOnClick Button"
+                            }
+                        }
+                    }
+
+                    WGPushButton {
+                        text: "contentPopupSize"
+
+                        WGPopup {
+                            openPolicy: openOnClick
+
+                            Rectangle {
+                                height: 50
+                                width: 200
+                                color: "red"
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "200 x 50"
+                                }
+                            }
+                        }
+                    }
+
+                    WGPushButton {
+                        text: "contentPopupSizeAndPadding"
+
+                        WGPopup {
+                            openPolicy: openOnClick
+                            padding: 10
+                            Rectangle {
+                                height: 200
+                                width: 100
+
+                                color: "red"
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "100 x 200 + 10"
+                                }
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
                     }
                 }
 

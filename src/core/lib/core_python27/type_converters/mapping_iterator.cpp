@@ -119,9 +119,9 @@ Variant MappingIterator::value() const /* override */
 
 	Variant result;
 	std::string childPath;
-	childPath += IClassDefinition::INDEX_OPEN;
+	childPath += Collection::getIndexOpen();
 	childPath += key_.str(PyScript::ScriptErrorPrint()).c_str();
-	childPath += IClassDefinition::INDEX_CLOSE;
+	childPath += Collection::getIndexClose();
 	const bool success = typeConverters_.toVariant(item, result, containerHandle_, childPath);
 	assert(success);
 	return result;
@@ -145,9 +145,9 @@ bool MappingIterator::setValue(const Variant& value) const /* override */
 	return container_.setItem(key_, scriptValue, PyScript::ScriptErrorPrint());
 }
 
-void MappingIterator::inc() /* override */
+void MappingIterator::inc( size_t advAmount ) /* override */
 {
-	++index_;
+	index_ += advAmount;
 	if (index_ >= container_.size())
 	{
 		key_ = nullptr;

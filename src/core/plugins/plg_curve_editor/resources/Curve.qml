@@ -136,7 +136,7 @@ Canvas {
         // ends at point(index+1) if possible
 
         var startPoint = curveModel.atIndex(index)
-        var endPoint = curveModel.atIndex(index)
+        var endPoint = startPoint
 
         var yPoints = []
 
@@ -155,18 +155,10 @@ Canvas {
         return yPoints
     }
 
-    WGListModel
-    {
-        id: pointModel
-        source: points
-
-        ValueExtension {}
-    }
-
     Repeater
     {
         id: pointRepeater
-        model: pointModel
+        model: points
         delegate: Point{
             objectName: "point" + index + "_" + curve.objectName
             point: value;
@@ -262,12 +254,12 @@ Canvas {
         }
     }
 
-    WGDataChangeNotifier
-    {
-        source: curveModel.notifyDirty
-        onDataChanged:
+    property bool modelDirty: curveModel.dirty;
+
+    onModelDirtyChanged: {
+        if (modelDirty === true )
         {
-            // HACK: force the points to re-evaluate their positions by emitting the viewTransform changed signal
+            console.log("WOO");
             viewTransformChanged();
         }
     }

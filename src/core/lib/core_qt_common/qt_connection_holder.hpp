@@ -9,6 +9,8 @@ class QtConnectionHolder
 {
 public:
 	QtConnectionHolder();
+	QtConnectionHolder(const QtConnectionHolder&) = delete;
+	QtConnectionHolder(QtConnectionHolder&&);
 	QtConnectionHolder(QMetaObject::Connection& connection);
 	~QtConnectionHolder();
 

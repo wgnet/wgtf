@@ -7,6 +7,7 @@
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_dependency_system/depends.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
+#include "core_object/managed_object.hpp"
 
 class QQuickView;
 class QQmlContext;
@@ -31,7 +32,7 @@ public:
 private:
 	mutable IComponentContext* contextManager_;
 	wg_future<std::unique_ptr<IView>> alertWindow_;
-	ObjectHandleT<AlertPageModel> alertPageModel_;
+    ManagedObject<AlertPageModel> alertPageModel_;
 
 	std::unique_ptr<IAction> testAddAlert_;
 	int alertCounter_;

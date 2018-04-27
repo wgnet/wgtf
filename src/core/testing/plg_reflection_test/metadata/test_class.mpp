@@ -14,9 +14,13 @@ END_EXPOSE()
 BEGIN_EXPOSE(TestClass, TestBase, MetaNone())
 EXPOSE("Name", name_, MetaGroup(L"TestClassGroupName") + MetaDisplayName(L"TestClassDisplayName"))
 EXPOSE("String", string_, MetaNone())
+EXPOSE("Strings", strings_, MetaNone())
 EXPOSE("StringFunc", getString, setString, MetaNone())
 EXPOSE_CALLABLE("StringLambda", [](SelfType* object) { return object->string_; },
                 [](SelfType* object, std::string value) { object->string_ = std::move(value); }, MetaNone())
+EXPOSE_CALLABLE("StringsLambda", [](SelfType* object) -> std::vector<std::string>& { return object->strings_; },
+                [](SelfType* object, std::vector<std::string> value) { object->strings_ = std::move(value); },
+                MetaNone())
 EXPOSE("InnerClass", innerClass_, MetaNone())
 END_EXPOSE()
 BEGIN_EXPOSE(TestClass::InnerClass, MetaNone())

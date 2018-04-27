@@ -1,5 +1,6 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.3
+import WGControls 1.0
 
 /*!
   \ingroup wgcontrols
@@ -15,14 +16,14 @@ WGMultiLineText {
 */
 
 WGLabel {
-	id: multiLineText
+    id: multiLineText
     objectName: "WGMultiLineText"
     WGComponent { type: "WGMultiLineText" }
     
     Layout.minimumHeight: lineCount * defaultSpacing.minimumRowHeight
     formLabel: false
     wrapMode: Text.WordWrap
-	
-	/*! Deprecated */
-	property alias formLabel_: multiLineText.formLabel
+
+    /*! Deprecated */
+    property alias formLabel_: multiLineText.formLabel
 }

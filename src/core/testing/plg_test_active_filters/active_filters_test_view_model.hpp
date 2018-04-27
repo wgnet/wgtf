@@ -8,7 +8,6 @@
 
 namespace wgt
 {
-class IActiveFiltersModel;
 class IDefinitionManager;
 class IUIFramework;
 
@@ -24,7 +23,6 @@ public:
 
 	void init(IDefinitionManager& defManager, IUIFramework& uiFramework);
 
-	IActiveFiltersModel* getSimpleActiveFiltersModel() const;
 	AbstractTreeModel* getSampleDataToFilter() const;
 
 private:

@@ -6,11 +6,10 @@ SET( CMAKE_MODULE_PATH
 INCLUDE_DIRECTORIES( ${WG_TOOLS_SOURCE_DIR}/core )
 INCLUDE_DIRECTORIES( ${WG_TOOLS_SOURCE_DIR}/core/lib )
 
-IF( BW_UNIT_TESTS_ENABLED )
+IF( WG_UNIT_TESTS_ENABLED )
 	LIST( APPEND BW_TOOLS_UNIT_TEST_LIBRARIES
 		core_generic_plugin_test	core/lib/core_generic_plugin_test
 		core_unit_test		core/lib/core_unit_test
-		CppUnitLite2		core/third_party/CppUnitLite2
 	)
 
 	LIST( APPEND BW_TOOLS_UNIT_TEST_BINARIES
@@ -23,6 +22,8 @@ IF( BW_UNIT_TESTS_ENABLED )
 		data_model_unit_test				core/lib/core_data_model/unit_test
 		string_utils_unit_test				core/lib/core_string_utils/unit_test
 		qt_common_unit_test					core/lib/core_qt_common/unit_test
+		wg_types_unit_test					core/lib/wg_types/unit_test
+		curve_editor_unit_test				core/plugins/plg_curve_editor/unit_test
 		)
 
 	IF(MSVC)
@@ -62,57 +63,59 @@ LIST( APPEND BW_BINARY_PROJECTS
 	${BW_TOOLS_UNIT_TEST_BINARIES}
 )
 
+# Add all the plugin test projects
+IF( NGT_INCLUDE_EXAMPLES )
+	LIST( APPEND WG_TOOLS_EXAMPLE_PLUGINS
+		data_model_test					core/testing/data_model_test
+		interfaces_test					core/testing/interfaces_test
+		plg_main_test					core/testing/plg_main_test
+		plg_window_test					core/testing/plg_window_test
+		plg_2_test						core/testing/plg_2_test
+		plg_3_test						core/testing/plg_3_test
+		plg_reflection_test				core/testing/plg_reflection_test
+		plg_splash_test					core/testing/plg_splash_test
+		plg_progress_manager_test		core/testing/plg_progress_manager_test
+		plg_python27_ui_test			core/testing/plg_python27_ui_test
+		plg_curve_editor_test			core/testing/plg_curve_editor_test
+		plg_ui_main_test				core/testing/plg_ui_main_test
+		plg_list_model_test  			core/testing/plg_list_model_test
+		plg_table_model_test  			core/testing/plg_table_model_test
+		plg_tree_model_test  			core/testing/plg_tree_model_test
+		plg_data_model_test				core/testing/plg_data_model_test
+		plg_obj_handle_test				core/testing/plg_obj_handle_test
+		plg_panel_manager_test			core/testing/plg_panel_manager_test
+		plg_test_active_filters			core/testing/plg_test_active_filters
+		plg_reflection_object_test		core/testing/plg_reflection_object_test
+		plg_demo_test					core/testing/plg_demo_test
+		plg_context_menu_test			core/testing/plg_context_menu_test
+		plg_controls_test				core/testing/plg_controls_test
+		plg_custom_panel				core/testing/plg_custom_panel
+		plg_custom_xml_serialization_test core/testing/plg_custom_xml_serialization_test
+		plg_timeline_panel				core/testing/plg_timeline_panel
+		plg_node_editor_test			core/testing/plg_node_editor_test
+		plg_environment_test			core/testing/plg_environment_test
+		plg_async_loader_test			core/testing/plg_async_loader_test
+		plg_dialog_test					core/testing/plg_dialog_test
+		plg_hotloading_test				core/testing/plg_hotloading_test
+		plg_grid_editor_test			core/testing/plg_grid_editor_test
+		plg_hello_world_main			core/testing/plg_hello_world_main
+		plg_hello_world_interface		core/testing/plg_hello_world_interface
+		plg_multi_edit_test				core/testing/plg_multi_edit_test
+		plg_color_test					core/testing/plg_color_test
+		plg_static_string_database_test	core/testing/plg_static_string_database_test
+		plg_toolbox_test				core/testing/plg_toolbox_test
+		plg_grabber_manager_test		core/testing/plg_grabber_manager_test
+		plg_object						core/testing/plg_object
+	)
+ENDIF()
+
 LIST( APPEND BW_PLUGIN_PROJECTS
-	data_model_test					core/testing/data_model_test
-	interfaces_test					core/testing/interfaces_test
-	plg_main_test					core/testing/plg_main_test
-	plg_window_test					core/testing/plg_window_test
-	plg_2_test						core/testing/plg_2_test
-	plg_3_test						core/testing/plg_3_test
-	plg_4_test						core/testing/plg_4_test
-	plg_reflection_test				core/testing/plg_reflection_test
-	plg_splash_test					core/testing/plg_splash_test
-	plg_progress_manager_test		core/testing/plg_progress_manager_test
-	plg_python27_ui_test			core/testing/plg_python27_ui_test
-	plg_curve_editor_test			core/testing/plg_curve_editor_test
-	plg_ui_main_test				core/testing/plg_ui_main_test
-	plg_list_model_test  			core/testing/plg_list_model_test
-	plg_table_model_test  			core/testing/plg_table_model_test
-	plg_tree_model_test  			core/testing/plg_tree_model_test
-	plg_data_model_test				core/testing/plg_data_model_test
-	plg_obj_handle_test				core/testing/plg_obj_handle_test
-	plg_panel_manager_test			core/testing/plg_panel_manager_test
-	plg_test_active_filters			core/testing/plg_test_active_filters
-	plg_modal_dlg_test				core/testing/plg_modal_dlg_test
-	plg_reflection_object_test		core/testing/plg_reflection_object_test
-	plg_demo_test					core/testing/plg_demo_test
-	plg_context_menu_test			core/testing/plg_context_menu_test
-	plg_controls_test				core/testing/plg_controls_test
-	plg_custom_panel				core/testing/plg_custom_panel
-	plg_custom_xml_serialization_test core/testing/plg_custom_xml_serialization_test
-	plg_timeline_panel				core/testing/plg_timeline_panel
-	plg_node_editor_test			core/testing/plg_node_editor_test
-	plg_environment_test			core/testing/plg_environment_test
-	plg_logging_ui					core/testing/plg_logging_ui
-	plg_async_loader_test			core/testing/plg_async_loader_test
-	plg_dialog_test					core/testing/plg_dialog_test
-	plg_hotloading_test				core/testing/plg_hotloading_test
-	plg_grid_editor_test			core/testing/plg_grid_editor_test
-	plg_hello_world_main			core/testing/plg_hello_world_main
-	plg_hello_world_interface		core/testing/plg_hello_world_interface
+	# Example/demonstration/test plugins
+	${WG_TOOLS_EXAMPLE_PLUGINS}
 
 	# Automated testing framework plugins
 	${WG_TOOLS_AUTO_TEST_PLUGINS}
 
 	# Unit test plugins
 	${BW_TOOLS_UNIT_TEST_PLUGINS}
-)
-
-SET( NGT_PLUGIN_CONFIGURATION_FILES
-	config/testing/*.txt
-	config/automated/*.txt
-)
-
-SET( NGT_PLUGIN_SETTINGS_FILES
-	config/automated/*.settings
 )

@@ -1,33 +1,31 @@
 #include "plugin_context_manager.hpp"
+
 #include "default_context_manager.hpp"
 
-#include <cassert>
-
+#include "core_common/assert.hpp"
 namespace wgt
 {
-PluginContextManager::PluginContextManager() : globalContext_(new DefaultComponentContext()), executablepath_(nullptr)
+PluginContextManager::PluginContextManager()
+    : globalContext_(new DefaultComponentContext(L"root")), executablepath_(nullptr)
 {
-	globalContext_->registerListener(*this);
+	connections_ += globalContext_->registerListener(*this);
 }
 
 PluginContextManager::~PluginContextManager()
 {
-	for (auto& it : contexts_)
-	{
-		delete it.second.first;
-	}
-	globalContext_->deregisterListener(*this);
 }
 
 IComponentContext* PluginContextManager::createContext(const PluginId& id, const std::wstring& path)
 {
 	// Create context
-	auto pluginContext = new DefaultComponentContext(globalContext_.get());
-
-	globalContext_->registerListener(*pluginContext);
+	auto pluginContext = new DefaultComponentContext(id, globalContext_.get());
 
 	// Insert in context list
-	contexts_.insert(std::make_pair(id, std::make_pair(pluginContext, path)));
+	auto metaData = std::unique_ptr<ContextMetaData>(new ContextMetaData());
+	metaData->context_ = pluginContext;
+	metaData->contextName_ = path;
+	metaData->connections_ += globalContext_->registerListener(*pluginContext);
+	contexts_.insert(std::make_pair(id, std::move(metaData)));
 
 	// Create ContextCreators and register them
 	for (auto& it : contextCreators_)
@@ -35,7 +33,7 @@ IComponentContext* PluginContextManager::createContext(const PluginId& id, const
 		auto contextCreator = it.second;
 
 		// Create context
-		IInterface* pInterface = contextCreator->createContext(id.c_str());
+		auto pInterface = contextCreator->createContext(id.c_str());
 		const char* type = contextCreator->getType();
 
 		// Register
@@ -50,7 +48,7 @@ IComponentContext* PluginContextManager::getContext(const PluginId& id) const
 	auto findIt = contexts_.find(id);
 	if (findIt != contexts_.end())
 	{
-		return findIt->second.first;
+		return findIt->second->context_;
 	}
 	return NULL;
 }
@@ -65,8 +63,6 @@ void PluginContextManager::destroyContext(const PluginId& id)
 	auto findIt = contexts_.find(id);
 	if (findIt != contexts_.end())
 	{
-		globalContext_->deregisterListener(*findIt->second.first);
-		delete findIt->second.first;
 		contexts_.erase(findIt);
 	}
 }
@@ -74,19 +70,19 @@ void PluginContextManager::destroyContext(const PluginId& id)
 void PluginContextManager::onContextCreatorRegistered(IComponentContextCreator* contextCreator)
 {
 	// Add ContextCreator to list
-	assert(contextCreators_.find(contextCreator->getType()) == contextCreators_.end());
+	TF_ASSERT(contextCreators_.find(contextCreator->getType()) == contextCreators_.end());
 	contextCreators_.insert(std::make_pair(contextCreator->getType(), contextCreator));
 
 	// Register interface for ContextCreator
-	for (auto context : contexts_)
+	for (auto& context : contexts_)
 	{
-		IInterface* child = context.second.first->registerInterfaceImpl(
-		contextCreator->getType(), contextCreator->createContext(context.second.second.c_str()),
+		auto child = context.second->context_->registerInterfaceImpl(
+		contextCreator->getType(), contextCreator->createContext(context.second->contextName_.c_str()),
 		IComponentContext::Reg_Local);
 		childContexts_[contextCreator].push_back(child);
 	}
 
-	IInterface* child = globalContext_->registerInterfaceImpl(
+	auto child = globalContext_->registerInterfaceImpl(
 	contextCreator->getType(), contextCreator->createContext(L"globalContext"), IComponentContext::Reg_Local);
 	childContexts_[contextCreator].push_back(child);
 }
@@ -101,12 +97,17 @@ void PluginContextManager::onContextCreatorDeregistered(IComponentContextCreator
 			continue;
 		}
 		auto findIt = childContexts_.find(contextCreator);
-		assert(findIt != childContexts_.end());
+		TF_ASSERT(findIt != childContexts_.end());
 		for (auto& child : findIt->second)
 		{
 			for (auto& contextIt : contexts_)
 			{
-				if (contextIt.second.first->deregisterInterface(child))
+				auto pChild = child.lock();
+				if (pChild == nullptr)
+				{
+					continue;
+				}
+				if (contextIt.second->context_->deregisterInterface(pChild.get()))
 				{
 					break;
 				}

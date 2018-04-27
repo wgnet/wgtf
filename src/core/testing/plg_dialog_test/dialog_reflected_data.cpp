@@ -2,115 +2,81 @@
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
+#include "core_object/managed_object.hpp"
+#include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/base_property.hpp"
+#include "wg_types/color_utilities.hpp"
+#include "core_string_utils/string_utils.hpp"
 #include <algorithm>
 #include <vector>
 
 namespace wgt
 {
-struct DialogReflectedData::Data
-{
-	Data(IComponentContext& context)
-	    : checked_(true), text_(L"Hello Test"), slider_(0.0), vector_(nullptr), color_(51.0f, 153.0f, 255.0f),
-	      context_(context)
-	{
-		auto& definitionManager = *context_.queryInterface<IDefinitionManager>();
-		vector_ = GenericObject::create(definitionManager);
-		for (int i = 0; i < 4; ++i)
-		{
-			vector_->set(std::to_string(i).c_str(), rand());
-		}
-	}
-
-	Data(Data& data)
-	    : checked_(data.checked_), text_(data.text_), slider_(data.slider_), vector_(nullptr), color_(data.color_),
-	      context_(data.context_)
-	{
-		auto& definitionManager = *context_.queryInterface<IDefinitionManager>();
-		vector_ = GenericObject::create(definitionManager);
-		auto definition = data.vector_.getDefinition(definitionManager);
-		for (auto property : definition->allProperties())
-		{
-			const char* name = property->getName();
-			vector_->set(name, definition->bindProperty(name, data.vector_).getValue());
-		}
-	}
-
-	bool checked_;
-	std::wstring text_;
-	double slider_;
-	GenericObjectPtr vector_;
-	Vector3 color_;
-	IComponentContext& context_;
-};
-
 DialogReflectedData::DialogReflectedData()
+	: text_(L"Hello Test")
+	, slider_(0.0)
+	, vector_(nullptr)
+	, color_(51.0f, 153.0f, 255.0f, 255.0f)
 {
+	vector_ = GenericObject::create();
+	for (int i = 0; i < 4; ++i)
+	{
+		vector_->set(std::to_string(i).c_str(), rand());
+	}
+
+	checkBoxes_["True"] = true;
+	checkBoxes_["False"] = false;
+	checkBoxes_["Partial"] = Variant();
 }
 
 DialogReflectedData::~DialogReflectedData()
 {
 }
 
-const DialogReflectedData& DialogReflectedData::operator=(const DialogReflectedData& data)
+std::string DialogReflectedData::getDisplayName(std::string path, const ObjectHandle&)
 {
-	if (this != &data)
-	{
-		assert(data.data_);
-		data_.reset(new Data(*data.data_));
-	}
-	return *this;
+	StringUtils::erase_string(path, Collection::getIndexCloseStr());
+	StringUtils::erase_string(path, Collection::getIndexOpen());
+	return path;
 }
 
-void DialogReflectedData::initialise(IComponentContext& context)
+void DialogReflectedData::setColor(const Vector4& color)
 {
-	data_.reset(new Data(context));
+	color_.x = color.x;
+	color_.y = color.y;
+	color_.z = color.z;
+	color_.w = color.w;
 }
 
-void DialogReflectedData::setColor(const Vector3& color)
+void DialogReflectedData::getColor(Vector4* color) const
 {
-	data_->color_.x = color.x;
-	data_->color_.y = color.y;
-	data_->color_.z = color.z;
-}
-
-void DialogReflectedData::getColor(Vector3* color) const
-{
-	color->x = data_->color_.x;
-	color->y = data_->color_.y;
-	color->z = data_->color_.z;
-}
-
-void DialogReflectedData::setCheckBoxState(const bool& checked)
-{
-	data_->checked_ = checked;
-}
-
-void DialogReflectedData::getCheckBoxState(bool* checked) const
-{
-	*checked = data_->checked_;
+	color->x = color_.x;
+	color->y = color_.y;
+	color->z = color_.z;
+	color->w = color_.w;
 }
 
 void DialogReflectedData::setTextField(const std::wstring& text)
 {
-	data_->text_ = text;
+	text_ = text;
 }
 
 void DialogReflectedData::getTextField(std::wstring* text) const
 {
-	*text = data_->text_;
+	*text = text_;
 }
 
 void DialogReflectedData::setSlideData(const double& length)
 {
 	if (length >= getSlideMinData() && length <= getSlideMaxData())
 	{
-		data_->slider_ = length;
+		slider_ = length;
 	}
 }
 
 void DialogReflectedData::getSlideData(double* length) const
 {
-	*length = data_->slider_;
+	*length = slider_;
 }
 
 int DialogReflectedData::getSlideMaxData()
@@ -125,12 +91,12 @@ int DialogReflectedData::getSlideMinData()
 
 void DialogReflectedData::setVector(const GenericObjectPtr& vec)
 {
-	data_->vector_ = vec;
+	*vector_ = vec;
 }
 
 const GenericObjectPtr& DialogReflectedData::getVector() const
 {
-	return data_->vector_;
+	return vector_->handle();
 }
 
 } // end namespace wgt

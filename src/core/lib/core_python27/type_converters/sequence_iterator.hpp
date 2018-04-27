@@ -52,7 +52,7 @@ public:
 	virtual Variant key() const override;
 	virtual Variant value() const override;
 	virtual bool setValue(const Variant& value) const override;
-	virtual void inc() override;
+	virtual void inc( size_t advAmount ) override;
 	virtual bool equals(const CollectionIteratorImplBase& that) const override;
 	virtual CollectionIteratorImplPtr clone() const override;
 

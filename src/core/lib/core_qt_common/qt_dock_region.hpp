@@ -10,6 +10,7 @@
 
 class QDockWidget;
 class QWidget;
+class QByteArray;
 
 namespace wgt
 {
@@ -21,7 +22,7 @@ class QtWindow;
 class QtDockRegion : public IRegion, public Depends<IQtFramework, IUIApplication>
 {
 public:
-	QtDockRegion(IComponentContext& context, QtWindow& qtWindow, QDockWidget& qDockWidget);
+	QtDockRegion(QtWindow& qtWindow, QDockWidget& qDockWidget);
 
 	const LayoutTags& tags() const override;
 
@@ -31,15 +32,18 @@ public:
 
 private:
 	void setDefaultPreferenceForDockWidget(QDockWidget* qDockWidget);
+	const QByteArray* getWidgetPersistentGeometry(const char* widgetName) const;
+	void setWidgetPersistentGeometry(const char* widgetName, const QByteArray& geometry);
 
 	QtWindow& qtWindow_;
 	QDockWidget& qDockWidget_;
 	LayoutTags tags_;
+	std::string menuPath_;
 	bool hidden_;
-	typedef std::pair<std::unique_ptr<QDockWidget>, std::unique_ptr<IAction>> DockData;
-	std::map<IView*, DockData> dockWidgetMap_;
+	std::map<IView*, std::unique_ptr<QDockWidget>> dockWidgetMap_;
 	typedef std::pair<QDockWidget*, IView*> DockPair;
 	std::vector<DockPair> needToRestorePreference_;
+	std::map<std::string, QByteArray> persistentWidgetGeometry_;
 };
 } // end namespace wgt
 #endif // QT_DOCK_REGION_HPP

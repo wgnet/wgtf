@@ -116,7 +116,11 @@ public:
 			{
 				--iter->index_;
 			}
-			--iter->size_;
+
+			if (index <= iter->size_)
+			{
+				--iter->size_;
+			}
 		}
 	}
 
@@ -124,6 +128,12 @@ public:
 	{
 		std::lock_guard<std::mutex> guard(mutex_);
 		vector_.clear();
+
+		for (auto iter : iterators_)
+		{
+			iter->index_ = 0;
+			iter->size_ = 0;
+		}
 	}
 
 private:

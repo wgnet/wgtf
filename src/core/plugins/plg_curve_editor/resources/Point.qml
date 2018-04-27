@@ -6,7 +6,7 @@ import WGControls.Canvas 2.0
 Rectangle {
     id: handle
     WGComponent { type: "Point" }
-    
+
     visible: enabled;
     width: 7;
     height: width
@@ -202,6 +202,10 @@ Rectangle {
         onPressed: {
             handle.pressed(handle, mouse);
             prevState = handle.state;
+            if (mouse.modifiers !== Qt.ControlModifier)
+            {
+                handle.selected = true;
+            }
             handleDragArea.startPos = Qt.point(mouse.x,mouse.y)
         }
         onReleased: {

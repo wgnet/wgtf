@@ -8,39 +8,88 @@ import WGControls.Views 2.0
 WGPanel {
     id: testTablePanel
 
-	ListModel {
-		id: qmlModel
-		ListElement { 
-			display: "This"
-		}
-        ListElement {
-			display: "Is"
-		}
-        ListElement {
-			display: "A"
-		}
-        ListElement {
-			display: "QML"
-		}
-        ListElement {
-			display: "Model"
-		}
-	}
+    WGTableModel {
+        id: qmlModel
 
-	property var sourceModel: WGColumnLayoutProxy {
-		sourceModel: useCppModel ? source : qmlModel
-		columnSequence: [0,1,2,3,0]
-	}
+        header: WGModelRow {
+            WGModelData {
+                roles: {"headerText": "h1", "footerText": "f1"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h2", "footerText": "f2"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h3", "footerText": "f3"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h4", "footerText": "f4"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h5", "footerText": "f5"}
+            }
+        }
+
+        WGModelRow {
+            WGModelData {
+                roles: {"display": "This"}
+            }
+
+            WGModelData {
+                roles: {"display": "is"}
+            }
+
+            WGModelData {
+                roles: {"display": "a"}
+            }
+
+            WGModelData {
+                roles: {"display": "QML"}
+            }
+
+            WGModelData {
+                roles: {"display": "model"}
+            }
+        }
+
+        WGModelRow {
+            WGModelData {
+                roles: {"display": "This"}
+            }
+
+            WGModelData {
+                roles: {"display": "is"}
+            }
+
+            WGModelData {
+                roles: {"display": "a"}
+            }
+
+            WGModelData {
+                roles: {"display": "QML"}
+            }
+
+            WGModelData {
+                roles: {"display": "model"}
+            }
+        }
+    }
+
+    property var columnProxyModel: WGColumnLayoutProxy {
+        sourceModel: source
+        columnSequence: [0,1,2,3,0]
+    }
+
+    property var sourceModel: useCppModel ? columnProxyModel : qmlModel
     property bool useCppModel: true
     property int topControlsHeight: 20
 
     title: "TableModel Test"
     layoutHints: { 'test': 0.1 }
     color: palette.mainWindowColor
-
-    // TODO NGT-2493 ScrollView steals keyboard focus
-    Keys.forwardTo: [tableView1, tableView2]
-    focus: true
 
     Button {
         id: switchModelButton
@@ -123,7 +172,7 @@ WGPanel {
                 id: textBoxHeader
                 textColor: palette.textColor
                 text: valid ? headerData.headerText : ""
-                width: parent.width
+                width: parent !== null ? parent.width : 0
                 height: 24
 
                 property bool valid: headerData !== null &&
@@ -145,7 +194,7 @@ WGPanel {
                 id: textBoxFooter
                 textColor: palette.textColor
                 text: valid ? headerData.footerText : ""
-                width: parent.width
+                width: parent !== null ? parent.width : 0
                 height: 24
 
                 property bool valid: headerData !== null &&

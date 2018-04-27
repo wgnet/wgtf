@@ -5,6 +5,8 @@
 #include <QModelIndex>
 #include <QVariant>
 #include "core_qt_common/qt_new_handler.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 
 namespace wgt
 {
@@ -12,7 +14,7 @@ class ISelectionHandler;
 
 // TODO: NGT-849
 // Eventually, we need to remove this class
-class SelectionHelper : public QObject
+class SelectionHelper : public QObject, Depends<IQtHelpers>
 {
 	Q_OBJECT
 

@@ -6,42 +6,35 @@
 //  Copyright (c) Wargaming.net. All rights reserved.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#ifndef CURVE_H_
-#define CURVE_H_
-
 #pragma once
 
-#include "interfaces/i_curve.hpp"
-
-#include <core_common/signal.hpp>
-#include <core_dependency_system/i_interface.hpp>
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#include "core_data_model/generic_list.hpp"
-#pragma warning(pop)
+#include "curve_editor/i_curve.hpp"
+#include "core_common/signal.hpp"
+#include "core_dependency_system/i_interface.hpp"
+#include "core_data_model/collection_model.hpp"
+#include "core_object/managed_object.hpp"
+#include "core_common/wg_read_write_lock.hpp"
 
 namespace wgt
 {
 class ICurveInterpolator;
-class IDefinitionManager;
 class BezierPoint;
 
 typedef std::unique_ptr<ICurveInterpolator> ICurveInterpolatorPtr;
 
 class Curve : public Implements<ICurve>
 {
-	typedef GenericListT<ObjectHandleT<BezierPoint>> TCurveList;
 	typedef Signal<void(PointUpdateData)> PointSignal;
 	typedef Signal<void(PointUpdateData, PointUpdateData)> ModifiedPointSignal;
 
 public:
-	Curve(ICurveInterpolatorPtr interpolator, IDefinitionManager* definitionManager);
+	Curve(ICurveInterpolatorPtr interpolator);
 
 	~Curve();
 
 	/*! Adds a bezier point to the curve
 	*/
-	virtual void add(const BezierPointData&, bool triggerCallback) override;
+	virtual void add(const BezierPointData& data, bool triggerCallback) override;
 
 	/*! Adds a new point at the specified time
 	    @param time the exact point in time between 0.0 and 1.0 at which to add a point
@@ -112,34 +105,41 @@ public:
 		return (unsigned int)points_.size();
 	}
 
-	virtual ObjectHandleT<IValueChangeNotifier> curveDirty() const override
+	virtual bool getDirty() const override
 	{
-		return ObjectHandleT<IValueChangeNotifier>(&dirty_);
+		return dirty_;
 	}
 
 	/*! Redoes the last modification
 	*/
-	virtual void redo(const ObjectHandle& handle, Variant variant) override
+	virtual void redo(Variant params, Variant variant) override
 	{
 		modificationStack_[++currentState_].redo_();
 	}
 
 	/*! Undoes the last modification
 	*/
-	void undo(const ObjectHandle& handle, Variant variant) override
+	virtual void undo(Variant params, Variant variant) override
 	{
 		modificationStack_[currentState_--].undo_();
+	}
+
+	virtual void getDirtySignal(Signal<void(Variant&)>** result) const override
+	{
+		*result = const_cast<Signal<void(Variant&)>*>(&dirtySignal_);
 	}
 
 protected:
 	/*! Gets the collection of bezier points exposed through reflection
 	*/
-	virtual const IListModel* getPoints() const final
+	virtual const AbstractListModel* getPoints() const final
 	{
-		return &points_;
+		return &pointsModel_;
 	}
 
 private:
+	Signal<void(Variant&)> dirtySignal_;
+
 	typedef std::function<void()> ModificationFunction;
 	struct CurveModification
 	{
@@ -154,21 +154,26 @@ private:
 
 	void addListeners(ObjectHandleT<BezierPoint> bezierPoint);
 	void removeListeners(ObjectHandleT<BezierPoint> bezierPoint);
-	void insertPoint(ObjectHandleT<BezierPoint> bezierPoint, bool updateYPos, bool triggerCallback);
+	void insertPoint(BezierPointData data, bool updateYPos, bool triggerCallback);
+    void insertPoint(int index, ManagedObject<BezierPoint> bezierPoint, bool triggerCallback);
+    void removePoint(int index, bool triggerCallback);
 	void pushModification(ModificationFunction&& executeFunc, ModificationFunction&& undoFunc);
-	unsigned int find_index(const BezierPointData& value);
+    unsigned int findIndex(const BezierPointData& value) const;
+    unsigned int findIndex(const std::string& id) const;
+    ObjectHandleT<BezierPoint> findPoint(const std::string& id) const;
 
-	PointSignal added_;
-	PointSignal removed_;
-	ModifiedPointSignal modified_;
-	TCurveList points_;
+    std::vector<ObjectHandleT<BezierPoint>> points_;
+    std::vector<ManagedObject<BezierPoint>> pointObjects_;
+	CollectionModel pointsModel_;
+    mutable wg_read_write_lock pointsLock_;
+
+    PointSignal added_;
+    PointSignal removed_;
+    ModifiedPointSignal modified_;
 	std::vector<CurveModification> modificationStack_;
 	size_t currentState_;
-	IDefinitionManager* definitionManager_;
-
 	bool showControlPoints_;
-	ValueChangeNotifier<bool> dirty_;
+	bool dirty_;
 	ICurveInterpolatorPtr interpolator_;
 };
 } // end namespace wgt
-#endif // CURVE_H_

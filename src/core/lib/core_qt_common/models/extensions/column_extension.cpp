@@ -78,4 +78,11 @@ void ColumnExtension::onRowsRemoved(const QModelIndex& parent, int first, int la
 	impl_->redundantColumnModels_.clear();
 }
 
+
+void ColumnExtension::onModelReset()
+{
+	impl_->redundantColumnModels_.clear(); 
+	isolateRedundantIndices(impl_->columnModels_, impl_->redundantColumnModels_);
+}
+
 } // end namespace wgt

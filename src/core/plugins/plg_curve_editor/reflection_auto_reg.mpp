@@ -1,0 +1,2 @@
+#include "metadata/i_curve_editor.mpp"
+#include "metadata/curve_editor.mpp"

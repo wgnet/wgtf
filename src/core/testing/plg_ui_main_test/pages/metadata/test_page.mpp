@@ -6,46 +6,99 @@
 
 namespace wgt
 {
-namespace
+enum TestPageGroup
 {
-const wchar_t* s_Group1 = L"SimpleCases";
-const wchar_t* s_Group2 = L"ComplexCases";
-const wchar_t* s_Group3 = L"ForPerformance";
+	SIMPLE,
+	COMPLEX,
+    INVALIDATING,
+    COLLECTION,
+	NONE
+};
+
+MetaData MetaTestPage(TestPageGroup group = TestPageGroup::NONE)
+{
+	switch(group)
+	{
+	case TestPageGroup::SIMPLE:
+		return MetaReadOnly(TestPage::getReadOnly) + MetaGroup(L"Simple Cases");
+	case TestPageGroup::COMPLEX:
+		return MetaReadOnly(TestPage::getReadOnly) + MetaGroup(L"Complex Cases");
+	case TestPageGroup::INVALIDATING:
+		return MetaReadOnly(TestPage::getReadOnly) + MetaGroup(L"Invalidating Cases") + MetaInvalidatesObject();
+	case TestPageGroup::COLLECTION:
+		return MetaReadOnly(TestPage::getReadOnly) + MetaGroup(L"Collection Cases");
+	default:
+		return MetaReadOnly(TestPage::getReadOnly);
+	}
 }
 
 BEGIN_EXPOSE(TestPage, MetaNone())
-EXPOSE("Bool", boolTest_, MetaGroup(s_Group1))
-EXPOSE("CheckBox", getCheckBoxState, setCheckBoxState, MetaGroup(s_Group1))
-EXPOSE("TextField", getTextField, setTextField, MetaGroup(s_Group1))
-EXPOSE("Slide", getSlideData, setSlideData,
-       MetaMinMax(static_cast<float>(TestPage::getSlideMinData()), static_cast<float>(TestPage::getSlideMaxData())) +
-       MetaSlider() + MetaGroup(s_Group1))
-EXPOSE("Number", getNumber, setNumber, MetaGroup(s_Group1))
-EXPOSE("ComboBox", getSelected, setSelected, MetaEnum(L"Select0=0|"
-                                                      L"Select1|Select2") +
-       MetaGroup(s_Group1))
-EXPOSE("Vector3", getVector3, setVector3, MetaGroup(s_Group1))
-EXPOSE("Vector4", getVector4, setVector4, MetaGroup(s_Group1))
-EXPOSE("Color3", getColor3, setColor3, MetaGroup(s_Group1) + MetaColor())
-EXPOSE("Color4", getColor4, setColor4, MetaGroup(s_Group1) + MetaColor())
-EXPOSE("Thumbnail", getThumbnail, MetaGroup(s_Group1) + MetaThumbnail(64, 64))
-EXPOSE("GenericProperties", getGenericObject, setGenericObject, MetaGroup(s_Group1))
-EXPOSE("PolyStruct", getTestPolyStruct, setTestPolyStruct, MetaNoNull() + MetaGroup(s_Group2))
-EXPOSE("TestEnumFunc", getEnumFunc, setEnumFunc, MetaEnumFunc(generateEnumFunc))
-EXPOSE("UseNativeFileDialog", getFileUrl, setFileUrl, MetaGroup(s_Group1) +
+
+/* Simple Group */
+EXPOSE("Bool", boolTest_, MetaTestPage(SIMPLE))
+EXPOSE("Int", intValue_, MetaTestPage(SIMPLE))
+EXPOSE("Int64", int64Value_, MetaTestPage(SIMPLE))
+EXPOSE("UInt64", uint64Value_, MetaTestPage(SIMPLE))
+EXPOSE("Float", floatValue_, MetaTestPage(SIMPLE) + MetaDecimals(2) + MetaStepSize(0.01))
+EXPOSE("Double", doubleValue_, MetaTestPage(SIMPLE) + MetaDecimals(5) + MetaStepSize(0.00001))
+EXPOSE("CheckBox", getCheckBoxState, setCheckBoxState, MetaTestPage(SIMPLE))
+EXPOSE("TextField", getTextField, setTextField, MetaTestPage(SIMPLE))
+EXPOSE("Slide", getSlideData, setSlideData, MetaMinMaxMapped(0.0, 1.0, -100.0, 100.0) + MetaSlider() + MetaTestPage(SIMPLE))
+EXPOSE("Degrees", getAngle, setAngle, MetaAngle(false, false) + MetaTestPage(SIMPLE))
+EXPOSE("Time", getTime, setTime, MetaTime() + MetaTestPage(SIMPLE))
+EXPOSE("Number", getNumber, setNumber, MetaTestPage(SIMPLE))
+EXPOSE("Vector3", getVector3, setVector3, MetaTestPage(SIMPLE))
+EXPOSE("Vector4", getVector4, setVector4, MetaTestPage(SIMPLE))
+EXPOSE("Color3", getColor3, setColor3, MetaTestPage(SIMPLE) + MetaColor())
+EXPOSE("Color4", getColor4, setColor4, MetaTestPage(SIMPLE) + MetaColor())
+EXPOSE("HDRColor", getHDRColor, setHDRColor, MetaTestPage(SIMPLE) + MetaHDRColor())
+EXPOSE("KelvinColor", getKelvinColor, setKelvinColor, MetaTestPage(SIMPLE) + MetaKelvinColor() + MetaMinMax(1000, 40000))
+EXPOSE("Thumbnail", getThumbnail, MetaTestPage(SIMPLE) + MetaThumbnail(64, 64))
+EXPOSE("ComboBox", getSelected, setSelected, MetaEnum(L"Select0=0|Select1|Select2") + MetaTestPage(SIMPLE))
+EXPOSE("ComboBoxLarge", getEnumFunc, setEnumFunc, MetaEnumFunc(generateEnumLargeFunc) + MetaTestPage(SIMPLE))
+EXPOSE("ComboBoxFunc", getEnumFunc, setEnumFunc, MetaEnumFunc(generateEnumFunc) + MetaTestPage(SIMPLE))
+EXPOSE("ComboBoxColor", getColorEnumFunc, setColorEnumFunc, MetaEnumFunc(generateColorEnumFunc) + MetaTestPage(SIMPLE))
+EXPOSE("UseNativeFileDialog", getFileUrl, setFileUrl, MetaTestPage(SIMPLE) +
        MetaUrl(true, "FileSelectDialog", "", "Text files(*.txt) | All files (*)", "Text files(*.txt)"))
-EXPOSE("UseAssetBrowserDialog", getAssetUrl, setAssetUrl, MetaGroup(s_Group1) + MetaUrl(false, "AssetBrowserDialog"))
-EXPOSE_METHOD("BUG MethodOnly should not be visible in the UI", methodOnly, MetaGroup(s_Group1))
-EXPOSE("TestIntStringVectorMap", testVectorMap_, MetaNone())
-EXPOSE("TestIntStringMap", testMap_, MetaNone())
-EXPOSE("TestStringMap", testStringMap_, MetaNone())
-EXPOSE("TestVectorFunc", getTestVector, MetaNone())
-EXPOSE("TestIntVector", intVector_, MetaNone())
-EXPOSE("TestFloatVector", floatVector_, MetaDecimals(5) + MetaStepSize(0.00001))
-EXPOSE("TestVectorIntVector", vectorVector_, MetaNone())
+EXPOSE("UseAssetBrowserDialog", getAssetUrl, setAssetUrl, MetaTestPage(SIMPLE) + MetaUrl(false, "AssetBrowserDialog"))
+EXPOSE_METHOD("BUG MethodOnly should not be visible in the UI", methodOnly, MetaTestPage(SIMPLE))
+EXPOSE("StaticString", getStringId, setStringId, MetaStaticString() + MetaTestPage(SIMPLE))
+
+/* Complex Group */
+EXPOSE("PolyStruct", getTestPolyStruct, setTestPolyStruct, MetaNoNull() + MetaTestPage(COMPLEX))
+EXPOSE("GenericProperties", getGenericObject, setGenericObject, MetaTestPage(COMPLEX))
+
+/* Invalidating Group */
+EXPOSE("Invalidating Bool", boolTest_, MetaTestPage(INVALIDATING))
+EXPOSE("Invalidating Int", intValue_, MetaTestPage(INVALIDATING))
+EXPOSE("Invalidating Int64", int64Value_, MetaTestPage(INVALIDATING))
+EXPOSE("Invalidating UInt64", uint64Value_, MetaTestPage(INVALIDATING))
+EXPOSE("Invalidating Vector3", getVector3, setVector3, MetaTestPage(INVALIDATING))
+EXPOSE("Invalidating Vector4", getVector4, setVector4, MetaTestPage(INVALIDATING))
+
+/* Collection Group */
+EXPOSE("TestIntStringVectorMap", testVectorMap_, MetaTestPage(COLLECTION))
+EXPOSE("TestIntStringMap", testMap_, MetaTestPage(COLLECTION))
+EXPOSE("TestStringMap", testStringMap_, MetaTestPage(COLLECTION))
+EXPOSE("TestBoolMap", testBoolMap_, MetaTestPage(COLLECTION) +
+    MetaCollectionItemMeta(MetaCheckBox()))
+EXPOSE("TestVectorFunc", getTestVector, MetaTestPage(COLLECTION))
+EXPOSE("TestIntVector", intVector_, MetaTestPage(COLLECTION))
+EXPOSE("TestFloatVector", floatVector_, MetaTestPage(COLLECTION) +
+    MetaCollectionItemMeta(MetaDecimals(5) + MetaStepSize(0.00001)))
+EXPOSE("TestVectorIntVector", vectorVector_, MetaTestPage(COLLECTION))
+EXPOSE("TestObjectVector", objectVector_, MetaTestPage(COLLECTION) +
+    MetaCollectionItemMeta(MetaDisplayPathNameCallback(&TestPage::objectDisplayName)))
+
 END_EXPOSE()
 
-BEGIN_EXPOSE(TestPage2, MetaNone())
-EXPOSE("TestPage", getTestPage, setTestPage, MetaNone())
+BEGIN_EXPOSE(TestObject::Member, MetaNone())
+EXPOSE("Enabled", enabled_, MetaDisplayPathNameCallback(&TestPage::objectDisplayName))
 END_EXPOSE()
+
+BEGIN_EXPOSE(TestObject, MetaNone())
+EXPOSE("Members", members_, MetaCollectionItemMeta(
+	MetaDisplayPathNameCallback(&TestPage::objectDisplayName)) + MetaInPlace())
+END_EXPOSE()
+
 } // end namespace wgt

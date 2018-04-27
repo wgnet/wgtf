@@ -18,15 +18,11 @@ public:
 	DialogReflectedData();
 	~DialogReflectedData();
 
-	void initialise(IComponentContext& context);
-	const DialogReflectedData& operator=(const DialogReflectedData& data);
-
 private:
-	void setCheckBoxState(const bool& checked);
-	void getCheckBoxState(bool* checked) const;
+	static std::string getDisplayName(std::string path, const ObjectHandle&);
 
-	void setColor(const Vector3& color);
-	void getColor(Vector3* color) const;
+	void setColor(const Vector4& color);
+	void getColor(Vector4* color) const;
 
 	void setTextField(const std::wstring& text);
 	void getTextField(std::wstring* text) const;
@@ -39,8 +35,11 @@ private:
 	static int getSlideMaxData();
 	static int getSlideMinData();
 
-	struct Data;
-	std::unique_ptr<Data> data_;
+	std::wstring text_;
+	double slider_;
+	ManagedObject<GenericObject> vector_;
+	Vector4 color_;
+	std::map<std::string, Variant> checkBoxes_;
 };
 
 } // end namespace wgt

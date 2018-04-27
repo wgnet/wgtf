@@ -14,34 +14,21 @@ WGPanel
     title: "Node Editor"
     layoutHints: { 'nodeeditor': 1.0 }
 
-    WGListModel
+    GraphView
     {
-        id: graphListModel
-        source: graphModel
+        id: graphView
+        nodesModel : graph.nodesModel
+        connectionsModel: graph.connectionsModel
+        nodeClassesModel: graph.nodeClassesModel
+        groupModel: graph.nodeGroupModel
 
-        ValueExtension {}
-    }
+        Connections {
+            target: nodeEditorView
 
-    Repeater
-    {
-        id: graphRender
-        model: graphListModel
-        delegate: GraphView
-        {
-            id: graphView
-            nodesModel : value.nodesModel
-            connectionsModel: value.connectionsModel
-            nodeClassesModel: value.nodeClassesModel
-            groupModel: value.nodeGroupModel
-
-            Connections {
-                target: nodeEditorView
-
-                onFocusChanged: {
-                    if ( nodeEditorView.focus === true )
-                    {
-                        graphView.redrawGraph();
-                    }
+            onFocusChanged: {
+                if ( nodeEditorView.focus === true )
+                {
+                    graphView.redrawGraph();
                 }
             }
         }

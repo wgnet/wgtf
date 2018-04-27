@@ -4,6 +4,10 @@
 #include "undo_redo_data.hpp"
 #include "core_serialization/resizing_memory_stream.hpp"
 #include "core_reflection_utils/commands/reflectedproperty_undoredo_helper.hpp"
+#include "core_object/managed_object.hpp"
+
+#include <memory>
+#include <vector>
 
 namespace wgt
 {
@@ -17,15 +21,16 @@ public:
 	friend CommandInstance;
 
 	ReflectionUndoRedoData(CommandInstance& commandInstance);
+	virtual ~ReflectionUndoRedoData();
 
 	void connect();
 	void disconnect();
 	void consolidate();
 
-	void undo() override;
-	void redo() override;
+	bool undo() override;
+	bool redo() override;
 
-	ObjectHandle getCommandDescription() const override;
+    CommandDescription getCommandDescription() const override;
 
 	BinaryBlock getUndoData() const;
 	BinaryBlock getRedoData() const;

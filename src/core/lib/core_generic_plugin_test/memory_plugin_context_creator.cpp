@@ -6,9 +6,9 @@
 namespace wgt
 {
 //==============================================================================
-IInterface* MemoryPluginContextCreator::createContext(const wchar_t* contextId)
+InterfacePtr MemoryPluginContextCreator::createContext(const wchar_t* contextId)
 {
-	return new InterfaceHolder<PluginMemoryAllocator>(new PluginMemoryAllocator(contextId), false);
+	return std::make_shared<InterfaceHolder<PluginMemoryAllocator>>(new PluginMemoryAllocator(contextId), false);
 }
 
 //==============================================================================

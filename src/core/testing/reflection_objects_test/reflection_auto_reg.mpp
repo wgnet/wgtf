@@ -1,0 +1,3 @@
+#include "metadata/test_structure.mpp"
+#include "metadata/test_polystruct.mpp"
+#include "metadata/test_methods_object.mpp"

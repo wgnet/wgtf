@@ -34,6 +34,7 @@ public:
 	bool removeRows(int row, int count) override;
 
 	std::vector<std::string> roles() const override;
+	void iterateRoles(const std::function<void(const char*)>& iterFunc) const;
 
 	virtual Connection connectPreItemDataChanged(DataCallback callback) override;
 	virtual Connection connectPostItemDataChanged(DataCallback callback) override;

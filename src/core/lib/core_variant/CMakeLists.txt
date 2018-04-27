@@ -26,14 +26,13 @@ SET( ALL_SRCS
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_LIBRARY( core_variant ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_variant INTERFACE
-	wg_types
-	core_serialization
+	wgtf_types
 )
 
 BW_PROJECT_CATEGORY( core_variant "WGT Libs" )

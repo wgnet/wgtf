@@ -4,7 +4,10 @@
 #include <memory>
 #include "core_dependency_system/depends.hpp"
 #include "core_ui_framework/i_view.hpp"
+#include "core_common/wg_future.hpp"
 #include <unordered_map>
+#include "core_environment_system/i_env_system.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -16,68 +19,47 @@ class IDataSource;
 class IDataSourceManager;
 class ICommandManager;
 class IDefinitionManager;
-class IReflectionController;
 class IEnvManager;
 class IFileSystem;
 class ObjectHandle;
+class IViewCreator;
+class IViewport;
+class TestUIContext;
 
-class TestUI
-: Depends<IDefinitionManager, ICommandManager, IReflectionController, IDataSourceManager, IEnvManager, IFileSystem>,
-  public IViewEventListener
+class TestUI : EnvComponentT<IEnvComponentState>,
+               Depends<IDefinitionManager, ICommandManager, IDataSourceManager, IEnvManager, IFileSystem, IUIFramework,
+                       IUIApplication, IViewCreator>
 {
 public:
-	explicit TestUI(IComponentContext& context);
+	TestUI(IEnvManager& envManager);
 	~TestUI();
 
-	void init(IUIApplication& uiApplication, IUIFramework& uiFramework);
+	void init();
 	void fini();
 
-	// IViewEventListener
-	virtual void onFocusIn(IView* view) override;
-	virtual void onFocusOut(IView* view) override;
-	virtual void onLoaded(IView* view) override
-	{
-	}
-
 private:
-	void createActions(IUIFramework& uiFramework);
-
-	void destroyActions();
-	void destroyViews(size_t idx);
-
-	void addActions(IUIApplication& uiApplication);
-
 	void undo(IAction* action);
 	void redo(IAction* action);
 	bool canUndo(const IAction* action) const;
 	bool canRedo(const IAction* action) const;
-
 	void open();
 	void close();
 	void closeAll();
 	bool canOpen() const;
 	bool canClose() const;
 
-	void createViews(IUIFramework& uiFramework, IDataSource* dataSrc, int envIdx);
-	void removeViews(size_t idx);
+	virtual const char* getEnvComponentId() const override;
+	virtual void onPostEnvironmentChanged(const EnvironmentId& oldId, const EnvironmentId& newId) override;
 
-	IComponentContext& context_;
-
-	IUIApplication* app_;
-	IUIFramework* fw_;
-
+	wg_future<std::unique_ptr<IView>> view_;
+    ManagedObject<TestUIContext> context_;
 	std::unique_ptr<IAction> testOpen_;
 	std::unique_ptr<IAction> testClose_;
+	std::unordered_map<std::string, std::unique_ptr<IViewport>> viewports_;
 
-	typedef std::vector<std::pair<IDataSource*, int>> DataSrcEnvPairs;
+	typedef std::vector<std::pair<IDataSource*, std::string>> DataSrcEnvPairs;
 	DataSrcEnvPairs dataSrcEnvPairs_;
-
-	typedef std::vector<ObjectHandle> TestContexts;
-	TestContexts test1Contexts_;
-
-	typedef std::vector<std::pair<std::unique_ptr<IView>, int>> TestViews;
-	TestViews test1Views_;
-	std::unordered_map<int, bool> historyFlags_;
 };
+
 } // end namespace wgt
 #endif // TEST_UI_H

@@ -1,6 +1,13 @@
+INCLUDE( WGTFMacros )
 INCLUDE( WGMacros )
-INCLUDE( WGMayaProject )
+INCLUDE( WGStandardProject )
 INCLUDE( WGProjectUserFile )
+
+IF( NOT MAYA_VERSION )
+	SET( MAYA_VERSION "2014" )
+ENDIF()
+
+WG_FIND_PACKAGE( Maya ${MAYA_VERSION} )
 
 IF( MAYA_THIRD_PARTY_NOT_FOUND )
     MESSAGE( "Maya third party directory is not found, skip building Maya plugin!" )
@@ -13,13 +20,7 @@ PROJECT( maya_plugin )
 MACRO( BW_ADD_MAYA_APP _PROJNAME _DIRNAME )
 	ADD_LIBRARY( ${_PROJNAME} ${ARGN} )
 
-	SET_TARGET_PROPERTIES( ${_PROJNAME} PROPERTIES
-		DEBUG_OUTPUT_NAME
-		"${_PROJNAME}_d" )
-	SET_TARGET_PROPERTIES( ${_PROJNAME} PROPERTIES
-		HYBRID_OUTPUT_NAME
-		"${_PROJNAME}" )
-
+	BW_SET_OUTPUT_NAMES( ${_PROJNAME} )
 	BW_SET_BINARY_DIR( ${_PROJNAME} "${WG_TOOLS_BIN_DIR}/${_DIRNAME}/${BW_PLATFORM}" )
 
 	BW_PROJECT_CATEGORY( ${_PROJNAME} "Executables" )
@@ -55,7 +56,7 @@ FILE( GLOB PLUGIN_CONFIG_FILES
 SOURCE_GROUP( "Plugin Configurations" FILES ${PLUGIN_CONFIG_FILES} )
 BW_CUSTOM_COPY_TO_PROJECT_OUTPUT( plugins "${PLUGIN_CONFIG_FILES}" )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${maya_plugin_SRCS}
 	${PLUGIN_CONFIG_FILES}
 )
@@ -73,7 +74,7 @@ BW_TARGET_LINK_LIBRARIES( maya_plugin PRIVATE
 	core_common
 	core_wgtf_app
 	core_generic_plugin_manager
-	wg_memory
+	wgtf_memory
 
 	# external libraries
 	$(PLATFORM_LIBRARIES)
@@ -87,3 +88,8 @@ BW_TARGET_LINK_LIBRARIES( maya_plugin PRIVATE
 
 # this is a macro defined in FindMaya that sets up our plugin with standard Maya build settings
 MAYA_SET_PLUGIN_PROPERTIES( maya_plugin )
+
+if(MSVC)
+	ADD_DEFINITIONS( -DWIN32_LEAN_AND_MEAN )    
+endif(MSVC)
+

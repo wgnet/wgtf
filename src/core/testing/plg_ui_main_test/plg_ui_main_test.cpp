@@ -12,6 +12,8 @@
 
 #include "pages/metadata/test_page.mpp"
 #include "pages/metadata/test_polymorphism.mpp"
+#include "test_ui/metadata/context.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 #include <vector>
 
@@ -20,8 +22,8 @@ WGT_INIT_QRC_RESOURCE
 namespace wgt
 {
 /**
-* A plugin which creates a TestData option in the menu bar with open and close options.
-* When open is chosen sample data is displayed in two panels.
+* A plugin which creates a menu option to open and close environments, each
+* environment changing what is displayed on a single Property Tree Test Panel.
 *
 * @ingroup plugins
 * @image html plg_ui_main_test.png
@@ -32,14 +34,18 @@ namespace wgt
 class MainUITestPlugin : public PluginMain
 {
 private:
-	TestUI testUI_;
+	std::unique_ptr<TestUI> testUI_;
 	std::unique_ptr<TestDataSourceManager> dataSrc_;
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 
 public:
 	//==========================================================================
-	MainUITestPlugin(IComponentContext& contextManager) : testUI_(contextManager)
+	MainUITestPlugin(IComponentContext& contextManager)
 	{
+		registerCallback([](IDefinitionManager & defManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
 
 	//==========================================================================
@@ -56,22 +62,18 @@ public:
 	void Initialise(IComponentContext& contextManager)
 	{
 		// register reflected type definition
-		IDefinitionManager* defManager = contextManager.queryInterface<IDefinitionManager>();
-		assert(defManager != nullptr);
-
-		this->initReflectedTypes(*defManager);
-
 		dataSrc_->init(contextManager);
 
-		auto uiApplication = contextManager.queryInterface<IUIApplication>();
-		auto uiFramework = contextManager.queryInterface<IUIFramework>();
-
-		testUI_.init(*uiApplication, *uiFramework);
+		auto envManager = contextManager.queryInterface<IEnvManager>();
+		assert(envManager);
+		testUI_ = std::make_unique<TestUI>(*envManager);
+		testUI_->init();
 	}
 	//==========================================================================
 	bool Finalise(IComponentContext& contextManager)
 	{
-		testUI_.fini();
+		testUI_->fini();
+		testUI_.reset();
 
 		assert(dataSrc_);
 		dataSrc_->fini();
@@ -83,20 +85,9 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 		dataSrc_ = nullptr;
-	}
-
-	void initReflectedTypes(IDefinitionManager& definitionManager)
-	{
-		REGISTER_DEFINITION(TestPolyCheckBox)
-		REGISTER_DEFINITION(TestPolyTextField)
-		REGISTER_DEFINITION(TestPolyComboBox)
-		REGISTER_DEFINITION(TestPolyColor3)
-		REGISTER_DEFINITION(TestPage)
-		REGISTER_DEFINITION(TestPage2)
-		REGISTER_DEFINITION(TestUIContext);
 	}
 };
 

@@ -14,9 +14,9 @@ public:
 	{
 	}
 
-	virtual QWidget* releaseView() = 0;
-	virtual void retainView() = 0;
-	virtual QWidget* view() const = 0;
+	virtual QWidget* releaseWidget() = 0;
+	virtual void retainWidget() = 0;
+	virtual QWidget* widget() const = 0;
 };
 } // end namespace wgt
 #endif // I_QT_VIEW_HPP

@@ -1,4 +1,5 @@
 #include "StringSlot.h"
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
@@ -6,11 +7,12 @@ const std::string STRING_SLOT_LABEL = "string";
 const std::string STRING_SLOT_ICON = "images/blueSlot.png";
 const std::string STRING_SLOT_COLOR = "darkCyan";
 
-StringSlot::StringSlot(INode* node, bool isInput)
+StringSlot::StringSlot(ObjectHandleT<INode> node, bool isInput)
     : m_label(STRING_SLOT_LABEL), m_icon(STRING_SLOT_ICON), m_color(STRING_SLOT_COLOR), m_editable(true),
       m_isInput(isInput), m_pNode(node)
 {
 	m_id = reinterpret_cast<size_t>(this);
+	connectedSlotsModel.setSource(Collection(m_connectedSlots));
 }
 
 std::string StringSlot::Label() const
@@ -44,32 +46,33 @@ bool StringSlot::Editable() const
 	return m_editable;
 }
 
-INode* StringSlot::Node() const
+ObjectHandleT<INode> StringSlot::Node() const
 {
 	return m_pNode;
 }
 
-const GenericListT<ISlot*>* StringSlot::GetConnectedSlots() const
+const CollectionModel* StringSlot::GetConnectedSlots() const
 {
-	return &m_connectedSlots;
+	return &connectedSlotsModel;
 }
 
 bool StringSlot::CanConnect(ObjectHandleT<ISlot> slot)
 {
 	assert(m_pNode != nullptr);
-	return m_pNode->CanConnect(this, slot);
+	return m_pNode->CanConnect(getThis(), slot);
 }
 
 bool StringSlot::Connect(size_t connectionID, ObjectHandleT<ISlot> slot)
 {
 	assert(m_pNode != nullptr);
-	bool result = m_pNode->CanConnect(this, slot);
+	bool result = m_pNode->CanConnect(getThis(), slot);
 
 	if (result)
 	{
-		m_connectedSlots.push_back(slot.get());
+		Collection& collection = connectedSlotsModel.getSource();
+		collection.insertValue(collection.size(), slot);
 		m_connectionIds.insert(connectionID);
-		m_pNode->OnConnect(this, m_connectedSlots.back());
+		m_pNode->OnConnect(getThis(), m_connectedSlots.back());
 	}
 
 	return result;
@@ -88,7 +91,7 @@ bool StringSlot::Disconnect(size_t connectionID, ObjectHandleT<ISlot> slot)
 		result = true;
 		m_connectedSlots.erase(slotPos);
 		m_connectionIds.erase(connectionID);
-		m_pNode->OnDisconnect(this, slot);
+		m_pNode->OnDisconnect(getThis(), slot);
 	}
 
 	return result;

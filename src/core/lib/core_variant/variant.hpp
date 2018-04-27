@@ -1,29 +1,35 @@
 #ifndef VARIANT_HPP_INCLUDED
 #define VARIANT_HPP_INCLUDED
 
-#include <string>
-#include <typeinfo>
-#include <iostream>
-#include <type_traits>
 #include <algorithm>
+#include <iostream>
 #include <memory>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
 #include <utility>
 
 #include <cstdint>
-#include <cassert>
 
-#include "type_id.hpp"
 #include "meta_type.hpp"
+#include "type_id.hpp"
 #include <atomic>
 
+#include "core_common/assert.hpp"
 #include "core_common/strong_type.hpp"
-#include "core_serialization/text_stream.hpp"
+#include "core_common/wg_hash.hpp"
 #include "core_serialization/binary_stream.hpp"
+#include "core_serialization/text_stream.hpp"
 
 #include "variant_dll.hpp"
 
-#if _MSC_VER == 1700
+#if _MSC_VER < 1900
 class QObject;
+namespace wgt
+{
+template <typename Signature>
+class Signal;
+}
 #endif
 
 namespace wgt
@@ -80,19 +86,19 @@ bool downcast(T* v, const Storage& storage)
 	return true;
 }
 
-// uintmax_t
+// uint32_t
 
 template <typename T>
 typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value &&
-                        !variant_details::is_same_no_cv<T, bool>::value,
-                        uintmax_t>::type
+                        !variant_details::is_same_no_cv<T, bool>::value && sizeof(T) <= sizeof(uint32_t),
+                        uint32_t>::type
 upcast(T v)
 {
 	return v;
 }
 
 template <typename T>
-bool downcast(T* v, uintmax_t storage)
+bool downcast(T* v, uint32_t storage)
 {
 	if (v)
 	{
@@ -101,19 +107,19 @@ bool downcast(T* v, uintmax_t storage)
 	return true;
 }
 
-// intmax_t
+// int32_t
 
 template <typename T>
 typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value &&
-                        !variant_details::is_same_no_cv<T, bool>::value,
-                        intmax_t>::type
+                        !variant_details::is_same_no_cv<T, bool>::value && sizeof(T) <= sizeof(int32_t),
+                        int32_t>::type
 upcast(T v)
 {
 	return v;
 }
 
 template <typename T>
-bool downcast(T* v, intmax_t storage)
+bool downcast(T* v, int32_t storage)
 {
 	if (v)
 	{
@@ -129,12 +135,12 @@ Use template function to avoid unexpected implicit conversion of different types
 to bool.
 */
 template <typename T>
-typename std::enable_if<std::is_same<T, bool>::value, intmax_t>::type upcast(T v)
+typename std::enable_if<std::is_same<T, bool>::value, int32_t>::type upcast(T v)
 {
 	return v;
 }
 
-inline bool downcast(bool* v, intmax_t storage)
+inline bool downcast(bool* v, int32_t storage)
 {
 	if (v)
 	{
@@ -209,8 +215,10 @@ static No checkStreamingIn(...);
 template <typename Stream, typename T>
 struct check
 {
-	static const bool has_streaming_out = std::is_same<decltype(checkStreamingOut<Stream, T>(0)), Yes>::value;
-	static const bool has_streaming_in = std::is_same<decltype(checkStreamingIn<Stream, T>(0)), Yes>::value;
+	static const bool has_streaming_out = std::is_same<decltype(checkStreamingOut<Stream, T>(0)), Yes>::value ||
+		(std::is_enum<T>::value && std::is_same<decltype(checkStreamingOut<Stream, int>(0)), Yes>::value);
+	static const bool has_streaming_in = std::is_same<decltype(checkStreamingIn<Stream, T>(0)), Yes>::value ||
+		(std::is_enum<T>::value && std::is_same<decltype(checkStreamingIn<Stream, int>(0)), Yes>::value);
 };
 };
 
@@ -249,7 +257,7 @@ struct Storable
 	type;
 };
 
-#if _MSC_VER == 1700
+#if _MSC_VER < 1900
 
 /**
     Workaround MSVC 2012 bug which causes compilation error in case of
@@ -289,6 +297,12 @@ struct is_copy_assignable<QObject>
 	static const bool value = false;
 };
 
+template <typename T>
+struct is_copy_assignable<Signal<T>>
+{
+	static const bool value = false;
+};
+
 #else
 
 template <typename T>
@@ -314,6 +328,20 @@ template <typename T>
 struct safe_element_type<T, false>
 {
 	typedef void type; // this case should never be used
+};
+
+template <typename T>
+struct is_less_than_comparable
+{
+	template <typename U>
+	static std::true_type check(
+		typename std::decay<decltype(std::declval<const U&>() < std::declval<const U&>())>::type*);
+
+	template <typename U>
+	static std::false_type check(...);
+
+	typedef decltype(check<T>(0)) check_type;
+	static const bool value = check_type::value;
 };
 
 template <typename T>
@@ -443,7 +471,7 @@ class RecursiveUpcaster<T, false>
 
 public:
 	template <typename U>
-	static typename traits::upcasted_type call_upcast(U&& v)
+	inline static typename traits::upcasted_type call_upcast(U&& v)
 	{
 		return std::forward<U>(v);
 	}
@@ -459,7 +487,7 @@ class Upcaster
 
 public:
 	template <typename U>
-	static typename traits::upcasted_type upcast(U&& v)
+	inline static typename traits::upcasted_type upcast(U&& v)
 	{
 		return RecursiveUpcaster<T>::call_upcast(std::forward<U>(v));
 	}
@@ -547,9 +575,9 @@ struct TextStreamerOut<T, false>
 };
 
 /**
-    Helper struct that provides access to either existing text-streaming-in
-    implementation or error-stub.
-    */
+Helper struct that provides access to either existing text-streaming-in
+implementation or error-stub.
+*/
 template <typename T, bool has_text_streaming_in = streaming::check<TextStream, T>::has_streaming_in>
 struct TextStreamerIn
 {
@@ -569,9 +597,9 @@ struct TextStreamerIn<T, false>
 };
 
 /**
-    Helper struct that provides access to either existing binary-streaming-out
-    implementation or error-stub.
-    */
+Helper struct that provides access to either existing binary-streaming-out
+implementation or error-stub.
+*/
 template <typename T, bool has_binary_streaming_out = streaming::check<BinaryStream, T>::has_streaming_out>
 struct BinaryStreamerOut
 {
@@ -591,9 +619,9 @@ struct BinaryStreamerOut<T, false>
 };
 
 /**
-    Helper struct that provides access to either existing binary-streaming-in
-    implementation or error-stub.
-    */
+Helper struct that provides access to either existing binary-streaming-in
+implementation or error-stub.
+*/
 template <typename T, bool has_binary_streaming_in = streaming::check<BinaryStream, T>::has_streaming_in>
 struct BinaryStreamerIn
 {
@@ -613,8 +641,8 @@ struct BinaryStreamerIn<T, false>
 };
 
 /**
-    Helper struct to workaround compiler warnings for bool vs. int comparison.
-    */
+Helper struct to workaround compiler warnings for bool vs. int comparison.
+*/
 template <typename T>
 struct EqualityCompare
 {
@@ -682,8 +710,8 @@ downcast(shared_ptr<T>* v,
 // unique_ptr
 
 /*
-    You can move unique_ptr to Variant, but you can't get unique_ptr back.
-    */
+You can move unique_ptr to Variant, but you can't get unique_ptr back.
+*/
 template <typename T, typename D>
 shared_ptr<T> upcast(unique_ptr<T, D> v)
 {
@@ -781,7 +809,7 @@ public:
 	Construct variant from a given value.
 	*/
 	template <typename T>
-	Variant(T&& value, typename std::enable_if<traits<T>::can_upcast>::type* = nullptr)
+	inline Variant(T&& value, typename std::enable_if<traits<T>::can_upcast>::type* = nullptr)
 	{
 		initGeneric(std::forward<T>(value));
 	}
@@ -831,6 +859,8 @@ public:
 	All types (and all supported conversions) may be cross-compared,
 	i.e. @c int may be compared with @a double.
 	*/
+	bool operator<(const Variant& that) const;
+
 	bool operator==(const Variant& that) const;
 
 	bool operator!=(const Variant& that) const
@@ -1230,6 +1260,7 @@ public:
 		return r;
 	}
 
+	uint64_t getHashCode() const;
 private:
 	static const size_t INLINE_PAYLOAD_SIZE = sizeof(std::shared_ptr<void>);
 	static const uintptr_t STORAGE_KIND_MASK = 0x03;
@@ -1253,36 +1284,18 @@ private:
 
 		static COWData* allocate(size_t payloadSize);
 
-		void incRef()
-		{
-			refs_.fetch_add(1);
-		}
-
+		void incRef();
 		void decRef(const MetaType* type);
 
 		/**
 		Check if there's only one reference to this data.
 		*/
-		bool isExclusive() const
-		{
-			return refs_ == 0;
-		}
-
-		void* payload()
-		{
-			return this + 1;
-		}
-
-		const void* payload() const
-		{
-			return this + 1;
-		}
+		bool isExclusive() const;
+		void* payload();
+		const void* payload() const;
 
 	private:
-		COWData() : refs_(0)
-		{
-		}
-
+		COWData();
 		std::atomic<int> refs_;
 	};
 
@@ -1323,7 +1336,7 @@ private:
 
 	void setTypeInternal(const MetaType::Qualified* t, StorageKind s)
 	{
-		assert((reinterpret_cast<uintptr_t>(t) & STORAGE_KIND_MASK) == 0);
+		TF_ASSERT((reinterpret_cast<uintptr_t>(t) & STORAGE_KIND_MASK) == 0);
 		type_ = reinterpret_cast<const MetaType*>(reinterpret_cast<uintptr_t>(t) |
 		                                          (static_cast<uintptr_t>(s) & STORAGE_KIND_MASK));
 	}
@@ -1340,9 +1353,9 @@ private:
 	}
 
 	template <typename T>
-	typename std::enable_if<traits<T>::value_storage &&
+	inline typename std::enable_if<traits<T>::value_storage &&
 	                        MetaTypeImpl<typename traits<T>::storage_type>::can_store_by_value>::type
-	initGeneric(T&& value)
+		initGeneric(T&& value)
 	{
 		typedef typename traits<T>::storage_type storage_type;
 
@@ -1358,6 +1371,7 @@ private:
 		{
 			setTypeInternal(type, COW);
 			data_.cow_ = COWData::allocate<storage_type>();
+			data_.cow_->incRef();
 			p = data_.cow()->payload();
 		}
 
@@ -1536,7 +1550,7 @@ private:
 			break;
 
 		default:
-			assert(false);
+			TF_ASSERT(false);
 			return false;
 		}
 
@@ -1582,20 +1596,26 @@ private:
 			break;
 
 		case COW:
-			if (!std::is_const<storage_element_type>::value)
 			{
-				detach(true);
-			}
+			    // Only checking if the type is cast-able, do not incur the cost
+			    // of detaching and creating the CoW payload.
+			    decltype(data_.cow()->payload()) emptyType = nullptr;
+			    bool isCorrectType = t->castPtr(&ptr, emptyType);
+			    if (isCorrectType == false)
+			    {
+				    return false;
+			    }
+			    if (!std::is_const<storage_element_type>::value)
+			    {
+				    detach(true);
+			    }
+			    t->castPtr(&ptr, data_.cow()->payload());
+		    }
+		    break;
 
-			if (!t->castPtr(&ptr, data_.cow()->payload()))
-			{
-				return false;
-			}
-			break;
-
-		default:
-			assert(false);
-			return false;
+		    default:
+			    TF_ASSERT(false);
+			    return false;
 		}
 
 		return traits<T>::downcast(dest, ptr);
@@ -1659,7 +1679,7 @@ private:
 			break;
 
 		default:
-			assert(false);
+			TF_ASSERT(false);
 			return false;
 		}
 
@@ -1705,7 +1725,7 @@ private:
 			return false;
 
 		default:
-			assert(false);
+			TF_ASSERT(false);
 			return false;
 		}
 
@@ -1751,7 +1771,7 @@ private:
 			break;
 
 		default:
-			assert(false);
+			TF_ASSERT(false);
 			return false;
 		}
 
@@ -1812,11 +1832,33 @@ public:
 	std::is_default_constructible<value_type>::value && variant_details::is_copy_assignable<value_type>::value &&
 	std::is_destructible<value_type>::value;
 
+	static const bool is_less_than_comparable = variant_details::is_less_than_comparable<value_type>::value;
 	static const bool is_equal_comparable = variant_details::is_equal_comparable<value_type>::value;
 
 protected:
 	DefaultMetaTypeImplBase(const char* name, int flags) : base(name, data<T>(flags))
 	{
+	}
+};
+
+
+template< typename T, bool = is_hashable< T >::value, typename = void >
+struct HashCodeOp
+{
+	static size_t hashCode(const T & value)
+	{
+		hash< T > hash_fn;
+		return hash_fn(value);
+	}
+};
+
+template < typename T, typename Dummy >
+struct HashCodeOp< T, false, Dummy >
+{
+	static size_t hashCode(const T & value)
+	{
+		//static_assert(false, "No hash function defined!");
+		return 0;
 	}
 };
 
@@ -1875,6 +1917,24 @@ private:
 		}
 	};
 
+	template <bool = DefaultMetaTypeImplBase<T>::is_less_than_comparable, typename = void>
+	struct LessThanOp
+	{
+		static bool lessThan(const void* lhs, const void* rhs)
+		{
+			return cast(lhs) < cast(rhs);
+		}
+	};
+
+	template <typename Dummy>
+	struct LessThanOp<false, Dummy>
+	{
+		static bool lessThan(const void* lhs, const void* rhs)
+		{
+			return lhs < rhs;
+		}
+	};
+
 	template <bool = DefaultMetaTypeImplBase<T>::is_equal_comparable, typename = void>
 	struct EqualOp
 	{
@@ -1893,6 +1953,7 @@ private:
 		}
 	};
 	typedef LifeTimeOps<> LTOps;
+	typedef LessThanOp<> LTOp;
 	typedef EqualOp<> EOp;
 
 public:
@@ -1920,9 +1981,19 @@ public:
 		LTOps::destroy(value);
 	}
 
+	bool lessThan(const void* lhs, const void* rhs) const override
+	{
+		return LTOp::lessThan(lhs, rhs);
+	}
+
 	bool equal(const void* lhs, const void* rhs) const override
 	{
 		return EOp::equal(lhs, rhs);
+	}
+
+	uint64_t hashCode(const void * value) const override
+	{
+		return HashCodeOp< T >::hashCode(cast(value));
 	}
 
 protected:
@@ -1985,26 +2056,51 @@ class MetaTypeImpl : public DefaultMetaTypeImpl<T>
 
 } // end namespace wgt
 
+/***
+* Hash operators
+*/
+namespace std
+{
+	template <>
+	struct hash<wgt::Variant> : public unary_function<wgt::Variant, size_t>
+	{
+	public:
+		uint64_t operator()(const wgt::Variant & v) const
+		{
+			return v.getHashCode();
+		}
+	};
+
+	template <>
+	struct hash<const wgt::Variant> : public unary_function<const wgt::Variant, size_t>
+	{
+	public:
+		uint64_t operator()(const wgt::Variant & v) const
+		{
+			return v.getHashCode();
+		}
+	};
+}
+
 /**
 Specialize MetaType for given type and use name in serialization.
 */
-#define META_TYPE_NAME(type, name)                                  \
-	\
-namespace wgt                                                       \
-	\
-{                                                            \
-		template <>                                                 \
-		class MetaTypeImpl<type> : public DefaultMetaTypeImpl<type> \
-		{                                                           \
-			typedef DefaultMetaTypeImpl<type> base;                 \
-                                                                    \
-		public:                                                     \
-			MetaTypeImpl() : base(name)                             \
-			{                                                       \
-			}                                                       \
-		};                                                          \
-	\
-}
+#define META_TYPE_NAME(type, name)                              \
+                                                                \
+	namespace wgt                                               \
+                                                                \
+	{                                                           \
+	template <>                                                 \
+	class MetaTypeImpl<type> : public DefaultMetaTypeImpl<type> \
+	{                                                           \
+		typedef DefaultMetaTypeImpl<type> base;                 \
+                                                                \
+	public:                                                     \
+		MetaTypeImpl() : base(name)                             \
+		{                                                       \
+		}                                                       \
+	};                                                          \
+	}
 
 /**
 Same as META_TYPE_NAME, but use stringified type name itself as MetaType's name.

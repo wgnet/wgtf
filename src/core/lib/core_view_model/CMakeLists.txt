@@ -7,9 +7,6 @@ PROJECT( core_view_model )
 SET( METADATA
 	metadata/property_view_model.mpp
 	metadata/view_model.mpp
-
-	metadata/types.cpp
-	metadata/types.hpp
 )
 WG_AUTO_SOURCE_GROUPS(${METADATA})
 
@@ -20,7 +17,7 @@ SET( ALL_SRCS
 )
 WG_AUTO_SOURCE_GROUPS(${ALL_SRCS})
 
-BW_BLOB_SOURCES( BLOB_SRCS 
+WG_BLOB_SOURCES( BLOB_SRCS 
 	${METADATA}
 	${ALL_SRCS}
 )

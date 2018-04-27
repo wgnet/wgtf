@@ -1,4 +1,4 @@
 <Actions>
-	<TestCommand1 path="ToolBar.Test|"/>
-	<TestCommand2 path="ToolBar.Test|"/>
+	<TestCommand1 path="ToolBar"  icon=":/WGControls/icons/model_16x16.png"/>
+  <TestCommand2 path="ToolBar"  icon=":/WGControls/icons/model_16x16.png"/>
 </Actions>

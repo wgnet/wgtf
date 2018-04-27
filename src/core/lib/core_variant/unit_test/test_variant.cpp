@@ -6,6 +6,7 @@
 #include <memory>
 #include <cstring>
 #include <cmath>
+#include <bitset>
 
 #include "core_variant/variant.hpp"
 
@@ -297,7 +298,7 @@ TEST(Variant_construct)
 TEST(Variant_int)
 {
 	Variant v = 42;
-	variantCheck<intmax_t>(EXTRA_ARGS, v, 42, "42");
+	variantCheck<int32_t>(EXTRA_ARGS, v, 42, "42");
 
 	castCheck<int64_t>(EXTRA_ARGS, v, 42);
 	castCheck<int32_t>(EXTRA_ARGS, v, 42);
@@ -310,6 +311,30 @@ TEST(Variant_int)
 	castCheck<double>(EXTRA_ARGS, v, 42.0);
 	castCheck<float>(EXTRA_ARGS, v, 42.0f);
 	castCheck<std::string>(EXTRA_ARGS, v, "42");
+}
+
+TEST(Variant_int64)
+{
+	Variant v = (int64_t)42;
+	variantCheck<int64_t>(EXTRA_ARGS, v, 42, "42");
+
+	castCheck<int64_t>(EXTRA_ARGS, v, 42);
+	castCheck<int32_t>(EXTRA_ARGS, v, 42);
+	castCheck<int16_t>(EXTRA_ARGS, v, 42);
+	castCheck<int8_t>(EXTRA_ARGS, v, 42);
+	castCheck<uint64_t>(EXTRA_ARGS, v, 42);
+	castCheck<uint32_t>(EXTRA_ARGS, v, 42);
+	castCheck<uint16_t>(EXTRA_ARGS, v, 42);
+	castCheck<uint8_t>(EXTRA_ARGS, v, 42);
+	castCheck<double>(EXTRA_ARGS, v, 42.0);
+	castCheck<float>(EXTRA_ARGS, v, 42.0f);
+	castCheck<std::string>(EXTRA_ARGS, v, "42");
+
+	v = 9223372036854775807;
+	variantCheck<int64_t>(EXTRA_ARGS, v, 9223372036854775807, "9223372036854775807");
+	castCheck<int64_t>(EXTRA_ARGS, v, 9223372036854775807);
+	castCheck<uint64_t>(EXTRA_ARGS, v, 9223372036854775807);
+	castCheck<double>(EXTRA_ARGS, v, 9223372036854775807.0);
 }
 
 TEST(Variant_double)
@@ -333,7 +358,7 @@ TEST(Variant_double)
 TEST(Variant_bool)
 {
 	Variant v = true;
-	variantCheck<intmax_t>(EXTRA_ARGS, v, 1, "1");
+	variantCheck<int32_t>(EXTRA_ARGS, v, 1, "1");
 
 	CHECK(v.cast<bool>() == true);
 	CHECK(v == true);
@@ -349,6 +374,17 @@ TEST(Variant_bool)
 	castCheck<double>(EXTRA_ARGS, v, 1.0);
 	castCheck<float>(EXTRA_ARGS, v, 1.0f);
 	castCheck<std::string>(EXTRA_ARGS, v, "1");
+}
+
+TEST(Variant_bit_set)
+{
+	std::bitset<8> bitset;
+	bitset.set(1);
+	bitset.set(3);
+	bitset.set(5);
+	bitset.set(7);
+	Variant v = bitset;
+	variantCheck<std::bitset<8>>(EXTRA_ARGS, v, bitset);
 }
 
 TEST(Variant_string_number)
@@ -629,10 +665,19 @@ TEST(Variant_interchange)
 	}
 
 	v = -1;
-	variantCheck<intmax_t>(EXTRA_ARGS, v, -1, "-1");
+	variantCheck<int32_t>(EXTRA_ARGS, v, -1, "-1");
 
 	v = (unsigned)1;
-	variantCheck<uintmax_t>(EXTRA_ARGS, v, 1, "1");
+	variantCheck<uint32_t>(EXTRA_ARGS, v, 1, "1");
+
+	v = -9223372036854775807;
+	variantCheck<int64_t>(EXTRA_ARGS, v, -9223372036854775807, "-9223372036854775807");
+
+	v = 10223372036854775807;
+	variantCheck<uint64_t>(EXTRA_ARGS, v, 10223372036854775807, "10223372036854775807");
+
+	v = (unsigned)1;
+	variantCheck<uint32_t>(EXTRA_ARGS, v, 1, "1");
 
 	v = 1.5f;
 	variantCheck<double>(EXTRA_ARGS, v, 1.5f, "1.5");

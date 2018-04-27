@@ -25,6 +25,7 @@ public:
 	void update() const;
 
 	void addAction(IAction& action);
+	void addMenuPath(const char* path, const char* windowId);
 	void addMenu(IMenu& menu);
 	void addView(IView& view);
 	void addWindow(IWindow& window);
@@ -35,6 +36,9 @@ public:
 	void removeWindow(IWindow& window);
 
 	void setWindowIcon(const char* path, const char* windowId);
+	void setStatusMessage(const char* message, int timeout);
+	void saveWindowPreferences();
+	void loadWindowPreferences();
 	const Windows& windows() const;
 
 private:

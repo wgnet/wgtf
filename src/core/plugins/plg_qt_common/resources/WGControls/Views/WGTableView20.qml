@@ -60,30 +60,30 @@ WGListViewBase {
     property alias clamp: itemView.clamp
     /** The model containing the selected items/indices.*/
     property alias selectionModel: itemView.selectionModel
+	property alias internalSelectionModel: itemView.internalSelectionModel
     /** A replacement for ListView's currentIndex that uses a QModelIndex from the selection model.*/
     property var currentIndex: itemView.selectionModel.currentIndex
     /** The combined common and view extensions.*/
     property var extensions: []
 
-    signal selectionChanged(var selected, var deselected)
+    signal selectionChanged()
 
     onCurrentIndexChanged: {
-        if (typeof( currentIndex ) == "number") {
-            currentRow = currentIndex
+        if (typeof(currentIndex) == "number") {
+            currentRow = currentIndex;
+			return;
         }
-        else {
-            currentRow = itemView.getRow( currentIndex );
-            itemView.selectionModel.setCurrentIndex( currentIndex, ItemSelectionModel.NoUpdate );
-        }
+        currentRow = itemView.getRow(currentIndex);
+		if (itemView.selectionModel.currentIndex != currentIndex && currentIndex != null) {
+			itemView.selectionModel.setCurrentIndex(currentIndex, ItemSelectionModel.NoUpdate);
+		}
     }
     Connections {
-        target: itemView.selectionModel
+        target: itemView
 
-        onSelectionChanged: selectionChanged(selected, deselected)
+        onSelectionChanged: selectionChanged()
         onCurrentChanged: {
-            if (current != previous) {
-                currentIndex = current;
-            }
+            currentIndex = itemView.selectionModel.currentIndex;
         }
     }
 
@@ -99,6 +99,9 @@ WGListViewBase {
     Keys.onRightPressed: {
         itemView.moveForwards(event);
     }
+    Keys.onEscapePressed: {
+        itemView.selectionModel.clear()
+    }
 
     property bool __skippedPress: false
     onItemPressed: {
@@ -111,23 +114,26 @@ WGListViewBase {
         }
 
         itemView.select(mouse, itemIndex);
+		forceActiveFocus();
     }
     onItemClicked: {
         if ( __skippedPress ) {
             itemView.select(mouse, itemIndex);
+			forceActiveFocus();
         }
         __skippedPress = false;
+    }
+
+    function createExtension(name)
+    {
+        return view.createExtension(name);
     }
 
     /** Common view code. */
     WGItemViewCommon {
         id: itemView
         style: WGTableViewStyle {}
-        viewExtension: tableExtension
-
-        TableExtension {
-            id: tableExtension
-        }
+        viewExtension: createExtension("TableExtension")
     }
 }
 

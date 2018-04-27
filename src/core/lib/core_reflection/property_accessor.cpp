@@ -1,4 +1,5 @@
 #include "property_accessor.hpp"
+
 #include "interfaces/i_base_property.hpp"
 #include "reflected_object.hpp"
 #include "reflected_method.hpp"
@@ -9,73 +10,81 @@
 #include "utilities/reflection_utilities.hpp"
 #include "metadata/meta_base.hpp"
 #include "core_reflection/base_property_with_metadata.hpp"
-
+#include "core_reflection/i_object_manager.hpp"
+#include "core_reflection/object/object_reference.hpp"
 #include <unordered_map>
 #include "core_variant/variant.hpp"
 #include "metadata/meta_utilities.hpp"
 #include "metadata/meta_impl.hpp"
+#include "core_logging/logging.hpp"
+#include "core_common/assert.hpp"
+#include "private/property_accessor_data.hpp"
 
 namespace wgt
 {
+
+
 //==============================================================================
+PropertyAccessor::PropertyAccessor()
+{
+}
+
+
+//------------------------------------------------------------------------------
 PropertyAccessor::PropertyAccessor(PropertyAccessor&& other)
-    : parentAccessor_(std::move(other.parentAccessor_)), object_(other.object_), property_(std::move(other.property_)),
-      rootObject_(other.rootObject_), path_(std::move(other.path_)), definitionManager_(other.definitionManager_)
+    : data_( std::move( other.data_ ) )
 {
 }
 
-//==============================================================================
+
+//------------------------------------------------------------------------------
 PropertyAccessor::PropertyAccessor(const PropertyAccessor& other)
-    : parentAccessor_(other.parentAccessor_), object_(other.object_), property_(other.property_),
-      rootObject_(other.rootObject_), path_(other.path_), definitionManager_(other.definitionManager_)
+    : data_( std::make_shared<PropertyAccessorPrivate::Data>( *other.data_ ) )
 {
 }
 
-//==============================================================================
-PropertyAccessor::PropertyAccessor() : property_(nullptr), definitionManager_(nullptr)
+
+//------------------------------------------------------------------------------
+PropertyAccessor::PropertyAccessor(
+	const char* path, const std::shared_ptr<ObjectReference>& reference)
+	: data_( std::make_shared< PropertyAccessorPrivate::Data >( path, reference ) )
 {
 }
 
-//==============================================================================
+
+//------------------------------------------------------------------------------
+PropertyAccessor::~PropertyAccessor()
+{
+}
+
+
+//------------------------------------------------------------------------------
 PropertyAccessor& PropertyAccessor::operator=(const PropertyAccessor& other)
 {
 	if (this == &other)
 	{
 		return *this;
 	}
+	if (other.data_ == nullptr)
+	{
+		return *this;
+	}
 
-	object_ = other.object_;
-	property_ = other.property_;
-	rootObject_ = other.rootObject_;
-	path_ = other.path_;
-	definitionManager_ = other.definitionManager_;
-	parentAccessor_ = other.parentAccessor_;
+	data_ = std::make_shared< PropertyAccessorPrivate::Data >( *other.data_ );
 	return *this;
 }
 
 //==============================================================================
 PropertyAccessor& PropertyAccessor::operator=(PropertyAccessor&& other)
 {
-	object_ = other.object_;
-	property_ = std::move(other.property_);
-	rootObject_ = other.rootObject_;
-	path_ = std::move(other.path_);
-	definitionManager_ = other.definitionManager_;
-	parentAccessor_ = other.parentAccessor_;
+	data_ = std::move( other.data_ );
 	return *this;
-}
-
-//==============================================================================
-PropertyAccessor::PropertyAccessor(const IDefinitionManager* definitionManager, const ObjectHandle& rootObject,
-                                   const char* path)
-    : property_(nullptr), rootObject_(rootObject), path_(path), definitionManager_(definitionManager)
-{
 }
 
 //==============================================================================
 bool PropertyAccessor::isValid() const
 {
-	return object_ != ObjectHandle() && getProperty() != nullptr;
+	return data_ != nullptr && data_->object_.isValid() && getProperty() != nullptr;
 }
 
 //==============================================================================
@@ -90,29 +99,6 @@ const TypeId& PropertyAccessor::getType() const
 }
 
 //==============================================================================
-PropertyAccessor PropertyAccessor::getParent() const
-{
-	if (path_.length() == 0 || definitionManager_ == nullptr)
-	{
-		return PropertyAccessor();
-	}
-	auto definition = rootObject_.getDefinition(*definitionManager_);
-	if (definition == nullptr)
-	{
-		return PropertyAccessor();
-	}
-	// This is the member operator '.', the arrow operator '->', and array operator '['
-	size_t parentMarkerPos = path_.find_last_of(".[");
-	if (parentMarkerPos == std::string::npos)
-	{
-		return definition->bindProperty("", rootObject_);
-	}
-	std::string parentPath;
-	parentPath.append(path_.c_str(), parentMarkerPos);
-	return definition->bindProperty(parentPath.c_str(), rootObject_);
-}
-
-//==============================================================================
 bool PropertyAccessor::canSetValue() const
 {
 	if (!this->isValid())
@@ -120,12 +106,35 @@ bool PropertyAccessor::canSetValue() const
 		return false;
 	}
 
-	if (definitionManager_ == nullptr)
+	if (data_->get< IDefinitionManager >() == nullptr)
 	{
 		return false;
 	}
 
-	return !this->getProperty()->readOnly();
+	return !this->getProperty()->readOnly(getObject());
+}
+
+//==============================================================================
+void PropertyAccessor::notify() const
+{
+	// Intentionally copy cause set of listeners can change between preSet and postSet
+	auto listeners = data_->get< IDefinitionManager >()->getPropertyAccessorListeners();
+	auto itBegin = listeners.cbegin();
+	auto itEnd = listeners.cend();
+	Variant value = getValue();
+	for (auto it = itBegin; it != itEnd; ++it)
+	{
+		auto listener = *it;
+		TF_ASSERT(listener != nullptr);
+		listener->preSetValue(*this, value);
+	}
+
+	for (auto it = itBegin; it != itEnd; ++it)
+	{
+		auto listener = *it;
+		TF_ASSERT(listener != nullptr);
+		listener->postSetValue(*this, value);
+	}
 }
 
 //==============================================================================
@@ -136,33 +145,25 @@ bool PropertyAccessor::setValue(const Variant& value) const
 		return false;
 	}
 
-	// Since "listeners" is a MutableVector, these iterators are safe to use
-	// while other listeners are registered/deregistered
-	auto& listeners = definitionManager_->getPropertyAccessorListeners();
+	// Intentionally copy cause set of listeners can change between preSet and postSet
+	auto listeners = data_->get< IDefinitionManager >()->getPropertyAccessorListeners();
 	auto itBegin = listeners.cbegin();
 	auto itEnd = listeners.cend();
 	for (auto it = itBegin; it != itEnd; ++it)
 	{
-		auto listener = it->lock();
-		assert(listener != nullptr);
+		auto listener = *it;
+		TF_ASSERT(listener != nullptr);
 		listener->preSetValue(*this, value);
 	}
-	bool ret = getProperty()->set(object_, value, *definitionManager_);
+	bool ret = getProperty()->set(data_->object_, value, *data_->get< IDefinitionManager >());
+
 	// Set the parent object to support properties returned by value
-	if (parentAccessor_)
-	{
-		parentAccessor_->setValue(object_);
-	}
-	// Call the property changed callback if it exists
-	auto metaPropertyChanged = findFirstMetaData<MetaOnPropertyChangedObj>(*getProperty(), *definitionManager_);
-	if (metaPropertyChanged)
-	{
-		metaPropertyChanged->onPropertyChanged(object_);
-	}
+	propagateSetToAncestors();
+
 	for (auto it = itBegin; it != itEnd; ++it)
 	{
-		auto listener = it->lock();
-		assert(listener != nullptr);
+		auto listener = *it;
+		TF_ASSERT(listener != nullptr);
 		listener->postSetValue(*this, value);
 	}
 	return ret;
@@ -171,16 +172,18 @@ bool PropertyAccessor::setValue(const Variant& value) const
 //==============================================================================
 bool PropertyAccessor::setValueWithoutNotification(const Variant& value) const
 {
-	if (!isValid())
-	{
-		return false;
-	}
-	if (definitionManager_ == nullptr)
+	if (!this->canSetValue())
 	{
 		return false;
 	}
 
-	return getProperty()->set(object_, value, *definitionManager_);
+	if (!getProperty()->set(data_->object_, value, *data_->get< IDefinitionManager >()))
+	{
+		return false;
+	}
+
+	propagateSetToAncestors();
+	return true;
 }
 
 //==============================================================================
@@ -191,7 +194,7 @@ bool PropertyAccessor::canInvoke() const
 		return false;
 	}
 
-	if (definitionManager_ == nullptr)
+	if (data_->get< IDefinitionManager >()== nullptr)
 	{
 		return false;
 	}
@@ -209,21 +212,22 @@ Variant PropertyAccessor::invoke(const ReflectedMethodParameters& parameters) co
 		return result;
 	}
 
-	const auto& listeners = definitionManager_->getPropertyAccessorListeners();
+	auto listeners = data_->get< IDefinitionManager >()->getPropertyAccessorListeners();
 
-	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
+	for (auto it = listeners.cbegin(); it != listeners.cend(); ++it)
 	{
-		auto listener = itr->lock();
-		assert(listener != nullptr);
+		auto listener = *it;
+		TF_ASSERT(listener != nullptr);
 		listener->preInvoke(*this, parameters, false);
 	}
 
-	result = getProperty()->invoke(object_, *definitionManager_, parameters);
+	result = getProperty()->invoke(
+		data_->object_, *data_->get< IDefinitionManager >(), parameters);
 
-	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
+	for (auto it = listeners.cbegin(); it != listeners.cend(); ++it)
 	{
-		auto listener = itr->lock();
-		assert(listener != nullptr);
+		auto listener = *it;
+		TF_ASSERT(listener != nullptr);
 		listener->postInvoke(*this, result, false);
 	}
 
@@ -255,28 +259,33 @@ void PropertyAccessor::invokeUndoRedo(const ReflectedMethodParameters& parameter
 		return;
 	}
 
-	const auto& listeners = definitionManager_->getPropertyAccessorListeners();
-
-	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
+	auto listeners = data_->get<IDefinitionManager >()->getPropertyAccessorListeners();
+	for (auto it = listeners.cbegin(); it != listeners.cend(); ++it)
 	{
-		auto listener = itr->lock();
+		auto listener = *it;
 		// What does this assertion mean? Isn't this to be expected sometimes?
 		// I encountered this assertion during shutdown. @m_martin
-		assert(listener != nullptr);
+		TF_ASSERT(listener != nullptr);
 		listener->preInvoke(*this, parameters, undo);
 	}
 
 	method = undo ? method->getUndoMethod() : method->getRedoMethod();
-	assert(method != nullptr);
+	TF_ASSERT(method != nullptr);
 	ReflectedMethodParameters paramsUndoRedo;
-	paramsUndoRedo.push_back(ObjectHandle(parameters));
-	paramsUndoRedo.push_back(result);
-	method->invoke(object_, *definitionManager_, paramsUndoRedo);
-
-	for (auto itr = listeners.cbegin(); itr != listeners.cend(); ++itr)
+	//TODO: push back each parameter one by one
+	/*for (int i = 0; i < parameters.size(); ++i)
 	{
-		auto listener = itr->lock();
-		assert(listener != nullptr);
+		paramsUndoRedo.push_back(parameters[i]);
+	}*/
+	paramsUndoRedo.push_back(parameters);
+	paramsUndoRedo.push_back(result);
+	method->invoke(
+		data_->object_, *data_->get< IDefinitionManager >(), paramsUndoRedo);
+
+	for (auto it = listeners.cbegin(); it != listeners.cend(); ++it)
+	{
+		auto listener = *it;
+		TF_ASSERT(listener != nullptr);
 		listener->postInvoke(*this, result, undo);
 	}
 }
@@ -309,9 +318,7 @@ bool PropertyAccessor::insert(const Variant& key, const Variant& value) const
 		return false;
 	}
 
-	// Since "listeners" is a MutableVector, these iterators are safe to use
-	// while other listeners are registered/deregistered
-	auto& listeners = definitionManager_->getPropertyAccessorListeners();
+	auto listeners = data_->get< IDefinitionManager >()->getPropertyAccessorListeners();
 	auto itBegin = listeners.cbegin();
 	auto itEnd = listeners.cend();
 
@@ -319,8 +326,8 @@ bool PropertyAccessor::insert(const Variant& key, const Variant& value) const
 		auto index = std::distance(collection.begin(), pos);
 		for (auto it = itBegin; it != itEnd; ++it)
 		{
-			auto listener = it->lock();
-			assert(listener != nullptr);
+			auto listener = *it;
+			TF_ASSERT(listener != nullptr);
 			listener->preInsert(*this, index, count);
 		}
 	});
@@ -328,8 +335,8 @@ bool PropertyAccessor::insert(const Variant& key, const Variant& value) const
 		auto index = std::distance(collection.begin(), pos);
 		for (auto it = itBegin; it != itEnd; ++it)
 		{
-			auto listener = it->lock();
-			assert(listener != nullptr);
+			auto listener = *it;
+			TF_ASSERT(listener != nullptr);
 			listener->postInserted(*this, index, count);
 		}
 	});
@@ -338,6 +345,8 @@ bool PropertyAccessor::insert(const Variant& key, const Variant& value) const
 
 	preInsert.disconnect();
 	postInserted.disconnect();
+
+	setValueWithoutNotification(collection);
 
 	return it != collection.end();
 }
@@ -370,9 +379,7 @@ bool PropertyAccessor::erase(const Variant& key) const
 		return false;
 	}
 
-	// Since "listeners" is a MutableVector, these iterators are safe to use
-	// while other listeners are registered/deregistered
-	auto& listeners = definitionManager_->getPropertyAccessorListeners();
+	auto listeners = data_->get< IDefinitionManager >()->getPropertyAccessorListeners();
 	auto itBegin = listeners.cbegin();
 	auto itEnd = listeners.cend();
 
@@ -380,17 +387,30 @@ bool PropertyAccessor::erase(const Variant& key) const
 		auto index = std::distance(collection.begin(), pos);
 		for (auto it = itBegin; it != itEnd; ++it)
 		{
-			auto listener = it->lock();
-			assert(listener != nullptr);
+			auto listener = *it;
+			TF_ASSERT(listener != nullptr);
 			listener->preErase(*this, index, count);
 		}
 	});
 	auto postErased = collection.connectPostErased([&](Collection::Iterator pos, size_t count) {
 		auto index = std::distance(collection.begin(), pos);
+		
+		auto objectManager = data_->get< IDefinitionManager >()->getObjectManager();
+		auto rootObject = getRootObject();
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			auto fullPath = getFullPath() + std::string("[") + std::to_string(index + i) + "]";
+			auto rootReference = std::dynamic_pointer_cast<ObjectReference>(rootObject.storage());
+			TF_ASSERT(rootReference);
+			auto childReference = objectManager->getObject( data_->rootReference_->id(), fullPath);
+			objectManager->clearStorageRecursively(childReference);
+		}
+
 		for (auto it = itBegin; it != itEnd; ++it)
 		{
-			auto listener = it->lock();
-			assert(listener != nullptr);
+			auto listener = *it;
+			TF_ASSERT(listener != nullptr);
 			listener->postErased(*this, index, count);
 		}
 	});
@@ -399,6 +419,8 @@ bool PropertyAccessor::erase(const Variant& key) const
 
 	preErase.disconnect();
 	postErased.disconnect();
+
+	setValueWithoutNotification(collection);
 
 	return count > 0;
 }
@@ -420,7 +442,8 @@ const IClassDefinition* PropertyAccessor::getStructDefinition() const
 	{
 		return nullptr;
 	}
-	if (definitionManager_ == nullptr)
+	auto defManager = data_->get< IDefinitionManager >();
+	if (defManager == nullptr)
 	{
 		return nullptr;
 	}
@@ -428,9 +451,9 @@ const IClassDefinition* PropertyAccessor::getStructDefinition() const
 	bool isCollection = getValue().tryCast(collection);
 	if (isCollection)
 	{
-		return definitionManager_->getDefinition(collection.valueType().getName());
+		return defManager->getDefinition(collection.valueType().getName());
 	}
-	return definitionManager_->getDefinition(getProperty()->getType().getName());
+	return defManager->getDefinition(getProperty()->getType().getName());
 }
 
 bool PropertyAccessor::canGetValue() const
@@ -440,7 +463,7 @@ bool PropertyAccessor::canGetValue() const
 		return false;
 	}
 
-	if (definitionManager_ == nullptr)
+	if (data_->get< IDefinitionManager >() == nullptr)
 	{
 		return false;
 	}
@@ -451,63 +474,207 @@ bool PropertyAccessor::canGetValue() const
 //==============================================================================
 Variant PropertyAccessor::getValue() const
 {
-	// TODO NGT-1649 How does it return a value when it's invalid?
-	// Does not match behaviour of setValue()
-	if (!this->isValid())
+	auto defManager = data_->get< IDefinitionManager >();
+	if (!this->isValid() || defManager == nullptr)
 	{
-		return this->getRootObject();
-	}
-	if (definitionManager_ == nullptr)
-	{
-		return this->getRootObject();
+		return Variant();
 	}
 
-	assert(this->canGetValue());
-	return getProperty()->get(object_, *definitionManager_);
+	TF_ASSERT(this->canGetValue());
+
+	// TODO: early out if a child reference already exists and the existing storage is by value for this property
+
+	Variant variant = getProperty()->get(data_->object_, *defManager);
+
+	if (getProperty()->isCollection())
+	{
+		return variant;
+	}
+
+	static TypeId objectType = TypeId::getType<ObjectHandle>();
+	auto typeId = variant.type()->typeId();
+	if (typeId == objectType)
+	{
+		// property is a link
+		return variant;
+	}
+
+	auto objectManager = data_->get< IObjectManager >();
+	auto tempObject = ObjectHandle(objectManager->createObjectStorage(variant));
+	auto definition = defManager->getObjectDefinition(tempObject);
+	if (definition != nullptr)
+	{
+		auto rootObject = getRootObject();
+		auto fullPath = getFullPath();
+
+		auto rootReference = std::dynamic_pointer_cast<ObjectReference>(rootObject.storage());
+		TF_ASSERT(rootReference);
+		auto childReference = objectManager->getObject(data_->rootReference_->id(), fullPath);
+
+		if(getProperty()->isByReference())
+		{
+			// Always update the object storage when data is returned by reference
+			// Example: Edit a material and toggle the BLEND_TERRAIN flag. When reloaded the material adds new parameters
+			// The storage of the parameters must be update as the references to the elements has changed
+			objectManager->updateObjectStorage(childReference, variant);
+		}
+		else
+		{
+			auto childReferenceDefinition = defManager->getObjectDefinition(ObjectReference::asHandle(childReference));
+			const char* currentType = childReferenceDefinition ? childReferenceDefinition->getName() : "";
+			const char* newType = getProperty()->getType().getName();
+			if (childReference->storage() == nullptr || strcmp(currentType, newType) != 0)
+			{
+				// For properties that return by value don't update object storage if it already exists
+				// as this would invalidate sub references to the existing storage
+				// however we must update if the object is set to the new type
+				objectManager->updateObjectStorage(childReference, variant);
+			}
+		}
+
+		return ObjectReference::asHandle(childReference);
+	}
+
+	return variant;
 }
 
 //==============================================================================
-MetaHandle PropertyAccessor::getMetaData() const
+IBasePropertyPtr PropertyAccessor::getProperty() const
+{
+	return data_->property_;
+}
+
+//==============================================================================
+const ObjectHandle& PropertyAccessor::getObject() const
+{
+	return data_->object_;
+}
+
+//==============================================================================
+const char * PropertyAccessor::getPath() const
+{
+	return data_->path_.c_str();
+}
+
+//==============================================================================
+void PropertyAccessor::setObjectReference(const std::shared_ptr<ObjectReference>& reference)
+{
+	data_->reference_ = reference;
+	data_->object_ = ObjectReference::asHandle(data_->reference_);
+}
+
+//==============================================================================
+void PropertyAccessor::setPath(const std::string& path)
+{
+	data_->path_ = path;
+}
+
+//==============================================================================
+const MetaData & PropertyAccessor::getMetaData() const
 {
 	if (getProperty() == nullptr)
 	{
-		return nullptr;
+		static MetaData s_Empty;
+		return s_Empty;
 	}
 	return getProperty()->getMetaData();
 }
 
 //==============================================================================
-void PropertyAccessor::setObject(const ObjectHandle& object)
-{
-	object_ = object;
-}
-
-//==============================================================================
 void PropertyAccessor::setBaseProperty(const IBasePropertyPtr& property)
 {
-	property_ = property;
-}
-
-void PropertyAccessor::setParent(const PropertyAccessor& parent)
-{
-	parentAccessor_ = std::make_shared<PropertyAccessor>(parent);
+	data_->property_ = property;
 }
 
 //==============================================================================
-const ObjectHandle& PropertyAccessor::getRootObject() const
+const ObjectHandle & PropertyAccessor::getRootObject() const
 {
-	return rootObject_;
+	if (data_->rootObject_.isValid())
+	{
+		return data_->rootObject_;
+	}
+
+	data_->rootReference_ = ObjectReference::rootReference(data_->reference_);
+	data_->rootObject_ = ObjectReference::asHandle(data_->rootReference_);
+	return data_->rootObject_;
 }
 
 //==============================================================================
 const char* PropertyAccessor::getFullPath() const
 {
-	return path_.c_str();
+	if (!data_->fullPath_.empty())
+	{
+		return data_->fullPath_.c_str();
+	}
+
+	data_->reference_->getFullPath(data_->fullPath_);
+
+	if (!data_->fullPath_.empty() && !data_->path_.empty() && data_->path_[0] != '[')
+	{
+		data_->fullPath_.push_back('.');
+	}
+
+	data_->fullPath_ += data_->path_;
+	return data_->fullPath_.c_str();
 }
 
 //==============================================================================
 const IDefinitionManager* PropertyAccessor::getDefinitionManager() const
 {
-	return definitionManager_;
+	return data_->get< IDefinitionManager >();
 }
+
+void PropertyAccessor::propagateSetToAncestors() const
+{
+	auto defManager = data_->get< IDefinitionManager >();
+	TF_ASSERT(defManager != nullptr);
+
+	std::shared_ptr<ObjectReference> parent = data_->reference_->parentReference();
+	std::string path = data_->reference_->path();
+	std::shared_ptr<ObjectReference> child = data_->reference_;
+	Collection* collection;
+	Variant value;
+	const IClassDefinition* definition;
+	IBasePropertyPtr property;
+
+	while (parent && !path.empty())
+	{
+		ObjectHandle parentHandle(ObjectReference::asHandle(parent));
+		collection = child->get<Collection>();
+		collection == nullptr ? value = ObjectReference::asHandle(child) : value = *collection;
+		definition = defManager->getDefinition(parentHandle);
+		property = std::get<0>(ReflectionUtilities::parseProperty(path.c_str(), parentHandle, nullptr, definition, *defManager));
+		TF_ASSERT(property.get() != nullptr);
+
+		if (!property->isByReference())
+		{
+			property->set(parentHandle, value, *defManager);
+		}
+
+		auto callback = findFirstMetaData<MetaCallbackObj>(*property, *defManager);
+		if (callback != nullptr)
+		{
+			callback->invoke(parentHandle);
+		}
+
+		child = parent;
+		path = child->path();
+		parent = child->parentReference();
+	}
+}
+
+//------------------------------------------------------------------------------
+PropertyAccessor::PropertyAccessor( std::shared_ptr< PropertyAccessorPrivate::Data > & data)
+	: data_( data )
+{
+}
+
+
+//------------------------------------------------------------------------------
+std::shared_ptr< PropertyAccessorPrivate::Data > & PropertyAccessor::getData()
+{
+	return data_;
+}
+
+
 } // end namespace wgt

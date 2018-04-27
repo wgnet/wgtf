@@ -58,14 +58,14 @@ private:
 	                         const QVector<int>& roles) override;
 	void onParentLayoutChanged(const QList<QPersistentModelIndex>& parents,
 	                           QAbstractItemModel::LayoutChangeHint hint) override;
-	void onParentColumnsAboutToBeInserted(const QModelIndex& parent, int first, int last);
-	void onParentColumnsInserted(const QModelIndex& parent, int first, int last);
-	void onParentColumnsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-	void onParentColumnsRemoved(const QModelIndex& parent, int first, int last);
+	void onParentColumnsAboutToBeInserted(const QModelIndex& parent, int first, int last) override;
+	void onParentColumnsInserted(const QModelIndex& parent, int first, int last) override;
+	void onParentColumnsAboutToBeRemoved(const QModelIndex& parent, int first, int last) override;
+	void onParentColumnsRemoved(const QModelIndex& parent, int first, int last) override;
 	void onParentColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
-	                                   const QModelIndex& destinationParent, int destinationColumn);
+	                                   const QModelIndex& destinationParent, int destinationColumn) override;
 	void onParentColumnsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
-	                          const QModelIndex& destinationParent, int destinationColumn);
+	                          const QModelIndex& destinationParent, int destinationColumn) override;
 
 private:
 	const QAbstractItemModel* model_;

@@ -4,3 +4,9 @@ SET( PLATFORM_SRCS
 	ngt_windows.hpp
 	shared_library_windows.cpp
 )
+
+SET( PLATFORM_LIBRARIES
+	shell32.lib
+	Ole32.lib
+	User32.lib
+)

@@ -7,34 +7,40 @@ namespace wgt
 {
 namespace proto
 {
-class ReflectedGroupItem;
+class PropertyGroupItem;
+typedef std::unique_ptr<PropertyGroupItem> PropertyGroupItemPtr;
 
 class PropertyTreeModel : public ReflectedTreeModel
 {
 public:
-	PropertyTreeModel(IComponentContext& context, const ObjectHandle& object = nullptr);
+	PropertyTreeModel(const ObjectHandle& object = nullptr);
 	virtual ~PropertyTreeModel();
 
 protected:
-	virtual std::unique_ptr<Children> getChildren(const AbstractItem* item) override;
+	virtual std::unique_ptr<Children> mapChildren(const AbstractItem* item) override;
 	virtual void clearChildren(const AbstractItem* item) override;
 
-	typedef std::vector<std::unique_ptr<ReflectedGroupItem>> Groups;
-	const Groups& getGroups(const ReflectedPropertyItem* item);
+	virtual const AbstractItem* mappedItem(const ReflectedPropertyItem* item) const;
+
+	typedef std::pair<const ReflectedPropertyItem*, uint64_t> PropertyItem;
+	typedef std::vector<PropertyGroupItemPtr>                 Groups;
+
+	Groups getGroups(const PropertyItem propertyItem);
 	void clearGroups(const ReflectedPropertyItem* item);
 
-	void collectProperties(const ReflectedPropertyItem* item, std::vector<const ReflectedPropertyItem*>& o_Properties);
+	PropertyItem propertyItem(const AbstractItem* item) const;
+	void collectProperties(const ReflectedPropertyItem* item, std::vector<PropertyItem>& o_Properties, Groups* groups = nullptr, uint64_t groupHash = 0);
 
 	enum FilterResult
 	{
-		INCLUDE,
-		INCLUDE_CHILDREN,
-		IGNORE
+		FILTER_INCLUDE,
+		FILTER_INCLUDE_CHILDREN,
+		FILTER_IGNORE
 	};
 	virtual FilterResult filterProperty(const ReflectedPropertyItem* item) const;
 
 private:
-	std::map<const ReflectedPropertyItem*, Groups*> groups_;
+	std::unordered_map<const ReflectedPropertyItem*, Groups> groups_;
 };
 }
 }

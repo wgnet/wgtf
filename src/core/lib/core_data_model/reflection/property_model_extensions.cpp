@@ -46,6 +46,11 @@ public:
 		return true;
 	}
 
+	bool isCollection() const override
+	{
+		return false;
+	}
+
 	bool set(const ObjectHandle&, const Variant&, const IDefinitionManager&) const override
 	{
 		return false;

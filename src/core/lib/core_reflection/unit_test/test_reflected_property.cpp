@@ -2,16 +2,16 @@
 #include "core_reflection/reflected_property.hpp"
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
-#include "core_reflection/reflected_types.hpp"
 #include "core_reflection/function_property.hpp"
+#include "core_reflection/property_accessor.hpp"
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 #include "wg_types/binary_block.hpp"
 #include "test_helpers.hpp"
 #include "core_unit_test/unit_test.hpp"
-#include "test_reflection_fixture.hpp"
+#include "core_unit_test/test_framework.hpp"
+#include "test_reflected_property.hpp"
 
 // =============================================================================
 
@@ -33,47 +33,6 @@
 
 namespace wgt
 {
-class TestPropertyFixture : public TestReflectionFixture
-{
-public:
-	class TestPropertyObject
-	{
-	public:
-		bool boolean_;
-		int integer_;
-		unsigned int uinteger_;
-		float floating_;
-		std::string string_;
-		std::wstring wstring_;
-		const char* raw_string_;
-		const wchar_t* raw_wstring_;
-		std::shared_ptr<BinaryBlock> binary_data_;
-
-		TestPropertyObject()
-		    : boolean_(false), integer_(0), uinteger_(0U), floating_(0.0f), string_(), wstring_(), raw_string_(NULL),
-		      raw_wstring_(NULL), binary_data_()
-		{
-		}
-	};
-
-	ReflectedProperty<bool, TestPropertyObject> booleanProperty_;
-	ReflectedProperty<int, TestPropertyObject> integerProperty_;
-	ReflectedProperty<unsigned int, TestPropertyObject> uintegerProperty_;
-	ReflectedProperty<float, TestPropertyObject> floatProperty_;
-
-	ReflectedProperty<std::string, TestPropertyObject> stringProperty_;
-	ReflectedProperty<std::wstring, TestPropertyObject> wstringProperty_;
-	ReflectedProperty<const char*, TestPropertyObject> rawStringProperty_;
-	ReflectedProperty<const wchar_t*, TestPropertyObject> rawWStringProperty_;
-
-	ReflectedProperty<std::shared_ptr<BinaryBlock>, TestPropertyObject> binaryDataProperty_;
-
-public:
-	TestPropertyFixture();
-};
-
-BEGIN_EXPOSE(TestPropertyFixture::TestPropertyObject, MetaNone())
-END_EXPOSE()
 
 TestPropertyFixture::TestPropertyFixture()
     : booleanProperty_("boolean", &TestPropertyObject::boolean_, TypeId::getType<bool>()),
@@ -87,271 +46,229 @@ TestPropertyFixture::TestPropertyFixture()
       binaryDataProperty_("binary data", &TestPropertyObject::binary_data_,
                           TypeId::getType<std::shared_ptr<BinaryBlock>>())
 {
-	IDefinitionManager& definitionManager = getDefinitionManager();
-	REGISTER_DEFINITION(TestPropertyObject);
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, boolean_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.boolean_ = false;
+		provider->boolean_ = false;
 
 		bool value;
-		Variant variant = booleanProperty_.get(provider, getDefinitionManager());
+		Variant variant = booleanProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
 
-		CHECK_EQUAL(false, subject_.boolean_);
-		CHECK_EQUAL(subject_.boolean_, value);
+		CHECK_EQUAL(false, provider->boolean_);
+		CHECK_EQUAL(provider->boolean_, value);
 	}
 
 	{
 		bool value = true;
-		booleanProperty_.set(provider, value, getDefinitionManager());
+		booleanProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
-		CHECK_EQUAL(true, subject_.boolean_);
+		CHECK_EQUAL(true, provider->boolean_);
 	}
+
+	CHECK(!booleanProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, integer_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.integer_ = -3567345;
+		provider->integer_ = -3567345;
 
 		int value;
-		Variant variant = integerProperty_.get(provider, getDefinitionManager());
+		Variant variant = integerProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
 
-		CHECK_EQUAL(-3567345, subject_.integer_);
-		CHECK_EQUAL(subject_.integer_, value);
+		CHECK_EQUAL(-3567345, provider->integer_);
+		CHECK_EQUAL(provider->integer_, value);
 	}
 
 	{
 		int value = 5645654;
-		integerProperty_.set(provider, value, getDefinitionManager());
+		integerProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
-		CHECK_EQUAL(5645654, subject_.integer_);
+		CHECK_EQUAL(5645654, provider->integer_);
 	}
+
+	CHECK(!integerProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, unsigned_integer_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.uinteger_ = 1321491649u;
+		provider->uinteger_ = 1321491649u;
 
 		unsigned int value;
-		Variant variant = uintegerProperty_.get(provider, getDefinitionManager());
+		Variant variant = uintegerProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
-		CHECK_EQUAL(1321491649u, subject_.uinteger_);
-		CHECK_EQUAL(subject_.uinteger_, value);
+		CHECK_EQUAL(1321491649u, provider->uinteger_);
+		CHECK_EQUAL(provider->uinteger_, value);
 	}
 
 	{
 		unsigned int value = 564658465u;
-		uintegerProperty_.set(provider, value, getDefinitionManager());
+		uintegerProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
-		CHECK_EQUAL(564658465u, subject_.uinteger_);
+		CHECK_EQUAL(564658465u, provider->uinteger_);
 	}
+
+	CHECK(!uintegerProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, float_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.floating_ = 367.345f;
+		provider->floating_ = 367.345f;
 
 		float value;
-		Variant variant = floatProperty_.get(provider, getDefinitionManager());
+		Variant variant = floatProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
 
-		CHECK_EQUAL(367.345f, subject_.floating_);
-		CHECK_EQUAL(subject_.floating_, value);
+		CHECK_EQUAL(367.345f, provider->floating_);
+		CHECK_EQUAL(provider->floating_, value);
 	}
 
 	{
 		float value = -321.587f;
-		floatProperty_.set(provider, value, getDefinitionManager());
+		floatProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
-		CHECK_EQUAL(-321.587f, subject_.floating_);
+		CHECK_EQUAL(-321.587f, provider->floating_);
 	}
+
+	CHECK(!floatProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, string_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.string_ = std::string("Hello World!");
+		provider->string_ = std::string("Hello World!");
 
 		std::string value;
-		Variant variant = stringProperty_.get(provider, getDefinitionManager());
+		Variant variant = stringProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
 
-		CHECK_EQUAL(subject_.string_, value);
+		CHECK_EQUAL(provider->string_, value);
 	}
 
 	{
 		std::string value = "Delicious Cupcakes";
-		stringProperty_.set(provider, value, getDefinitionManager());
+		stringProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
-		CHECK_EQUAL(value, subject_.string_);
+		CHECK_EQUAL(value, provider->string_);
 	}
+
+	CHECK(!stringProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, wstring_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.wstring_ = std::wstring(L"Chunky Bacon!");
+		provider->wstring_ = std::wstring(L"Chunky Bacon!");
 
 		std::wstring value;
-		Variant variant = wstringProperty_.get(provider, getDefinitionManager());
+		Variant variant = wstringProperty_.get(provider.getHandleT(), getDefinitionManager());
 
 		variant.tryCast(value);
 		// cppunitlite wants to serialise the expected and actual values
 		// via a std::stringstream, hence wide character strings don't work.
 
-		// CHECK_EQUAL(subject_.wstring_, value);
-		CHECK(subject_.wstring_ == value);
+		// CHECK_EQUAL(provider->wstring_, value);
+		CHECK(provider->wstring_ == value);
 	}
 
 	{
 		std::wstring value = L"Foxes driving pickups";
-		wstringProperty_.set(provider, value, getDefinitionManager());
+		wstringProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
-		// CHECK_EQUAL(value, subject_.wstring_);
-		CHECK(value == subject_.wstring_);
+		// CHECK_EQUAL(value, provider->wstring_);
+		CHECK(value == provider->wstring_);
 	}
+
+	CHECK(!wstringProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, raw_string_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.raw_string_ = "Hello World!";
+		provider->raw_string_ = "Hello World!";
 
 		std::string value;
-		Variant variant = rawStringProperty_.get(provider, getDefinitionManager());
+		Variant variant = rawStringProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
 
-		CHECK(strcmp(subject_.raw_string_, value.c_str()) == 0);
+		CHECK(strcmp(provider->raw_string_, value.c_str()) == 0);
 	}
+
+	CHECK(!rawStringProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, raw_wstring_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
-		subject_.raw_wstring_ = L"Hello World!";
+		provider->raw_wstring_ = L"Hello World!";
 
 		std::wstring value;
-		Variant variant = rawWStringProperty_.get(provider, getDefinitionManager());
+		Variant variant = rawWStringProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
-		CHECK(subject_.raw_wstring_ == value); // Only checks pointers are equal
-		CHECK(wcscmp(subject_.raw_wstring_, value.c_str()) == 0);
+		CHECK(provider->raw_wstring_ == value); // Only checks pointers are equal
+		CHECK(wcscmp(provider->raw_wstring_, value.c_str()) == 0);
 	}
+
+	CHECK(!rawWStringProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestPropertyFixture, binary_data_property)
 {
-	TestPropertyObject subject_;
-	ObjectHandle provider(&subject_, getDefinitionManager().getDefinition<TestPropertyObject>());
+	auto provider = ManagedObject<TestPropertyObject>::make();
 
 	{
 		const char* randomData = "Something evil this way comes.";
-		subject_.binary_data_ = std::make_shared<BinaryBlock>(randomData, strlen(randomData) + 1, false);
+		provider->binary_data_ = std::make_shared<BinaryBlock>(randomData, strlen(randomData) + 1, false);
 
 		std::shared_ptr<BinaryBlock> value;
-		Variant variant = binaryDataProperty_.get(provider, getDefinitionManager());
+		Variant variant = binaryDataProperty_.get(provider.getHandleT(), getDefinitionManager());
 		variant.tryCast(value);
-		CHECK(subject_.binary_data_->compare(*value) == 0);
+		CHECK(provider->binary_data_->compare(*value) == 0);
 	}
 
 	{
 		const char* randomData = "Oh no, the boost library is here.";
 		auto value = std::make_shared<BinaryBlock>(randomData, strlen(randomData) + 1, false);
-		binaryDataProperty_.set(provider, value, getDefinitionManager());
+		binaryDataProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
-		CHECK(value->compare(*(subject_.binary_data_)) == 0);
+		CHECK(value->compare(*(provider->binary_data_)) == 0);
 	}
+
+	CHECK(!binaryDataProperty_.isCollection());
 }
 
 // =============================================================================
-
-class TestCollectionFixture
-{
-public:
-	typedef std::vector<int> IntVector;
-	typedef std::vector<float> FloatVector;
-	typedef std::vector<std::string> StringVector;
-	typedef std::vector<const char*> RawStringVector;
-	typedef std::map<int, int> IntMap;
-	typedef std::map<int, float> FloatMap;
-
-	class TestCollectionObject
-	{
-	public:
-		IntVector int_vector_;
-		FloatVector float_vector_;
-		StringVector string_vector_;
-		RawStringVector raw_string_vector_;
-		IntMap int_map_;
-		FloatMap float_map_;
-
-		TestCollectionObject()
-		{
-		}
-	};
-
-	ReflectedProperty<IntVector, TestCollectionObject> intVectorProperty_;
-	ReflectedProperty<FloatVector, TestCollectionObject> floatVectorProperty_;
-	ReflectedProperty<StringVector, TestCollectionObject> stringVectorProperty_;
-	ReflectedProperty<RawStringVector, TestCollectionObject> rawStringVectorProperty_;
-	ReflectedProperty<IntMap, TestCollectionObject> intMapProperty_;
-	ReflectedProperty<FloatMap, TestCollectionObject> floatMapProperty_;
-
-public:
-	TestCollectionFixture();
-
-	IDefinitionManager& getDefinitionManager()
-	{
-		return definitionManager_;
-	}
-
-private:
-	ObjectManager objectManager_;
-	DefinitionManager definitionManager_;
-};
-
-BEGIN_EXPOSE(TestCollectionFixture::TestCollectionObject, MetaNone())
-EXPOSE("int vector", int_vector_)
-END_EXPOSE()
 
 TestCollectionFixture::TestCollectionFixture()
     : intVectorProperty_("int vector", &TestCollectionObject::int_vector_, TypeId::getType<IntVector>()),
@@ -360,19 +277,14 @@ TestCollectionFixture::TestCollectionFixture()
       rawStringVectorProperty_("raw string vector", &TestCollectionObject::raw_string_vector_,
                                TypeId::getType<RawStringVector>()),
       intMapProperty_("int map", &TestCollectionObject::int_map_, TypeId::getType<IntMap>()),
-      floatMapProperty_("float map", &TestCollectionObject::float_map_, TypeId::getType<FloatMap>()),
-      definitionManager_(objectManager_)
+      floatMapProperty_("float map", &TestCollectionObject::float_map_, TypeId::getType<FloatMap>())
 {
-	objectManager_.init(&definitionManager_);
-	IDefinitionManager& definitionManager = definitionManager_;
-	Reflection::initReflectedTypes(definitionManager);
-	REGISTER_DEFINITION(TestCollectionObject);
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestCollectionFixture, int_vector)
 {
-	TestCollectionObject subject;
+	auto provider = ManagedObject<TestCollectionObject>::make();
 
 	IntVector test1;
 	test1.push_back(1);
@@ -393,11 +305,9 @@ TEST_F(TestCollectionFixture, int_vector)
 	test2.push_back(-128);
 
 	// Verify initial size & types
-	CHECK_EQUAL(0, subject.int_vector_.size());
+	CHECK_EQUAL(0, provider->int_vector_.size());
 
-	ObjectHandle provider(&subject);
-
-	Variant vIntVector = intVectorProperty_.get(provider, getDefinitionManager());
+	Variant vIntVector = intVectorProperty_.get(provider.getHandleT(), getDefinitionManager());
 	Collection collection;
 	vIntVector.tryCast(collection);
 	CHECK_EQUAL(0, collection.size());
@@ -410,9 +320,9 @@ TEST_F(TestCollectionFixture, int_vector)
 	}
 
 	{
-		subject.int_vector_ = test1;
+		provider->int_vector_ = test1;
 
-		CHECK(Collection(subject.int_vector_) == collection);
+		CHECK(Collection(provider->int_vector_) == collection);
 		CHECK_EQUAL(test1.size(), collection.size());
 	}
 
@@ -455,10 +365,10 @@ TEST_F(TestCollectionFixture, int_vector)
 
 	{
 		IntVector value = test2;
-		intVectorProperty_.set(provider, value, getDefinitionManager());
+		intVectorProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
 		CHECK(test2 == value);
-		CHECK(test2 == subject.int_vector_);
+		CHECK(test2 == provider->int_vector_);
 
 		CHECK_EQUAL(test2.size(), collection.size());
 	}
@@ -467,7 +377,7 @@ TEST_F(TestCollectionFixture, int_vector)
 	CHECK(definition);
 
 	{
-		auto pa = definition->bindProperty("int vector[0]", provider);
+		auto pa = definition->bindProperty("int vector[0]", provider.getHandleT());
 		CHECK(pa.isValid());
 
 		int i = 0;
@@ -479,12 +389,14 @@ TEST_F(TestCollectionFixture, int_vector)
 		// not Variant::traits< int >::storage_type
 		CHECK(pa.getType() == TypeId::getType<int>());
 	}
+
+	CHECK(intVectorProperty_.isCollection());
 }
 
 // -----------------------------------------------------------------------------
 TEST_F(TestCollectionFixture, int_map)
 {
-	TestCollectionObject subject;
+	auto provider = ManagedObject<TestCollectionObject>::make();
 
 	IntMap test1;
 	test1[1] = 0;
@@ -505,11 +417,9 @@ TEST_F(TestCollectionFixture, int_map)
 	test2[-128] = -28;
 
 	// Verify initial size & types
-	CHECK_EQUAL(0, subject.int_map_.size());
+	CHECK_EQUAL(0, provider->int_map_.size());
 
-	ObjectHandle provider(&subject, getDefinitionManager().getDefinition<TestCollectionObject>());
-
-	auto vCollection = intMapProperty_.get(provider, getDefinitionManager());
+	auto vCollection = intMapProperty_.get(provider.getHandleT(), getDefinitionManager());
 	Collection collection;
 	vCollection.tryCast(collection);
 	CHECK_EQUAL(0, collection.size());
@@ -523,9 +433,9 @@ TEST_F(TestCollectionFixture, int_map)
 	}
 
 	{
-		subject.int_map_ = test1;
+		provider->int_map_ = test1;
 
-		CHECK(Collection(subject.int_map_) == collection);
+		CHECK(Collection(provider->int_map_) == collection);
 		CHECK_EQUAL(test1.size(), collection.size());
 	}
 
@@ -569,12 +479,14 @@ TEST_F(TestCollectionFixture, int_map)
 
 	{
 		IntMap value = test2;
-		intMapProperty_.set(provider, value, getDefinitionManager());
+		intMapProperty_.set(provider.getHandleT(), value, getDefinitionManager());
 
 		CHECK(test2 == value);
-		CHECK(test2 == subject.int_map_);
+		CHECK(test2 == provider->int_map_);
 
 		CHECK_EQUAL(test2.size(), collection.size());
 	}
+
+	CHECK(intMapProperty_.isCollection());
 }
 } // end namespace wgt

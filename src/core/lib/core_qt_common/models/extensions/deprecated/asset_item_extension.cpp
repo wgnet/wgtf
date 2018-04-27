@@ -5,18 +5,13 @@
 #include "core_data_model/asset_browser/i_asset_object_item.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/qt_image_provider_old.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/models/wg_list_model.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_reflection/interfaces/i_class_definition.hpp"
 
 namespace wgt
 {
-AssetItemExtension::AssetItemExtension()
-{
-	qtFramework_ = Context::queryInterface<IQtFramework>();
-}
-
 AssetItemExtension::~AssetItemExtension()
 {
 }
@@ -60,7 +55,8 @@ QVariant AssetItemExtension::data(const QModelIndex& index, int role) const
 	    roleId == IsDirectoryRole::roleId_ || roleId == IsReadOnlyRole::roleId_ ||
 	    roleId == IsCompressedRole::roleId_ || roleId == ItemRole::itemIdId)
 	{
-		return QtHelpers::toQVariant(item->getData(column, roleId), const_cast<QAbstractItemModel*>(index.model()));
+		return get<IQtHelpers>()->toQVariant(item->getData(column, roleId),
+		                                     const_cast<QAbstractItemModel*>(index.model()));
 	}
 	else if (roleId == StatusIconRole::roleId_)
 	{
@@ -72,7 +68,7 @@ QVariant AssetItemExtension::data(const QModelIndex& index, int role) const
 		if (status != nullptr)
 		{
 			auto qtImageProvider = dynamic_cast<QtImageProviderOld*>(
-			qtFramework_->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
+			get<IQtFramework>()->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
 			if (qtImageProvider != nullptr)
 			{
 				return qtImageProvider->encodeImage(status);

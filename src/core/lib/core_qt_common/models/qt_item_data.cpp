@@ -7,7 +7,7 @@
 
 namespace wgt
 {
-QtItemData::MetaObject::MetaObject(QAbstractItemModel& model) : model_(model)
+QtItemData::MetaObject::MetaObject(QAbstractItemModel& model) : model_(&model)
 {
 	QMetaObjectBuilder builder;
 	builder.setClassName(QUuid().toByteArray());
@@ -23,7 +23,7 @@ QtItemData::MetaObject::MetaObject(QAbstractItemModel& model) : model_(model)
 	addExtraProperty("column", "QVariant");
 	addExtraProperty("parent", "QVariant");
 
-	QHashIterator<int, QByteArray> itr(model_.roleNames());
+	QHashIterator<int, QByteArray> itr(model_->roleNames());
 	while (itr.hasNext())
 	{
 		itr.next();
@@ -45,29 +45,29 @@ QtItemData::MetaObject::~MetaObject()
 	::free(metaObject_);
 }
 
-struct QtItemData::Impl
+void QtItemData::MetaObject::destroy()
 {
-	Impl(const QModelIndex& index, std::weak_ptr<MetaObject>& metaObject) : index_(index), metaObject_(metaObject)
-	{
-	}
+	model_ = nullptr;
+}
 
-	QModelIndex index_;
-	std::weak_ptr<MetaObject> metaObject_;
-};
+QtItemData::QtItemData(const QModelIndex& index, std::shared_ptr<MetaObject> & metaObject)
+    : index_( index )
+	, metaObject_( metaObject )
+{
+}
 
-QtItemData::QtItemData(const QModelIndex& index, std::weak_ptr<MetaObject> metaObject)
-    : impl_(new Impl(index, metaObject))
+QtItemData::~QtItemData()
 {
 }
 
 const QModelIndex& QtItemData::index() const
 {
-	return impl_->index_;
+	return index_;
 }
 
 const QMetaObject* QtItemData::metaObject() const
 {
-	auto metaObject = impl_->metaObject_.lock();
+	auto && metaObject = metaObject_;
 	if (metaObject == nullptr)
 	{
 		return nullptr;
@@ -78,7 +78,7 @@ const QMetaObject* QtItemData::metaObject() const
 
 int QtItemData::qt_metacall(QMetaObject::Call c, int id, void** argv)
 {
-	auto metaObject = impl_->metaObject_.lock();
+	auto && metaObject = metaObject_;
 	if (metaObject == nullptr)
 	{
 		return -1;
@@ -114,33 +114,36 @@ int QtItemData::qt_metacall(QMetaObject::Call c, int id, void** argv)
 			{
 				if (c == QMetaObject::ReadProperty)
 				{
-					*value = impl_->index_.row();
+					*value = index_.row();
 				}
 			}
 			if (propertyId-- == 0)
 			{
 				if (c == QMetaObject::ReadProperty)
 				{
-					*value = impl_->index_.column();
+					*value = index_.column();
 				}
 			}
 			if (propertyId-- == 0)
 			{
 				if (c == QMetaObject::ReadProperty)
 				{
-					*value = QVariant::fromValue(new QtItemData(impl_->index_.parent(), impl_->metaObject_));
+					*value = QVariant::fromValue(new QtItemData(index_.parent(), metaObject_));
 				}
 			}
 			if (propertyId >= 0)
 			{
 				auto role = metaObject->roles_[id - 3];
-				if (c == QMetaObject::ReadProperty)
+				if (metaObject->model_ != nullptr)
 				{
-					*value = metaObject->model_.data(impl_->index_, role);
-				}
-				else
-				{
-					metaObject->model_.setData(impl_->index_, *value, role);
+					if (c == QMetaObject::ReadProperty)
+					{
+						*value = metaObject->model_->data(index_, role);
+					}
+					else
+					{
+						metaObject->model_->setData(index_, *value, role);
+					}
 				}
 			}
 		}

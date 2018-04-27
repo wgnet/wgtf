@@ -3,7 +3,7 @@
 
 namespace wgt
 {
-TimelinePanel::TimelinePanel(IComponentContext& context) : Depends(context)
+TimelinePanel::TimelinePanel()
 {
 	timelineModel_.addComponent("Component 1");
 	timelineModel_.addTextBox("Condition 1", "if (life == 0)");
@@ -62,7 +62,7 @@ bool TimelinePanel::addPanel()
 		return false;
 	}
 	timelineView_ =
-	viewCreator->createView("PlgTimelinePanel/TimelinePanel.qml", ObjectHandleT<AbstractListModel>(&timelineModel_));
+	viewCreator->createView("PlgTimelinePanel/TimelinePanel.qml", &timelineModel_);
 	return true;
 }
 

@@ -1,12 +1,12 @@
 #include "column_list_adapter.hpp"
 
-#include <cassert>
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
 ColumnListAdapter::ColumnListAdapter(const QModelIndex& row) : model_(row.model()), row_(row)
 {
-	assert(row_.isValid());
+	TF_ASSERT(row_.isValid());
 	parent_ = row_.parent();
 	connect();
 }

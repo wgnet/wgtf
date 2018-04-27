@@ -86,26 +86,6 @@ ComboBox {
         text: __multipleValuesString
     }
 
-
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( box.currentIndex )
-            }
-
-            onDataPasted : {
-                box.currentIndex = data
-            }
-        }
-
-        onSelectedChanged : selected ? selectControl( copyableObject ) : deselectControl( copyableObject )
-    }
-
     MouseArea {
         id: wheelMouseArea
         anchors.fill: parent

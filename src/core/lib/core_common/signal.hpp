@@ -1,13 +1,13 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //
-//  signal.h
+//  signal.hpp
 //
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //  Copyright (c) Wargaming.net. All rights reserved.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#ifndef SIGNAL_H_
-#define SIGNAL_H_
+#ifndef SIGNAL_HPP_
+#define SIGNAL_HPP_
 
 #pragma once
 
@@ -16,6 +16,7 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <cassert>
 
 namespace wgt
 {
@@ -27,9 +28,8 @@ namespace internal
 struct SignalHolder
 {
 	bool enabled_;
-	bool expired_;
 
-	explicit SignalHolder(bool enabled) : enabled_(enabled), expired_(false)
+	explicit SignalHolder(bool enabled) : enabled_(enabled)
 	{
 	}
 };
@@ -53,14 +53,17 @@ struct TemplateSignalHolder : public SignalHolder
 // the function is not called if the object gets destroyed.
 class Connection
 {
+	typedef std::function<void(Connection&)> DisconnectSig;
+
 private:
 	typedef std::shared_ptr<internal::SignalHolder> SignalHolderPtr;
 
 	SignalHolderPtr entry_;
+	std::weak_ptr<DisconnectSig> disconnectSig_;
 
 public:
 	Connection();
-	explicit Connection(SignalHolderPtr entry);
+	explicit Connection(SignalHolderPtr entry, std::weak_ptr<DisconnectSig> disconnectSig_);
 	Connection(const Connection& other);
 	Connection(Connection&& other);
 	~Connection();
@@ -75,6 +78,11 @@ public:
 
 	bool enabled() const;
 	bool connected() const;
+
+	SignalHolderPtr& getEntry()
+	{
+		return entry_;
+	}
 };
 
 class ConnectionHolder
@@ -114,11 +122,22 @@ private:
 
 	HolderList entries_;
 
+	typedef std::shared_ptr<std::function<void(Connection&)>> DisconnectSig;
+	DisconnectSig disconnectSig_;
 	mutable std::mutex mutex_;
-
 public:
 	Signal()
 	{
+		disconnectSig_ = std::make_shared<std::function<void(Connection&)>>([this](Connection& connection) {
+			std::lock_guard<std::mutex> lock(mutex_);
+			auto findIt = std::find(entries_.begin(), entries_.end(), connection.getEntry());
+			// Disconnect can be called from many sources, so allow this to happen
+			// Can't warn either as the signal owner can easily just call clear
+			if (findIt != entries_.end())
+			{
+				entries_.erase(findIt);
+			}
+		});
 	}
 
 	Signal(Signal&& other)
@@ -152,10 +171,6 @@ public:
 	void clear()
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
-		for (auto entry : entries_)
-		{
-			entry->expired_ = true;
-		}
 		entries_.clear();
 	}
 
@@ -165,71 +180,36 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
 
-		// Clear invalid entries
-		auto expired_func = [](SignalHolderPtr ptr) { return ptr->expired_; };
-		auto erase_begin = std::remove_if(std::begin(entries_), std::end(entries_), expired_func);
-		entries_.erase(erase_begin, std::end(entries_));
-
 		// Create new entry
 		auto entry = std::make_shared<SignatureHolder>(callback);
 		entries_.push_back(entry);
-		return Connection(entry);
+		return Connection(entry, disconnectSig_);
 	}
 
-// Helper macro for the body of a call(...) function since
-// we can't use variadic templates just yet.
-#define CALL_FUNCTION_ITERATE_ENTRIES(function_call_args)            \
-	std::lock_guard<std::mutex> lock(mutex_);                        \
-	for (auto entry : entries_)                                      \
-	{                                                                \
-		if (!entry->expired_ && entry->function_ && entry->enabled_) \
-		{                                                            \
-			entry->function_ function_call_args;                     \
-		}                                                            \
-	}
-
-	void operator()() const
+	template<typename ...Args>
+	void operator()(Args&&... args) const
 	{
-		CALL_FUNCTION_ITERATE_ENTRIES(())
+		HolderList copyList;
+		{
+			std::lock_guard<std::mutex> lock(mutex_);
+			copyList = entries_;
+		}
+		for (auto entry : copyList)
+		{
+			if (entry && entry->function_ && entry->enabled_)
+			{
+				entry->function_(std::forward<Args>(args)...);
+			}
+		}
 	}
-
-	template <class TArg1>
-	void operator()(TArg1&& arg1) const
-	{
-		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1)))
-	}
-
-	template <class TArg1, class TArg2>
-	void operator()(TArg1&& arg1, TArg2&& arg2) const
-	{
-		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1), std::forward<TArg2>(arg2)))
-	}
-
-	template <class TArg1, class TArg2, class TArg3>
-	void operator()(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3) const
-	{
-		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3)))
-	}
-
-	template <class TArg1, class TArg2, class TArg3, class TArg4>
-	void operator()(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3, TArg4&& arg4) const
-	{
-		CALL_FUNCTION_ITERATE_ENTRIES(
-		(std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3), std::forward<TArg4>(arg4)))
-	}
-
-	template <class TArg1, class TArg2, class TArg3, class TArg4, class TArg5>
-	void operator()(TArg1&& arg1, TArg2&& arg2, TArg3&& arg3, TArg4&& arg4, TArg5&& arg5) const
-	{
-		CALL_FUNCTION_ITERATE_ENTRIES((std::forward<TArg1>(arg1), std::forward<TArg2>(arg2), std::forward<TArg3>(arg3),
-		                               std::forward<TArg4>(arg4), std::forward<TArg5>(arg5)))
-	}
-
-#undef CALL_FUNCTION_ITERATE_ENTRIES
-	Signal& operator=(const Signal&);
-
 private:
 	Signal(const Signal&);
+
+#if _MSC_VER < 1900
+	Signal& operator=(const Signal&);
+#else
+	Signal& operator=(const Signal&) = delete;
+#endif
 };
 } // end namespace wgt
 #endif // SIGNAL_H_

@@ -1,6 +1,6 @@
 #include "i_list_adapter.hpp"
 
-#include <cassert>
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
@@ -106,7 +106,7 @@ bool IListAdapter::setData(const QModelIndex& index, const QVariant& value, int 
 
 QModelIndex IListAdapter::cachedAdaptedIndex(int row, int column, const QModelIndex& parent) const
 {
-	assert(column == 0 && !parent.isValid());
+	TF_ASSERT(column == 0 && !parent.isValid());
 	auto it = cachedAdaptedIndices_.find(row);
 	if (it != cachedAdaptedIndices_.end())
 	{

@@ -43,6 +43,15 @@ public:
 	int index_;
 };
 
+namespace ListDataModelDetails
+{
+static const std::string s_RolesArr[] = { ItemRole::nameName, ItemRole::descriptionName, ItemRole::numberName };
+
+static const std::vector<std::string> s_RolesVec(&s_RolesArr[0],
+                                                 &s_RolesArr[0] + std::extent<decltype(s_RolesArr)>::value);
+
+}; // end namespace ListDataModelDetails
+
 struct ListDataModel::Impl
 {
 	Impl()
@@ -103,13 +112,19 @@ int ListDataModel::columnCount() const
 	return 1;
 }
 
+//------------------------------------------------------------------------------
+void ListDataModel::iterateRoles(const std::function<void(const char*)>& iterFunc) const
+{
+	for (auto&& role : ListDataModelDetails::s_RolesVec)
+	{
+		iterFunc(role.c_str());
+	}
+}
+
+//------------------------------------------------------------------------------
 std::vector<std::string> ListDataModel::roles() const
 {
-	std::vector<std::string> roles;
-	roles.emplace_back(ItemRole::nameName);
-	roles.emplace_back(ItemRole::descriptionName);
-	roles.emplace_back(ItemRole::numberName);
-	return roles;
+	return ListDataModelDetails::s_RolesVec;
 }
 
 } // end namespace wgt

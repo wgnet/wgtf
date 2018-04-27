@@ -7,6 +7,7 @@
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
+#include "core_ui_framework/i_action.hpp"
 
 #include <memory>
 
@@ -18,7 +19,6 @@ class IComponentContext;
 class MainWindow : public Depends<IViewCreator, IUIApplication, IUIFramework>
 {
 public:
-	explicit MainWindow(IComponentContext& context);
 	~MainWindow();
 
 	void init();

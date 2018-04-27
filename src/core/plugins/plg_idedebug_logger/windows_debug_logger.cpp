@@ -8,7 +8,7 @@
 
 namespace wgt
 {
-void WindowsDebugLogger::out(LogMessage* message)
+void WindowsDebugLogger::out(ILogMessage* message)
 {
 	if (message != nullptr)
 	{

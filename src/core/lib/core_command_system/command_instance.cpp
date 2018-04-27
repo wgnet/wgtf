@@ -2,10 +2,10 @@
 #include "command.hpp"
 #include "i_command_manager.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/collection_model.hpp"
-
+#include "core_object/i_managed_object.hpp"
 #include "core_reflection/generic/generic_object.hpp"
-#include "core_reflection/interfaces/i_class_definition.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
@@ -19,6 +19,7 @@
 #include "core_logging/logging.hpp"
 #include "custom_undo_redo_data.hpp"
 #include "core_reflection_utils/commands/reflectedproperty_undoredo_helper.hpp"
+#include "batch_command.hpp"
 
 namespace wgt
 {
@@ -93,9 +94,24 @@ bool CommandInstance::hasChildren() const
 }
 
 //==============================================================================
+void CommandInstance::setArguments(const std::nullptr_t&)
+{
+    arguments_ = nullptr;
+    argumentsStorage_ = nullptr;
+}
+
+//==============================================================================
 void CommandInstance::setArguments(const ObjectHandle& arguments)
 {
 	arguments_ = arguments;
+	argumentsStorage_ = nullptr;
+}
+
+//==============================================================================
+void CommandInstance::setArguments(ManagedObjectPtr arguments)
+{
+    argumentsStorage_ = std::move(arguments);
+    arguments_ = argumentsStorage_->getHandle();
 }
 
 //==============================================================================
@@ -119,18 +135,18 @@ void CommandInstance::setCommandId(const char* commandName)
 //==============================================================================
 Command* CommandInstance::getCommand()
 {
-	assert(pCmdSysProvider_ != nullptr);
+	TF_ASSERT(pCmdSysProvider_ != nullptr);
 	Command* pCommand = pCmdSysProvider_->findCommand(commandId_.c_str());
-	assert(pCommand != nullptr);
+	TF_ASSERT(pCommand != nullptr);
 	return pCommand;
 }
 
 //==============================================================================
 const Command* CommandInstance::getCommand() const
 {
-	assert(pCmdSysProvider_ != nullptr);
+	TF_ASSERT(pCmdSysProvider_ != nullptr);
 	Command* pCommand = pCmdSysProvider_->findCommand(commandId_.c_str());
-	assert(pCommand != nullptr);
+	TF_ASSERT(pCommand != nullptr);
 	return pCommand;
 }
 
@@ -150,55 +166,65 @@ void CommandInstance::setStatus(ExecutionStatus status)
 }
 
 //==============================================================================
-void CommandInstance::undo()
+bool CommandInstance::undo()
 {
+	bool returnValue = true;
 	for (auto it = undoRedoData_.rbegin(); it != undoRedoData_.rend(); ++it)
 	{
-		(*it)->undo();
+		if(!(*it)->undo())
+		{
+			returnValue = false;
+			break;
+		}
 	}
 	const Command* command = getCommand();
 	command->fireCommandExecuted(*this, CommandOperation::UNDO);
+	return returnValue;
 }
 
 //==============================================================================
-void CommandInstance::redo()
+bool CommandInstance::redo()
 {
+	bool returnValue = true;
 	for (auto it = undoRedoData_.begin(); it != undoRedoData_.end(); ++it)
 	{
-		(*it)->redo();
+		if (!(*it)->redo())
+		{
+			returnValue = false;
+			break;
+		}
 	}
 	const Command* command = getCommand();
 	command->fireCommandExecuted(*this, CommandOperation::REDO);
+	return returnValue;
 }
 
 //==============================================================================
 void CommandInstance::execute()
 {
 	const Command* command = getCommand();
+	Variant result;
 	if (command->customUndo())
 	{
-		returnValue_ = command->execute(arguments_);
+		result = command->execute(arguments_);
 		undoRedoData_.emplace_back(new CustomUndoRedoData(*this));
 	}
 	else
 	{
 		auto undoRedoData = new ReflectionUndoRedoData(*this);
 		undoRedoData->connect();
-		returnValue_ = command->execute(arguments_);
+		result = command->execute(arguments_);
 		undoRedoData->disconnect();
 		undoRedoData_.emplace_back(undoRedoData);
 	}
 	command->fireCommandExecuted(*this, CommandOperation::EXECUTE);
-	auto errorCode = returnValue_.getBase<CommandErrorCode>();
-	if (errorCode != nullptr)
-	{
-		errorCode_ = *errorCode;
-	}
-	else
+
+	if (!result.tryCast<CommandErrorCode>(errorCode_))
 	{
 		// Not returning a CommandErrorCode assumes the code is COMMAND_NO_ERROR.
 		// @see Command::execute()
-		errorCode_ = CommandErrorCode::COMMAND_NO_ERROR;
+        errorCode_ = CommandErrorCode::COMMAND_NO_ERROR;
+		returnValue_ = result;
 	}
 }
 
@@ -221,12 +247,35 @@ void CommandInstance::setContextObject(const ObjectHandle& contextObject)
 }
 
 //==============================================================================
+Collection CommandInstance::getChildren() const
+{
+	return Collection(children_);
+}
+
+//==============================================================================
+ObjectHandle CommandInstance::setCommandDescription(CommandDescription description) const
+{
+    if (description != nullptr)
+    {
+        if (description_ == nullptr)
+        {
+            description_ = GenericObject::create();
+        }
+        *description_ = description.getHandleT();
+        return description_.getHandle();
+    }
+    return nullptr;
+}
+
+//==============================================================================
 ObjectHandle CommandInstance::getCommandDescription() const
 {
-	auto description = getCommand()->getCommandDescription(getArguments());
+	auto command = this->getCommand();
+
+	auto description = command->getCommandDescription(getArguments());
 	if (description != nullptr)
 	{
-		return description;
+        return setCommandDescription(std::move(description));
 	}
 
 	if (undoRedoData_.empty())
@@ -237,11 +286,15 @@ ObjectHandle CommandInstance::getCommandDescription() const
 	// Single command
 	// OR
 	// Batch command with one child
+	// OR
+	// Macro command
 	// - getCommandDescription() returns the same as a single command
+
 	const auto commandCount = undoRedoData_.size();
+	auto batchCommand = dynamic_cast<const BatchCommand*>(command);
 	if ((commandCount == 1) || (commandCount == 2))
 	{
-		return undoRedoData_.begin()->get()->getCommandDescription();
+        return setCommandDescription(undoRedoData_.begin()->get()->getCommandDescription());
 	}
 
 	// Batch command with multiple children
@@ -250,30 +303,33 @@ ObjectHandle CommandInstance::getCommandDescription() const
 
 	// First item is the batch itself
 	auto batchHandle = itr->get()->getCommandDescription();
-	auto pBatchDescription = batchHandle.getBase<GenericObject>();
-	assert(pBatchDescription != nullptr);
-	auto& genericObject = *pBatchDescription;
+    auto pBatchDescription = batchHandle.getHandleT();
+	TF_ASSERT(pBatchDescription != nullptr);
 
 	// Get copy of children
+    typedef std::vector<ManagedObjectPtr> ContainerType;
 	Collection childrenCollection;
-	const auto getCollection = genericObject.get("Children", childrenCollection);
-	assert(getCollection);
+	const bool success = pBatchDescription->get("Children", childrenCollection);
+    auto container = childrenCollection.container<ContainerType>();
+    if (!success || !container)
+    {
+        TF_ASSERT(!"Children must be in container of Managed Objects");
+        return nullptr;
+    }
 
 	// Latter items are children of the batch
-	++itr;
-	for (; itr != undoRedoData_.end(); ++itr)
-	{
-		auto childHandle = itr->get()->getCommandDescription();
-		auto collectionItem = childrenCollection.insert(childrenCollection.size());
-		const auto setValue = collectionItem.setValue(childHandle);
-		assert(setValue);
-	}
+    ++itr;
+    for (; itr != undoRedoData_.end(); ++itr)
+    {
+        auto childObject = itr->get()->getCommandDescription();
+        container->push_back(std::make_unique<ManagedObject<GenericObject>>(std::move(childObject)));
+    }
 
 	// Copy back to batch
-	const auto setCollection = genericObject.set("Children", childrenCollection);
-	assert(setCollection);
+	const auto setCollection = pBatchDescription->set("Children", childrenCollection);
+	TF_ASSERT(setCollection);
 
-	return batchHandle;
+    return setCommandDescription(std::move(batchHandle));
 }
 
 //==============================================================================
@@ -331,15 +387,15 @@ void CommandInstance::consolidateUndoRedoData(CommandInstance* parentInstance)
 			if (it != lastParent->undoRedoHelperList_.end())
 			{
 				auto& helper = *it;
-				assert(!helper->isMethod());
-				assert(!childHelper->isMethod());
+				TF_ASSERT(!helper->isMethod());
+				TF_ASSERT(!childHelper->isMethod());
 				auto propertyHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>(helper.get());
 				auto childPropertyHelper = static_cast<RPURU::ReflectedPropertyUndoRedoHelper*>(childHelper.get());
 				propertyHelper->postValue_ = childPropertyHelper->postValue_;
 			}
 			else
 			{
-				assert(!childHelper->isMethod());
+				TF_ASSERT(!childHelper->isMethod());
 				lastParent->undoRedoHelperList_.emplace_back(childHelper.release());
 			}
 		}
@@ -352,4 +408,39 @@ void CommandInstance::consolidateUndoRedoData(CommandInstance* parentInstance)
 	}
 	undoRedoData_.clear();
 }
+
+//==============================================================================
+void CommandInstance::consolidateChildren()
+{
+	auto commands_compressible = [](const CommandInstancePtr& command_a, const CommandInstancePtr& command_b) {
+		auto command_a_type_ok =
+		strcmp(command_a->getCommandId(), getClassIdentifier<SetReflectedPropertyCommand>()) == 0;
+		auto command_b_type_ok =
+		strcmp(command_b->getCommandId(), getClassIdentifier<SetReflectedPropertyCommand>()) == 0;
+		auto command_a_argument = command_a->getArguments().getBase<ReflectedPropertyCommandArgument>();
+		auto command_b_argument = command_b->getArguments().getBase<ReflectedPropertyCommandArgument>();
+
+		bool commands_has_correct_type =
+		command_a_type_ok && command_b_type_ok && command_a_argument && command_b_argument;
+		return commands_has_correct_type &&
+		(command_a_argument->getContextId() == command_b_argument->getContextId()) &&
+		(command_a_argument->getContextId() == command_b_argument->getContextId());
+	};
+
+	size_t j = 0;
+	for (size_t i = 0; i < children_.size(); ++i)
+	{
+		if (commands_compressible(children_[j], children_[i]) || children_[i] == children_[j])
+		{
+			children_[j] = children_[i];
+		}
+		else
+		{
+			children_[++j] = children_[i];
+		}
+	}
+
+	children_.resize(std::min(children_.size(), j + 1));
+}
+
 } // end namespace wgt

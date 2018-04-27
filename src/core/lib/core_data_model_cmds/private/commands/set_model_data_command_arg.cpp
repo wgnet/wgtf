@@ -1,4 +1,6 @@
 #include "set_model_data_command_arg.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_data_model/abstract_item_model.hpp"
 
 #include <limits>
@@ -25,7 +27,7 @@ void SetModelDataCommandArgument::setValue(size_t roleId, const Variant& newValu
 {
 	roleId_ = roleId;
 
-	assert(pModel_ != nullptr);
+	TF_ASSERT(pModel_ != nullptr);
 
 	oldValue_ = pModel_->getData(row_, column_, roleId_);
 	newValue_ = newValue;

@@ -8,13 +8,20 @@ namespace wgt
 {
 class MainApplication : public Implements<IApplication>
 {
+	IComponentContext& context_;
+	std::string name_;
+
 public:
+	MainApplication(IComponentContext& context) : context_(context)
+	{
+	}
+
 	int startApplication() override
 	{
 		// Query all versions of interface with major version 0
 		{
 			std::vector<INTERFACE_VERSION(TestInterface, 0, 0)*> interfaces;
-			Context::queryInterface(interfaces);
+			context_.queryInterface(interfaces);
 			for (auto& pInterface : interfaces)
 			{
 				pInterface->test();
@@ -24,7 +31,7 @@ public:
 		// Query only interfaces supporting version 0.1 or greater
 		{
 			std::vector<INTERFACE_VERSION(TestInterface, 0, 1)*> interfaces;
-			Context::queryInterface(interfaces);
+			context_.queryInterface(interfaces);
 			for (auto& pInterface : interfaces)
 			{
 				pInterface->test();
@@ -35,7 +42,7 @@ public:
 		// Query only interfaces supporting version 1.0 or greater
 		{
 			std::vector<INTERFACE_VERSION(TestInterface, 1, 0)*> interfaces;
-			Context::queryInterface(interfaces);
+			context_.queryInterface(interfaces);
 			int value = 100;
 			for (auto& pInterface : interfaces)
 			{
@@ -44,22 +51,32 @@ public:
 				++value;
 			}
 		}
-
-		// Test auto populated class
-		auto autoPopulate = Context::queryInterface<AutoPopulate>();
-		auto pInterface = autoPopulate->getInterfaceA();
-		pInterface->test2();
-
-		auto pInterfaces = autoPopulate->getInterfaceBs();
-		for (auto& pInt : pInterfaces)
-		{
-			pInt->test();
-		}
 		return 0;
 	}
 
 	void quitApplication() override
 	{
+	}
+
+	TimerId startTimer(int, TimerCallback) override
+	{
+		assert(!"Not Implemented");
+		return 0;
+	}
+
+	void killTimer(TimerId)
+	{
+		assert(!"Not Implemented");
+	}
+
+	void setAppSettingsName(const char* appName) override
+	{
+		name_ = appName;
+	}
+
+	const char* getAppSettingsName() override
+	{
+		return name_.c_str();
 	}
 };
 
@@ -72,14 +89,9 @@ class MainTestPlugin : public PluginMain
 {
 public:
 	//==========================================================================
-	MainTestPlugin(IComponentContext& contextManager)
-	{
-	}
-
-	//==========================================================================
 	bool PostLoad(IComponentContext& contextManager)
 	{
-		contextManager.registerInterface(new MainApplication);
+		contextManager.registerInterface(new MainApplication(contextManager));
 		return true;
 	}
 };

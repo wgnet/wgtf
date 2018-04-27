@@ -7,9 +7,10 @@
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_logging/logging.hpp"
+#include "core_file_logging/file_logger.hpp"
 #include "core_wgtf_app/memory_plugin_context_creator.hpp"
 #include "core_wgtf_app/command_line_parser.hpp"
-
+#include "core_common/platform_dbg.hpp"
 #include "core_common/platform_path.hpp"
 #include <locale>
 #include <codecvt>
@@ -21,13 +22,32 @@
 
 namespace wgt
 {
+namespace AppCommonPrivate
+{
+	static std::unique_ptr<FileLogger>& getFileLogger()
+	{
+		static std::unique_ptr<FileLogger> s_FileLogger(new FileLogger());
+		return s_FileLogger;
+	}
+
+	void staticInitPlugin() { /*unused*/ }
+}
+
 namespace
 {
 #ifdef _WIN32
 static const wchar_t* const pluginsFolder = L"plugins\\";
 #elif __APPLE__
 static const wchar_t* const pluginsFolder = L"../Resources/plugins/";
-#endif // __APPLE__
+#endif
+
+#ifdef DEFAULT_CONFIG_FILE
+static const wchar_t* const defaultConfigFileName = DEFAULT_CONFIG_FILE;
+#elif _WIN32
+static const wchar_t* const defaultConfigFileName = L"plugins_ui.txt";
+#elif __APPLE__
+static const wchar_t* const defaultConfigFileName = L"plugins_ui_mac.txt";
+#endif
 
 bool getPlugins(std::vector<std::wstring>& plugins, const wchar_t* configFile)
 {
@@ -39,13 +59,8 @@ bool getPlugins(std::vector<std::wstring>& plugins, const wchar_t* configFile)
 	{
 		::PathAppendW(path, pluginsFolder);
 
-		return ConfigPluginLoader::getPlugins(plugins, std::wstring(path) +
-#ifdef __APPLE__
-		                                      L"plugins_ui_mac.txt")
-#else
-		                                      L"plugins_ui.txt")
-#endif
-		|| FolderPluginLoader::getPluginsCustomPath(plugins, path);
+		return ConfigPluginLoader::getPlugins(plugins, std::wstring(path) + std::wstring(defaultConfigFileName))
+			|| FolderPluginLoader::getPluginsCustomPath(plugins, path);
 	}
 	else
 	{
@@ -73,6 +88,7 @@ void signalHandler(int signal)
 int Main(int argc, char** argv)
 {
 	CommandLineParser* clp = new CommandLineParser(argc, argv);
+
 #ifdef _WIN32
 	if (clp->getFlag("-unattended"))
 	{
@@ -102,12 +118,20 @@ int Main(int argc, char** argv)
 		_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
 	}
 #endif // _WIN32
-	auto allocatorDebugOutput = clp->getFlag("--allocatorDebugOutput");
-	auto allocatorStackTraces = clp->getFlag("--allocatorStackTraces");
+	const auto allocatorDebugOutput = clp->getFlag("--allocatorDebugOutput");
+	const auto allocatorStackTraces = clp->getFlag("--allocatorStackTraces");
 	const auto allocatorLeakDetection = clp->getFlag("--allocatorLeakDetection");
 	NGTAllocator::enableDebugOutput(allocatorDebugOutput);
 	NGTAllocator::enableStackTraces(allocatorStackTraces);
 	NGTAllocator::enableLeakDetection(allocatorLeakDetection);
+
+	setCustomLoggingHandle([](LogLevel level, const char* message)
+	{
+		if (auto& logger = AppCommonPrivate::getFileLogger())
+		{
+			logger->log(level, message);
+		}
+	});
 
 	std::wstring config;
 #ifdef _CONFIG_FILE_NAME
@@ -138,6 +162,8 @@ int Main(int argc, char** argv)
 		{
 			result = application->startApplication();
 		}
+		AppCommonPrivate::getFileLogger()->onApplicationShutdown();
+		setCustomLoggingHandle(nullptr);
 	}
 	return result;
 }
@@ -155,5 +181,33 @@ int STDMETHODCALLTYPE WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPST
 	{
 #endif // __APPLE__
 
-		return wgt::Main(argc, argv);
+		__try
+		{
+			return wgt::Main(argc, argv);
+		}
+		__except (wgt::FileLogger::onFatalException(
+			wgt::AppCommonPrivate::getFileLogger().get(),
+			GetExceptionCode(), GetExceptionInformation()))
+		{
+			return EXIT_FAILURE;
+		}
 	}
+
+#ifdef HAVE_CUSTOM_ALLOCATOR
+	void* InitMemoryOverrides(size_t size)
+	{
+		auto allocate = [](size_t size) {
+			// Pass on to your own allocator
+			return ::malloc(size);
+		};
+
+		auto deallocate = [](void* ptr) {
+			// Pass on to your own deallocator
+			::free(ptr);
+		};
+
+		wgt::NGTAllocator::setHandles(allocate, deallocate, ::malloc, ::free);
+		s_customAllocFunc = &wgt::NGTAllocator::allocate;
+		return s_customAllocFunc(size);
+	}
+#endif

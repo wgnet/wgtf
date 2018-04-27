@@ -7,6 +7,7 @@
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_variant/variant.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -29,7 +30,7 @@ bool isValid(const InsertDefaultCommandArgument* pCommandArgs)
 
 } // end namespace InsertDefaultCommand_Detail
 
-InsertDefaultCommand::InsertDefaultCommand(IComponentContext& context) : definitionManager_(context)
+InsertDefaultCommand::~InsertDefaultCommand()
 {
 }
 
@@ -81,32 +82,32 @@ bool InsertDefaultCommand::redo(const ObjectHandle& arguments) const /* override
 	return model.insertItem(key);
 }
 
-ObjectHandle InsertDefaultCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
+CommandDescription InsertDefaultCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
-	auto handle = GenericObject::create(*definitionManager_);
-	assert(handle.get() != nullptr);
-	auto& genericObject = (*handle);
+    auto object = GenericObject::create();
 
 	if (!arguments.isValid())
 	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Insert");
-		return ObjectHandle(std::move(handle));
+        object->set("Name", "Invalid");
+		object->set("Type", "Insert");
 	}
+    else
+    {
+        auto pCommandArgs = arguments.getBase<InsertDefaultCommandArgument>();
+        if (!InsertDefaultCommand_Detail::isValid(pCommandArgs))
+        {
+            object->set("Name", "Invalid");
+            object->set("Type", "Insert");
+        }
+        else
+        {
+            object->set("Id", pCommandArgs->key_);
+            object->set("Name", "Insert");
+            object->set("Type", "Insert");
+        }
+    }
 
-	auto pCommandArgs = arguments.getBase<InsertDefaultCommandArgument>();
-	if (!InsertDefaultCommand_Detail::isValid(pCommandArgs))
-	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Insert");
-		return ObjectHandle(std::move(handle));
-	}
-
-	genericObject.set("Id", pCommandArgs->key_);
-	genericObject.set("Name", "Insert");
-	genericObject.set("Type", "Insert");
-
-	return ObjectHandle(std::move(handle));
+    return std::move(object);
 }
 
 const char* InsertDefaultCommand::getId() const /* override */
@@ -121,7 +122,7 @@ bool InsertDefaultCommand::validateArguments(const ObjectHandle& arguments) cons
 	return InsertDefaultCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle InsertDefaultCommand::execute(const ObjectHandle& arguments) const /* override */
+Variant InsertDefaultCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<InsertDefaultCommandArgument>();
 	if (!InsertDefaultCommand_Detail::isValid(pCommandArgs))
@@ -143,4 +144,8 @@ CommandThreadAffinity InsertDefaultCommand::threadAffinity() const /* override *
 	return CommandThreadAffinity::UI_THREAD;
 }
 
+ManagedObjectPtr InsertDefaultCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<InsertDefaultCommandArgument>(arguments);
+}
 } // end namespace wgt

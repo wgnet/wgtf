@@ -9,9 +9,10 @@
 #include <vector>
 #include "core_reflection/property_accessor_listener.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
-#include "core_dependency_system/di_ref.hpp"
+#include "core_dependency_system/depends.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
+#include "core_reflection/interfaces/i_property_path.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_serialization/i_file_system.hpp"
 #include "asset_manager/i_asset_manager.hpp"
@@ -20,27 +21,15 @@ namespace wgt
 {
 namespace proto
 {
-class ReflectedTreeModel : public AbstractTreeModel
+class ReflectedTreeModel : public AbstractTreeModel,
+                           protected Depends<IDefinitionManager, IReflectionController, ICommandManager, IAssetManager>
 {
 public:
-	ReflectedTreeModel(IComponentContext& context, const ObjectHandle& object = nullptr);
-	virtual ~ReflectedTreeModel();
+	ReflectedTreeModel(const ObjectHandle& object = nullptr);
+    virtual ~ReflectedTreeModel();
 
+	void setRecordHistory(bool recordHistory);
 	void setObject(const ObjectHandle& object);
-
-	IDefinitionManager* getDefinitionManager() const
-	{
-		return definitionManager_.get();
-	}
-	IReflectionController* getController() const
-	{
-		return controller_.get();
-	}
-
-	IAssetManager* getAssetManager() const
-	{
-		return assetManager_.get();
-	}
 
 	const ObjectHandle& getObject() const
 	{
@@ -53,8 +42,11 @@ public:
 
 	virtual int rowCount(const AbstractItem* item) const override;
 	virtual int columnCount() const override;
+	int getColumnCount() const;
 
 	virtual MimeData mimeData(std::vector<AbstractItemModel::ItemIndex>& indices) override;
+
+	void iterateMimeTypes(const std::function<void(const char*)>& iterFunc) const override;
 	virtual std::vector<std::string> mimeTypes() const override;
 	virtual bool canDropMimeData(const MimeData& mimeData, DropAction action,
 	                             const AbstractItemModel::ItemIndex& index) const override;
@@ -62,31 +54,40 @@ public:
 	                          const AbstractItemModel::ItemIndex& index) override;
 
 	virtual std::vector<std::string> roles() const override;
+	void iterateRoles(const std::function<void(const char*)>& iterFunc) const override;
 
-	virtual Connection connectPreModelReset(VoidCallback callback) override;
-	virtual Connection connectPostModelReset(VoidCallback callback) override;
 	virtual Connection connectPreItemDataChanged(DataCallback callback) override;
 	virtual Connection connectPostItemDataChanged(DataCallback callback) override;
+	virtual Connection connectPreLayoutChanged(LayoutCallback callback) override;
+	virtual Connection connectPostLayoutChanged(LayoutCallback callback) override;
+	virtual Connection connectModelChanged(VoidCallback callback) override;
+	virtual Connection connectPreModelReset(VoidCallback callback) override;
+	virtual Connection connectPostModelReset(VoidCallback callback) override;
 	virtual Connection connectPreRowsInserted(RangeCallback callback) override;
 	virtual Connection connectPostRowsInserted(RangeCallback callback) override;
 	virtual Connection connectPreRowsRemoved(RangeCallback callback) override;
 	virtual Connection connectPostRowsRemoved(RangeCallback callback) override;
 
+	void firePostItemDataChanged(const ItemIndex& index, int column, ItemRole::Id roleId, Variant value);
+
 protected:
 	typedef std::vector<const AbstractItem*> Children;
-	virtual std::unique_ptr<Children> getChildren(const AbstractItem* item);
+	virtual std::unique_ptr<Children> mapChildren(const AbstractItem* item);
 	virtual void clearChildren(const AbstractItem* item);
-	virtual ItemIndex childHint(const AbstractItem* item);
+	virtual ItemIndex childHint(const ReflectedPropertyItem* item) const;
 
-	virtual std::unique_ptr<ReflectedPropertyItem> makeProperty(const ObjectHandle& object, const std::string& path,
-	                                                            const std::string& fullPath) const;
+	bool isMapped(const ReflectedPropertyItem* item) const;
+	virtual const AbstractItem* mappedItem(const ReflectedPropertyItem* item) const;
 
-	typedef std::vector<std::unique_ptr<ReflectedPropertyItem>> Properties;
+	virtual ReflectedPropertyItemPtr makeProperty(IPropertyPath::ConstPtr & path) const;
+
+	typedef std::vector<ReflectedPropertyItemPtr> Properties;
 	const Properties& getProperties(const ReflectedPropertyItem* item);
 	void clearProperties(const ReflectedPropertyItem* item);
 	const ReflectedPropertyItem* findProperty(const ObjectHandle& object, const std::string& path) const;
+	const ReflectedPropertyItem* parentProperty(const ReflectedPropertyItem* item) const;
 
-	void updatePath(ReflectedPropertyItem* item, const std::string& path);
+	void updatePath(ReflectedPropertyItem* item, IPropertyPath::ConstPtr & path );
 
 	struct ItemMapping
 	{
@@ -96,21 +97,44 @@ protected:
 	ItemMapping* mapItem(const AbstractItem* item);
 	void unmapItem(const AbstractItem* item);
 
-	std::unordered_map<const ReflectedPropertyItem*, Properties*> properties_;
+	std::unordered_map<const ReflectedPropertyItem*, Properties> properties_;
 
 private:
-	DIRef<IDefinitionManager> definitionManager_;
-	DIRef<IReflectionController> controller_;
-	DIRef<ICommandManager> commandManager_;
-	DIRef<IAssetManager> assetManager_;
+	bool canDropItemMimeData(const std::vector<char>& data,
+		DropAction action,
+		const AbstractItemModel::ItemIndex& index) const;
+	bool canDropTextMimeData(const std::vector<char>& data,
+		DropAction action,
+		const AbstractItemModel::ItemIndex& index) const;
+
+	bool canDropFilePathMimeData(const std::vector<char>& data,
+		DropAction action,
+		const AbstractItemModel::ItemIndex& index) const;
+
+	bool dropItemMimeData(const std::vector<char>& data,
+		DropAction action,
+	    const AbstractItemModel::ItemIndex& index);
+	bool dropTextMimeData(const std::vector<char>& data,
+		DropAction action,
+	    const AbstractItemModel::ItemIndex& index);
+
+	bool dropFilePathMimeData(const std::vector<char>& data,
+		DropAction action,
+		const AbstractItemModel::ItemIndex& index);
+
 	ObjectHandle object_;
+	bool recordHistory_;
 
 	std::unordered_map<const AbstractItem*, std::unique_ptr<ItemMapping>> mappedItems_;
 
 	std::shared_ptr<PropertyAccessorListener> listener_;
 
-	Signal<VoidSignature> preModelChanged_;
-	Signal<VoidSignature> postModelChanged_;
+	Signal<VoidSignature> preModelReset_;
+	Signal<VoidSignature> postModelReset_;
+	Signal<VoidSignature> modelChanged_;
+
+	Signal<AbstractTreeModel::LayoutChangedSignature> preLayoutChanged_;
+	Signal<AbstractTreeModel::LayoutChangedSignature> postLayoutChanged_;
 
 	Signal<AbstractTreeModel::DataSignature> preItemDataChanged_;
 	Signal<AbstractTreeModel::DataSignature> postItemDataChanged_;

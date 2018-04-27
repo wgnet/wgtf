@@ -1,6 +1,6 @@
 
 IF( BW_PLATFORM_WINDOWS )
-	SET( DEPLOY_PYTHON_COMMAND "./deploy_python.bat" )
+	SET( DEPLOY_PYTHON_COMMAND "${WG_TOOLS_SOURCE_DIR}/../build/deploy_python.bat" )
 ENDIF()
 
 BW_GET_EXECUTABLE_DST_DIR( EXE_DIR )

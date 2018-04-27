@@ -28,7 +28,7 @@ public:
 	bool PostLoad(IComponentContext& componentContext) override
 	{
 		// Create the panel
-		customPanel_.reset(new CustomPanel(componentContext));
+		customPanel_.reset(new CustomPanel);
 		return true;
 	}
 

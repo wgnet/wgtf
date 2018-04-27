@@ -7,6 +7,7 @@
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_variant/variant.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -29,7 +30,11 @@ bool isValid(const RemoveItemCommandArgument* pCommandArgs)
 
 } // end namespace RemoveItemCommand_Detail
 
-RemoveItemCommand::RemoveItemCommand(IComponentContext& context) : definitionManager_(context)
+RemoveItemCommand::RemoveItemCommand()
+{
+}
+
+RemoveItemCommand::~RemoveItemCommand()
 {
 }
 
@@ -82,33 +87,33 @@ bool RemoveItemCommand::redo(const ObjectHandle& arguments) const /* override */
 	return model.removeItem(key);
 }
 
-ObjectHandle RemoveItemCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
+CommandDescription RemoveItemCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
-	auto handle = GenericObject::create(*definitionManager_);
-	assert(handle.get() != nullptr);
-	auto& genericObject = (*handle);
+    auto object = GenericObject::create();
 
 	if (!arguments.isValid())
 	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Remove");
-		return ObjectHandle(std::move(handle));
+		object->set("Name", "Invalid");
+		object->set("Type", "Remove");
 	}
+    else
+    {
+        auto pCommandArgs = arguments.getBase<RemoveItemCommandArgument>();
+        if (!RemoveItemCommand_Detail::isValid(pCommandArgs))
+        {
+            object->set("Name", "Invalid");
+            object->set("Type", "Remove");
+        }
+        else
+        {
+            object->set("Id", pCommandArgs->key_);
+            object->set("Name", "Remove");
+            object->set("Type", "Remove");
+            object->set("PreValue", pCommandArgs->value_);
+        }
+    }
 
-	auto pCommandArgs = arguments.getBase<RemoveItemCommandArgument>();
-	if (!RemoveItemCommand_Detail::isValid(pCommandArgs))
-	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Remove");
-		return ObjectHandle(std::move(handle));
-	}
-
-	genericObject.set("Id", pCommandArgs->key_);
-	genericObject.set("Name", "Remove");
-	genericObject.set("Type", "Remove");
-	genericObject.set("PreValue", pCommandArgs->value_);
-
-	return ObjectHandle(std::move(handle));
+    return std::move(object);
 }
 
 const char* RemoveItemCommand::getId() const /* override */
@@ -123,7 +128,7 @@ bool RemoveItemCommand::validateArguments(const ObjectHandle& arguments) const /
 	return RemoveItemCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle RemoveItemCommand::execute(const ObjectHandle& arguments) const /* override */
+Variant RemoveItemCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<RemoveItemCommandArgument>();
 	if (!RemoveItemCommand_Detail::isValid(pCommandArgs))
@@ -147,4 +152,8 @@ CommandThreadAffinity RemoveItemCommand::threadAffinity() const /* override */
 	return CommandThreadAffinity::UI_THREAD;
 }
 
+ManagedObjectPtr RemoveItemCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<RemoveItemCommandArgument>(arguments);
+}
 } // end namespace wgt

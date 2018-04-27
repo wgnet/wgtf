@@ -10,12 +10,6 @@ namespace wgt
 {
 class IInterface;
 
-namespace Context
-{
-extern void* queryInterface(const TypeId&);
-extern void queryInterface(const TypeId&, std::vector<void*>&);
-}
-
 //==============================================================================
 class IInterface
 {
@@ -26,22 +20,21 @@ public:
 	virtual void* queryInterface(const TypeId& id) = 0;
 };
 
-//==============================================================================
-// Used to as null class type
-struct EmptyType
-{
-};
+struct EmptyType { };
 
-//==============================================================================
-// Change this to support as many classes as we need to inherit, until we have
-// support for variadic templates
-//==============================================================================
-template <typename T1, typename T2 = EmptyType, typename T3 = EmptyType, typename T4 = EmptyType,
-          typename T5 = EmptyType>
-class Implements : public T1, public virtual Implements<T2, T3, T4, T5>
+/**
+* Helper class for supporting TypeId-based queries in an interface implementation.
+*
+* This implements the queryInterface method for the first type in the template argument list,
+* and recursively instantiates itself for the remaining types.
+*/
+template <typename T1, typename... Args>
+class ImplementsImpl
+	: public T1
+	, public virtual ImplementsImpl< Args... >
 {
 public:
-	void* queryInterface(const TypeId& id)
+	inline void* queryInterface(const TypeId& id)
 	{
 		static const TypeId selfType = TypeId::getType<T1>();
 		auto pT1 = static_cast<T1*>(this);
@@ -54,58 +47,118 @@ public:
 		{
 			return t1Result;
 		}
-		return Implements<T2, T3, T4, T5>::queryInterface(id);
+		return ImplementsImpl<Args...>::queryInterface(id);
 	}
-
 private:
 	template <typename U>
 	decltype(std::declval<U>().queryInterface(std::declval<const TypeId&>())) queryInterface(U* /*pThis*/,
-	                                                                                         const TypeId* id)
+		const TypeId* id)
 	{
 		return U::queryInterface(*id);
 	}
 
-	void* queryInterface(...)
+	inline void* queryInterface(...)
 	{
 		return nullptr;
 	}
 };
+
 
 //==============================================================================
 // Handle the empty type
 //==============================================================================
 template <>
-class Implements<EmptyType>
+class ImplementsImpl< EmptyType >
 {
 public:
-	void* queryInterface(const TypeId& /*id*/)
+	template< typename U >
+	inline void* queryInterface( const U & dummy )
 	{
 		return nullptr;
 	}
 };
 
+
+/**
+* Base class for interface implementations.
+*
+* Classes which implement one or more interfaces should derive from this helper class to
+* get the queryInterface method which is required by the dependency system for registration:
+*
+* @code
+*	class Example : public Implements<IExample>
+*	{
+*		// ...
+*	};
+* @endcode
+*
+* The interface type will be a base type of the Implements instantiation, so there's no need to
+* derive from the interface explicitly.
+*
+* Implementations need to be registered explicitly with the module context. They also need to be
+* de-registered when the provider is unloaded, so the usual procedure is to instance and register
+* the implementation objects in the constructor of a plug-in, store the handles returned by
+* IComponentContext::registerInterface, and de-register everything in PluginMain::Unload:
+*
+* @code
+*	class MyPlugin : public PluginMain
+*	{
+*	public:
+*		MyPlugin(IComponentContext& contextManager)
+*		{
+*			types_.push_back(contextManager.registerInterface(new MyImplementation1()));
+*			types_.push_back(contextManager.registerInterface(new MyImplementation2()));
+*		}
+*
+*		void Unload(IComponentContext& contextManager) override
+*		{
+*			for (auto type : types_)
+*			{
+*				contextManager.deregisterInterface(type.get());
+*			}
+*		}
+*	};
+*	PLG_CALLBACK_FUNC(MyPlugin)
+* @endcode
+*
+* Calling registerInterface will automatically inject the implementation in all the code which depends
+* on the interface. See the documentation for the Depends class for details on how to take advantage
+* of this mechanism, and how it is implemented.
+*
+*/
+template <typename... Args>
+class Implements
+	: public ImplementsImpl< Args..., EmptyType >
+{
+};
+
+
+template< typename T >
 struct query_interface
 {
-	template <class T>
-	static typename std::enable_if<std::is_base_of<Implements<EmptyType>, T>::value>::type* execute(T* pImpl_,
-	                                                                                                const TypeId& id)
+	template< typename... Args >
+	static T * execute( T *, const TypeId& id, ImplementsImpl< Args... > * pImpl )
 	{
-		return pImpl_->queryInterface(id);
+		return static_cast< T * >( pImpl->queryInterface( id ) );
 	}
 
-	template <class T>
-	static typename std::enable_if<!std::is_base_of<Implements<EmptyType>, T>::value>::type* execute(T* pImpl_,
-	                                                                                                 const TypeId& id)
+	static typename T * execute(T * pImpl, const TypeId& id, ... )
 	{
 		static const TypeId selfType = TypeId::getType<T>();
 		if (selfType == id)
 		{
-			return pImpl_;
+			return pImpl;
 		}
 		return nullptr;
 	}
 };
 
+/**
+* Wrapper used by dependency contexts to store registered interface implementations.
+*
+* Bridges the runtime dispatch queryInterface mechanism used by the contexts to the
+* metaprogramming-based dispatch used by ImplementsImpl. 
+*/
 template <class T>
 class InterfaceHolder : public IInterface
 {
@@ -122,9 +175,9 @@ public:
 		}
 	}
 
-	void* queryInterface(const TypeId& id) override
+	inline void* queryInterface(const TypeId& id) override
 	{
-		return query_interface::execute(pImpl_, id);
+		return query_interface< T >::execute(pImpl_, id, pImpl_ );
 	}
 
 private:
@@ -132,21 +185,5 @@ private:
 	bool owns_;
 };
 
-namespace Context
-{
-//==============================================================================
-template <class T>
-T* queryInterface()
-{
-	return reinterpret_cast<T*>(Context::queryInterface(typeid(T).name()));
-}
-
-template <class T>
-void queryInterface(std::vector<T*>& o_Impls)
-{
-	Context::queryInterface(typeid(T).name(), reinterpret_cast<std::vector<void*>&>(o_Impls));
-}
-
-} // namespace Context
 } // end namespace wgt
 #endif // I_INTERFACE_HPP

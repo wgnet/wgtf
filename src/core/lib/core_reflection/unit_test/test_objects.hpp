@@ -5,8 +5,7 @@
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/i_definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
-#include "core_reflection/reflected_types.hpp"
+#include "core_object/managed_object.hpp"
 
 #include "wg_types/vector3.hpp"
 #include "wg_types/vector4.hpp"
@@ -19,6 +18,13 @@
 
 namespace wgt
 {
+//------------------------------------------------------------------------------
+struct TestMetaDataObject 
+{
+    int hasMetaData_ = 0;
+    int noMetaData_ = 0;
+};
+
 //------------------------------------------------------------------------------
 struct TestStructure2
 {
@@ -80,6 +86,7 @@ public:
 
 	void setInts(const std::vector<int32_t>& value)
 	{
+		int32sSelf_ = &value == &int32s_;
 		int32s_ = value;
 	}
 	const std::vector<int32_t>& getInts() const
@@ -143,6 +150,7 @@ public:
 	// PropertyType::Int32
 	int32_t int32_;
 	std::vector<int32_t> int32s_;
+	bool int32sSelf_;
 
 	// PropertyType::UInt64
 	uint64_t uint64_;
@@ -211,6 +219,26 @@ public:
 			increment += 3.25f;
 		}
 	}
+
+    template<typename T>
+    void testMetaData(const IClassDefinition& def, std::function<void(const T*)> testFn)
+    {
+        auto& manager = getDefinitionManager();
+        testFn(findFirstMetaData<T>(def, manager).get());
+    }
+
+    template<typename T>
+    void testMetaData(const PropertyAccessor& pa, std::function<void(const T*)> testFn)
+    {
+        auto& manager = getDefinitionManager();
+        const auto object = pa.getRootObject();
+        const auto& property = *pa.getProperty();
+        auto && metaHandle = property.getMetaData();
+
+        testFn(findFirstMetaData<T>(pa, manager).get());
+        testFn(findFirstMetaData<T>(property, manager).get());
+        testFn(findFirstMetaData<T>(metaHandle, manager).get());
+    }
 
 public:
 	IClassDefinition* klass_;

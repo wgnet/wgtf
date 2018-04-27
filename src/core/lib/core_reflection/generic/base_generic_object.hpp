@@ -1,12 +1,13 @@
 #ifndef BASE_GENERIC_OBJECT_HPP
 #define BASE_GENERIC_OBJECT_HPP
 
+#include "core_common/assert.hpp"
 #include "core_reflection/utilities/reflection_utilities.hpp"
 #include "core_reflection/reflection_dll.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 
 namespace wgt
 {
-class IClassDefinition;
 class ReflectedMethodParameters;
 class Variant;
 class PropertyAccessor;
@@ -44,24 +45,42 @@ public:
 	 *	@return true on success.
 	 */
 	template <typename T>
-	bool get(const char* name, T& value) const;
+	bool get(const char* name, T& value) const
+	{
+		auto pDefinitionManager = this->getDefinition()->getDefinitionManager();
+		TF_ASSERT(pDefinitionManager != nullptr);
+		auto variant = this->getProperty(name);
+		return ReflectionUtilities::extract(variant, value, (*pDefinitionManager));
+	}
 
 	/**
-	 *	Set a typed property on the Python object.
+	 *	Set a typed property on the object.
 	 *	@param name name of property.
 	 *	@param value value of property to set.
 	 *	@return true on success.
 	 */
 	template <typename T>
-	bool set(const char* name, const T& value);
+	bool set(const char* name, const T& value, bool enableNotification = true)
+	{
+		return this->setProperty(name, value, enableNotification);
+	}
 
 	/**
-	 *	Set a variant property on the Python object.
+	 *	Set a variant property on the object.
 	 *	@param name name of property.
 	 *	@param value value of property to set.
 	 *	@return true on success.
 	 */
-	bool set(const char* name, const Variant& value);
+	bool set(const char* name, const Variant& value, bool enableNotification = true);
+
+	/**
+	 *	Adds a new variant property on the object.
+	 *	@param name name of property.
+	 *	@param value value of property to set.
+	 *  @param metadata Metadata to attach to the property
+	 *	@return true on success.
+	 */
+	bool add(const char* name, const Variant& value, MetaData metadata, bool enableNotification = true);
 
 	/**
 	 *	Call a function which is part of this instance.
@@ -82,10 +101,9 @@ public:
 
 protected:
 	Variant invokeProperty(const char* name, const ReflectedMethodParameters& parameters);
-
 	Variant getProperty(const char* name) const;
-
-	bool setProperty(const char* name, const Variant& value);
+	bool setProperty(const char* name, const Variant& value, bool enableNotification);
+	bool addProperty(const char* name, const Variant& value, MetaData metadata, bool enableNotification);
 
 	/**
 	 *	Must be implemented in all types that derive from BaseGenericObject.
@@ -100,23 +118,8 @@ protected:
 	virtual ObjectHandle getDerivedType() const = 0;
 	virtual ObjectHandle getDerivedType() = 0;
 
-private:
 	IClassDefinition* definition_;
 };
 
-template <typename T>
-bool BaseGenericObject::get(const char* name, T& value) const
-{
-	auto pDefinitionManager = this->getDefinition()->getDefinitionManager();
-	assert(pDefinitionManager != nullptr);
-	auto variant = this->getProperty(name);
-	return ReflectionUtilities::extract(variant, value, (*pDefinitionManager));
-}
-
-template <typename T>
-bool BaseGenericObject::set(const char* name, const T& value)
-{
-	return this->setProperty(name, value);
-}
 } // end namespace wgt
 #endif // BASE_GENERIC_OBJECT_HPP

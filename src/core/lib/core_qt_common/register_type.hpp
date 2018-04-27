@@ -43,12 +43,12 @@ QQmlPrivate::RegisterType TryRegisterType(const char* uri, int versionMajor, int
 }
 
 template <typename T>
-void registerType(IUIFramework* framework, const char* uri, int versionMajor, int versionMinor, const char* qmlName,
+void registerType(IUIFramework& framework, const char* uri, int versionMajor, int versionMinor, const char* qmlName,
                   int metaObjectRevision = 0)
 {
 	auto type = TryRegisterType<T>(uri, versionMajor, versionMinor, qmlName, metaObjectRevision);
 	ObjectHandleT<QQmlPrivate::RegisterType> handleToType(type);
-	framework->registerQmlType(handleToType);
+	framework.registerQmlType(handleToType);
 }
 }
 

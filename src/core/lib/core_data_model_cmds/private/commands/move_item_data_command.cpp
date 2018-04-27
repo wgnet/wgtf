@@ -3,10 +3,12 @@
 
 #include "core_command_system/i_command_manager.hpp"
 #include "core_data_model/abstract_item_model.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/generic/generic_object.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_variant/variant.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -49,7 +51,7 @@ bool isValid(const MoveItemDataCommandArgument* pCommandArgs)
 }
 } // end namespace MoveItemDataCommand_Detail
 
-MoveItemDataCommand::MoveItemDataCommand(IComponentContext& context) : Depends(context)
+MoveItemDataCommand::~MoveItemDataCommand()
 {
 }
 
@@ -137,31 +139,31 @@ bool MoveItemDataCommand::redo(const ObjectHandle& arguments) const /* override 
 	return false;
 }
 
-ObjectHandle MoveItemDataCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
+CommandDescription MoveItemDataCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
-	auto handle = GenericObject::create(*get<IDefinitionManager>());
-	assert(handle.get() != nullptr);
-	auto& genericObject = (*handle);
+    auto object = GenericObject::create();
 
 	if (!arguments.isValid())
 	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Move");
-		return ObjectHandle(std::move(handle));
+		object->set("Name", "Invalid");
+		object->set("Type", "Move");
 	}
+    else
+    {
+        auto pCommandArgs = arguments.getBase<MoveItemDataCommandArgument>();
+        if (!MoveItemDataCommand_Detail::isValid(pCommandArgs))
+        {
+            object->set("Name", "Invalid");
+            object->set("Type", "Move");
+        }
+        else
+        {
+            object->set("Name", "Move");
+            object->set("Type", "Move");
+        }
+    }
 
-	auto pCommandArgs = arguments.getBase<MoveItemDataCommandArgument>();
-	if (!MoveItemDataCommand_Detail::isValid(pCommandArgs))
-	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Move");
-		return ObjectHandle(std::move(handle));
-	}
-
-	genericObject.set("Name", "Move");
-	genericObject.set("Type", "Move");
-
-	return ObjectHandle(std::move(handle));
+    return std::move(object);
 }
 
 const char* MoveItemDataCommand::getId() const /* override */
@@ -176,7 +178,7 @@ bool MoveItemDataCommand::validateArguments(const ObjectHandle& arguments) const
 	return MoveItemDataCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle MoveItemDataCommand::execute(const ObjectHandle& arguments) const /* override */
+Variant MoveItemDataCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<MoveItemDataCommandArgument>();
 	if (!MoveItemDataCommand_Detail::isValid(pCommandArgs))
@@ -210,4 +212,8 @@ CommandThreadAffinity MoveItemDataCommand::threadAffinity() const /* override */
 	return CommandThreadAffinity::UI_THREAD;
 }
 
+ManagedObjectPtr MoveItemDataCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<MoveItemDataCommandArgument>(arguments);
+}
 } // end namespace wgt

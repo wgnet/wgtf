@@ -1,6 +1,8 @@
 #include "core_dependency_system/i_interface.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "testing/reflection_objects_test/test_objects.hpp"
+#include "testing/reflection_objects_test/reflection_auto_reg.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 #include <vector>
 
 namespace wgt
@@ -19,6 +21,10 @@ public:
 	//==========================================================================
 	ReflectionObjectTestPlugin(IComponentContext& contextManager)
 	{
+		registerCallback([](IDefinitionManager & definitionManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(definitionManager);
+		});
 	}
 
 	//==========================================================================
@@ -30,12 +36,6 @@ public:
 	//==========================================================================
 	void Initialise(IComponentContext& contextManager)
 	{
-		// register reflected type definition
-		IDefinitionManager* defManager = contextManager.queryInterface<IDefinitionManager>();
-		assert(defManager != nullptr);
-
-		TestObjects testObjects;
-		testObjects.initDefs(*defManager);
 	}
 	//==========================================================================
 	bool Finalise(IComponentContext& contextManager)

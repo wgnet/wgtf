@@ -13,6 +13,10 @@ ChildListAdapter::ChildListAdapter(const QModelIndex& parent, bool connect) : pa
 	{
 		connections_ +=
 		QObject::connect(this->model(), &QAbstractItemModel::dataChanged, this, &ChildListAdapter::onParentDataChanged);
+		connections_ +=
+		QObject::connect(this->model(), &QAbstractItemModel::rowsAboutToBeMoved, this, &ChildListAdapter::onParentRowsAboutToBeMoved);
+		connections_ +=
+		QObject::connect(this->model(), &QAbstractItemModel::rowsMoved, this, &ChildListAdapter::onParentRowsMoved);
 	}
 }
 
@@ -153,14 +157,23 @@ void ChildListAdapter::onParentRowsAboutToBeMoved(const QModelIndex& sourceParen
                                                   const QModelIndex& destinationParent,
                                                   int destinationRow) /* override */
 {
-	beginMoveRows(sourceParent, sourceFirst, sourceLast, destinationParent, destinationRow);
+	if (sourceParent != parent_ || destinationParent != parent_)
+	{
+		return;
+	}
+
+	beginMoveRows(QModelIndex(), sourceFirst, sourceLast, QModelIndex(), destinationRow);
 }
 
 void ChildListAdapter::onParentRowsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
                                          const QModelIndex& destinationParent, int destinationRow) /* override */
 {
+	if (sourceParent != parent_ || destinationParent != parent_)
+	{
+		return;
+	}
+
 	this->reset();
 	endMoveRows();
 }
-
 } // end namespace wgt

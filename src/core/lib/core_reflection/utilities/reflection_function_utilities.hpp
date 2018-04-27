@@ -8,13 +8,19 @@
 
 namespace wgt
 {
+template<typename T, bool is_enum = std::is_enum<T>::value>
+struct target_type { using type = T; };
+template<typename T>
+struct target_type<T, true> { using type = typename std::underlying_type<T>::type; };
+
 template <typename SelfType>
 struct FunctionPropertyHelper
 {
 	template <typename DataType>
 	static BaseProperty* getBaseProperty(const char* name, DataType SelfType::*memberPointer)
 	{
-		return new ReflectedProperty<DataType, SelfType>(name, memberPointer, TypeId::getType<DataType>());
+		using TargetType = typename target_type<DataType>::type;
+		return new ReflectedProperty<TargetType, SelfType>(name, (TargetType SelfType::*)memberPointer, TypeId::getType<TargetType>());
 	}
 
 	template <typename DataType>
@@ -39,18 +45,34 @@ struct FunctionPropertyHelper
 	static BaseProperty* getBaseProperty(const char* name, size_t (SelfType::*getSizeFunc)() const,
 	                                     DataType& (SelfType::*getValueFunc)(size_t) const)
 	{
-		return new FunctionCollectionProperty<size_t, DataType, SelfType>(name, getSizeFunc, nullptr, getValueFunc,
-		                                                                  nullptr);
+		return new FunctionCollectionProperty<
+			size_t, DataType, SelfType, decltype(getValueFunc) >(
+				name, getSizeFunc, nullptr, getValueFunc, nullptr, nullptr );
+	}
+
+
+	template <typename DataType>
+	static BaseProperty* getBaseProperty(
+		const char* name,
+		size_t(SelfType::*getSizeFunc)() const,
+		DataType (SelfType::*getValueFunc)(size_t) const,
+		size_t (SelfType::*addKeyFunc)(const size_t & ) = nullptr,
+		size_t(SelfType::*removeKeyFunc)(const size_t &) = nullptr )
+	{
+		return new FunctionCollectionProperty<
+			size_t, DataType, SelfType, decltype( getValueFunc ) >(
+				name, getSizeFunc, nullptr, getValueFunc, addKeyFunc, removeKeyFunc );
 	}
 
 	template <typename DataType, typename KeyType>
 	static BaseProperty* getBaseProperty(const char* name, size_t (SelfType::*getSizeFunc)() const,
 	                                     DataType& (SelfType::*getValueFunc)(size_t) const,
-	                                     size_t (SelfType::*setKeyFunc)(const KeyType&) = nullptr,
-	                                     KeyType& (SelfType::*getKeyFunc)(size_t) const = nullptr)
+	                                     size_t (SelfType::*addKeyFunc)(const KeyType&) = nullptr,
+	                                     KeyType& (SelfType::*getKeyFunc)(size_t) const = nullptr )
 	{
-		return new FunctionCollectionProperty<KeyType, DataType, SelfType>(name, getSizeFunc, getKeyFunc, getValueFunc,
-		                                                                   setKeyFunc);
+		return new FunctionCollectionProperty<
+			KeyType, DataType, SelfType, decltype(getValueFunc)>(
+				name, getSizeFunc, getKeyFunc, getValueFunc, addKeyFunc, nullptr );
 	}
 };
 } // end namespace wgt

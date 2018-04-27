@@ -1,18 +1,31 @@
 #include "reflected_property_item.hpp"
+
 #include "reflected_tree_model.hpp"
 
+#include "core_common/assert.hpp"
+#include "core_reflection/i_definition_manager.hpp"
+#include "core_data_model/i_item.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/common_data_roles.hpp"
 #include "core_data_model/reflection/reflected_collection.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
-#include "../reflection/reflected_enum_model.hpp"
+#include "core_reflection/object/object_reference.hpp"
+#include "../reflection/reflected_enum_model_new.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
-#include "../reflection/class_definition_model.hpp"
+#include "../reflection/class_definition_model_new.hpp"
 #include "wg_types/binary_block.hpp"
 #include "../file_system/file_system_model.hpp"
+#include "core_variant/collection.hpp"
+#include "core_string_utils/string_utils.hpp"
+#include "core_logging/logging.hpp"
+#include "core_reflection/base_property.hpp"
+#include "core_reflection/interfaces/i_property_path.hpp"
 
 namespace wgt
 {
+ITEMROLE(path)
+ITEMROLE(fullPath)
+ITEMROLE(indexPath)
 ITEMROLE(key)
 ITEMROLE(keyType)
 ITEMROLE(isCollection)
@@ -23,6 +36,16 @@ ITEMROLE(enabled)
 ITEMROLE(multipleValues)
 ITEMROLE(assetModel)
 ITEMROLE(name)
+ITEMROLE(objectHierarchy)
+ITEMROLE(staticString)
+ITEMROLE(minMappedValue)
+ITEMROLE(maxMappedValue)
+ITEMROLE(parentCollection)
+ITEMROLE(canInsert)
+ITEMROLE(canRemove)
+ITEMROLE(canInsertIntoParent)
+ITEMROLE(canRemoveFromParent)
+ITEMROLE(collectionIndex)
 
 namespace
 {
@@ -128,45 +151,117 @@ Variant getMinValue(const TypeId& typeId)
 }
 namespace proto
 {
-ReflectedPropertyItem::ReflectedPropertyItem(const ReflectedTreeModel& model, const ObjectHandle& object,
-                                             const std::string& path, const std::string& fullpath)
-    : model_(model), object_(object), path_(path), fullPath_(fullpath)
+ReflectedPropertyItem::ReflectedPropertyItem(const ReflectedTreeModel& model, const std::shared_ptr< const IPropertyPath > & path, bool recordHistory)
+    : model_(model), path_(path), recordHistory_(recordHistory)
 {
+	auto rootObject = model_.getObject();
+	std::shared_ptr<ObjectReference> rootReference = std::dynamic_pointer_cast<ObjectReference>(rootObject.storage());
+	if (rootReference != nullptr)
+	{
+		auto pDefinitionManager = get<IDefinitionManager>();
+		auto rootDefinition = pDefinitionManager->getObjectDefinition(rootObject);
+		if (rootDefinition != nullptr)
+		{
+			auto propertyAccessor = rootDefinition->bindProperty(path_, rootObject);
+			objectReference_ = propertyAccessor.getRootObject();
+			referencePath_ = propertyAccessor.getFullPath();
+		}
+	}
 }
 
 ReflectedPropertyItem::~ReflectedPropertyItem()
 {
 }
 
-const ObjectHandle& ReflectedPropertyItem::getObject() const
-{
-	return object_;
-}
-
-const std::string& ReflectedPropertyItem::getPath() const
+const std::shared_ptr< const IPropertyPath > & ReflectedPropertyItem::getPath() const
 {
 	return path_;
 }
 
-const std::string& ReflectedPropertyItem::getFullPath() const
-{
-	return fullPath_;
-}
-
-void ReflectedPropertyItem::setPath(const std::string& path)
+void ReflectedPropertyItem::setPath(const std::shared_ptr< const IPropertyPath >& path)
 {
 	path_ = path;
 }
 
+const std::string ReflectedPropertyItem::getPathName() const
+{
+	std::shared_ptr< const IPropertyPath > lastProperty;
+	for( auto path = path_; path != nullptr; path = path->getParent() )
+	{
+		if (path->getType() == IPropertyPath::TYPE_PROPERTY ||
+			path->getType() == IPropertyPath::TYPE_COLLECTION &&
+			lastProperty != nullptr)
+		{
+			lastProperty = path;
+			break;
+		}
+	}
+	for (auto path = path_; path != nullptr; path = path->getParent())
+	{
+		if (path == lastProperty)
+		{
+			break;
+		}
+		if (path->getType() == IPropertyPath::TYPE_COLLECTION_ITEM)
+		{
+			return path_->generateDecoratedPath();
+		}
+	}
+	if (lastProperty)
+	{
+		return lastProperty->getPath();
+	}
+	static std::string s_Empty;
+	return s_Empty;
+}
+
+bool ReflectedPropertyItem::isReadOnly(const PropertyAccessor& propertyAccessor) const
+{
+	auto readonly = findFirstMetaData<MetaReadOnlyObj>(propertyAccessor, *get<IDefinitionManager>());
+	if (readonly != nullptr)
+	{
+		return readonly->isReadOnly(propertyAccessor.getObject());
+	}
+	Collection collection;
+	const bool isCollection = propertyAccessor.getValue().tryCast(collection);
+	if (isCollection == false)
+	{
+		return false;
+	}
+	return !collection.canResize();
+}
+
+PropertyAccessor ReflectedPropertyItem::parentCollectionPropertyAccessor(const PropertyAccessor& propertyAccessor, IClassDefinition* definition) const
+{
+	auto object = propertyAccessor.getRootObject();
+	std::string path = propertyAccessor.getFullPath();
+
+	if (path[path.length() - 1] != Collection::getIndexClose())
+	{
+		return PropertyAccessor();
+	}
+
+	size_t indexPosition = path.find_last_of(Collection::getIndexOpen());
+	path = path.substr(0, indexPosition);
+	return definition->bindProperty(path.c_str(), object);
+}
+
 Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 {
-	auto pDefinitionManager = model_.getDefinitionManager();
+	auto pDefinitionManager = get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return Variant();
 	}
 
-	auto propertyAccessor = object_.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), object_);
+	const auto& object = model_.getObject();
+	auto definition = pDefinitionManager->getObjectDefinition(object);
+	if (definition == nullptr)
+	{
+		return Variant();
+	}
+
+	auto propertyAccessor = definition->bindProperty(path_, object);
 
 	if (roleId == ItemRole::displayId)
 	{
@@ -174,16 +269,63 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		{
 		case 0:
 		{
+			auto indexDisplayName = findFirstMetaData<MetaDisplayPathNameCallbackObj>(propertyAccessor, *pDefinitionManager);
+			if (indexDisplayName != nullptr)
+			{
+				return indexDisplayName->getDisplayName(getPathName(), propertyAccessor.getObject());
+			}
 			auto displayName = findFirstMetaData<MetaDisplayNameObj>(propertyAccessor, *pDefinitionManager);
 			if (displayName != nullptr)
 			{
 				return displayName->getDisplayName(propertyAccessor.getObject());
 			}
-			return path_.c_str();
+			ObjectHandle object;
+			auto attrDisplayName =
+				findFirstMetaData<MetaAttributeDisplayNameObj>(propertyAccessor, *pDefinitionManager);
+			if (attrDisplayName != nullptr)
+			{
+				object = propertyAccessor.getObject();
+				definition = pDefinitionManager->getObjectDefinition(object);
+			}
+			else
+			{
+				auto value = propertyAccessor.getValue();
+				if (value.tryCast(object))
+				{
+					definition =
+						pDefinitionManager->getObjectDefinition(object);
+					if (definition)
+					{
+						attrDisplayName =
+							findFirstMetaData<MetaAttributeDisplayNameObj>(
+								*definition, *pDefinitionManager);
+					}
+				}
+			}
+			if (attrDisplayName != nullptr)
+			{
+				propertyAccessor = definition->bindProperty(
+					attrDisplayName->getAttributeName(), object);
+				return propertyAccessor.getValue();
+			}
+
+			return getPathName().c_str();
 		}
 		default:
 			return "Reflected Property";
 		}
+	}
+	else if (roleId == ItemRole::pathId)
+	{
+		return propertyAccessor.getPath();
+	}
+	else if (roleId == ItemRole::fullPathId)
+	{
+		return propertyAccessor.getFullPath();
+	}
+	else if (roleId == ItemRole::indexPathId)
+	{
+		return getPath()->getRecursivePath();
 	}
 	else if (roleId == ItemRole::valueId || roleId == ValueRole::roleId_)
 	{
@@ -192,15 +334,41 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 			return Variant();
 		}
 		auto value = propertyAccessor.getValue();
+		auto objectValueComponent = findFirstMetaData<MetaEnableValueComponentForObjectObj>(propertyAccessor, *pDefinitionManager);
+		if (objectValueComponent != nullptr)
+		{
+			if (value.canCast<ObjectHandle>())
+			{
+				auto handle = value.cast<ObjectHandle>();
+				return objectValueComponent->getComponentValue(handle);
+			}
+		}
 		if (value.canCast<Collection>())
 		{
-			value = Collection(std::make_shared<ReflectedCollection>(propertyAccessor, model_.getController()));
+			value = Collection(std::make_shared<ReflectedCollection>(propertyAccessor, get<IReflectionController>()));
 		}
 		return value;
 	}
 	else if (roleId == ItemRole::valueTypeId || roleId == ValueTypeRole::roleId_)
 	{
-		return propertyAccessor.getType().getName();
+		auto objectValueComponent = findFirstMetaData<MetaEnableValueComponentForObjectObj>(propertyAccessor, *pDefinitionManager);
+		if (objectValueComponent != nullptr)
+		{
+			auto objectValue = propertyAccessor.getValue();
+			if (objectValue.canCast<ObjectHandle>())
+			{
+				auto handle = objectValue.cast<ObjectHandle>();
+				return objectValueComponent->getComponentType(handle);
+			}
+		}
+		static TypeId s_valueType = TypeId::getType<Variant>();
+		auto typeId = propertyAccessor.getType();
+		if (typeId == s_valueType)
+		{
+			auto value = propertyAccessor.getValue();
+			typeId = value.type()->typeId();
+		}
+		return typeId.getName();
 	}
 	else if (roleId == ItemRole::keyId || roleId == KeyRole::roleId_)
 	{
@@ -298,25 +466,61 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	}
 	else if (roleId == ItemRole::assetModelId)
 	{
-		auto assetManager = model_.getAssetManager();
+		auto assetManager = get<IAssetManager>();
 		if (assetManager == nullptr)
 		{
 			return Variant();
 		}
-		return ObjectHandle(assetManager->assetModel());
+		return assetManager->assetModel();
 	}
 	else if (roleId == ItemRole::nameId)
 	{
 		return propertyAccessor.getName();
 	}
-
-	if (roleId == ObjectRole::roleId_)
+	else if (roleId == ItemRole::componentTypeId)
 	{
-		return getObject();
+		auto metaComponent = findFirstMetaData<MetaComponentObj>(propertyAccessor, *get<IDefinitionManager>());
+		if (metaComponent == nullptr)
+		{
+			return nullptr;
+		}
+		return metaComponent->getComponentName();
+	}
+	else if (roleId == ItemRole::objectHierarchyId)
+	{
+		// HACK: this is to get around the limitation of the 'Object' role for models that don't return by value.
+		// Objects returned through the Object role may be copies or properties of other objects that are also copies.
+		// The returned ObjectHandle will keep the returned object alive, but once the property accessor goes out of
+		// scope the parent object (which is also a copy) will be destroyed. If the returned object tries to reference
+		// any data from its parent you have a problem
+		auto objects = std::make_shared<CollectionHolder<std::vector<ObjectHandle>>>();
+		auto pa = &propertyAccessor;
+		ObjectHandle object = pa->getObject();
+
+		while (object.isValid())
+		{
+			objects->storage().push_back(object);
+			object = object.parent();
+		}
+
+		return Collection(objects);
+	}
+
+	if (roleId == EnumModelRole::roleId_)
+	{
+		auto enumObj = findFirstMetaData<MetaEnumObj>(propertyAccessor, *get<IDefinitionManager>());
+		if (enumObj != nullptr)
+		{
+			return enumObj->generateEnum(propertyAccessor.getObject());
+		}
+	}
+	else if (roleId == ObjectRole::roleId_)
+	{
+		return propertyAccessor.getObject();
 	}
 	else if (roleId == RootObjectRole::roleId_)
 	{
-		return getObject();
+		return model_.getObject();
 	}
 	else if (roleId == IsEnumRole::roleId_)
 	{
@@ -334,6 +538,10 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	{
 		return findFirstMetaData<MetaColorObj>(propertyAccessor, *pDefinitionManager) != nullptr;
 	}
+	else if (roleId == ItemRole::staticStringId)
+	{
+		return findFirstMetaData<MetaStaticStringObj>(propertyAccessor, *pDefinitionManager) != nullptr;
+	}
 	else if (roleId == IsActionRole::roleId_)
 	{
 		return findFirstMetaData<MetaActionObj>(propertyAccessor, *pDefinitionManager) != nullptr;
@@ -344,6 +552,15 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		if (descObj != nullptr)
 		{
 			return descObj->getDescription();
+		}
+		return nullptr;
+	}
+	else if (roleId == ItemRole::tooltipId)
+	{
+		auto tooltipObj = findFirstMetaData<MetaTooltipObj>(propertyAccessor, *pDefinitionManager);
+		if (tooltipObj != nullptr)
+		{
+			return tooltipObj->getTooltip(propertyAccessor.getObject());
 		}
 		return nullptr;
 	}
@@ -359,7 +576,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		}
 
 		// Should not have a MetaThumbObj for properties that do not have a value
-		assert(propertyAccessor.canGetValue());
+		TF_ASSERT(propertyAccessor.canGetValue());
 
 		typedef std::shared_ptr<BinaryBlock> ThumbnailData;
 		const Variant value = propertyAccessor.getValue();
@@ -378,14 +595,11 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		{
 			const float& value = minMaxObj->getMin();
 			float minValue = .0f;
-			bool isOk = variant.tryCast(minValue);
-			if (isOk)
+			if (variant.tryCast(minValue))
 			{
-				float diff = minValue - value;
-				float epsilon = std::numeric_limits<float>::epsilon();
-				if (diff > epsilon)
+				if (minValue - value > std::numeric_limits<float>::epsilon())
 				{
-					NGT_ERROR_MSG("Property %s: MetaMinMaxObj min value exceeded limits.\n", path_.c_str());
+					NGT_ERROR_MSG("Property %s: MetaMinMaxObj min value exceeded limits.\n", path_->getRecursivePath().str().c_str());
 					return variant;
 				}
 			}
@@ -405,14 +619,11 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		{
 			const float& value = minMaxObj->getMax();
 			float maxValue = .0f;
-			bool isOk = variant.tryCast(maxValue);
-			if (isOk)
+			if (variant.tryCast(maxValue))
 			{
-				float diff = value - maxValue;
-				float epsilon = std::numeric_limits<float>::epsilon();
-				if (diff > epsilon)
+				if (value - maxValue > std::numeric_limits<float>::epsilon())
 				{
-					NGT_ERROR_MSG("Property %s: MetaMinMaxObj max value exceeded limits.\n", path_.c_str());
+					NGT_ERROR_MSG("Property %s: MetaMinMaxObj max value exceeded limits.\n", path_->getRecursivePath().str().c_str());
 					return variant;
 				}
 			}
@@ -422,6 +633,48 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		{
 			return variant;
 		}
+	}
+	else if (roleId == ItemRole::minMappedValueId)
+	{
+		auto minMaxObj = findFirstMetaData<MetaMinMaxMappedObj>(propertyAccessor, *pDefinitionManager);
+		if (minMaxObj != nullptr)
+		{
+			TypeId typeId = propertyAccessor.getType();
+			Variant variant = getMinValue(typeId);
+			const float& value = minMaxObj->getMappedMin();
+			float minValue = .0f;
+			if (variant.tryCast(minValue))
+			{
+				if (minValue - value > std::numeric_limits<float>::epsilon())
+				{
+					NGT_ERROR_MSG("Property %s: MetaMinMaxMappedObj min value exceeded limits.\n", path_->getRecursivePath().str().c_str());
+					return variant;
+				}
+			}
+			return value;
+		}
+		return Variant(); // undefined
+	}
+	else if (roleId == ItemRole::maxMappedValueId)
+	{
+		auto minMaxObj = findFirstMetaData<MetaMinMaxMappedObj>(propertyAccessor, *pDefinitionManager);
+		if (minMaxObj != nullptr)
+		{
+			TypeId typeId = propertyAccessor.getType();
+			Variant variant = getMaxValue(typeId);
+			const float& value = minMaxObj->getMappedMax();
+			float maxValue = .0f;
+			if (variant.tryCast(maxValue))
+			{
+				if (value - maxValue > std::numeric_limits<float>::epsilon())
+				{
+					NGT_ERROR_MSG("Property %s: MetaMinMaxMappedObj max value exceeded limits.\n", path_->getRecursivePath().str().c_str());
+					return variant;
+				}
+			}
+			return value;
+		}
+		return Variant(); // undefined
 	}
 	else if (roleId == StepSizeRole::roleId_)
 	{
@@ -449,19 +702,6 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 			return MetaDecimalsObj::DefaultDecimals;
 		}
 	}
-	else if (roleId == EnumModelRole::roleId_)
-	{
-		auto enumObj = findFirstMetaData<MetaEnumObj>(propertyAccessor, *pDefinitionManager);
-		if (enumObj)
-		{
-			if (getObject().isValid() == false)
-			{
-				return Variant();
-			}
-			auto enumModel = std::unique_ptr<IListModel>(new ReflectedEnumModel(propertyAccessor, enumObj));
-			return std::move(enumModel);
-		}
-	}
 	else if (roleId == DefinitionRole::roleId_)
 	{
 		if (!propertyAccessor.canGetValue())
@@ -474,8 +714,8 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 		variant.tryCast(provider);
 		provider = reflectedRoot(provider, *pDefinitionManager);
 		auto definition =
-		const_cast<IClassDefinition*>(provider.isValid() ? provider.getDefinition(*pDefinitionManager) : nullptr);
-		return ObjectHandle(definition);
+		const_cast<IClassDefinition*>(provider.isValid() ? pDefinitionManager->getDefinition(provider) : nullptr);
+		return definition;
 	}
 	else if (roleId == DefinitionModelRole::roleId_)
 	{
@@ -485,9 +725,12 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 			auto definition = pDefinitionManager->getDefinition(typeId.removePointer().getName());
 			if (definition != nullptr)
 			{
-				auto definitionModel =
-				std::unique_ptr<IListModel>(new ClassDefinitionModel(definition, *pDefinitionManager));
-				return std::move(definitionModel);
+				if (!definitionModel_ || static_cast<ClassDefinitionModelNew*>(definitionModel_.get())->definition() != definition)
+				{
+					definitionModel_.reset(new ClassDefinitionModelNew(definition, *pDefinitionManager));
+				}
+
+				return definitionModel_.get();
 			}
 		}
 	}
@@ -543,13 +786,7 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	}
 	else if (roleId == ItemRole::readOnlyId)
 	{
-		TypeId typeId = propertyAccessor.getType();
-		auto readonly = findFirstMetaData<MetaReadOnlyObj>(propertyAccessor, *pDefinitionManager);
-		if (readonly)
-		{
-			return true;
-		}
-		return false;
+		return isReadOnly(propertyAccessor);
 	}
 	else if (roleId == ItemRole::enabledId)
 	{
@@ -559,25 +796,176 @@ Variant ReflectedPropertyItem::getData(int column, ItemRole::Id roleId) const
 	{
 		return Variant(false);
 	}
+	else if (roleId == ItemRole::parentCollectionId)
+	{
+		auto parentCollectionPA = parentCollectionPropertyAccessor(propertyAccessor, definition);
+		if (!parentCollectionPA.isValid())
+		{
+			return Variant();
+		}
+
+		Variant variant = parentCollectionPA.getValue();
+		if (!variant.canCast<Collection>())
+		{
+			return Variant();
+		}
+
+		return Collection(std::make_shared<ReflectedCollection>(parentCollectionPA, get<IReflectionController>()));
+	}
+	else if (roleId == ItemRole::canInsertId)
+	{
+		if (!propertyAccessor.getProperty()->isCollection())
+		{
+			return false;
+		}
+
+		if (isReadOnly(propertyAccessor))
+		{
+			return false;
+		}
+
+		auto customInsert = findFirstMetaData<MetaInsertObj>(propertyAccessor, *pDefinitionManager);
+		if (customInsert != nullptr)
+		{
+			return customInsert->canInsert(propertyAccessor.getObject());
+		}
+
+		return true;
+	}
+	else if (roleId == ItemRole::canRemoveId)
+	{
+		if (!propertyAccessor.getProperty()->isCollection())
+		{
+			return false;
+		}
+
+		if (isReadOnly(propertyAccessor))
+		{
+			return false;
+		}
+
+		auto customInsert = findFirstMetaData<MetaInsertObj>(propertyAccessor, *pDefinitionManager);
+		if (customInsert != nullptr)
+		{
+			return customInsert->canRemove(propertyAccessor.getObject());
+		}
+
+		Collection collection;
+		const bool isCollection = propertyAccessor.getValue().tryCast(collection);
+		if (isCollection == false)
+		{
+			return false;
+		}
+
+		return collection.size() > 0;
+	}
+	else if (roleId == ItemRole::canInsertIntoParentId)
+	{
+		// Check that parent item is a collection and can be resized.
+		auto parentCollectionPA = parentCollectionPropertyAccessor(propertyAccessor, definition);
+		if (!parentCollectionPA.isValid())
+		{
+			return false;
+		}
+
+		if (!parentCollectionPA.getProperty()->isCollection())
+		{
+			return false;
+		}
+
+		if (isReadOnly(parentCollectionPA))
+		{
+			return false;
+		}
+
+		auto customInsert = findFirstMetaData<MetaInsertObj>(parentCollectionPA, *pDefinitionManager);
+		if (customInsert != nullptr)
+		{
+			return customInsert->canInsert(parentCollectionPA.getObject());
+		}
+
+		return true;
+	}
+	else if (roleId == ItemRole::canRemoveFromParentId)
+	{
+		// Check that parent item is a collection and can be resized.
+		auto parentCollectionPA = parentCollectionPropertyAccessor(propertyAccessor, definition);
+		if (!parentCollectionPA.isValid())
+		{
+			return false;
+		}
+
+		if (!parentCollectionPA.getProperty()->isCollection())
+		{
+			return false;
+		}
+
+		if (isReadOnly(parentCollectionPA))
+		{
+			return false;
+		}
+
+		auto customInsert = findFirstMetaData<MetaInsertObj>(parentCollectionPA, *pDefinitionManager);
+		if (customInsert != nullptr)
+		{
+			return customInsert->canRemove(parentCollectionPA.getObject());
+		}
+
+		Collection collection;
+		const bool isCollection = parentCollectionPA.getValue().tryCast(collection);
+		if (isCollection == false)
+		{
+			return false;
+		}
+
+		return collection.size() > 0;
+	}
+	else if (roleId == ItemRole::collectionIndexId)
+	{
+		auto object = propertyAccessor.getRootObject();
+		std::string path = propertyAccessor.getFullPath();
+
+		if (path[path.length() - 1] != Collection::getIndexClose())
+		{
+			return Variant();
+		}
+
+		size_t position = path.find_last_of(Collection::getIndexOpen()) + 1;
+		size_t count = path.length() - 1 - position;
+		std::string stringIndex = path.substr(position, count);
+
+		for (char& c: stringIndex)
+		{
+			if (std::isdigit(c) == 0)
+			{
+				return stringIndex;
+			}
+		}
+
+		return std::stoi(stringIndex);
+	}
 
 	return Variant();
 }
 
 bool ReflectedPropertyItem::setData(int column, ItemRole::Id roleId, const Variant& data)
 {
-	auto controller = model_.getController();
-	if (controller == nullptr)
-	{
-		return false;
-	}
-	auto pDefinitionManager = model_.getDefinitionManager();
+	auto controller = get<IReflectionController>();
+
+	auto pDefinitionManager = get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
 	}
 
-	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), obj);
+	const auto& object = model_.getObject();
+	auto definition = pDefinitionManager->getObjectDefinition(object);
+	if (definition == nullptr)
+	{
+		return false;
+	}
+
+	auto propertyAccessor = definition->bindProperty(path_, object);
 
 	if (roleId == ValueRole::roleId_)
 	{
@@ -586,7 +974,16 @@ bool ReflectedPropertyItem::setData(int column, ItemRole::Id roleId, const Varia
 			return false;
 		}
 
-		controller->setValue(propertyAccessor, data);
+		if (controller && recordHistory_)
+		{
+			// Note: Should return result from this function
+			controller->setValue(propertyAccessor, data);
+		}
+		else
+		{
+			// Note: Should return result from this function
+			propertyAccessor.setValue(data);
+		}
 		return true;
 	}
 	else if (roleId == DefinitionRole::roleId_)
@@ -603,23 +1000,67 @@ bool ReflectedPropertyItem::setData(int column, ItemRole::Id roleId, const Varia
 			return false;
 		}
 
-		ObjectHandle provider;
-		if (!data.tryCast<ObjectHandle>(provider))
+		IClassDefinition* valueDefinition = nullptr;
+		if (!data.tryCast<IClassDefinition*>(valueDefinition))
 		{
 			return false;
 		}
 
-		auto valueDefinition = provider.getBase<IClassDefinition>();
 		if (valueDefinition == nullptr)
 		{
 			return false;
 		}
 
-		ObjectHandle value;
-		value = valueDefinition->create();
-		controller->setValue(propertyAccessor, value);
+		auto value = valueDefinition->createShared();
+		if (controller && recordHistory_)
+		{
+			controller->setValue(propertyAccessor, value);
+		}
+		else
+		{
+			propertyAccessor.setValue(value);
+		}
 		return true;
 	}
+	else if (roleId == ItemRole::parentCollectionId)
+	{
+		auto object = propertyAccessor.getRootObject();
+		std::string path = propertyAccessor.getFullPath();
+
+		if (path[path.length() - 1] != Collection::getIndexClose())
+		{
+			return false;
+		}
+
+		size_t indexPosition = path.find_last_of(Collection::getIndexOpen());
+		path = path.substr(0, indexPosition);
+		PropertyAccessor accessor = definition->bindProperty(path.c_str(), object);
+		Variant oldValue = accessor.getValue();
+		Variant newValue = data;
+		Collection* oldCollection = nullptr;
+		Collection* newCollection = nullptr;
+
+		if (!oldValue.tryCast(oldCollection) || oldCollection == nullptr ||
+			!newValue.tryCast(newCollection) || newCollection == nullptr)
+		{
+			return false;
+		}
+
+		size_t oldSize = oldCollection->size();
+		size_t newSize = newCollection->size();
+
+		bool same = oldCollection->flags() == newCollection->flags() &&
+			oldCollection->keyType() == newCollection->keyType() &&
+			oldCollection->valueType() == newCollection->valueType();
+
+		if (!same)
+		{
+			return false;
+		}
+
+		return accessor.setValue(newValue);
+	}
+
 	return false;
 }
 }

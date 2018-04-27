@@ -15,7 +15,7 @@ bool ImageQtTypeConverter::toVariant(const QVariant& qVariant, Variant& o_varian
 
 	auto image = qVariant.value<QImage>();
 	std::shared_ptr<BinaryBlock> data(new BinaryBlock(image.bits(), image.byteCount(), false));
-	o_variant = ObjectHandle(data);
+	o_variant = data;
 	return true;
 }
 
@@ -23,16 +23,7 @@ bool ImageQtTypeConverter::toQVariant(const Variant& variant, QVariant& o_qVaria
 {
 	BinaryBlock* data = nullptr;
 
-	if (variant.typeIs<ObjectHandle>())
-	{
-		ObjectHandle provider;
-		if (!variant.tryCast(provider))
-		{
-			return false;
-		}
-		data = provider.getBase<BinaryBlock>();
-	}
-	else if (variant.canCast<std::shared_ptr<BinaryBlock>>())
+	if (variant.canCast<std::shared_ptr<BinaryBlock>>())
 	{
 		data = variant.cast<std::shared_ptr<BinaryBlock>>().get();
 	}

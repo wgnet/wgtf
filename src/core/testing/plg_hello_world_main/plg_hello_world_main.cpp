@@ -1,13 +1,15 @@
-
-// Declaration of PluginMain
-#include "core_generic_plugin/generic_plugin.hpp"
-
 // Declaration of the Panel
 #include "hello_panel.hpp"
 #include "hello_panel_list.hpp"
 
 // Interface specifically for the Hello World Interface example
 #include "../interfaces_test/hello_interface.hpp"
+
+// Declaration of PluginMain
+#include "core_generic_plugin/generic_plugin.hpp"
+#include "metadata/hello_panel_list.mpp"
+#include "metadata/hello_panel.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 #include <memory>
 
@@ -30,13 +32,17 @@ class HelloPanelPlugin : public PluginMain
 public:
 	HelloPanelPlugin(IComponentContext& componentContext)
 	{
+		registerCallback([](IDefinitionManager & defManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
 
 	bool PostLoad(IComponentContext& componentContext) override
 	{
 		// Create the panel
-		helloPanel_.reset(new HelloPanel(componentContext));
-		helloPanelList_.reset(new HelloPanelList(componentContext));
+		helloPanel_.reset(new HelloPanel);
+		helloPanelList_.reset(new HelloPanelList);
 		return true;
 	}
 

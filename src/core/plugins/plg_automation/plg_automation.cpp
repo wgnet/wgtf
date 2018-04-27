@@ -1,4 +1,4 @@
-#include "core_automation/interfaces/automation_interface.hpp"
+#include "core_automation/interfaces/i_automation.hpp"
 #include "core_common/wg_condition_variable.hpp"
 #include "core_dependency_system/depends.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
@@ -12,13 +12,13 @@
 
 namespace wgt
 {
-class Automation : public Implements<AutomationInterface>, Depends<IUIApplication>
+class Automation : public Implements<IAutomation>, Depends<IUIApplication>
 {
 public:
 	// TODO make this configurable
 	static const std::chrono::seconds TIMEOUT_SECONDS;
 
-	Automation(IComponentContext& context);
+	Automation();
 	virtual ~Automation();
 
 	virtual bool timedOut() override;
@@ -32,13 +32,13 @@ public:
 	wg_condition_variable workerWakeUp_;
 	std::mutex workerMutex_;
 	std::atomic<bool> loadingDone_;
+	std::atomic<bool> initialised_;
 };
 
 // TODO make this configurable
-/* static */ const std::chrono::seconds Automation::TIMEOUT_SECONDS(30);
+/* static */ const std::chrono::seconds Automation::TIMEOUT_SECONDS(60);
 
-Automation::Automation(IComponentContext& context)
-    : Depends<IUIApplication>(context), startTime_(std::clock()), loadingDone_(false)
+Automation::Automation() : startTime_(std::clock()), loadingDone_(false), initialised_(false)
 {
 	workerThread_ = std::thread(&Automation::threadFunc, this);
 }
@@ -65,8 +65,13 @@ void Automation::notifyLoadingDone() /* override */
 void Automation::threadFunc()
 {
 	std::unique_lock<std::mutex> lock(workerMutex_);
+	
+	auto wakeupCheck = [this]
+	{
+		return loadingDone_.load() && initialised_.load();
+	};
 
-	workerWakeUp_.wait_for(lock, std::chrono::seconds(TIMEOUT_SECONDS), [this] { return loadingDone_.load(); });
+	workerWakeUp_.wait_for(lock, std::chrono::seconds(TIMEOUT_SECONDS), wakeupCheck);
 
 	auto pUIApplication = this->get<IUIApplication>();
 	if (pUIApplication != nullptr)
@@ -86,27 +91,29 @@ void Automation::threadFunc()
 class AutomationPlugin : public PluginMain
 {
 public:
-	AutomationPlugin(IComponentContext& contextManager)
-	{
-	}
-
 	virtual bool PostLoad(IComponentContext& contextManager) override
 	{
-		automation_.reset(new Automation(contextManager));
+		automation_.reset(new Automation);
 		pAutomationInterface_ = contextManager.registerInterface(automation_.get(), false /* transferOwnership */);
 
 		return true;
 	}
 
+	virtual void Initialise(IComponentContext& /*contextManager*/) override
+	{
+		automation_->initialised_ = true;
+		automation_->workerWakeUp_.notify_all();
+	}
+		
 	virtual void Unload(IComponentContext& contextManager) override
 	{
 		// Stop worker thread
-		contextManager.deregisterInterface(pAutomationInterface_);
+		contextManager.deregisterInterface(pAutomationInterface_.get());
 		automation_.reset();
 	}
 
 	std::unique_ptr<Automation> automation_;
-	IInterface* pAutomationInterface_;
+	InterfacePtr pAutomationInterface_;
 };
 
 PLG_CALLBACK_FUNC(AutomationPlugin)

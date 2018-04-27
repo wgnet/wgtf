@@ -4,6 +4,7 @@
 #include "base_property.hpp"
 #include "utilities/reflection_utilities.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_variant/collection.hpp"
 #include "core_variant/variant.hpp"
 
@@ -26,10 +27,20 @@ public:
 		return (memberPtr_ != nullptr);
 	}
 
+	bool isCollection() const override
+	{
+		return Collection::traits<TargetType>::is_supported;
+	}
+
+	bool isByReference() const override
+	{
+		return std::is_reference<TargetType>::value;
+	}
+
 	//==========================================================================
 	Variant get(const ObjectHandle& pBase, const IDefinitionManager& definitionManager) const override
 	{
-		assert(this->isValue());
+		TF_ASSERT(this->isValue());
 		auto pObject = reflectedCast<BaseType>(pBase.data(), pBase.type(), definitionManager);
 		if (pObject && memberPtr_)
 		{
@@ -41,7 +52,7 @@ public:
 		}
 	}
 
-	bool readOnly() const override
+	bool readOnly(const ObjectHandle&) const override
 	{
 		return can_set_Value<std::is_same<TargetType, Variant>::value>::readOnly(memberPtr_);
 	}
@@ -50,7 +61,7 @@ public:
 	bool set(const ObjectHandle& pBase, const Variant& value,
 	         const IDefinitionManager& definitionManager) const override
 	{
-		// assert( !this->readOnly() );
+		// TF_ASSERT( !this->readOnly() );
 		return set_Value<std::is_same<TargetType, Variant>::value>::set(pBase, memberPtr_, value, definitionManager);
 	}
 

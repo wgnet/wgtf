@@ -7,12 +7,14 @@ INCLUDE( WGToolsCoreLibrary )
 SET( ALL_SRCS
 	file_path.hpp
 	string_utils.hpp
+	string_utils.cpp
 	text_utilities.hpp
 	text_utilities.cpp
+	time_utils.hpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS} 
 )
 BW_ADD_LIBRARY( core_string_utils ${BLOB_SRCS} )

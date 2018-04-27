@@ -1,13 +1,12 @@
 #include "hello_panel_list.hpp"
 #include "core_logging/logging.hpp"
-#include "metadata/hello_panel_list.mpp"
+#include "core_ui_framework/i_ui_framework.hpp"
+#include "core_ui_framework/i_ui_application.hpp"
+#include "core_ui_framework/interfaces/i_view_creator.hpp"
+#include "hello_panel_list_exposed.hpp"
 
 namespace wgt
 {
-HelloPanelList::HelloPanelList(IComponentContext& context) : Depends(context)
-{
-}
-
 bool HelloPanelList::addPanel()
 {
 	if (this->get<IDefinitionManager>() == nullptr)
@@ -15,9 +14,7 @@ bool HelloPanelList::addPanel()
 		return false;
 	}
 
-	IDefinitionManager& definitionManager = *this->get<IDefinitionManager>();
-	REGISTER_DEFINITION(HelloPanelListExposed);
-	auto helloPanelListExposed = definitionManager.create<HelloPanelListExposed>();
+	helloPanelListExposed_ = ManagedObject<HelloPanelListExposed>::make();
 
 	auto viewCreator = this->get<IViewCreator>();
 	if (viewCreator == nullptr)
@@ -25,7 +22,7 @@ bool HelloPanelList::addPanel()
 		return false;
 	}
 
-	helloView_ = viewCreator->createView("WGHello/HelloPanelList.qml", helloPanelListExposed);
+	helloView_ = viewCreator->createView("WGHello/HelloPanelList.qml", helloPanelListExposed_.getHandleT());
 
 	return helloView_.valid();
 }
@@ -44,6 +41,8 @@ void HelloPanelList::removePanel()
 		uiApplication->removeView(*view);
 		view = nullptr;
 	}
+
+    helloPanelListExposed_ = nullptr;
 }
 
 } // end namespace wgt

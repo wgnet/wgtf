@@ -29,28 +29,23 @@ static_assert(QT_VERSION < QT_VERSION_CHECK(6, 0, 0), "Are QList<> specializatio
 #define SPECIALIZE_QLIST(TNode)                                                                                   \
 	template <>                                                                                                   \
 	Q_INLINE_TEMPLATE void QList<TNode>::node_construct(Node* n, const TNode& t)                                  \
-	\
-{                                                                                                          \
+	{                                                                                                             \
 		static_assert(QTypeInfo<TNode>::isLarge || QTypeInfo<TNode>::isStatic, "Invalid QList<> Specialization"); \
 		void* memory = ::malloc(sizeof(TNode));                                                                   \
 		n->v = new (memory) TNode(t);                                                                             \
-	\
-}                                                                                                          \
-	\
-template<>                                                                                                        \
+	}                                                                                                             \
+	template <>                                                                                                   \
 	Q_INLINE_TEMPLATE void QList<TNode>::node_destruct(Node* n)                                                   \
-	\
-{                                                                                                          \
+	{                                                                                                             \
 		static_assert(QTypeInfo<TNode>::isLarge || QTypeInfo<TNode>::isStatic, "Invalid QList<> Specialization"); \
 		reinterpret_cast<TNode*>(n->v)->~TNode();                                                                 \
 		::free(n->v);                                                                                             \
-	\
-}                                                                                                          \
-	\
-template<>                                                                                                        \
+	}                                                                                                             \
+                                                                                                                  \
+	template <>                                                                                                   \
 	Q_INLINE_TEMPLATE void QList<TNode>::node_copy(Node* from, Node* to, Node* src)                               \
-	\
-{                                                                                                          \
+                                                                                                                  \
+	{                                                                                                             \
 		Node* current = from;                                                                                     \
 		static_assert(QTypeInfo<TNode>::isLarge || QTypeInfo<TNode>::isStatic, "Invalid QList<> Specialization"); \
 		QT_TRY                                                                                                    \
@@ -72,13 +67,12 @@ template<>                                                                      
 			}                                                                                                     \
 			QT_RETHROW;                                                                                           \
 		}                                                                                                         \
-	\
-}                                                                                                          \
-	\
-template<>                                                                                                        \
+	}                                                                                                             \
+                                                                                                                  \
+	template <>                                                                                                   \
 	Q_INLINE_TEMPLATE void QList<TNode>::node_destruct(Node* from, Node* to)                                      \
-	\
-{                                                                                                          \
+                                                                                                                  \
+	{                                                                                                             \
 		static_assert(QTypeInfo<TNode>::isLarge || QTypeInfo<TNode>::isStatic, "Invalid QList<> Specialization"); \
 		while (from != to)                                                                                        \
 		{                                                                                                         \
@@ -86,5 +80,4 @@ template<>                                                                      
 			reinterpret_cast<TNode*>(to->v)->~TNode();                                                            \
 			::free(to->v);                                                                                        \
 		}                                                                                                         \
-	\
-}
+	}

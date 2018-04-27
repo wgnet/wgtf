@@ -4,7 +4,7 @@ PROJECT( plg_environment_test )
 ADD_DEFINITIONS( -DNOMINMAX )
 
 INCLUDE( WGToolsCoreProject )
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -56,6 +56,8 @@ BW_TARGET_LINK_LIBRARIES( plg_environment_test PRIVATE
 	core_generic_plugin
 	core_reflection
 	core_data_model
+	core_viewport
+	core_serialization_xml
 	${PLATFORM_LIBRARIES}
 )
 

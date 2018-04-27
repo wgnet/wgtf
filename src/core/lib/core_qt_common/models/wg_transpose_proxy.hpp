@@ -7,6 +7,14 @@
 
 namespace wgt
 {
+
+/**
+* Proxy layer which transposes the source model, i.e. swaps rows and columns.
+*
+* Used by the MultiEdit control to transpose the output of WGMergeProxy, which has
+* items as columns and properties as rows, into a layout where items are rows, which
+* is more suitable for presentation.
+*/
 class WGTransposeProxy : public QAbstractProxyModel
 {
 	Q_OBJECT
@@ -26,7 +34,7 @@ public:
 	Q_INVOKABLE virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 	Q_INVOKABLE virtual bool hasChildren(const QModelIndex& parent = QModelIndex()) const override;
 
-	Q_INVOKABLE virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+	Q_INVOKABLE virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value,
 	                           int role = Qt::EditRole) override;
 

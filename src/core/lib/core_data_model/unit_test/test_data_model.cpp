@@ -2,7 +2,6 @@
 
 #include "test_data_model_objects.hpp"
 #include "core_data_model/i_item_role.hpp"
-#include "core_reflection/object_manager.hpp"
 #include "core_unit_test/unit_test.hpp"
 
 namespace wgt

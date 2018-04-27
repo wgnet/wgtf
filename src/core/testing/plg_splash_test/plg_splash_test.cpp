@@ -27,7 +27,7 @@ public:
 class CustomSplash : public Implements<ISplash>, Depends<IResourceSystem>
 {
 public:
-	CustomSplash(IComponentContext& context);
+    virtual ~CustomSplash() {}
 	bool loadData(std::unique_ptr<BinaryBlock>& o_data, std::string& o_format) const override;
 };
 
@@ -37,12 +37,8 @@ SplashTestPlugin::SplashTestPlugin(IComponentContext& contextManager)
 
 bool SplashTestPlugin::PostLoad(IComponentContext& contextManager) /* override */
 {
-	contextManager.registerInterface(new CustomSplash(contextManager));
+	contextManager.registerInterface(new CustomSplash);
 	return true;
-}
-
-CustomSplash::CustomSplash(IComponentContext& context) : Depends<IResourceSystem>(context)
-{
 }
 
 bool CustomSplash::loadData(std::unique_ptr<BinaryBlock>& o_data, std::string& o_format) const /* override */

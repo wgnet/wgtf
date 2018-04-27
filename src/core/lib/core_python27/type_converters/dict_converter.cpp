@@ -13,8 +13,7 @@ namespace wgt
 {
 namespace PythonType
 {
-DictConverter::DictConverter(IComponentContext& context, const Converters& typeConverters)
-    : IParentConverter(), context_(context), typeConverters_(typeConverters)
+DictConverter::DictConverter(const Converters& typeConverters) : IParentConverter(), typeConverters_(typeConverters)
 {
 }
 
@@ -26,7 +25,7 @@ bool DictConverter::toVariant(const PyScript::ScriptObject& inObject, Variant& o
 		return false;
 	}
 	PyScript::ScriptDict scriptDict(inObject.get(), PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
-	auto dictHandle = ReflectedPython::DefinedInstance::findOrCreate(context_, scriptDict, parentHandle, childPath);
+	auto dictHandle = get<IPythonObjManager>()->findOrCreate(scriptDict, parentHandle, childPath);
 	assert(dictHandle.isValid());
 
 	auto collectionHolder = std::make_shared<Mapping>(scriptDict, dictHandle, typeConverters_);

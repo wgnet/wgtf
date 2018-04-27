@@ -2,7 +2,6 @@
 #define I_PREFERENCE_HPP
 
 #include "core_reflection/generic/generic_object.hpp"
-#include "core_reflection/mutable_vector.hpp"
 
 namespace wgt
 {
@@ -23,15 +22,13 @@ public:
 class IPreferences
 {
 public:
-	virtual ~IPreferences()
-	{
-	}
 
-	typedef MutableVector<std::weak_ptr<IPreferencesListener>> PreferencesListeners;
+	virtual ~IPreferences() = default;
 
-	virtual GenericObjectPtr& getPreference(const char* key) = 0;
-	virtual bool preferenceExists(const char* key) const = 0;
+	virtual GenericObjectPtr getPreference(const std::string& key, const std::string& preferenceKey = "") = 0;
+	virtual bool preferenceExists(const std::string& key, const std::string& preferenceKey = "") const = 0;
 
+	typedef std::vector<std::shared_ptr<IPreferencesListener>> PreferencesListeners;
 	virtual void registerPreferencesListener(std::shared_ptr<IPreferencesListener>& listener) = 0;
 	virtual void deregisterPreferencesListener(std::shared_ptr<IPreferencesListener>& listener) = 0;
 
@@ -64,14 +61,14 @@ public:
 	* @param fileName The name of the file to save with an optional extension.
 	* Note if no extension is given, default extension is used
 	*/
-	virtual void writePreferenceToFile(const char* fileName) = 0;
+	virtual bool writePreferenceToFile(const char* fileName, bool notifyListeners = true) = 0;
 
 	/**
 	* Load preferences from a file
 	* @param fileName The name of the file to load from with an optional extension.
 	* Note if no extension is given, default extension is used
 	*/
-	virtual void loadPreferenceFromFile(const char* fileName) = 0;
+	virtual bool loadPreferenceFromFile(const char* fileName, bool notifyListeners = true) = 0;
 
 	/**
 	* Determines if the preference file exists
@@ -79,6 +76,26 @@ public:
 	* Note if no extension is given, default extension is used
 	*/
 	virtual bool hasPreferencesFile(const char* fileName) const = 0;
+
+	/**
+	* @return the extension used for preference files, includes the '.'
+	*/
+	virtual const char* getPreferencesExtension() const = 0;
+
+	/**
+	* Clears all preferences in the default preference key
+	*/
+	virtual void clearPreferences() = 0;
+
+	/**
+	* Sets the default key preferences are loaded from
+	*/
+	virtual void setDefaultPreferenceKey(const std::string& preferenceKey) = 0;
+
+	/**
+	* Gets the default key preferences are loaded from
+	*/
+	virtual const std::string& getDefaultPreferenceKey() const = 0;
 };
 } // end namespace wgt
 #endif // I_PREFERENCE_HPP

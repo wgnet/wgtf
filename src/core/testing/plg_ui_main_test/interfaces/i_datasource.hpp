@@ -13,13 +13,11 @@ typedef ObjectHandleT<TestPolyStruct> TestPolyStructPtr;
 
 class BinaryBlock;
 class TestPage;
-class TestPage2;
 
 class IDataSource
 {
 public:
 	virtual const ObjectHandleT<TestPage>& getTestPage() const = 0;
-	virtual const ObjectHandleT<TestPage2>& getTestPage2() const = 0;
 	virtual const char* description() const = 0;
 };
 

@@ -5,8 +5,9 @@
 
 namespace wgt
 {
-class ObjectManager;
-class DefinitionManager;
+class IObjectManager;
+class IDefinitionManager;
+class TestFramework;
 
 class TestReflectionFixture
 {
@@ -15,14 +16,11 @@ public:
 	~TestReflectionFixture();
 	IObjectManager& getObjectManager() const;
 	IDefinitionManager& getDefinitionManager() const;
-
 	TestStructure& getTestStructure();
 
 private:
-	std::unique_ptr<ObjectManager> objectManager_;
-	std::unique_ptr<DefinitionManager> definitionManager_;
-
-	TestObjects testObjects_;
+	std::unique_ptr<TestFramework> framework_;
+    TestObjects testObjects_;
 };
 } // end namespace wgt
 #endif // TEST_REFLECTION_FIXTURE_HPP

@@ -4,6 +4,7 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/interfaces/i_command_line_parser.hpp"
+#include "core_python27/python_obj_manager.hpp"
 #include "core_unit_test/unit_test.hpp"
 
 #include "python27_unit_test.hpp"
@@ -20,6 +21,7 @@ class Python27UnitTestPlugin : public PluginMain
 public:
 	Python27UnitTestPlugin(IComponentContext& contextManager)
 	{
+		contextManager.registerInterface(new PythonObjManager());
 	}
 
 	bool PostLoad(IComponentContext& contextManager) override

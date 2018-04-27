@@ -3,7 +3,7 @@
 #define _REFLECTED_TREE_ITEM_NEW_HPP
 
 #include "core_data_model/abstract_item.hpp"
-#include "core_dependency_system/di_ref.hpp"
+#include "core_dependency_system/depends.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
 
@@ -19,14 +19,12 @@ class ObjectHandle;
 class PropertyAccessor;
 
 /** Base class for adding a reflected item to a tree. */
-class ReflectedTreeItemNew : public AbstractTreeItem
+class ReflectedTreeItemNew : public AbstractTreeItem, public Depends<IDefinitionManager>
 {
 public:
-	ReflectedTreeItemNew(IComponentContext& contextManager, const ReflectedTreeModelNew& model);
-	ReflectedTreeItemNew(IComponentContext& contextManager, ReflectedTreeItemNew* parent, size_t index,
-	                     const char* path);
-	ReflectedTreeItemNew(IComponentContext& contextManager, ReflectedTreeItemNew* parent, size_t index,
-	                     const std::string& path);
+	ReflectedTreeItemNew(const ReflectedTreeModelNew& model);
+	ReflectedTreeItemNew(ReflectedTreeItemNew* parent, size_t index, const char* path);
+	ReflectedTreeItemNew(ReflectedTreeItemNew* parent, size_t index, const std::string& path);
 	virtual ~ReflectedTreeItemNew();
 
 	/** Finds the ObjectHandle of the most distant ancestor with an ObjectHandle.
@@ -102,14 +100,6 @@ public:
 	@note This includes all (non in place) ancestors up to this item. */
 	const std::string& getPath() const;
 
-	/** Gets the associated IReflectionController that controls changes to the property for this item.
-	@note This can be nullptr. */
-	IReflectionController* getController() const;
-
-	/** Gets the IDefinitionManager that contains the class definition for this item.
-	@note This can be nullptr. */
-	IDefinitionManager* getDefinitionManager() const;
-
 	/** Gets the model that contains this item. */
 	const ReflectedTreeModelNew* getModel() const;
 
@@ -132,8 +122,6 @@ protected:
 	uint64_t id_;
 	std::string path_;
 	size_t index_;
-	DIRef<IReflectionController> controller_;
-	DIRef<IDefinitionManager> definitionManager_;
 
 	typedef std::function<bool(const IBasePropertyPtr&, const std::string&)> PropertyCallback;
 	bool enumerateVisibleProperties(const PropertyCallback& callback) const;

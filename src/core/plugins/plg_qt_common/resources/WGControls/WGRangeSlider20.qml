@@ -147,40 +147,7 @@ Item {
         setValueHelper(slider, "value", sliderFrame.upperValue);
     }
 
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( slider.value )
-            }
-
-            onDataPasted : {
-                setValueHelper(sliderFrame, "value", data)
-                if(sliderFrame.value != data)
-                {
-                    bPasted = false;
-                }
-            }
-        }
-
-        onSelectedChanged : {
-            if(selected)
-            {
-                selectControl( copyableObject )
-            }
-            else
-            {
-                deselectControl( copyableObject )
-            }
-        }
-    }
-
     Component.onCompleted: {
-        copyableControl.disableChildrenCopyable( sliderFrame );
         setValueHelper(slider, "value", sliderFrame.value);
     }
 
@@ -263,14 +230,7 @@ Item {
         }
 
         onValueChanged: {
-            sliderFrame.lowerValue = value
-        }
-
-
-        Binding {
-            target: sliderLowerValue
-            property: "value"
-            value: sliderFrame.lowerValue
+            setValueHelper(sliderFrame, "lowerValue", value)
         }
     }
 
@@ -306,13 +266,7 @@ Item {
             maxHandle: false
 
             onValueChanged: {
-                sliderFrame.lowerValue = value
-            }
-
-            Binding {
-                target: sliderMinHandle
-                property: "value"
-                value: sliderFrame.lowerValue
+                setValueHelper(sliderFrame, "lowerValue", value)
             }
         }
 
@@ -327,13 +281,7 @@ Item {
             maxHandle: true
 
             onValueChanged: {
-                sliderFrame.upperValue = value
-            }
-
-            Binding {
-                target: sliderMaxHandle
-                property: "value"
-                value: sliderFrame.upperValue
+                setValueHelper(sliderFrame, "upperValue", value)
             }
         }
     }
@@ -366,14 +314,7 @@ Item {
         }
 
         onValueChanged: {
-            sliderFrame.upperValue = value
-        }
-
-
-        Binding {
-            target: sliderUpperValue
-            property: "value"
-            value: sliderFrame.upperValue
+            setValueHelper(sliderFrame, "upperValue", value)
         }
     }
 

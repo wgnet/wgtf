@@ -23,7 +23,7 @@ SET( ALL_SRCS
 
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 
@@ -32,6 +32,7 @@ BW_ADD_LIBRARY( ${PROJECT_NAME} ${BLOB_SRCS} )
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} INTERFACE
 	core_dependency_system
 	core_common
+	core_object
 	core_reflection
 )
 

@@ -19,6 +19,7 @@ namespace wgt
 class ReflectedPropertyModel;
 
 class RefPropertyItem : public AbstractItem
+					  , Depends<IDefinitionManager, ICommandManager>
 {
 public:
 	RefPropertyItem(ReflectedPropertyModel& model);
@@ -98,9 +99,10 @@ private:
 };
 
 class ReflectedPropertyModel : public AbstractItemModel
+							 , Depends<IDefinitionManager, ICommandManager>
 {
 public:
-	ReflectedPropertyModel(IComponentContext& context);
+	ReflectedPropertyModel();
 	~ReflectedPropertyModel();
 
 	void update();
@@ -143,7 +145,6 @@ private:
 	Variant getDataImpl(const RefPropertyItem* item, int column, ItemRole::Id roleId) const;
 	bool setDataImpl(RefPropertyItem* item, int column, ItemRole::Id roleId, const Variant& data);
 
-	Depends<IDefinitionManager, ICommandManager> interfacesHolder;
 	std::unique_ptr<RefPropertyItem> rootItem;
 	std::unordered_map<std::shared_ptr<const PropertyNode>, RefPropertyItem*> nodeToItem;
 

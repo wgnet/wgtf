@@ -122,35 +122,45 @@ WGListViewBase {
     property alias clamp: itemView.clamp
     /** The model containing the selected items/indices.*/
     property alias selectionModel: itemView.selectionModel
+	property alias internalSelectionModel: itemView.internalSelectionModel
     /** A replacement for ListView's currentIndex that can use either a number or a QModelIndex.*/
     property var currentIndex: itemView.selectionModel.currentIndex
     /** The combined common and view extensions.*/
     property var extensions: []
 
-    signal selectionChanged(var selected, var deselected)
+    /*Specifies if list view needs to support multiple selection, default value is true*/
+    property alias supportMultiSelect: itemView.supportMultiSelect
+    /*! Override this for determine if the node can be selected */
+    property var allowSelect: function(rowIndexToBeSelected, exisingSelectedIndexes, modifiers) {
+        return true;
+    } 
+
+    signal selectionChanged()
 
     onCurrentIndexChanged: {
-        if (typeof( currentIndex ) == "number") {
+        if (typeof(currentIndex) == "number") {
             currentRow = currentIndex
             return;
         }
-        currentRow = itemView.getRow( currentIndex );
-        itemView.selectionModel.setCurrentIndex( currentIndex, ItemSelectionModel.NoUpdate );
+        currentRow = itemView.getRow(currentIndex);
+		if (itemView.selectionModel.currentIndex != currentIndex && currentIndex != null) {
+			itemView.selectionModel.setCurrentIndex(currentIndex, ItemSelectionModel.NoUpdate);
+		}
+    }
+	onCurrentRowChanged: {
+        currentIndex = (currentRow < 0 || internalModel == null) ? null : internalModel.index(currentRow, 0);
     }
     onCurrentItemChanged: {
-        var index = currentItem != null ? currentItem.rowIndex : null;
-        if (currentIndex != index) {
-            currentIndex = index;
-        }
+        updateScrollPosition();
     }
     Connections {
-        target: itemView.selectionModel
+        target: itemView
 
-        onSelectionChanged: selectionChanged(selected, deselected)
+        onSelectionChanged: {
+			selectionChanged()
+		}
         onCurrentChanged: {
-            if (current != previous) {
-                currentIndex = current;
-            }
+            currentIndex = itemView.selectionModel.currentIndex;
         }
     }
 
@@ -178,7 +188,7 @@ WGListViewBase {
     property bool __skippedPress: false
     onItemPressed: {
         var selected = itemView.selectionModel.selectedIndexes;
-        for ( var i in selected ) {
+        for ( var i = 0; i < selected.length; ++i ) {
             if ( selected[i] === rowIndex ) {
                 __skippedPress = true;
                 return;
@@ -196,17 +206,59 @@ WGListViewBase {
         __skippedPress = false;
     }
 
+    function createExtension(name)
+    {
+        return view.createExtension(name);
+    }
+
     /** Common view code. */
     WGItemViewCommon {
         id: itemView
         style: WGListViewStyle {}
-        viewExtension: listExtension
-
-        ListExtension {
-            id: listExtension
+        viewExtension: createExtension("ListExtension")
+        allowSelect: function(rowIndexToBeSelected, exisingSelectedIndexes, modifiers) {
+            return listView.allowSelect(rowIndexToBeSelected, exisingSelectedIndexes, modifiers);
         }
-
     }
 
+    /**
+    * Moves the scroll bar to focus on the last selected list item
+    */
+    function updateScrollPosition() {
+        if( currentItem != null ) {
+
+            var footerHeight = footerItem && footerPositioning == ListView.OverlayFooter ? footerItem.height : 0;
+            var headerHeight = headerItem && headerPositioning == ListView.OverlayHeader ? headerItem.height : 0;
+            var borderHeight = headerHeight + footerHeight;
+
+            // Move up the list to get the position of the selected item
+            var itemHeight = currentItem.height;
+            var topItemHeight = itemHeight;
+            var itemCurrentTop = currentItem.y;
+            var itemCurrentBottom = itemCurrentTop + itemHeight;
+
+            // Convert the positions into the range the scroll expects
+            var scrollStart = originY;
+            var scrollEnd = scrollStart + contentItem.height - borderHeight;
+            var scrollHeight = contentHeight * visibleArea.heightRatio;
+            var scrollEndCap = scrollStart + contentItem.height - scrollHeight;
+            var scrollDifference = scrollEnd - scrollStart;
+            var listItemsEnd = contentItem.height - borderHeight;
+            itemCurrentTop = ( itemCurrentTop * ( scrollDifference / listItemsEnd ) ) + scrollStart;
+            itemCurrentBottom = ( itemCurrentBottom * ( scrollDifference / listItemsEnd ) ) + scrollStart;
+        
+            // Determine whether to scroll up or down
+            var scrollVisibleStart = contentY;
+            var scrollVisibleHeight = scrollHeight - borderHeight;
+            var scrollVisibleEnd = scrollVisibleStart + scrollVisibleHeight;
+
+            if( itemCurrentTop < scrollVisibleStart ) {
+                contentY = Math.min( scrollEndCap, Math.max( scrollStart, itemCurrentTop ) );
+            }
+            else if( itemCurrentBottom > scrollVisibleEnd ) {
+                contentY = Math.min( scrollEndCap, Math.max( scrollStart, itemCurrentBottom - scrollVisibleHeight ) );
+            }
+        }
+    }
 }
 

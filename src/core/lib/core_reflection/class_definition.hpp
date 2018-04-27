@@ -3,6 +3,7 @@
 
 #include "interfaces/i_class_definition.hpp"
 #include "interfaces/i_class_definition_modifier.hpp"
+#include "interfaces/i_property_path.hpp"
 
 #include "core_variant/type_id.hpp"
 
@@ -12,6 +13,8 @@
 namespace wgt
 {
 class IClassDefinitionDetails;
+class Variant;
+class ObjectReference;
 
 class REFLECTION_DLL ClassDefinition : public IClassDefinition
 {
@@ -21,42 +24,46 @@ public:
 
 	const IClassDefinitionDetails& getDetails() const override;
 
-	// Range for all properties contained in this and its parents' definitions
+	/**
+	* Range for all properties contained in this and its parents' definitions
+	*/
 	PropertyIteratorRange allProperties() const override;
-	// Range for only properties contain in this definition
+
+	/**
+	* Range for only properties contain in this definition
+	*/
 	PropertyIteratorRange directProperties() const override;
 
+
+	PropertyAccessor bindProperty( IPropertyPath::ConstPtr & path, const ObjectHandle& object) const override;
 	PropertyAccessor bindProperty(const char* name, const ObjectHandle& object) const override;
 
-	IClassDefinition* getParent() const override;
+	const std::vector< std::string > & getParentNames() const override;
 
 	bool isGeneric() const override;
 	bool canBeCastTo(const IClassDefinition& definition) const override;
 	void* castTo(const IClassDefinition& definition, void* object) const override;
-	void* upCast(void* object) const override;
 
 	IDefinitionManager* getDefinitionManager() const override;
 
 	const char* getName() const override;
-	MetaHandle getMetaData() const override;
-	ObjectHandle create() const override;
-	ObjectHandle createManagedObject(const RefObjectId& id = RefObjectId::zero()) const override;
-
-protected:
-	ObjectHandle registerObject(ObjectHandle& pObj, const RefObjectId& id = RefObjectId::zero()) const;
+	const MetaData & getMetaData() const override;
+	ObjectHandleStoragePtr createObjectStorage() const override;
+	ManagedObjectPtr createManaged(RefObjectId id = RefObjectId::zero()) const override;
+	ObjectHandle createShared(RefObjectId id = RefObjectId::zero()) const override;
 
 private:
-	std::unique_ptr<const IClassDefinitionDetails> details_;
-	IDefinitionManager* defManager_;
-
 	friend class PropertyIterator;
-	friend class PropertyAccessor;
 
 	IBasePropertyPtr findProperty(const char* name, size_t length) const override;
+	IBasePropertyPtr findProperty( IPropertyPath::ConstPtr & path ) const override;
 	void setDefinitionManager(IDefinitionManager* defManager) override;
 
-	void bindPropertyImpl(const char* name, const ObjectHandle& pBase,
-	                      PropertyAccessor& o_PropertyAccessor) const override;
+	std::shared_ptr<ObjectReference> getChildReference(
+		const std::shared_ptr<ObjectReference>& parent, const char* path, const Variant& value) const;
+
+	struct Impl;
+	std::unique_ptr< Impl > impl_;
 };
 } // end namespace wgt
 #endif // #define CLASS_DEFINITION_HPP

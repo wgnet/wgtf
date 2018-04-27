@@ -1,9 +1,11 @@
 #include "reflected_collection_erase_command.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/generic/generic_object.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -22,19 +24,25 @@ const char* ReflectedCollectionEraseCommand::getId() const
 	return s_Id;
 }
 
-ObjectHandle ReflectedCollectionEraseCommand::execute(const ObjectHandle& arguments) const
+const char* ReflectedCollectionEraseCommand::getName() const
+{
+	static const char* s_name = "Remove an item from a reflected collection";
+	return s_name;
+}
+
+Variant ReflectedCollectionEraseCommand::execute(const ObjectHandle& arguments) const
 {
 	auto commandArgs = arguments.getBase<ReflectedCollectionEraseCommandParameters>();
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert(objManager != nullptr);
+	TF_ASSERT(objManager != nullptr);
 	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 
-	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
+	auto property = definitionManager_.getDefinition(object)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
@@ -61,7 +69,7 @@ ObjectHandle ReflectedCollectionEraseCommand::execute(const ObjectHandle& argume
 		return CommandErrorCode::INVALID_VALUE;
 	}
 
-	return nullptr;
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 bool ReflectedCollectionEraseCommand::customUndo() const
@@ -79,14 +87,14 @@ bool ReflectedCollectionEraseCommand::undo(const ObjectHandle& arguments) const
 	}
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert(objManager != nullptr);
+	TF_ASSERT(objManager != nullptr);
 	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return false;
 	}
 
-	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
+	auto property = definitionManager_.getDefinition(object)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return false;
@@ -101,17 +109,21 @@ bool ReflectedCollectionEraseCommand::redo(const ObjectHandle& arguments) const
 	return true;
 }
 
-ObjectHandle ReflectedCollectionEraseCommand::getCommandDescription(const ObjectHandle& arguments) const
+CommandDescription ReflectedCollectionEraseCommand::getCommandDescription(const ObjectHandle&) const
 {
-	auto object = GenericObject::create(definitionManager_);
-	assert(object != nullptr);
-	object->set("Name", "Erase");
-	object->set("Type", "Unknown");
-	return object;
+    auto object = GenericObject::create();
+    object->set("Name", "Erase");
+    object->set("Type", "Unknown");
+    return std::move(object);
 }
 
 CommandThreadAffinity ReflectedCollectionEraseCommand::threadAffinity() const
 {
 	return CommandThreadAffinity::UI_THREAD;
+}
+
+ManagedObjectPtr ReflectedCollectionEraseCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<ReflectedCollectionEraseCommandParameters>(arguments);
 }
 } // end namespace wgt

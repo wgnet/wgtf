@@ -1,22 +1,23 @@
 
 #include "hotloading_panel.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/i_qt_framework.hpp"
+#include "core_serialization/i_file_system.hpp"
+#include "core_logging/logging.hpp"
 #include <QUrl>
 
 namespace wgt
 {
-void HotloadingPanel::initialise(QQmlEngine& engine, IFileSystem& filesystem)
+void HotloadingPanel::initialise()
 {
-	fileSystem_ = &filesystem;
-	initialiseFile(engine, "WGHotloading.qml", hotLoadedFile_);
-	initialiseFile(engine, "WGHotloadingBase.qml", hotLoadedBaseFile_);
-	initialiseFile(engine, "wg_hotloading.js", hotLoadedJSFile_);
+	initialiseFile("WGHotloading.qml", hotLoadedFile_);
+	initialiseFile("WGHotloadingBase.qml", hotLoadedBaseFile_);
+	initialiseFile("wg_hotloading.js", hotLoadedJSFile_);
 }
 
-void HotloadingPanel::initialiseFile(QQmlEngine& engine, const char* name, HotloadedFile& file)
+void HotloadingPanel::initialiseFile(const char* name, HotloadedFile& file)
 {
 	const std::string folder(PROJECT_RESOURCE_FOLDER);
-	file.path_ = QtHelpers::resolveQmlPath(engine, (folder + name).c_str()).toLocalFile().toUtf8().constData();
+	file.path_ = get<IQtFramework>()->resolveQmlPath((folder + name).c_str()).toLocalFile().toUtf8().constData();
 	file.text_ = getTextFromFile(file.path_);
 }
 
@@ -79,7 +80,8 @@ void HotloadingPanel::setHotloadingJSText(std::string text)
 
 std::string HotloadingPanel::getTextFromFile(const std::string& path)
 {
-	if (!fileSystem_->exists(path.c_str()))
+	auto fileSystem = get<IFileSystem>();
+	if (!fileSystem->exists(path.c_str()))
 	{
 		NGT_ERROR_MSG("File %s does not exist", path.c_str());
 		return std::string();
@@ -89,7 +91,7 @@ std::string HotloadingPanel::getTextFromFile(const std::string& path)
 	char buffer[bufferSize];
 	memset(buffer, '\0', bufferSize);
 
-	auto stream = fileSystem_->readFile(path.c_str(), std::ios::in);
+	auto stream = fileSystem->readFile(path.c_str(), std::ios::in);
 	if (!stream)
 	{
 		NGT_ERROR_MSG("File %s could not be read from", path.c_str());
@@ -102,12 +104,13 @@ std::string HotloadingPanel::getTextFromFile(const std::string& path)
 
 void HotloadingPanel::saveTextToFile(const std::string& path, const std::string& text)
 {
-	if (!fileSystem_->exists(path.c_str()))
+	auto fileSystem = get<IFileSystem>();
+	if (!fileSystem->exists(path.c_str()))
 	{
 		NGT_ERROR_MSG("File %s does not exist", path.c_str());
 	}
 
-	if (!fileSystem_->writeFile(path.c_str(), &text[0], text.size(), std::ios::out))
+	if (!fileSystem->writeFile(path.c_str(), &text[0], text.size(), std::ios::out))
 	{
 		NGT_ERROR_MSG("File %s could not be written to", path.c_str());
 	}

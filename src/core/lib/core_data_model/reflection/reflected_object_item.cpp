@@ -1,11 +1,16 @@
 #include "reflected_object_item.hpp"
+
 #include "reflected_group_item.hpp"
 #include "reflected_property_item.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/generic_tree_model.hpp"
 #include "core_reflection/interfaces/i_base_property.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/interfaces/i_class_definition.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_string_utils/string_utils.hpp"
 
 #include <codecvt>
@@ -24,7 +29,7 @@ ReflectedObjectItem::ReflectedObjectItem(const ObjectHandle& object, ReflectedIt
 
 const IClassDefinition* ReflectedObjectItem::getDefinition() const
 {
-	return object_.getDefinition(*getDefinitionManager());
+	return getDefinitionManager()->getDefinition(object_);
 }
 
 const char* ReflectedObjectItem::getDisplayText(int column) const
@@ -36,16 +41,14 @@ const char* ReflectedObjectItem::getDisplayText(int column) const
 		{
 			return "";
 		}
-		const MetaDisplayNameObj* displayName =
-		findFirstMetaData<MetaDisplayNameObj>(*definition, *getDefinitionManager());
+		auto displayName = findFirstMetaData<MetaDisplayNameObj>(*definition, *getDefinitionManager());
 		if (displayName == nullptr)
 		{
 			displayName_ = definition->getName();
 		}
 		else
 		{
-			std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
-			displayName_ = conversion.to_bytes(displayName->getDisplayName(object_));
+			displayName_ = StringUtils::to_string(displayName->getDisplayName(object_));
 		}
 	}
 	return displayName_.c_str();
@@ -54,7 +57,7 @@ const char* ReflectedObjectItem::getDisplayText(int column) const
 Variant ReflectedObjectItem::getData(int column, ItemRole::Id roleId) const
 {
 	// Only works for root items?
-	assert(parent_ == nullptr);
+	TF_ASSERT(parent_ == nullptr);
 	if (roleId == ValueRole::roleId_)
 	{
 		return object_;
@@ -90,8 +93,8 @@ bool ReflectedObjectItem::setData(int column, ItemRole::Id roleId, const Variant
 			return false;
 
 		auto obj = getRootObject();
-		auto definition = obj.getDefinition(*definitionManager);
-		auto otherDef = other.getDefinition(*definitionManager);
+		auto definition = definitionManager->getDefinition(obj);
+		auto otherDef = definitionManager->getDefinition(other);
 		if (definition != otherDef)
 			return false;
 
@@ -101,7 +104,7 @@ bool ReflectedObjectItem::setData(int column, ItemRole::Id roleId, const Variant
 			auto otherAccessor = definition->bindProperty(prop->getName(), other);
 			if (accessor.canSetValue())
 			{
-				assert(otherAccessor.canGetValue());
+				TF_ASSERT(otherAccessor.canGetValue());
 				accessor.setValue(otherAccessor.getValue());
 			}
 		}
@@ -226,10 +229,11 @@ ReflectedObjectItem::Groups& ReflectedObjectItem::GetGroups() const
 
 	auto parent = const_cast<ReflectedObjectItem*>(this);
 	EnumerateVisibleProperties([this, parent](IBasePropertyPtr property, const std::string& inplacePath) {
-		const MetaGroupObj* groupObj = findFirstMetaData<MetaGroupObj>(*property, *getDefinitionManager());
-		if (groupObj != nullptr && groups_.insert(groupObj->getGroupName()).second)
+		auto groupObj = findFirstMetaData<MetaGroupObj>(*property, *getDefinitionManager());
+		if (groupObj != nullptr && groups_.insert(groupObj->getGroupName(getObject())).second)
 		{
-			children_.emplace_back(new ReflectedGroupItem(groupObj, parent, inplacePath));
+			children_.emplace_back(
+				new ReflectedGroupItem( property->getMetaData(), groupObj, parent, inplacePath));
 		}
 		return true;
 	});

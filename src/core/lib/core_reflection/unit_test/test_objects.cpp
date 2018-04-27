@@ -1,81 +1,24 @@
 #include "pch.hpp"
 
 #include "core_reflection/interfaces/i_class_definition.hpp"
-#include "core_reflection/reflected_property.hpp"
-#include "core_reflection/function_property.hpp"
 #include "core_reflection/reflected_object.hpp"
-#include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
-#include "core_reflection/utilities/reflection_function_utilities.hpp"
-#include "core_reflection/utilities/reflection_method_utilities.hpp"
 
 #include "test_objects.hpp"
 
 namespace wgt
 {
-BEGIN_EXPOSE(TestDefinitionObject, MetaNone())
-EXPOSE("counter", counter_)
-EXPOSE("text", text_)
-EXPOSE("functional counter", getCounter, setCounter, MetaNone())
-EXPOSE("functional text", getText, setText, MetaNone())
-EXPOSE("functional ints", getInts, setInts, MetaNone())
-EXPOSE("functional string", getString, MetaNone())
-EXPOSE("counter getter", getCounter)
-EXPOSE("text getter", getText)
-EXPOSE("link", getLink, setLink, MetaNone())
-EXPOSE("raw string", raw_string_)
-EXPOSE("string", string_)
-EXPOSE("strings", strings_)
-EXPOSE("raw wstring", raw_wstring_)
-EXPOSE("wstring", wstring_)
-EXPOSE("wstrings", wstrings_)
-EXPOSE("exposed structure", exposedStruct_)
-EXPOSE("exposed structures", exposedStructs_)
-EXPOSE("exposed object", exposedObject_)
-EXPOSE("exposed objects", exposedObjects_)
-EXPOSE("boolean", boolean_)
-EXPOSE("booleans", booleans_)
-EXPOSE("uint32", uint32_)
-EXPOSE("uint32s", uint32s_)
-EXPOSE("int32", int32_)
-EXPOSE("int32s", int32s_)
-EXPOSE("uint64", uint64_)
-EXPOSE("uint64s", uint64s_)
-EXPOSE("float", float_)
-EXPOSE("floats", floats_)
-EXPOSE("vector3", vector3_)
-EXPOSE("vector3s", vector3s_)
-EXPOSE("vector4", vector4_)
-EXPOSE("vector4s", vector4s_)
-EXPOSE("binary", binary_)
-EXPOSE("binaries", binaries_)
-EXPOSE("multidimensional", multidimensional_)
-END_EXPOSE()
 
-BEGIN_EXPOSE(TestDefinitionDerivedObject, TestDefinitionObject, MetaNone())
-EXPOSE("some integer", someInteger_)
-EXPOSE("some float", someFloat_)
-END_EXPOSE()
-
-BEGIN_EXPOSE(TestStructure2, MetaNone())
-EXPOSE("name", name_)
-END_EXPOSE()
-
-BEGIN_EXPOSE(TestPolyStruct2, MetaNone())
-EXPOSE("name", name_)
-END_EXPOSE()
 
 TestDefinitionFixture::TestDefinitionFixture()
 {
 	IDefinitionManager& definitionManager = getDefinitionManager();
-	REGISTER_DEFINITION(TestStructure2);
-	REGISTER_DEFINITION(TestDefinitionObject);
-	REGISTER_DEFINITION(TestDefinitionDerivedObject);
 	klass_ = definitionManager.getDefinition<TestDefinitionObject>();
+	assert(klass_);
 	derived_klass_ = definitionManager.getDefinition<TestDefinitionDerivedObject>();
+	assert(derived_klass_);
 }
 
 namespace
@@ -112,6 +55,8 @@ TestDefinitionObject::TestDefinitionObject()
     : counter_(0), raw_string_("RAW READ-0NLY STR1NG!!!"), raw_wstring_(L"RAW READ-0NLY W1DE STR1NG!!!"),
       boolean_(false), uint32_(0), int32_(0), uint64_(0L), float_(0.f)
 {
+	strings_.push_back("string1");
+	strings_.push_back("string2");
 }
 
 //------------------------------------------------------------------------------

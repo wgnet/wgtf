@@ -2,10 +2,11 @@
 #include "group.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/type_class_definition.hpp"
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
-NodeEditor::NodeEditor(IComponentContext& context) : Implements<INodeEditor>(), Depends<IDefinitionManager>(context)
+NodeEditor::NodeEditor()
 {
 }
 
@@ -17,36 +18,33 @@ void NodeEditor::SetGraph(std::shared_ptr<IGraph> graph)
 		return;
 	}
 
-	graphModel.clear();
-	graphModel.push_back(graph);
+	graph_ = graph;
 }
 
-std::shared_ptr<INode> NodeEditor::CreateNode(std::string nodeClass, float x, float y)
+ObjectHandleT<INode> NodeEditor::CreateNode(std::string nodeClass, float x, float y)
 {
-	assert(!graphModel.empty());
-	return graphModel.back()->CreateNode(nodeClass, x, y);
+	return graph_->CreateNode(nodeClass, x, y);
 }
 
 void NodeEditor::onCreateNode(int x, int y, std::string nodeClass)
 {
 	// TODO: Unify the x, y type between CreateNode() and onCreateNode()
-	std::shared_ptr<INode> node =
-	graphModel.back()->CreateNode(nodeClass, static_cast<float>(x), static_cast<float>(y));
+	auto node = graph_->CreateNode(nodeClass, static_cast<float>(x), static_cast<float>(y));
 }
 
 void NodeEditor::onDeleteNode(size_t nodeID)
 {
-	graphModel.back()->DeleteNode(nodeID);
+	graph_->DeleteNode(nodeID);
 }
 
 void NodeEditor::onCreateConnection(size_t nodeIdFrom, size_t slotIdFrom, size_t nodeIdTo, size_t slotIdTo)
 {
-	graphModel.back()->CreateConnection(nodeIdFrom, slotIdFrom, nodeIdTo, slotIdTo);
+	graph_->CreateConnection(nodeIdFrom, slotIdFrom, nodeIdTo, slotIdTo);
 }
 
 void NodeEditor::onDeleteConnection(size_t connectionId)
 {
-	graphModel.back()->DeleteConnection(connectionId);
+	graph_->DeleteConnection(connectionId);
 }
 
 void NodeEditor::CreateGroup(Collection& collection, const Vector4& rectangle, const std::string& name,
@@ -57,17 +55,20 @@ void NodeEditor::CreateGroup(Collection& collection, const Vector4& rectangle, c
 	{
 		return;
 	}
-	auto pDefinition = pDefinitionManager->getDefinition<IGroup>();
+	auto pDefinition = pDefinitionManager->getDefinition<Group>();
 	if (pDefinition == nullptr)
 	{
 		return;
 	}
 
-	ObjectHandleT<IGroup> group(std::unique_ptr<IGroup>(new Group(rectangle, name, color)), pDefinition);
+	auto group = reflectedCast<IGroup>(pDefinition->createShared(), *pDefinitionManager);
+	group->setColor(color);
+	group->setName(name);
+	group->setRectangle(rectangle);
 	collection.insertValue(collection.size(), group);
 }
 
-INode* NodeEditor::GetNode(size_t id)
+ObjectHandleT<INode> NodeEditor::GetNode(size_t id)
 {
 	NGT_ERROR_MSG("METHOD IS NOT IMPLEMENTED\n");
 	return nullptr;
@@ -90,4 +91,5 @@ bool NodeEditor::Disconnect(size_t nodeIdFrom, size_t slotIdFrom, size_t nodeIdT
 	NGT_ERROR_MSG("METHOD IS NOT IMPLEMENTED\n");
 	return false;
 }
+
 } // end namespace wgt

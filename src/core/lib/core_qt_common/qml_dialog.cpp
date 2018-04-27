@@ -1,18 +1,24 @@
 #include "qml_dialog.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_ui_framework/i_window.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/helpers/qml_component_loader_helper.hpp"
 #include "core_data_model/dialog/dialog_model.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_qt_common/qt_component_finder.hpp"
 #include "core_string_utils/file_path.hpp"
+#include "core_object/managed_object.hpp"
+#include "core_logging/logging.hpp"
 
+#include <QtCore/qnamespace.h>
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <QQuickWidget>
 #include <QQmlComponent>
+#include <QMainWindow>
 #include <QString>
 #include <QVariant>
 #include <QDir>
@@ -33,9 +39,9 @@ enum class QmlDialogState
 	OPEN
 };
 
-struct QmlDialog::Implementation
+struct QmlDialog::Implementation : Depends<IQtFramework>
 {
-	Implementation(QmlDialog& self, IQtFramework& framework, IComponentContext& componentContext, QQmlEngine& engine);
+	Implementation(QmlDialog& self, QQmlEngine& engine);
 
 	~Implementation();
 
@@ -43,28 +49,22 @@ struct QmlDialog::Implementation
 	void load(const QUrl& url, QQmlComponent* component);
 	void loadCommon(const QUrl& url, QQmlComponent* component);
 	void reload(const QUrl& url, QQmlComponent* component);
-	ObjectHandleT<DialogModel> createDefaultModel();
 	void waitForStateChangeFrom(QmlDialogState from);
 	void onClose();
 	void onShow();
-	void focusInEvent();
-	void focusOutEvent();
-	void findChildDialogs(QObject* obj);
 	void setWatched(bool isWatched, QObject* root = nullptr);
 
 	QmlDialog& self_;
-	IQtFramework& framework_;
-	IComponentContext& componentContext_;
 	QQmlEngine& engine_;
 	Result lastResult_;
 	ObjectHandleT<DialogModel> model_;
+	ManagedObjectPtr ownedModel_ = nullptr;
 	std::unique_ptr<QQmlContext> qmlContext_;
 	std::unique_ptr<QQuickWidget> frame_;
 	Signal<ClosedSignature> closedSignal_;
 	std::string title_;
 	QmlDialogState state_;
 	QMetaObject::Connection errorConnection_;
-	std::vector<QQuickItem*> childDialogs_;
 	std::set<QString> watchedComponents_;
 	std::mutex loadMutex_;
 	QtComponentFinder components_;
@@ -72,10 +72,9 @@ struct QmlDialog::Implementation
 	bool watched_;
 };
 
-QmlDialog::Implementation::Implementation(QmlDialog& self, IQtFramework& framework, IComponentContext& componentContext,
-                                          QQmlEngine& engine)
-    : self_(self), framework_(framework), componentContext_(componentContext), engine_(engine), model_(nullptr),
-      qmlContext_(new QQmlContext(engine.rootContext())), state_(QmlDialogState::INVALID), watched_(false)
+QmlDialog::Implementation::Implementation(QmlDialog& self, QQmlEngine& engine)
+    : self_(self), engine_(engine), model_(nullptr), qmlContext_(new QQmlContext(engine.rootContext())),
+      state_(QmlDialogState::INVALID), watched_(false)
 {
 	initialise();
 }
@@ -96,7 +95,7 @@ QmlDialog::Implementation::~Implementation()
 
 void QmlDialog::Implementation::initialise()
 {
-	assert(state_ != QmlDialogState::OPEN);
+	TF_ASSERT(state_ != QmlDialogState::OPEN);
 	state_ = QmlDialogState::INVALID;
 	lastResult_ = IDialog::INVALID_RESULT;
 	title_ = "";
@@ -106,7 +105,7 @@ void QmlDialog::Implementation::setWatched(bool isWatched, QObject* root)
 {
 	if (isWatched != watched_)
 	{
-		auto watcher = framework_.qmlWatcher();
+		auto watcher = get<IQtFramework>()->qmlWatcher();
 		if (isWatched)
 		{
 			QObject::connect(watcher, SIGNAL(fileChanged(const QString&)), &self_, SLOT(reload(const QString&)));
@@ -129,7 +128,6 @@ void QmlDialog::Implementation::setWatched(bool isWatched, QObject* root)
 void QmlDialog::Implementation::loadCommon(const QUrl& url, QQmlComponent* component)
 {
 	std::unique_ptr<QObject> content(component->create(qmlContext_.get()));
-	QVariant titleProperty = content->property("title");
 
 	bool shouldBeWatched = false;
 	if (url.scheme() == "file")
@@ -139,23 +137,26 @@ void QmlDialog::Implementation::loadCommon(const QUrl& url, QQmlComponent* compo
 	}
 	setWatched(shouldBeWatched, content.get());
 
-	childDialogs_.clear();
-	findChildDialogs(content.get());
-
 	QObject* rootObject = frame_->rootObject();
 	if (rootObject)
 	{
 		rootObject->deleteLater();
 	}
 
-	frame_->setContent(url, component, content.release());
-	frame_->setResizeMode(QQuickWidget::SizeRootObjectToView);
-
+	QVariant titleProperty = content->property("title");
 	if (titleProperty.type() == QVariant::Type::String)
 	{
 		title_ = titleProperty.toString().toUtf8().data();
-		frame_->setWindowTitle(titleProperty.toString());
 	}
+
+	if (content->property("modality").isValid())
+	{
+		NGT_WARNING_MSG("Dialog %s has an internal window mode", title_.c_str());
+	}
+
+	frame_->setWindowTitle(QString(title_.c_str()));
+	frame_->setContent(url, component, content.release());
+	frame_->setResizeMode(QQuickWidget::SizeRootObjectToView);
 }
 
 void QmlDialog::Implementation::load(const QUrl& url, QQmlComponent* component)
@@ -174,31 +175,6 @@ void QmlDialog::Implementation::reload(const QUrl& url, QQmlComponent* component
 	loadCommon(url, component);
 }
 
-void QmlDialog::Implementation::findChildDialogs(QObject* obj)
-{
-	for (QObject* child : obj->children())
-	{
-		if (child->inherits("QQuickAbstractDialog"))
-		{
-			auto* frame = dynamic_cast<QQuickItem*>(child->parent());
-			if (frame)
-			{
-				childDialogs_.push_back(frame);
-				break;
-			}
-		}
-		findChildDialogs(child);
-	}
-}
-
-ObjectHandleT<DialogModel> QmlDialog::Implementation::createDefaultModel()
-{
-	auto definitionManager = componentContext_.queryInterface<IDefinitionManager>();
-	assert(definitionManager);
-
-	return definitionManager->create<DialogModel>();
-}
-
 void QmlDialog::Implementation::waitForStateChangeFrom(QmlDialogState from)
 {
 	while (state_ == from)
@@ -211,7 +187,7 @@ void QmlDialog::Implementation::waitForStateChangeFrom(QmlDialogState from)
 void QmlDialog::Implementation::onClose()
 {
 	auto model = model_.get();
-	assert(model);
+	TF_ASSERT(model);
 
 	if (lastResult_ == IDialog::INVALID_RESULT)
 	{
@@ -226,43 +202,24 @@ void QmlDialog::Implementation::onClose()
 void QmlDialog::Implementation::onShow()
 {
 	auto model = model_.get();
-	assert(model);
+	TF_ASSERT(model);
 	model->onShow();
 }
 
-void QmlDialog::Implementation::focusInEvent()
+QmlDialog::QmlDialog(QQmlEngine& engine) : QObject(nullptr), impl_(new Implementation(*this, engine))
 {
-	auto model = model_.get();
-	assert(model);
-	model->onFocusIn();
-}
-
-void QmlDialog::Implementation::focusOutEvent()
-{
-	const auto findFocused = [](const QQuickItem* obj) { return obj->hasFocus(); };
-	const auto itr = std::find_if(childDialogs_.begin(), childDialogs_.end(), findFocused);
-
-	auto model = model_.get();
-	assert(model);
-	model->onFocusOut(itr != childDialogs_.end());
-}
-
-QmlDialog::QmlDialog(IComponentContext& context, QQmlEngine& engine, IQtFramework& framework)
-    : QObject(nullptr), impl_(new Implementation(*this, framework, context, engine))
-{
-	impl_->errorConnection_ =
-	QObject::connect(impl_->frame_.get(), SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)), this,
-	                 SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
 }
 
 QmlDialog::~QmlDialog()
 {
-	// call sendPostedEvents to give chance to QScriptObject's DeferredDeleted event get handled in time
-	QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 const char* QmlDialog::title() const
 {
+	if (impl_->model_ != nullptr && impl_->model_->getTitle() != nullptr)
+	{
+		return impl_->model_->getTitle();
+	}
 	return impl_->title_.c_str();
 }
 
@@ -271,18 +228,35 @@ IDialog::Result QmlDialog::result() const
 	return impl_->lastResult_;
 }
 
+ObjectHandleT<DialogModel> QmlDialog::model() const
+{
+	return impl_->model_;
+}
+
+void QmlDialog::setModel(const std::nullptr_t&)
+{
+	impl_->qmlContext_->setContextObject(nullptr);
+	impl_->qmlContext_->setContextProperty(QString("dialog"), nullptr);
+	impl_->qmlContext_->setContextProperty(QString("qmlComponents"), nullptr);
+
+	impl_->ownedModel_ = nullptr;
+	impl_->model_ = nullptr;
+}
+
+void QmlDialog::setModel(ManagedObjectPtr model)
+{
+	impl_->ownedModel_ = std::move(model);
+	setModel(impl_->ownedModel_->getHandleT<DialogModel>());
+}
+
 void QmlDialog::setModel(ObjectHandleT<DialogModel> model)
 {
-	assert(impl_->state_ == QmlDialogState::INVALID || impl_->state_ == QmlDialogState::READY);
-
-	if (model.get() == nullptr)
-	{
-		model = impl_->createDefaultModel();
-	}
+	TF_ASSERT(model.get());
+	TF_ASSERT(impl_->state_ == QmlDialogState::INVALID || impl_->state_ == QmlDialogState::READY);
 
 	DialogModel* dialogModel = model.get();
 
-	QObject* qtModel = qvariant_cast<QObject*>(impl_->framework_.toQVariant(model, impl_->qmlContext_.get()));
+	QObject* qtModel = qvariant_cast<QObject*>(impl_->get<IQtFramework>()->toQVariant(model, impl_->qmlContext_.get()));
 	impl_->qmlContext_->setContextObject(qtModel);
 
 	impl_->qmlContext_->setContextProperty(QString("dialog"), this);
@@ -292,11 +266,12 @@ void QmlDialog::setModel(ObjectHandleT<DialogModel> model)
 
 void QmlDialog::load(const char* resource)
 {
-	assert(impl_->state_ != QmlDialogState::OPEN);
+	TF_ASSERT(resource != nullptr);
+	TF_ASSERT(impl_->state_ != QmlDialogState::OPEN);
 	impl_->waitForStateChangeFrom(QmlDialogState::LOADING);
 	impl_->state_ = QmlDialogState::LOADING;
 
-	auto url = QtHelpers::resolveQmlPath(impl_->engine_, resource);
+	auto url = impl_->get<IQtFramework>()->resolveQmlPath(impl_->engine_, resource);
 
 	if (url.scheme() == "file")
 	{
@@ -317,6 +292,11 @@ void QmlDialog::load(const char* resource)
 	}
 
 	impl_->frame_.reset(new QQuickWidget(&impl_->engine_, nullptr));
+
+	impl_->errorConnection_ =
+	QObject::connect(impl_->frame_.get(), SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)), this,
+	                 SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
+
 	auto qmlComponent = new QQmlComponent(&impl_->engine_, impl_->frame_.get());
 	QmlComponentLoaderHelper helper(qmlComponent, url);
 	helper.data_->connections_ +=
@@ -325,19 +305,45 @@ void QmlDialog::load(const char* resource)
 	helper.load(true);
 }
 
+void QmlDialog::raise()
+{
+	if (impl_->state_ == QmlDialogState::OPEN)
+	{
+		impl_->frame_->raise();
+	}
+}
+
+bool QmlDialog::isOpen() const
+{
+	return impl_->state_ == QmlDialogState::OPEN;
+}
+
+void QmlDialog::waitForClose()
+{
+	impl_->waitForStateChangeFrom(QmlDialogState::OPEN);
+}
+
 void QmlDialog::show(Mode mode)
 {
-	assert(impl_->state_ != QmlDialogState::OPEN);
+	TF_ASSERT(impl_->state_ != QmlDialogState::OPEN);
 	impl_->waitForStateChangeFrom(QmlDialogState::LOADING);
 	impl_->state_ = QmlDialogState::OPEN;
 	impl_->lastResult_ = INVALID_RESULT;
-
-	if (!impl_->model_.get())
+	if (mode == Mode::MODELESS)
 	{
-		setModel(impl_->createDefaultModel());
+		// Set parent for modeless dialog to be on top of application, use parent widget in case active window is context menu.
+		QWidget* parent = nullptr;
+		for (QWidget* widget : QApplication::topLevelWidgets())
+		{
+			if (QMainWindow* mainWindow = qobject_cast<QMainWindow*>(widget))
+			{
+				parent = widget;
+			}
+		}
+		impl_->frame_->setParent(parent);
+		impl_->frame_->setWindowFlags(Qt::Tool);
 	}
-
-	impl_->frame_->setWindowModality(mode == Mode::MODAL ? Qt::ApplicationModal : Qt::NonModal);
+	impl_->frame_->setWindowModality(mode == Mode::MODAL || mode == Mode::MODAL_NONBLOCKING ? Qt::ApplicationModal : Qt::NonModal);
 	impl_->frame_->setWindowTitle(title());
 	impl_->frame_->show();
 
@@ -373,16 +379,6 @@ void QmlDialog::error(QQuickWindow::SceneGraphError error, const QString& messag
 	NGT_ERROR_MSG("QmlView::error, rendering error: %s\n", message.toLatin1().constData());
 }
 
-ObjectHandle QmlDialog::model() const
-{
-	return impl_->model_;
-}
-
-IComponentContext& QmlDialog::componentContext() const
-{
-	return impl_->componentContext_;
-}
-
 QQmlEngine& QmlDialog::engine() const
 {
 	return impl_->engine_;
@@ -399,12 +395,6 @@ bool QmlDialog::eventFilter(QObject* object, QEvent* event)
 			return true;
 		case QEvent::Show:
 			impl_->onShow();
-			break;
-		case QEvent::FocusIn:
-			impl_->focusInEvent();
-			break;
-		case QEvent::FocusOut:
-			impl_->focusOutEvent();
 			break;
 		}
 	}

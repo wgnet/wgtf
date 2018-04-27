@@ -3,16 +3,18 @@
 #include "core_data_model/filtered_list_model.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/filtering/i_item_filter.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/helpers/wg_filter.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
 #include "core_reflection/object_handle.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_logging/logging.hpp"
 
 #include <QRegExp>
 
 namespace wgt
 {
-struct WGFilteredListModel::Implementation
+struct WGFilteredListModel::Implementation : Depends<IQtHelpers>
 {
 	Implementation(WGFilteredListModel& self);
 	~Implementation();
@@ -87,8 +89,6 @@ WGFilteredListModel::WGFilteredListModel() : impl_(new Implementation(*this))
 
 WGFilteredListModel::~WGFilteredListModel()
 {
-	setSource(QVariant());
-
 	impl_->qtConnections_.reset();
 
 	// Temporary hack to circumvent threading deadlock
@@ -112,7 +112,7 @@ void WGFilteredListModel::onSourceChanged()
 {
 	IListModel* source = nullptr;
 
-	Variant variant = QtHelpers::toVariant(getSource());
+	Variant variant = impl_->get<IQtHelpers>()->toVariant(getSource());
 	if (variant.typeIs<IListModel>())
 	{
 		source = const_cast<IListModel*>(variant.cast<const IListModel*>());

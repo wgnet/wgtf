@@ -1,9 +1,15 @@
 #include "core_generic_plugin/interfaces/i_application.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_dependency_system/i_interface.hpp"
 
 namespace wgt
 {
+
+/**
+* @cond HIDDEN_SYMBOLS
+*/
 class A;
 
 void fcn(A*);
@@ -29,6 +35,9 @@ void fcn(A* p)
 {
 	p->f();
 }
+/**
+* @endcond
+*/
 
 class RunTimeErrorTestPluginApplication : public Implements<IApplication>
 {
@@ -48,6 +57,29 @@ public:
 
 	void quitApplication() override
 	{
+	}
+
+	TimerId startTimer(int, TimerCallback) override
+	{
+		TF_ASSERT(!"Not Implemented");
+		return 0;
+	}
+
+	void killTimer(TimerId)
+	{
+		TF_ASSERT(!"Not Implemented");
+	}
+
+	void setAppSettingsName(const char* appName) override
+	{
+		assert(!"Not Implemented");
+	}
+
+	const char* getAppSettingsName() override
+	{
+		assert(!"Not Implemented");
+		static const char name = '\0';
+		return name;
 	}
 };
 

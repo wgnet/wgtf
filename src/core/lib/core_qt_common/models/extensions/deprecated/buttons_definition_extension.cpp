@@ -1,5 +1,6 @@
 #include "buttons_definition_extension.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/i_item.hpp"
 #include "helpers/qt_helpers.hpp"
@@ -21,14 +22,14 @@ QVariant ButtonsDefinitionExtension::data(const QModelIndex& index, int role) co
 		return QVariant();
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	IItem* item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr || roleId != buttonsDefinitionRole::roleId_)
 	{
 		return QVariant();
 	}
 
-	return QtHelpers::toQVariant(item->getData(index.column(), roleId), nullptr);
+	return get<IQtHelpers>()->toQVariant(item->getData(index.column(), roleId), nullptr);
 }
 
 bool ButtonsDefinitionExtension::setData(const QModelIndex& index, const QVariant& value, int role)

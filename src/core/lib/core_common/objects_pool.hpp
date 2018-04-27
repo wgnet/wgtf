@@ -1,11 +1,12 @@
 #ifndef OBJECTS_POOL_HPP
 #define OBJECTS_POOL_HPP
 
+#include "core_common/assert.hpp"
+
 #include <memory>
 #include <vector>
 #include <thread>
 #include <mutex>
-#include <cassert>
 
 class SingleThreadStrategy
 {
@@ -91,12 +92,12 @@ SingleThreadStrategy::SingleThreadStrategy() : threadAffinity(std::this_thread::
 
 void SingleThreadStrategy::lock()
 {
-	assert(threadAffinity == std::this_thread::get_id());
+	TF_ASSERT(threadAffinity == std::this_thread::get_id());
 }
 
 void SingleThreadStrategy::unlock()
 {
-	assert(threadAffinity == std::this_thread::get_id());
+	TF_ASSERT(threadAffinity == std::this_thread::get_id());
 }
 
 void MultiThreadStrategy::lock()
@@ -115,7 +116,7 @@ const size_t ObjectsPool<T, TLockStrategy>::INVALID_INDEX = static_cast<size_t>(
 template <typename T, typename TLockStrategy>
 ObjectsPool<T, TLockStrategy>::ObjectsPool(size_t batchSize_, size_t initialBatchCount) : batchSize(batchSize_)
 {
-	assert(initialBatchCount > 0);
+	TF_ASSERT(initialBatchCount > 0);
 	objectBatches.reserve(initialBatchCount);
 }
 
@@ -142,7 +143,7 @@ std::shared_ptr<T> ObjectsPool<T, TLockStrategy>::requestObject()
 	ObjectNode* nextObject = nullptr;
 	if (result->nextIndex != INVALID_INDEX)
 	{
-		assert(result->nextIndex < batchSize);
+		TF_ASSERT(result->nextIndex < batchSize);
 		nextObject = poolNode->batchStart + result->nextIndex;
 	}
 	poolNode->batchHead = nextObject;
@@ -155,10 +156,10 @@ template <typename T, typename TLockStrategy>
 void ObjectsPool<T, TLockStrategy>::releaseObject(T* object)
 {
 	LockGuard guard(lockStrategy);
-	assert(isInPool(object));
+	TF_ASSERT(isInPool(object));
 	ObjectNode* objectNode = reinterpret_cast<ObjectNode*>(reinterpret_cast<uint8_t*>(object) - 2 * sizeof(size_t));
 	size_t generation = objectNode->nodeGeneration;
-	assert(generation < objectBatches.size());
+	TF_ASSERT(generation < objectBatches.size());
 
 	PoolNode& poolNode = objectBatches[generation];
 	if (poolNode.batchHead == nullptr)

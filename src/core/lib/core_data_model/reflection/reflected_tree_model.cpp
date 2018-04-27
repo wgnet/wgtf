@@ -1,4 +1,7 @@
 #include "reflected_tree_model.hpp"
+
+#include "core_common/assert.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflected_object.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/reflection/reflected_property_item.hpp"
@@ -44,14 +47,14 @@ ReflectedTreeModel::~ReflectedTreeModel()
 void ReflectedTreeModel::addRootItem(GenericTreeItem* item) /* override */
 {
 	// ReflectedTreeModel does not support multiple roots
-	assert(item == &rootItem_);
+	TF_ASSERT(item == &rootItem_);
 	base::addRootItem(item);
 }
 
 void ReflectedTreeModel::removeRootItem(GenericTreeItem* item) /* override */
 {
 	// ReflectedTreeModel does not support multiple roots
-	assert(item == &rootItem_);
+	TF_ASSERT(item == &rootItem_);
 	base::removeRootItem(item);
 }
 

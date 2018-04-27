@@ -1,6 +1,8 @@
 #include "reflected_tree_model_new.hpp"
+
 #include "reflected_object_item_new.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/common_data_roles.hpp"
 
@@ -18,6 +20,26 @@ ITEMROLE(elementKeyType)
 ITEMROLE(readOnly)
 ITEMROLE(enabled)
 ITEMROLE(multipleValues)
+
+namespace ReflectedTreeModelDetails
+{
+static const std::string s_RolesArr[] = {
+	ItemRole::valueName, ItemRole::valueTypeName, ItemRole::keyName, ItemRole::keyTypeName, ItemRole::isCollectionName,
+	ItemRole::elementValueTypeName, ItemRole::elementKeyTypeName, ItemRole::readOnlyName, ItemRole::enabledName,
+	ItemRole::multipleValuesName,
+	// DEPRECATED
+	EnumModelRole::roleName_, DefinitionRole::roleName_, DefinitionModelRole::roleName_, ObjectRole::roleName_,
+	RootObjectRole::roleName_, MinValueRole::roleName_, MaxValueRole::roleName_, StepSizeRole::roleName_,
+	DecimalsRole::roleName_, IndexPathRole::roleName_, UrlIsAssetBrowserRole::roleName_, UrlDialogTitleRole::roleName_,
+	UrlDialogDefaultFolderRole::roleName_, UrlDialogNameFiltersRole::roleName_,
+	UrlDialogSelectedNameFilterRole::roleName_, IsReadOnlyRole::roleName_, IsEnumRole::roleName_,
+	IsThumbnailRole::roleName_, IsSliderRole::roleName_, IsColorRole::roleName_, IsActionRole::roleName_,
+	IsUrlRole::roleName_, DescriptionRole::roleName_, ThumbnailRole::roleName_
+};
+static const std::vector<std::string> s_RolesVec(&s_RolesArr[0],
+                                                 &s_RolesArr[0] + std::extent<decltype(s_RolesArr)>::value);
+} // end namespace ReflectedTreeModelDetails
+
 namespace
 {
 /**
@@ -79,10 +101,10 @@ void ReflectedTreeModelPropertyListener::postErased(const PropertyAccessor& acce
 
 } // namespace
 
-class ReflectedTreeModelNew::Implementation
+class ReflectedTreeModelNew::Implementation : public Depends<IDefinitionManager>
 {
 public:
-	Implementation(const ReflectedTreeModelNew& model, IComponentContext& contextManager, const ObjectHandle& object);
+	Implementation(const ReflectedTreeModelNew& model, const ObjectHandle& object);
 	~Implementation();
 
 	ReflectedTreeItemNew* getItemInternal(size_t index, const ReflectedTreeItemNew* parent) const;
@@ -91,27 +113,19 @@ public:
 
 	std::unique_ptr<ReflectedTreeItemNew> rootItem_;
 
-	DIRef<IDefinitionManager> definitionManager_;
 	std::shared_ptr<PropertyAccessorListener> listener_;
 };
 
-ReflectedTreeModelNew::Implementation::Implementation(const ReflectedTreeModelNew& model,
-                                                      IComponentContext& contextManager, const ObjectHandle& object)
-    : rootItem_(new ReflectedObjectItemNew(contextManager, object, model)), definitionManager_(contextManager),
+ReflectedTreeModelNew::Implementation::Implementation(const ReflectedTreeModelNew& model, const ObjectHandle& object)
+    : rootItem_(new ReflectedObjectItemNew(object, model)),
       listener_(new ReflectedTreeModelPropertyListener(*rootItem_.get()))
 {
-	if (definitionManager_ != nullptr)
-	{
-		definitionManager_->registerPropertyAccessorListener(listener_);
-	}
+	get<IDefinitionManager>()->registerPropertyAccessorListener(listener_);
 }
 
 ReflectedTreeModelNew::Implementation::~Implementation()
 {
-	if (definitionManager_ != nullptr)
-	{
-		definitionManager_->deregisterPropertyAccessorListener(listener_);
-	}
+	get<IDefinitionManager>()->deregisterPropertyAccessorListener(listener_);
 }
 
 ReflectedTreeItemNew* ReflectedTreeModelNew::Implementation::getItemInternal(size_t index,
@@ -138,7 +152,7 @@ size_t ReflectedTreeModelNew::Implementation::getIndexInternal(const ReflectedTr
 		return item->getIndex();
 	}
 
-	assert(item == rootItem_.get());
+	TF_ASSERT(item == rootItem_.get());
 	return 0;
 }
 
@@ -164,8 +178,8 @@ int ReflectedTreeModelNew::Implementation::getChildCountInternal(const Reflected
 	return item->rowCount();
 }
 
-ReflectedTreeModelNew::ReflectedTreeModelNew(IComponentContext& contextManager, const ObjectHandle& object)
-    : AbstractTreeModel(), impl_(new Implementation(*this, contextManager, object))
+ReflectedTreeModelNew::ReflectedTreeModelNew(const ObjectHandle& object)
+    : AbstractTreeModel(), impl_(new Implementation(*this, object))
 {
 }
 
@@ -176,7 +190,7 @@ ReflectedTreeModelNew::~ReflectedTreeModelNew()
 AbstractItem* ReflectedTreeModelNew::item(const AbstractTreeModel::ItemIndex& index) const /* override */
 {
 	auto reflectedParent = dynamic_cast<const ReflectedTreeItemNew*>(index.parent_);
-	assert(index.parent_ == nullptr || reflectedParent != nullptr);
+	TF_ASSERT(index.parent_ == nullptr || reflectedParent != nullptr);
 
 	auto itemCount = impl_->getChildCountInternal(reflectedParent);
 	auto row = index.row_;
@@ -213,7 +227,7 @@ AbstractTreeModel::ItemIndex ReflectedTreeModelNew::index(const AbstractItem* it
 	}
 
 	auto reflectedItem = dynamic_cast<const ReflectedTreeItemNew*>(item);
-	assert(reflectedItem != nullptr);
+	TF_ASSERT(reflectedItem != nullptr);
 
 	int row = 0;
 	auto parent = reflectedItem->getParent();
@@ -229,7 +243,7 @@ AbstractTreeModel::ItemIndex ReflectedTreeModelNew::index(const AbstractItem* it
 		auto parentIndex = this->index(parent);
 		row += parentIndex.row_;
 		parent = const_cast<ReflectedTreeItemNew*>(dynamic_cast<const ReflectedTreeItemNew*>(parentIndex.parent_));
-		assert(parentIndex.parent_ == nullptr || parent != nullptr);
+		TF_ASSERT(parentIndex.parent_ == nullptr || parent != nullptr);
 	}
 	return AbstractTreeModel::ItemIndex(row, parent);
 }
@@ -237,7 +251,7 @@ AbstractTreeModel::ItemIndex ReflectedTreeModelNew::index(const AbstractItem* it
 int ReflectedTreeModelNew::rowCount(const AbstractItem* item) const /* override */
 {
 	auto reflectedItem = static_cast<const ReflectedTreeItemNew*>(item);
-	assert(item == nullptr || reflectedItem != nullptr);
+	TF_ASSERT(item == nullptr || reflectedItem != nullptr);
 
 	int count = 0;
 	auto childCount = impl_->getChildCountInternal(reflectedItem);
@@ -257,7 +271,7 @@ int ReflectedTreeModelNew::columnCount() const /* override */
 bool ReflectedTreeModelNew::hasChildren(const AbstractItem* item) const /* override */
 {
 	auto reflectedItem = static_cast<const ReflectedTreeItemNew*>(item);
-	assert(item == nullptr || reflectedItem != nullptr);
+	TF_ASSERT(item == nullptr || reflectedItem != nullptr);
 
 	auto childCount = impl_->getChildCountInternal(reflectedItem);
 	for (int i = 0; i < childCount; ++i)
@@ -275,45 +289,19 @@ bool ReflectedTreeModelNew::hasChildren(const AbstractItem* item) const /* overr
 	return false;
 }
 
+//------------------------------------------------------------------------------
+void ReflectedTreeModelNew::iterateRoles(const std::function<void(const char*)>& iterFunc) const
+{
+	for (auto&& role : ReflectedTreeModelDetails::s_RolesVec)
+	{
+		iterFunc(role.c_str());
+	}
+}
+
+//------------------------------------------------------------------------------
 std::vector<std::string> ReflectedTreeModelNew::roles() const
 {
-	std::vector<std::string> roles;
-	roles.push_back(ItemRole::valueName);
-	roles.push_back(ItemRole::valueTypeName);
-	roles.push_back(ItemRole::keyName);
-	roles.push_back(ItemRole::keyTypeName);
-	roles.push_back(ItemRole::isCollectionName);
-	roles.push_back(ItemRole::elementValueTypeName);
-	roles.push_back(ItemRole::elementKeyTypeName);
-	roles.push_back(ItemRole::readOnlyName);
-	roles.push_back(ItemRole::enabledName);
-	roles.push_back(ItemRole::multipleValuesName);
-	// DEPRECATED
-	roles.push_back(EnumModelRole::roleName_);
-	roles.push_back(DefinitionRole::roleName_);
-	roles.push_back(DefinitionModelRole::roleName_);
-	roles.push_back(ObjectRole::roleName_);
-	roles.push_back(RootObjectRole::roleName_);
-	roles.push_back(MinValueRole::roleName_);
-	roles.push_back(MaxValueRole::roleName_);
-	roles.push_back(StepSizeRole::roleName_);
-	roles.push_back(DecimalsRole::roleName_);
-	roles.push_back(IndexPathRole::roleName_);
-	roles.push_back(UrlIsAssetBrowserRole::roleName_);
-	roles.push_back(UrlDialogTitleRole::roleName_);
-	roles.push_back(UrlDialogDefaultFolderRole::roleName_);
-	roles.push_back(UrlDialogNameFiltersRole::roleName_);
-	roles.push_back(UrlDialogSelectedNameFilterRole::roleName_);
-	roles.push_back(IsReadOnlyRole::roleName_);
-	roles.push_back(IsEnumRole::roleName_);
-	roles.push_back(IsThumbnailRole::roleName_);
-	roles.push_back(IsSliderRole::roleName_);
-	roles.push_back(IsColorRole::roleName_);
-	roles.push_back(IsActionRole::roleName_);
-	roles.push_back(IsUrlRole::roleName_);
-	roles.push_back(DescriptionRole::roleName_);
-	roles.push_back(ThumbnailRole::roleName_);
-	return roles;
+	return ReflectedTreeModelDetails::s_RolesVec;
 }
 
 bool ReflectedTreeModelNew::hasController() const /* override */
@@ -321,15 +309,11 @@ bool ReflectedTreeModelNew::hasController() const /* override */
 	return true;
 }
 
-#define CONNECT_METHOD(method, connection, callbackType)                                   \
-	\
-Connection                                                                          \
-	ReflectedTreeModelNew::method(AbstractTreeModel::callbackType callback) /* override */ \
-	\
-{                                                                                   \
-		return connection.connect(callback);                                               \
-	\
-}
+#define CONNECT_METHOD(method, connection, callbackType)                                              \
+	Connection ReflectedTreeModelNew::method(AbstractTreeModel::callbackType callback) /* override */ \
+	{                                                                                                 \
+		return connection.connect(callback);                                                          \
+	}
 
 CONNECT_METHOD(connectPreItemDataChanged, preItemDataChanged_, DataCallback)
 CONNECT_METHOD(connectPostItemDataChanged, postItemDataChanged_, DataCallback)

@@ -3,20 +3,22 @@
 
 #include <QObject>
 #include <QVariant>
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
-class IListModel;
-class IItem;
+class AbstractListModel;
+class AbstractItem;
 
-class WGListIterator : public QObject
+class WGListIterator : public QObject, Depends<IQtHelpers>
 {
 	Q_OBJECT
 
 	Q_PROPERTY(QVariant current READ getCurrent WRITE setCurrent)
 
 public:
-	WGListIterator(IListModel& listModel);
+	WGListIterator(AbstractListModel& listModel);
 	virtual ~WGListIterator();
 
 	Q_INVOKABLE void reset();
@@ -27,10 +29,10 @@ private:
 	void setCurrent(QVariant& value);
 
 private:
-	IListModel& listModel_;
-	size_t size_;
-	size_t currentIndex_;
-	IItem* currentItem_;
+	AbstractListModel& listModel_;
+	int size_;
+	int currentIndex_;
+	AbstractItem* currentItem_;
 };
 } // end namespace wgt
 #endif

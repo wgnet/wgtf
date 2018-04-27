@@ -4,7 +4,7 @@ PROJECT( plg_ui_main_test )
 ADD_DEFINITIONS( -DNOMINMAX )
 
 INCLUDE( WGToolsCoreProject )
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -30,6 +30,8 @@ SET( ALL_SRCS
 	test_ui/metadata/context.mpp
 	test_ui/test_ui.cpp
 	test_ui/test_ui.hpp
+	test_ui/test_viewport.cpp
+	test_ui/test_viewport.hpp
 	test_datasource.cpp
 	test_datasource.hpp
 	plg_ui_main_test.cpp
@@ -63,7 +65,13 @@ BW_TARGET_LINK_LIBRARIES( plg_ui_main_test PRIVATE
 	core_data_model
 	core_reflection
 	reflection_objects_test
+	core_viewport
+	core_serialization_xml
 	${PLATFORM_LIBRARIES}
+    Qt5::Core
+    Qt5::Gui
+    Qt5::QuickWidgets
+    Qt5::Quick	
 )
 
 BW_PROJECT_CATEGORY( plg_ui_main_test "Plugins" )

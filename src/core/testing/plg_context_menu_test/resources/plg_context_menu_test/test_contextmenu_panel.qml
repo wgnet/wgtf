@@ -18,7 +18,7 @@ WGPanel {
         anchors.fill: parent
 
         WGLabel {
-            text: "Test the context menu by right-clicking on this label."
+            text: "Test the context menu by right-clicking on this label. Test action by left click."
 
             MouseArea {
                 anchors.fill: parent
@@ -33,6 +33,9 @@ WGPanel {
                         // by attaching the contextObject data to the IActions so their bound functions can
                         // reference it if needed.
                         testContextMenu.popup();
+                    }
+                    else if (mouse.button == Qt.LeftButton) {
+                        executeAction("CMTestExplorerOpen", 67890);
                     }
                 }
             }

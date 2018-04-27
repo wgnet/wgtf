@@ -4,10 +4,9 @@
 #include <string>
 #include <vector>
 #include "core_reflection/reflected_object.hpp"
-#include "core_data_model/i_list_model.hpp"
-#include "core_data_model/generic_list.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_variant/collection.hpp"
+#include "core_data_model/abstract_item_model.hpp"
 
 #include "i_node.hpp"
 #include "i_connection.hpp"
@@ -40,7 +39,7 @@ public:
 	@param y coordinate of position on Y axis
 	@return new node object if node is successfully created, null otherwise
 	*/
-	virtual std::shared_ptr<INode> CreateNode(std::string nodeClass, float x = 0.0f, float y = 0.0f) = 0;
+	virtual ObjectHandleT<INode> CreateNode(std::string nodeClass, float x = 0.0f, float y = 0.0f) = 0;
 
 	/*! Deletes the node with current id
 	@param id The id of node which should be deleted
@@ -80,15 +79,15 @@ public:
 protected:
 	/*! Gets nodes model
 	*/
-	virtual const IListModel* GetNodesModel() const = 0;
+	virtual const AbstractListModel* GetNodesModel() const = 0;
 
 	/*! Gets connections model
 	*/
-	virtual const IListModel* GetConnectionsModel() const = 0;
+	virtual const AbstractListModel* GetConnectionsModel() const = 0;
 
 	/*! Gets node classes model
 	*/
-	virtual const IListModel* GetNodeClassesModel() const = 0;
+	virtual const AbstractListModel* GetNodeClassesModel() const = 0;
 
 	/*! Gets node group model
 	*/

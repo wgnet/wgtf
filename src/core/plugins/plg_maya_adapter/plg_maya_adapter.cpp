@@ -34,12 +34,12 @@ namespace wgt
 * @note Requires Plugins:
 *       - @ref coreplugins
 */
-class MayaAdapterPlugin : public PluginMain
+class MayaAdapterPlugin : public PluginMain, Depends<IUIFramework>
 {
 public:
 	MayaAdapterPlugin(IComponentContext& contextManager)
 	{
-		contextManager.registerInterface(new UIViewCreator(contextManager));
+		contextManager.registerInterface(new UIViewCreator);
 	}
 
 	bool PostLoad(IComponentContext& contextManager) override
@@ -49,7 +49,7 @@ public:
 		if (pPluginContextManager && pPluginContextManager->getExecutablePath())
 			QCoreApplication::addLibraryPath(pPluginContextManager->getExecutablePath());
 
-		qtApplication_ = new QtApplicationAdapter(contextManager);
+		qtApplication_ = new QtApplicationAdapter();
 
 #if defined(USE_Qt5_WEB_ENGINE)
 		char wgtHome[MAX_PATH] = {};
@@ -89,7 +89,6 @@ public:
 		auto commandsystem = contextManager.queryInterface<ICommandManager>();
 		qtCopyPasteManager_ = new QtCopyPasteManager();
 		types_.push_back(contextManager.registerInterface(qtCopyPasteManager_));
-		qtCopyPasteManager_->init(definitionManager, commandsystem);
 
 		qtFramework_->initialise(contextManager);
 
@@ -100,7 +99,6 @@ public:
 
 	bool Finalise(IComponentContext& contextManager) override
 	{
-		qtCopyPasteManager_->fini();
 		qtApplication_->finalise();
 		qtFramework_->finalise();
 		qtCopyPasteManager_ = nullptr;
@@ -111,7 +109,7 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 
 		qtFramework_ = nullptr;
@@ -122,7 +120,7 @@ private:
 	QtFramework* qtFramework_;
 	QtApplication* qtApplication_;
 	QtCopyPasteManager* qtCopyPasteManager_;
-	std::vector<IInterface*> types_;
+	std::vector<InterfacePtr> types_;
 };
 
 PLG_CALLBACK_FUNC(MayaAdapterPlugin)

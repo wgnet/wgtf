@@ -1,5 +1,8 @@
 #include "tree_extension_old.hpp"
+
 #include "selection_extension.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_qt_common/models/adapters/child_list_adapter.hpp"
 #include "core_qt_common/models/adapters/indexed_adapter.hpp"
 #include "core_data_model/i_item.hpp"
@@ -8,13 +11,14 @@
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_ui_framework/i_preferences.hpp"
 #include "core_reflection/property_accessor.hpp"
+#include "core_dependency_system/depends.hpp"
 #include <QSettings>
 
 namespace wgt
 {
-struct TreeExtensionOld::Implementation
+struct TreeExtensionOld::Implementation : Depends<IQtFramework>
 {
-	Implementation(TreeExtensionOld& self);
+	Implementation();
 	~Implementation();
 	void expand(const QModelIndex& index);
 	void collapse(const QModelIndex& index);
@@ -23,7 +27,6 @@ struct TreeExtensionOld::Implementation
 	void saveStates(const char* id);
 	void loadStates(const char* id);
 
-	TreeExtensionOld& self_;
 	std::vector<IndexedAdapter<ChildListAdapter>> childModels_;
 	std::vector<std::unique_ptr<ChildListAdapter>> redundantChildModels_;
 	std::vector<std::string> expandedList_;
@@ -34,8 +37,7 @@ struct TreeExtensionOld::Implementation
 	bool blockSelection_;
 };
 
-TreeExtensionOld::Implementation::Implementation(TreeExtensionOld& self)
-    : self_(self), selectionExtension_(nullptr), blockSelection_(false)
+TreeExtensionOld::Implementation::Implementation() : selectionExtension_(nullptr), blockSelection_(false)
 {
 }
 
@@ -47,7 +49,7 @@ TreeExtensionOld::Implementation::~Implementation()
 bool TreeExtensionOld::Implementation::getIndexPath(const QModelIndex& index, std::string& path) const
 {
 	auto item = reinterpret_cast<IItem*>(index.internalPointer());
-	assert(item != nullptr);
+	TF_ASSERT(item != nullptr);
 	Variant value = item->getData(0, IndexPathRole::roleId_);
 	bool isOk = value.tryCast(path);
 	if (!isOk || value.isVoid())
@@ -73,7 +75,7 @@ void TreeExtensionOld::Implementation::expand(const QModelIndex& index)
 		if (!expanded(index))
 		{
 			auto item = reinterpret_cast<IItem*>(index.internalPointer());
-			assert(item != nullptr);
+			TF_ASSERT(item != nullptr);
 			memoryExpandedList_.push_back(item);
 		}
 	}
@@ -95,7 +97,7 @@ void TreeExtensionOld::Implementation::collapse(const QModelIndex& index)
 	else
 	{
 		auto item = reinterpret_cast<IItem*>(index.internalPointer());
-		assert(item != nullptr);
+		TF_ASSERT(item != nullptr);
 		auto it = std::find(memoryExpandedList_.begin(), memoryExpandedList_.end(), item);
 		if (it != memoryExpandedList_.end())
 		{
@@ -117,7 +119,7 @@ bool TreeExtensionOld::Implementation::expanded(const QModelIndex& index) const
 	else
 	{
 		auto item = reinterpret_cast<IItem*>(index.internalPointer());
-		assert(item != nullptr);
+		TF_ASSERT(item != nullptr);
 		return std::find(memoryExpandedList_.cbegin(), memoryExpandedList_.cend(), item) != memoryExpandedList_.cend();
 	}
 }
@@ -129,7 +131,7 @@ void TreeExtensionOld::Implementation::saveStates(const char* id)
 		NGT_WARNING_MSG("Tree preference won't save: %s\n", "Please provide unique objectName for WGTreeModel in qml");
 		return;
 	}
-	auto preferences = self_.qtFramework_->getPreferences();
+	auto preferences = get<IQtFramework>()->getPreferences();
 	if (preferences == nullptr)
 	{
 		return;
@@ -159,7 +161,7 @@ void TreeExtensionOld::Implementation::loadStates(const char* id)
 	{
 		return;
 	}
-	auto preferences = self_.qtFramework_->getPreferences();
+	auto preferences = get<IQtFramework>()->getPreferences();
 	if (preferences == nullptr)
 	{
 		return;
@@ -174,18 +176,18 @@ void TreeExtensionOld::Implementation::loadStates(const char* id)
 
 	size_t count = 0;
 	bool isOk = preference->get("treeNodeCount", count);
-	assert(isOk);
+	TF_ASSERT(isOk);
 
 	std::string value("");
 	for (size_t i = 0; i < count; ++i)
 	{
 		bool isOk = preference->get(std::to_string(i).c_str(), value);
-		assert(isOk);
+		TF_ASSERT(isOk);
 		expandedList_.push_back(value);
 	}
 }
 
-TreeExtensionOld::TreeExtensionOld() : impl_(new Implementation(*this))
+TreeExtensionOld::TreeExtensionOld() : impl_(new Implementation())
 {
 }
 
@@ -216,7 +218,7 @@ QHash<int, QByteArray> TreeExtensionOld::roleNames() const
 QVariant TreeExtensionOld::data(const QModelIndex& index, int role) const
 {
 	auto model = index.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	ItemRole::Id roleId;
 	if (!this->decodeRole(role, roleId))
@@ -263,7 +265,7 @@ QVariant TreeExtensionOld::data(const QModelIndex& index, int role) const
 bool TreeExtensionOld::setData(const QModelIndex& index, const QVariant& value, int role)
 {
 	auto model = index.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	ItemRole::Id roleId;
 	if (!this->decodeRole(role, roleId))
@@ -287,7 +289,7 @@ bool TreeExtensionOld::setData(const QModelIndex& index, const QVariant& value, 
 		roles.append(role);
 		// The child model role is dependent on the expanded role
 		auto res = this->encodeRole(ChildModelRole::roleId_, role);
-		assert(res);
+		TF_ASSERT(res);
 		roles.append(role);
 		emit const_cast<QAbstractItemModel*>(model)->dataChanged(index, index, roles);
 
@@ -314,15 +316,15 @@ void TreeExtensionOld::onLayoutChanged(const QList<QPersistentModelIndex>& paren
 	QVector<int> roles;
 	int role;
 	auto res = this->encodeRole(ChildModelRole::roleId_, role);
-	assert(res);
+	TF_ASSERT(res);
 	roles.append(role);
 	res = this->encodeRole(HasChildrenRole::roleId_, role);
-	assert(res);
+	TF_ASSERT(res);
 	roles.append(role);
 	for (auto it = parents.begin(); it != parents.end(); ++it)
 	{
 		auto model = it->model();
-		assert(model != nullptr);
+		TF_ASSERT(model != nullptr);
 
 		emit const_cast<QAbstractItemModel*>(model)->dataChanged(*it, *it, roles);
 	}
@@ -342,7 +344,7 @@ void TreeExtensionOld::onRowsRemoved(const QModelIndex& parent, int first, int l
 bool TreeExtensionOld::moveUp()
 {
 	auto model = impl_->currentIndex_.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	int prevRow = impl_->currentIndex_.row() - 1;
 
@@ -389,7 +391,7 @@ bool TreeExtensionOld::moveUp()
 bool TreeExtensionOld::moveDown()
 {
 	auto model = impl_->currentIndex_.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	if (impl_->expanded(impl_->currentIndex_))
 	{
@@ -442,7 +444,7 @@ bool TreeExtensionOld::moveDown()
 bool TreeExtensionOld::moveLeft()
 {
 	auto model = impl_->currentIndex_.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	// Move up to the parent if there are no children or not expanded
 	if (!model->hasChildren(impl_->currentIndex_) || !impl_->expanded(impl_->currentIndex_))
@@ -473,7 +475,7 @@ bool TreeExtensionOld::moveLeft()
 bool TreeExtensionOld::moveRight()
 {
 	auto model = impl_->currentIndex_.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	// Make sure the current item has children
 	if (model->hasChildren(impl_->currentIndex_))

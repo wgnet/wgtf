@@ -1,0 +1,19 @@
+module WGControls.Color
+
+# 2.0 New Controls
+WGAlphaSlider 2.0 WGAlphaSlider20.qml
+WGColor4Picker 2.0 WGColor4Picker20.qml
+WGColorPalette 2.0 WGColorPalette20.qml
+WGColorPreview 2.0 WGColorPreview20.qml
+WGColorValueSlider 2.0 WGColorValueSlider20.qml
+WGColorWheel 2.0 WGColorWheel20.qml
+WGHDRSelector 2.0 WGHDRSelector20.qml
+WGHexColorTextBox 2.0 WGHexColorTextBox20.qml
+WGHueSlider 2.0 WGHueSlider20.qml
+WGHSVSquareHS 2.0 WGHSVSquareHS20.qml
+WGHSVSquareSV 2.0 WGHSVSquareSV20.qml
+WGKelvinSlider 2.0 WGKelvinSlider20.qml
+WGPickScreenButton 2.0 WGPickScreenButton20.qml
+WGRgbSlider 2.0 WGRgbSlider20.qml
+WGShadeGrid 2.0 WGShadeGrid20.qml
+WGValueLogSlider 2.0 WGValueLogSlider20.qml

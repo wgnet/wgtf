@@ -26,4 +26,14 @@ bool ISerializer::read(IDataStream* dataStream, Variant& variant)
 {
 	return false;
 }
+
+bool ISerializer::serialize(const IManagedObject& object)
+{
+	return false;
+}
+
+bool ISerializer::deserialize(IManagedObject& object)
+{
+	return false;
+}
 } // end namespace wgt

@@ -1,7 +1,6 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.3
-import WGControls 1.0
-import WGControls.Private 1.0
+import WGControls.Private 2.0
 
 /*!
  \ingroup wgcontrols
@@ -12,7 +11,7 @@ WGVectorN {
     objectName: "WGVector2"
     id: vector2
     WGComponent { type: "WGVector2" }
-    
+
     property vector2d value
 
     vectorData: [value.x, value.y]

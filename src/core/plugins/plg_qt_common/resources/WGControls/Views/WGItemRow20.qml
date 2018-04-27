@@ -7,12 +7,12 @@ import WGControls 2.0
 /** Shared component for the list of cells in a row of a WGItemView.
 \ingroup wgcontrols */
 Item {
-    id: itemRow
+    id: row
     objectName: "WGItemRow_" + index
     WGComponent { type: "WGItemRow20" }
 
-    width: row.width != 0 ? row.width : 1024
-    height: row.height != 0 ? row.height : 1024
+    width: ( view && view.totalColumnsWidth != 0 ) ? view.totalColumnsWidth : 1024
+    height: columns.height != 0 ? columns.height : 40
     clip: true
 
     /** This is a link to the containing WGItemView.*/
@@ -38,264 +38,353 @@ Item {
     \param mouse The mouse data at the time.
     \param itemIndex The index of the item.*/
     signal itemDoubleClicked(var mouse, var itemIndex)
+    /** Signals that this item was double clicked.
+    \param mouse The mouse data at the time.
+    \param itemIndex The index of the item.*/
+    signal itemHovered(var itemIndex)
 
     /* Aliasing the isSelected state for automated testing.*/
     property alias isSelected: rowBackground.isSelected
+	property alias isCurrent: rowBackground.isCurrent
+	property alias isHovered: rowBackground.isHovered
+    property var hoveredIndex: null
 
     Loader {
         id: rowBackground
         objectName: "RowBackground"
-        anchors.fill: row
-        asynchronous: itemRow.asynchronous
-        sourceComponent: view.style.rowBackground
+        anchors.fill: parent
+        asynchronous: row.asynchronous
+        sourceComponent: view ? view.style.rowBackground : null
 
-        property bool isSelected: view.selectionModel.isSelected(modelIndex)
-        /** Checks if this is the current focused row.*/
-        property bool isCurrent: view.selectionModel.currentIndex === modelIndex
+        property bool isSelected: view ? view.selectionModel.isSelected(modelIndex) : false
+        property bool isCurrent: view ? view.selectionModel.currentIndex === modelIndex : false
+        property bool isHovered: hoveredIndex != null
+
+        /** The depth of the item row in the model (0 if the view is not a tree).*/
+        property int itemDepth: itemRow.depth
+
+        /** Checks if the row has children if it is in a view that supports this.*/
+        property bool hasChildren: typeof model.hasChildren != "undefined" ? model.hasChildren : false
 
         Connections {
-            target: view.selectionModel
+            target: view
             onSelectionChanged: {
-                rowBackground.isSelected = view.selectionModel.isSelected(modelIndex)
+                rowBackground.isSelected = Qt.binding( function() { return view.selectionModel.isSelected(modelIndex); } )
             }
         }
     }
 
-    /** Row contents with traling column sizer.*/
     Row {
-        id: row
-        property var minX: rowHeader.width
-        property var maxX: rowFooter.x - lastColumnHandleSpacer.width
+        id: columns
+        x: view ? view.visibleOffset: 0
+        spacing: view ? view.columnSpacing : 0
 
-        /** Row contents (cells) layout.*/
-        Row {
-            id: columnsLayout
-            objectName: "Row"
-            spacing: view.columnSpacing
+        Repeater {
+            model: WGRangeProxy {
+                id: rangeProxy
+                sourceModel: typeof(columnModel) != "undefined" ? columnModel : null
 
-            /** Indent gap, followed by column cells.*/
-            Repeater {
-                id: columns
-                objectName: "Columns"
+                property var range: view ? view.visibleColumns : Qt.vector2d( 0, 0 )
+                onRangeChanged: {
+                    if (range.y >= range.x) {
+                        setRange(range.x, 0, range.y, 0);
+                    }
+                }
+            }
+            delegate: Item {
+                id: column
+                objectName: "Column_" + itemIndex
+                width: view ? view.getColumnWidth(itemIndex) : 0
+                height: childrenRect.height
+                clip: true
 
-                model: WGSequenceList {
-                    id: rowModel
-                    model: columnModel
-                    sequence: view.columnSequence
+                property var itemIndex: ( view ? view.visibleColumns.x : 0 ) + index
+                /** Checks if this item is selected.*/
+                property bool isSelected: view ? view.selectionModel.isSelected(modelIndex) : false
+                /** Checks if this is the current item.*/
+                property bool isCurrent: view ? view.selectionModel.currentIndex === modelIndex : false;
+                /** Checks if the mouse is in this item.*/
+                property bool isHovered: columnMouseArea.isHovered
+
+                Connections {
+                    target: view ? view.extendedModel : null
+                    onLayoutChanged: {
+                        column.itemIndexChanged();
+                    }
                 }
 
-                delegate: Item {
-                    id: columnContainer
-                    objectName: "ColumnContainer_" + index
-                    width: view.columnWidths[index]
+                onIsHoveredChanged: {
+                    if (isHovered) {
+                        row.hoveredIndex = modelIndex;
+                        row.itemHovered(modelIndex)
+                    }
+                    else if (row.hoveredIndex == modelIndex) {
+                        row.hoveredIndex = null;
+                    }
+                }
+
+                Connections {
+                    target: view
+                    onSelectionChanged: {
+                        column.isSelected = Qt.binding( function() { return view.selectionModel.isSelected(modelIndex); } )
+                    }
+                }
+
+                /** Optional background behind a single cell, specified in the style component.*/
+                Loader {
+                    id: columnBackground
+                    objectName: "ColumnBackground"
+                    anchors.left: columnHeader.left
+                    anchors.right: columnFooter.right
+                    height: itemContainer.height
+                    asynchronous: row.asynchronous
+                    sourceComponent: view ? view.style.columnBackground : null
+
+                    property bool isSelected: column.isSelected
+                    property bool isCurrent: column.isCurrent
+                    property bool isHovered: column.isHovered
+                }
+
+                DropArea {
+                    id: dropArea
+                    anchors.fill: columnBackground
+                    keys: row.view ? row.view.mimeTypes() : {}
+
+                    onDropped: {
+                        var mimeData = {};
+                        for (var i = 0; i < drop.formats.length; ++i) {
+                            var format = drop.formats[i];
+                            var value = drop.getDataAsArrayBuffer(format);
+                            mimeData[format] = value;
+                        }
+
+                        if (view.dropMimeData(mimeData, drop.proposedAction, modelIndex)) {
+                            drop.acceptProposedAction();
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: columnMouseArea
+                    objectName: "ColumnMouseArea"
+                    anchors.fill: columnBackground
+                    acceptedButtons: Qt.RightButton | Qt.LeftButton;
+                    drag.target: columnMouseArea
+                    hoverEnabled: true
+
+                    property var dragActive: drag.active
+                    property bool isHovered: false
+                    onDragActiveChanged: {
+                        if (drag.active) {
+                            Drag.mimeData = view.mimeData(row.view.selectionModel.selectedIndexes)
+                            Drag.active = true
+                        }
+                    }
+
+                    onContainsMouseChanged: { isHovered = containsMouse }
+
+                    Drag.dragType: Drag.Automatic
+                    Drag.proposedAction: Qt.MoveAction
+                    Drag.supportedActions: Qt.MoveAction | Qt.CopyAction
+
+                    /**
+                    * Signals that this item received a mouse press.
+                    * \param mouse The mouse data at the time.
+                    * \param modelIndex The index of the item.
+                    * \note cancel isHovered as RMC with context menus do not trigger onExited
+                    */
+                    onPressed: {
+                        isHovered = false;
+                        itemPressed(mouse, modelIndex);
+                    }
+
+                    /**
+                    * Signals that this item was clicked.
+                    * \param mouse The mouse data at the time.
+                    * \param modelIndex The index of the item.
+                    * \note cancel isHovered as RMC with context menus do not trigger onExited
+                    */
+                    onClicked: {
+                        isHovered = false;
+                        itemClicked(mouse, modelIndex);
+                    }
+
+                    /**
+                    * Signals that this item was double clicked.
+                    * \param mouse The mouse data at the time.
+                    * \param modelIndex The index of the item.
+                    * \note cancel isHovered as RMC with context menus do not trigger onExited
+                    */
+                    onDoubleClicked: {
+                        isHovered = false;
+                        itemDoubleClicked(mouse, modelIndex);
+                    }
+
+                    Drag.onDragStarted: {
+                        Drag.hotSpot.x = mouseX
+                        Drag.hotSpot.y = mouseY
+                    }
+
+                    Drag.onDragFinished: {
+                        makeFakeMouseRelease();
+                    }
+                }
+
+                /** Cell inside styling.*/
+                Item {
+                    id: itemContainer
+                    objectName: "ItemContainer"
+                    anchors.left: columnHeader.right
+                    anchors.right: columnFooter.left
                     height: childrenRect.height
                     clip: true
 
-                    /** Checks if this row is selected.*/
-                    property bool isSelected: view.selectionModel.isSelected(modelIndex)
-                    /** Checks if this is the current row.*/
-                    property bool isCurrent: view.selectionModel.currentIndex === modelIndex
+                    Loader {
+                        id: itemDelegate
+                        objectName: "ItemDelegate"
+                        asynchronous: row.asynchronous
+                        visible: status === itemDelegate.Ready
+                        sourceComponent: view ? view.getColumnDelegate(itemIndex) : null
+
+                        /** Exposes column width to the custom cell component.*/
+                        property int columnWidth: parent.width
+                        /** Exposes the value role to the custom cell component.
+                        The role to use as the value role is specified in view.columnRoles.*/
+                        property var itemValue: view ? model[view.getColumnRole(itemIndex) ] : null
+                        /** Exposes all roles to the custom cell component.*/
+                        property var itemData: model
+                        /** Exposes the hasChildren role to the custom cell component */
+                        property var hasModelChildren: rowHeader.itemData.hasModelChildren
+                        /** Exposes depth in hierarchy to the custom cell component.*/
+                        property var itemDepth: depth
+                        /** Exposes selected check to the custom cell component.*/
+                        property bool isSelected: column.isSelected
+                        /** Exposes current index check to the custom cell component.*/
+                        property bool isCurrent: column.isCurrent
+                        /** Exposes hovered check to the custom cell component.*/
+                        property bool isHovered: column.isHovered
+                        /** Exposes current row index to the custom cell component.*/
+                        property int itemRowIndex: row.itemRowIndex
+                        /** Exposes current column index to the custom cell component.*/
+                        property int itemColumnIndex: view ? view.sourceColumn(itemIndex) : -1;
+                        /** Exposes current modelIndex to the custom cell component.*/
+                        property var itemModelIndex: modelIndex
+                        /** Exposes current rowIndex to the custom cell component.*/
+                        property var itemRowModelIndex: row.rowIndex
+                        /** Exposes mouse area values to the custom cell component.*/
+                        property var colMouseArea: columnMouseArea;
+
+                        /** Exposes row selected check to the custom cell component.*/
+                        property bool rowIsSelected: row.isSelected
+                        /** Exposes row current index check to the custom cell component.*/
+                        property bool rowIsCurrent: row.isCurrent
+                        /** Exposes row hovered check to the custom cell component.*/
+                        property bool rowIsHovered: row.isHovered
+
+                        property var getImplicitWidths: function() {
+                            return Qt.vector3d(item != null ? item.implicitWidth : 0, 0, -1);
+                        }
+
+                        Connections {
+                            target: rangeProxy
+                            onRowsChanged: {
+                                if (index >= first && index <= last) {
+                                    itemDelegate.itemDataChanged();
+                                }
+                            }
+                        }
+
+                        onLoaded: {
+                            item.parent = itemContainer
+                            itemContainer.updateColumnImplicitWidths();
+                        }
+                    }
 
                     Connections {
-                        target: view.selectionModel
-                        onSelectionChanged: {
-                            columnBackground.isSelected = view.selectionModel.isSelected(modelIndex)
-                        }
-                    }
-
-                    /** Optional background behind a single cell, specified in the style component.*/
-                    Loader {
-                        id: columnBackground
-                        objectName: "ColumnBackground"
-                        anchors.fill: column
-                        asynchronous: itemRow.asynchronous
-                        sourceComponent: view.style.columnBackground
-
-                        /** Checks if this row is selected.*/
-                        property bool isSelected: columnContainer.isSelected
-                        /** Checks if this is the current focused row.*/
-                        property bool isCurrent: columnContainer.isCurrent
-                    }
-
-                    DropArea {
-                        id: dropArea
-                        anchors.fill: columnBackground
-                        keys: itemRow.view.mimeTypes()
-
-                        onDropped: {
-                            var mimeData = {};
-                            for (var i = 0; i < drop.formats.length; ++i) {
-                                var format = drop.formats[i];
-                                var value = drop.getDataAsArrayBuffer(format);
-                                mimeData[format] = value;
-                            }
-
-                            if (view.dropMimeData(mimeData, drop.proposedAction, modelIndex)) {
-                                drop.acceptProposedAction();
+                        target: itemDelegate.item
+                        onImplicitWidthChanged: {
+                            if (itemDelegate.status === Loader.Ready) {
+                                itemContainer.updateColumnImplicitWidths();
                             }
                         }
                     }
 
-                    MouseArea {
-                        id: columnMouseArea
-                        objectName: "ColumnMouseArea"
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: column.top
-                        anchors.bottom: column.bottom
-                        acceptedButtons: Qt.RightButton | Qt.LeftButton;
-                        drag.target: columnMouseArea
+                    /** Updates the implicit widths of the row,
+                    when custom cell components' implict widths change.*/
+                    function updateColumnImplicitWidths()
+                    {
+                        var headerWidth = columnHeader.width + columnHeader.x;
+                        var footerWidth = columnFooter.width
+                        var implicitWidths = itemDelegate.getImplicitWidths();
+                        view.updateImplicitColumnWidth(itemIndex,
+                            implicitWidths.x + (headerWidth + footerWidth),
+                            implicitWidths.y + (headerWidth + footerWidth),
+                            implicitWidths.z != -1 ? implicitWidths.z + (headerWidth + footerWidth) : -1);
+                    }
+                }
 
-                        property var dragActive: drag.active
-                        onDragActiveChanged: {
-                            if (drag.active) {
-                                Drag.mimeData = view.mimeData(itemRow.view.selectionModel.selectedIndexes)
-                                Drag.active = true
-                            }
-                        }
+                /** Styling in front of the cell.*/
+                Loader {
+                    id: columnHeader
+                    objectName: "ColumnHeader"
+                    asynchronous: row.asynchronous
+                    x: Math.max(rowHeader.width - (columns.x + column.x), 0)
+                    height: itemContainer.height
+                    width: sourceComponent ? sourceComponent.width : 0
+                    sourceComponent: view ? view.style.columnHeader : null
 
-                        Drag.dragType: Drag.Automatic
-                        Drag.proposedAction: Qt.MoveAction
-                        Drag.supportedActions: Qt.MoveAction | Qt.CopyAction
-
-                        /** Signals that this item received a mouse press.
-                        \param mouse The mouse data at the time.
-                        \param modelIndex The index of the item.*/
-                        onPressed: itemPressed(mouse, modelIndex)
-                        /** Signals that this item was clicked.
-                        \param mouse The mouse data at the time.
-                        \param modelIndex The index of the item.*/
-                        onClicked: itemClicked(mouse, modelIndex)
-                        /** Signals that this item was double clicked.
-                        \param mouse The mouse data at the time.
-                        \param modelIndex The index of the item.*/
-                        onDoubleClicked: itemDoubleClicked(mouse, modelIndex)
-
-                        Drag.onDragStarted: {
-                            Drag.hotSpot.x = mouseX
-                            Drag.hotSpot.y = mouseY
-                        }
-
-                        Drag.onDragFinished: {
-                            makeFakeMouseRelease();
-                        }
+                    onXChanged: {
+                        itemContainer.updateColumnImplicitWidths();
                     }
 
-                    /** Cell with styling, excluding indent gap in front of first cell.*/
-                    Item {
-                        id: column
-                        objectName: "Column"
-                        x: Math.max(row.minX - columnContainer.x, 0)
-                        width: Math.max(Math.min(row.maxX - columnContainer.x, columnContainer.width) - x, 0)
-                        height: itemContainer.height
-                        clip: true
+                    onWidthChanged: {
+                        itemContainer.updateColumnImplicitWidths();
+                    }
 
-                        /** Specifies minimum bound for cell.*/
-                        property var minX: columnHeader.width
-                        /** Specifies maximum bound for cell.*/
-                        property var maxX: columnFooter.x
+                    /** Exposes roles to custom style component.*/
+                    property var itemData: model
+                    /** Exposes depth in hierarchy to custom style component.*/
+                    property var itemDepth: depth
 
-                        /** Cell inside styling.*/
-                        Item {
-                            id: itemContainer
-                            objectName: "ItemContainer"
-                            x: column.minX
-                            width: Math.max(column.maxX - x, 0)
-                            height: childrenRect.height
-                            clip: true
-
-                            Loader {
-                                id: itemDelegate
-                                objectName: "ItemDelegate"
-                                asynchronous: itemRow.asynchronous
-                                sourceComponent: view.getColumnDelegate(index)
-
-                                /** Exposes the value role to the custom cell component.
-                                The role to use as the value role is specified in view.columnRoles.*/
-                                property var itemValue: model[view.getColumnRole(index)]
-                                /** Exposes all roles to the custom cell component.*/
-                                property var itemData: model
-                                /** Exposes depth in hierarchy to the custom cell component.*/
-                                property var itemDepth: depth
-                                /** Exposes selected check to the custom cell component.*/
-                                property bool isSelected: columnContainer.isSelected
-                                /** Exposes current index check to the custom cell component.*/
-                                property bool isCurrent: columnContainer.isCurrent
-                                /** Exposes current row index to the custom cell component.*/
-                                property int itemRowIndex: itemRow.itemRowIndex
-                                /** Exposes current column index to the custom cell component.*/
-                                property int itemColumnIndex: index
-                                /** Exposes current modelIndex to the custom cell component.*/
-                                property var itemModelIndex: modelIndex
-
-                                onLoaded: {
-                                    item.parent = itemContainer
-                                    itemContainer.updateColumnImplicitWidths();
-                                }
-                            }
-
-                            Connections {
-                                target: itemDelegate.item
-                                onImplicitWidthChanged: {
-                                    if (itemDelegate.status === Loader.Ready) {
-                                        itemContainer.updateColumnImplicitWidths();
-                                    }
-                                }
-                            }
-
-                            /** Updates the implicit widths of the row,
-                            when custom cell components' implict widths change.*/
-                            function updateColumnImplicitWidths()
-                            {
-                                var implicitWidths = view.implicitColumnWidths;
-                                var oldImplicitWidth = index in implicitWidths ? implicitWidths[index] : 0;
-                                var indent = index === 0 ? row.minX : 0;
-                                var newImplicitWidth = itemDelegate.item.implicitWidth + indent;
-                                implicitWidths[index] = Math.max(oldImplicitWidth, newImplicitWidth);
-                                view.implicitColumnWidths = implicitWidths;
+                    Connections {
+                        target: rangeProxy
+                        onRowsChanged: {
+                            if (index >= first && index <= last) {
+                                columnHeader.itemDataChanged();
                             }
                         }
+                    }
+                }
 
-                        /** Styling in front of the cell.*/
-                        Loader {
-                            id: columnHeader
-                            objectName: "ColumnHeader"
-                            asynchronous: itemRow.asynchronous
-                            height: column.height
-                            width: sourceComponent.width
-                            sourceComponent: view.style.columnHeader
+                /** Styling at end of the cell.*/
+                Loader {
+                    id: columnFooter
+                    objectName: "ColumnFooter"
+                    asynchronous: row.asynchronous
+                    x: Math.min(rowFooter.x - (columns.x + column.x), column.width) - width
+                    height: itemContainer.height
+                    width: sourceComponent ? sourceComponent.width : 0
+                    sourceComponent: view ? view.style.columnFooter : null
 
-                            /** Exposes roles to custom style component.*/
-                            property var itemData: model
-                            /** Exposes depth in hierarchy to custom style component.*/
-                            property var itemDepth: depth
-                        }
+                    onWidthChanged: {
+                        itemContainer.updateColumnImplicitWidths();
+                    }
 
-                        /** Styling behind the cell.*/
-                        Loader {
-                            id: columnFooter
-                            objectName: "ColumnFooter"
-                            asynchronous: itemRow.asynchronous
-                            x: column.width - width
-                            height: column.height
-                            width: sourceComponent.width
-                            sourceComponent: view.style.columnFooter
+                    /** Exposes roles to custom style component.*/
+                    property var itemData: model
+                    /** Exposes depth in hierarchy to custom style component.*/
+                    property var itemDepth: depth
 
-                            /** Exposes roles to custom style component.*/
-                            property var itemData: model
-                            /** Exposes depth in hierarchy to custom style component.*/
-                            property var itemDepth: depth
+                    Connections {
+                        target: rangeProxy
+                        onRowsChanged: {
+                            if (index >= first && index <= last) {
+                                columnFooter.itemDataChanged();
+                            }
                         }
                     }
                 }
             }
-        }
-
-        Item {
-            id: lastColumnHandleSpacer
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: view.clamp ? 0 : columnSpacing
         }
     }
 
@@ -303,10 +392,10 @@ Item {
     Loader {
         id: rowHeader
         objectName: "RowHeader"
-        asynchronous: itemRow.asynchronous
-        height: row.height
-        width: sourceComponent.width
-        sourceComponent: view.style.rowHeader
+        asynchronous: row.asynchronous
+        height: columns.height
+        width: sourceComponent ? sourceComponent.width : 0
+        sourceComponent: view ? view.style.rowHeader : null
 
         /** Exposes roles to custom style component.*/
         property var itemData: model
@@ -318,11 +407,11 @@ Item {
     Loader {
         id: rowFooter
         objectName: "RowFooter"
-        asynchronous: itemRow.asynchronous
+        asynchronous: row.asynchronous
         x: row.width - width
-        height: row.height
-        width: sourceComponent.width
-        sourceComponent: view.style.rowFooter
+        height: columns.height
+        width: sourceComponent ? sourceComponent.width : 0
+        sourceComponent: view ? view.style.rowFooter : null
 
         /** Exposes roles to custom style component.*/
         property var itemData: model

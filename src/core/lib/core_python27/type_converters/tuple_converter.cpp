@@ -13,8 +13,7 @@ namespace wgt
 {
 namespace PythonType
 {
-TupleConverter::TupleConverter(IComponentContext& context, const Converters& typeConverters)
-    : IParentConverter(), context_(context), typeConverters_(typeConverters)
+TupleConverter::TupleConverter(const Converters& typeConverters) : IParentConverter(), typeConverters_(typeConverters)
 {
 }
 
@@ -26,7 +25,7 @@ bool TupleConverter::toVariant(const PyScript::ScriptObject& inObject, Variant& 
 		return false;
 	}
 	PyScript::ScriptTuple scriptTuple(inObject.get(), PyScript::ScriptObject::FROM_BORROWED_REFERENCE);
-	auto tupleHandle = ReflectedPython::DefinedInstance::findOrCreate(context_, scriptTuple, parentHandle, childPath);
+	auto tupleHandle = get<IPythonObjManager>()->findOrCreate(scriptTuple, parentHandle, childPath);
 	assert(tupleHandle.isValid());
 
 	auto collectionHolder =

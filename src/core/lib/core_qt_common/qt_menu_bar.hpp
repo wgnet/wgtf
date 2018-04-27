@@ -13,10 +13,20 @@ class QtMenuBar : public QtMenu
 public:
 	QtMenuBar(QMenuBar& qMenuBar, const char* windowId);
 
+	void addPath(const char* path) override;
 	void addAction(IAction& action, const char* path) override;
 	void removeAction(IAction& action) override;
 
+	void update() override;
+
 private:
+	void removeFromMenuBar(QMenu* menu);
+	QMenu* addMenuToBar(QString path);
+
+	QStringList midMenus_;
+	QStringList frontMenus_;
+	QStringList backMenus_;
+
 	QMenuBar& qMenuBar_;
 };
 } // end namespace wgt

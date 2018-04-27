@@ -2,8 +2,8 @@
 #define REF_OBJECT_ID_HPP
 
 #include <string>
-#include "wg_types/hash_utilities.hpp"
 #include "reflection_dll.hpp"
+#include "core_variant/variant.hpp"
 
 namespace wgt
 {
@@ -57,9 +57,15 @@ public:
 	static RefObjectId generate();
 	static const RefObjectId& zero();
 
+	uint64_t getHash() const;
 private:
 	static bool fromString(const std::string& s, unsigned int* data);
 };
+
+REFLECTION_DLL BinaryStream& operator<<(BinaryStream& stream, const RefObjectId& v);
+REFLECTION_DLL BinaryStream& operator>>(BinaryStream& stream, RefObjectId& v);
+REFLECTION_DLL TextStream& operator<<(TextStream& stream, const RefObjectId& v);
+REFLECTION_DLL TextStream& operator>>(TextStream& stream, RefObjectId& v);
 } // end namespace wgt
 
 namespace std
@@ -69,13 +75,10 @@ struct hash<const wgt::RefObjectId> : public unary_function<const wgt::RefObject
 {
 	uint64_t operator()(const wgt::RefObjectId& v) const
 	{
-		uint64_t seed = 0;
-		wgt::HashUtilities::combine(seed, v.getA());
-		wgt::HashUtilities::combine(seed, v.getB());
-		wgt::HashUtilities::combine(seed, v.getC());
-		wgt::HashUtilities::combine(seed, v.getD());
-		return seed;
+		return v.getHash();
 	}
 };
 }
+
+META_TYPE_NAME(wgt::RefObjectId, "refObjectId")
 #endif // REF_OBJECT_ID_HPP

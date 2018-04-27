@@ -4,4 +4,4 @@ endif()
 
 set(EXPAT_FOUND 1)
 
-add_subdirectory(${BW_SOURCE_DIR}/core/third_party/expat expat)
+add_subdirectory(${WG_TOOLS_SOURCE_DIR}/core/third_party/expat expat)

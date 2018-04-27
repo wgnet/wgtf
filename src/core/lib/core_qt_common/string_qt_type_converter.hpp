@@ -36,6 +36,19 @@ public:
 			return true;
 		}
 
+		if (variant.typeIs<wgt::SharedString>())
+		{
+			wgt::SharedString value;
+			if (!variant.tryCast(value))
+			{
+				return false;
+			}
+
+			o_qVariant = QString(value->c_str());
+			return true;
+		}
+
+
 		if (variant.typeIs<const wchar_t*>() || variant.typeIs<std::wstring>())
 		{
 			std::wstring value;

@@ -8,7 +8,7 @@ WGDropDownBox {
     objectName: typeof itemData.indexPath == "undefined" ? "polystruct_component" : itemData.indexPath
     anchors.left: parent.left
     anchors.right: parent.right
-    enabled: itemData.enabled && !itemData.readOnly
+    enabled: itemData.enabled && !itemData.readOnly && (typeof readOnlyComponent == "undefined" || !readOnlyComponent)
     multipleValues: itemData.multipleValues
 
     Component.onCompleted: {

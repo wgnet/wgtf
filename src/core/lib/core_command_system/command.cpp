@@ -66,7 +66,7 @@ void Command::fireCommandExecuted(const CommandInstance& command, CommandOperati
 }
 
 //==============================================================================
-/*virtual */ ObjectHandle Command::execute(const ObjectHandle& arguments) const
+/*virtual */ Variant Command::execute(const ObjectHandle& arguments) const
 {
 	return CommandErrorCode::COMMAND_NO_ERROR;
 }

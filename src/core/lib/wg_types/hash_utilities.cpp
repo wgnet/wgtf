@@ -34,6 +34,20 @@ uint64_t compute(const char* value)
 	return result;
 }
 
+
+//------------------------------------------------------------------------------
+uint64_t computei(const char* value )
+{
+	const char* input = value;
+	uint64_t result = FNV_offset_basis;
+	while (*input)
+	{
+		result = (result ^ ::tolower(*input)) * FNV_prime;
+		++input;
+	}
+	return result;
+}
+
 //------------------------------------------------------------------------------
 uint64_t compute(const wchar_t* value)
 {

@@ -1,0 +1,18 @@
+#include "../test_function_property.hpp"
+#include "core_reflection/reflected_property.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/reflected_object.hpp"
+
+namespace wgt
+{
+
+BEGIN_EXPOSE(TestPropertyFixtureBase::TestPropertyObject )
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestPropertyFixtureBase::TestPropertyObject::ExposedStruct, MetaOnStack())
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestPropertyFixtureBase::TestPropertyObject::ExposedObject)
+END_EXPOSE()
+
+}

@@ -1,10 +1,11 @@
 #include "basic_stream.hpp"
 #include "i_datastream.hpp"
-#include <cassert>
 #include <cstdio> // for EOF
 #include <cstring>
 #include <utility>
 #include <algorithm>
+
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
@@ -136,7 +137,7 @@ std::streamsize BasicStream::read(void* destination, std::streamsize size)
 	}
 
 	// read buffer is empty, perform read from data stream
-	assert(readPos_ == readEnd_);
+	TF_ASSERT(readPos_ == readEnd_);
 
 	// is unget area larger than needed?
 	if (readPos_ - readBuffer_ > ungetBufferSize_)

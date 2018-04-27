@@ -3,16 +3,18 @@
 #include "core_data_model/filtered_tree_model.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/filtering/i_item_filter.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/helpers/wg_filter.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
 #include "core_reflection/object_handle.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_logging/logging.hpp"
 
 #include <QRegExp>
 
 namespace wgt
 {
-struct WGFilteredTreeModel::Implementation
+struct WGFilteredTreeModel::Implementation : Depends<IQtHelpers>
 {
 	Implementation(WGFilteredTreeModel& self);
 
@@ -64,8 +66,6 @@ WGFilteredTreeModel::WGFilteredTreeModel() : impl_(new Implementation(*this))
 
 WGFilteredTreeModel::~WGFilteredTreeModel()
 {
-	setSource(QVariant());
-
 	impl_->connections_.reset();
 
 	// Temporary hack to circumvent threading deadlock
@@ -89,7 +89,7 @@ void WGFilteredTreeModel::onSourceChanged()
 {
 	ITreeModel* source = nullptr;
 
-	Variant variant = QtHelpers::toVariant(getSource());
+	Variant variant = impl_->get<IQtHelpers>()->toVariant(getSource());
 	if (variant.typeIs<ITreeModel>())
 	{
 		source = const_cast<ITreeModel*>(variant.cast<const ITreeModel*>());

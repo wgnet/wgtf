@@ -1,6 +1,5 @@
 #include "pch.hpp"
 
-#include "core_dependency_system/di_ref.hpp"
 #include "core_python27/defined_instance.hpp"
 #include "core_python27/listener_hooks.hpp"
 #include "core_python27/scripting_engine.hpp"
@@ -12,6 +11,7 @@
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/reflected_method_parameters.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 
 #include <longintrepr.h>
 
@@ -28,8 +28,8 @@ class ScopedPythonState
 {
 public:
 	ScopedPythonState(IComponentContext& contextManager)
-	    : contextManager_(contextManager), scriptingEngine_(contextManager), definitionRegistry_(contextManager),
-	      typeConverterQueue_(contextManager), hookListener_(new ReflectedPython::HookListener())
+	    : contextManager_(contextManager), typeConverterQueue_(contextManager),
+	      hookListener_(new ReflectedPython::HookListener())
 	{
 		// Initialize listener hooks
 		const auto pDefinitionManager = contextManager.queryInterface<IDefinitionManager>();
@@ -54,7 +54,7 @@ public:
 	~ScopedPythonState()
 	{
 		typeConverterQueue_.fini();
-		contextManager_.deregisterInterface(pDefinitionRegistryInterface_);
+		contextManager_.deregisterInterface(pDefinitionRegistryInterface_.get());
 		definitionRegistry_.fini();
 		scriptingEngine_.fini();
 
@@ -77,7 +77,7 @@ public:
 	Python27ScriptingEngine scriptingEngine_;
 
 	ReflectedPython::ScriptObjectDefinitionRegistry definitionRegistry_;
-	IInterface* pDefinitionRegistryInterface_;
+	InterfacePtr pDefinitionRegistryInterface_;
 
 	PythonType::ConverterQueue typeConverterQueue_;
 	std::shared_ptr<ReflectedPython::HookListener> hookListener_;
@@ -92,14 +92,14 @@ TEST(Python27)
 	}
 	IComponentContext& contextManager(*g_contextManager);
 
-	DIRef<IDefinitionManager> pDefinitionManager(contextManager);
-	CHECK(pDefinitionManager.get() != nullptr);
-	if (pDefinitionManager.get() == nullptr)
+	auto pDefinitionManager = contextManager.queryInterface<IDefinitionManager>();
+	CHECK(pDefinitionManager != nullptr);
+	if (pDefinitionManager == nullptr)
 	{
 		return;
 	}
 
-	IDefinitionManager& definitionManager = *pDefinitionManager.get();
+	IDefinitionManager& definitionManager = *pDefinitionManager;
 
 	// Must be scoped so that fini is called on each of the early returns
 	ScopedPythonState scopedScriptingEngine(contextManager);
@@ -171,7 +171,7 @@ TEST(Python27)
 			return;
 		}
 
-		auto moduleDefinition = module.getDefinition(definitionManager);
+		auto moduleDefinition = definitionManager.getDefinition(module);
 		ReflectedMethodParameters parameters;
 		auto propertyAccessor = moduleDefinition->bindProperty("run", module);
 		CHECK(propertyAccessor.isValid());

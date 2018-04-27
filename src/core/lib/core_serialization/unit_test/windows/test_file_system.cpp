@@ -71,8 +71,8 @@ TEST(file_sytem)
 	});
 
 	fileSystem_.enumerate(getenv("HOMEDRIVE"), [&](IFileInfoPtr&& info) {
-		CHECK(fileSystem_.exists(info->fullPath()));
-		CHECK(fileSystem_.getFileInfo(info->fullPath())->size() == info->size());
+		CHECK(fileSystem_.exists(info->fullPath()->c_str()));
+		CHECK(fileSystem_.getFileInfo(info->fullPath()->c_str())->size() == info->size());
 		return true;
 	});
 
@@ -80,20 +80,73 @@ TEST(file_sytem)
 	CHECK(GetUserDirectoryPath(userDirectoryPath));
 	CHECK(fileSystem_.exists(userDirectoryPath));
 
-	std::string userToolsPath = userDirectoryPath;
-	userToolsPath += FilePath::kNativeDirectorySeparator;
-	userToolsPath += "wgtools_testing";
+	const std::string userToolsPath = std::string(userDirectoryPath) +
+		FilePath::kNativeDirectorySeparator +
+		"wgtools_testing";
 
+	const std::string userFilenamePath = userToolsPath +
+		FilePath::kNativeDirectorySeparator +
+		"wgtools_testing.txt";
+
+	// clean up any stray files from a previous test run
 	if (fileSystem_.exists(userToolsPath.c_str()))
 	{
-		rmdir(userToolsPath.c_str());
+		if (fileSystem_.exists(userFilenamePath.c_str()))
+		{
+			CHECK(fileSystem_.remove(userFilenamePath.c_str()));
+		}
+		CHECK(fileSystem_.removeDirectory(userToolsPath.c_str()));
 	}
 
+	// test directory creation and destruction and a file within that directory
 	CHECK(!fileSystem_.exists(userToolsPath.c_str()));
-	CHECK(CreateDirectoryPath(userToolsPath.c_str()));
+	CHECK(!fileSystem_.exists(userFilenamePath.c_str()));
+
+	CHECK(fileSystem_.createDirectory(userToolsPath.c_str()));
 	CHECK(fileSystem_.exists(userToolsPath.c_str()));
-	CHECK(CreateDirectoryPath(userToolsPath.c_str())); // Ensure multiple calls return true
-	CHECK(rmdir(userToolsPath.c_str()) == 0);
-	CHECK(!fileSystem_.exists(userToolsPath.c_str()));
+	CHECK(fileSystem_.createDirectory(userToolsPath.c_str())); // Ensure multiple calls return true
+	CHECK(fileSystem_.removeDirectory(userToolsPath.c_str()));
+	
+	{ // check file operations inside the test directory
+		CHECK(!fileSystem_.exists(userToolsPath.c_str()));
+		CHECK(fileSystem_.createDirectory(userToolsPath.c_str()));
+		CHECK(fileSystem_.exists(userToolsPath.c_str()));
+
+		const std::string testFileContents = "wgtools_testing.txt file contents";
+		const size_t dataSize = strlen(testFileContents.c_str());
+		CHECK(fileSystem_.writeFile(userFilenamePath.c_str(), testFileContents.c_str(), dataSize, std::ios::out));
+		CHECK(fileSystem_.exists(userFilenamePath.c_str()));
+		CHECK(fileSystem_.remove(userFilenamePath.c_str()));
+		CHECK(!fileSystem_.exists(userFilenamePath.c_str()));
+		CHECK(fileSystem_.writeFile(userFilenamePath.c_str(), testFileContents.c_str(), dataSize, std::ios::out));
+		CHECK(fileSystem_.exists(userFilenamePath.c_str()));
+
+		auto fileInfo = fileSystem_.getFileInfo(userFilenamePath.c_str());
+		CHECK(dataSize == fileInfo->size());
+		{
+			auto stream = fileSystem_.readFile(userFilenamePath.c_str(), std::ios::in);
+			const size_t bufferSize = 256;
+			char buffer[bufferSize] = { 0 };
+			CHECK(dataSize < bufferSize);
+			stream->readRaw(&buffer, dataSize);
+			CHECK(strcmp(testFileContents.c_str(), buffer) == 0);
+		}
+
+		// if a stream has been opened to read from the file, the stream must be closed
+		// before this point. Destroy the file first as the directory can't be destroyed
+		// until this is done
+
+		CHECK(fileSystem_.exists(userToolsPath.c_str()));
+		CHECK(!fileSystem_.removeDirectory(userToolsPath.c_str()));
+		CHECK(fileSystem_.exists(userToolsPath.c_str()));
+
+		CHECK(fileSystem_.exists(userFilenamePath.c_str()));
+		CHECK(fileSystem_.remove(userFilenamePath.c_str()));
+		CHECK(!fileSystem_.exists(userFilenamePath.c_str()));
+
+		CHECK(fileSystem_.exists(userToolsPath.c_str()));
+		CHECK(fileSystem_.removeDirectory(userToolsPath.c_str()));
+		CHECK(!fileSystem_.exists(userToolsPath.c_str()));
+	}
 }
 } // end namespace wgt

@@ -8,12 +8,13 @@ namespace wgt
 {
 class PropertyAccessor;
 class MetaEnumObj;
+template< class T > class ObjectHandleT;
 
 class ReflectedEnumModel : public IListModel
 {
 public:
 	ReflectedEnumModel(const MetaEnumObj* enumObj);
-	ReflectedEnumModel(const PropertyAccessor&, const MetaEnumObj* enumObj);
+	ReflectedEnumModel(const PropertyAccessor&, ObjectHandleT<MetaEnumObj> enumObj);
 	virtual ~ReflectedEnumModel();
 
 	IItem* item(size_t index) const override;

@@ -164,7 +164,6 @@ Rectangle {
             colorBody = "transparent"
             mainPanel.radius = 0
         }
-        subPanel_HeaderLaber_WGCopyable.setParentCopyable( mainPanel )
     }
 
     Layout.fillWidth: true
@@ -196,10 +195,6 @@ Rectangle {
         {
             defaultSpacing.minimumRowHeight + (radius * 2) + (defaultSpacing.topBottomMargin * 2) + (__squareModifier / 2)
         }
-    }
-
-    WGCopyable{
-        id: subPanel_HeaderLaber_WGCopyable
     }
 
     Timer {
@@ -427,31 +422,6 @@ Rectangle {
                     enabled: headerLabel.visible && globalSettings.wgCopyableEnabled
                     hoverEnabled: enabled
                     cursorShape: Qt.PointingHandCursor
-
-                    onClicked:{
-                        if (!subPanel_HeaderLaber_WGCopyable.enabled || !globalSettings.wgCopyableEnabled )
-                        {
-                            mouse.accepted = false
-                            return;
-                        }
-
-                        if ((mouse.button == Qt.LeftButton) && (mouse.modifiers & Qt.ControlModifier))
-                        {
-                            if (subPanel_HeaderLaber_WGCopyable.selected)
-                            {
-                                subPanel_HeaderLaber_WGCopyable.deSelect()
-                            }
-                            else
-                            {
-                                subPanel_HeaderLaber_WGCopyable.select()
-                            }
-                        }
-                        else if (mouse.button == Qt.LeftButton)
-                        {
-                            subPanel_HeaderLaber_WGCopyable.rootCopyable.deSelect();
-                            subPanel_HeaderLaber_WGCopyable.select()
-                        }
-                    }
                 }
             }
             //SubPanel secondary title
@@ -549,12 +519,15 @@ Rectangle {
             }
         }
 
-        Component.onCompleted: {
-            if (!expanded){
-                visible = false
-                opacity = 0
-            }
-        }
+		onLoaded: {
+			if (!expanded){
+                visible = false;
+                opacity = 0;
+            } else {
+				visible = true;
+				opacity = 1;
+			}
+		}
 
         Behavior on opacity{
             id: fadeAnimation

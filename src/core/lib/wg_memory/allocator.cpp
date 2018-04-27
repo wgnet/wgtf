@@ -1,27 +1,35 @@
-#include <memory.h>
-#include <cassert>
 #include <cstdlib>
+#include <memory.h>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
-#include <mutex>
 
 #include "wg_types/hash_utilities.hpp"
-
+#include "core_logging/logging.hpp"
+#include "core_common/assert.hpp"
 #include "core_common/ngt_windows.hpp"
 #include "core_common/thread_local_value.hpp"
 
 #include "allocator.hpp"
 #include <algorithm>
+#include <cwchar>
 #include <string>
 #include <thread>
-#include <cwchar>
 
 namespace wgt
 {
+static bool ALLOCATOR_LOGGING = true;
 static bool ALLOCATOR_DEBUG_OUTPUT = false;
 static bool ALLOCATOR_STACK_TRACES = false;
 static bool ALLOCATOR_LEAK_DETECTION = false;
+
+#ifdef HAVE_CUSTOM_ALLOCATOR
+static NGTAllocator::allocateFn ALLOCATOR_FN = nullptr;
+static NGTAllocator::deallocateFn DEALLOCATOR_FN = nullptr;
+static NGTAllocator::allocateFn UNTRACKED_ALLOCATOR_FN = nullptr;
+static NGTAllocator::deallocateFn UNTRACKED_DEALLOCATOR_FN = nullptr;
+#endif
 
 // Windows stack helper function definitions
 typedef USHORT(__stdcall* RtlCaptureStackBackTraceFuncType)(ULONG FramesToSkip, ULONG FramesToCapture, PVOID* BackTrace,
@@ -35,6 +43,44 @@ typedef DWORD(__stdcall* SymSetOptionsFuncType)(DWORD SymOptions);
 typedef BOOL(__stdcall* SymSetSearchPathFuncType)(HANDLE hProcess, PCSTR SearchPath);
 typedef BOOL(__stdcall* SymGetLineFromAddr64FuncType)(HANDLE hProcess, DWORD64 qwAddr, PDWORD pdwDisplacement,
                                                       PIMAGEHLP_LINE64 Line64);
+namespace internal
+{
+void* malloc(size_t size)
+{
+#ifdef HAVE_CUSTOM_ALLOCATOR
+	return ALLOCATOR_FN(size);
+#else
+	return ::malloc(size);
+#endif
+}
+
+void free(void* ptr)
+{
+#ifdef HAVE_CUSTOM_ALLOCATOR
+	DEALLOCATOR_FN(ptr);
+#else
+	::free(ptr);
+#endif
+}
+
+void* untracked_malloc(size_t size)
+{
+#ifdef HAVE_CUSTOM_ALLOCATOR
+	return UNTRACKED_ALLOCATOR_FN(size);
+#else
+	return ::malloc(size);
+#endif
+}
+
+void untracked_free(void* ptr)
+{
+#ifdef HAVE_CUSTOM_ALLOCATOR
+	UNTRACKED_DEALLOCATOR_FN(ptr);
+#else
+	::free(ptr);
+#endif
+}
+}
 
 RtlCaptureStackBackTraceFuncType RtlCaptureStackBackTraceFunc;
 SymFromAddrFuncType SymFromAddrFunc;
@@ -118,12 +164,12 @@ private:
 		typename std::allocator<T>::pointer allocate(typename std::allocator<T>::size_type n,
 		                                             typename std::allocator<void>::const_pointer = 0)
 		{
-			return (typename std::allocator<T>::pointer)::malloc(n * sizeof(T));
+			return (typename std::allocator<T>::pointer)wgt::internal::untracked_malloc(n * sizeof(T));
 		}
 
 		void deallocate(typename std::allocator<T>::pointer p, typename std::allocator<T>::size_type n)
 		{
-			::free(p);
+			wgt::internal::untracked_free(p);
 		}
 
 		template <typename Arg>
@@ -147,12 +193,12 @@ private:
 	typedef std::basic_string<char, std::char_traits<char>, UntrackedAllocator<char>> UntrackedString;
 
 public:
-	MemoryContext() : allocId_(0), parentContext_(nullptr)
+	MemoryContext() : parentContext_(nullptr), allocId_(0)
 	{
 		wcscpy(name_, L"root");
 #ifdef _WIN32
 		HMODULE kernel32 = ::LoadLibraryA("kernel32.dll");
-		assert(kernel32);
+		TF_ASSERT(kernel32);
 		RtlCaptureStackBackTraceFunc =
 		(RtlCaptureStackBackTraceFuncType)::GetProcAddress(kernel32, "RtlCaptureStackBackTrace");
 #elif __APPLE__
@@ -160,9 +206,9 @@ public:
 #endif
 	}
 
-	MemoryContext(const wchar_t* name, MemoryContext* parentContext) : allocId_(0), parentContext_(parentContext)
-	{
-		assert(parentContext_ != nullptr);
+	MemoryContext(const wchar_t* name, MemoryContext* parentContext) : parentContext_(parentContext), allocId_(0)
+    {
+		TF_ASSERT(parentContext_ != nullptr);
 		wcscpy(name_, name);
 
 		std::lock_guard<std::mutex> childContextsGuard(parentContext_->childContextsLock_);
@@ -172,13 +218,14 @@ public:
 	~MemoryContext()
 	{
 		const auto success = printLeaks();
-		assert((ALLOCATOR_LEAK_DETECTION ? success : true) && "Memory leaks detected");
 		if (parentContext_ != nullptr)
 		{
+			// TODO: move this assert back outside the parentContext check
+			TF_ASSERT((ALLOCATOR_LEAK_DETECTION ? success : true) && "Memory leaks detected");
 			std::lock_guard<std::mutex> childContextsGuard(parentContext_->childContextsLock_);
 			auto& childContexts = parentContext_->childContexts_;
 			auto foundIt = std::find(childContexts.cbegin(), childContexts.cend(), this);
-			assert(foundIt != childContexts.cend());
+			TF_ASSERT(foundIt != childContexts.cend());
 			childContexts.erase(foundIt);
 		}
 	}
@@ -207,7 +254,7 @@ public:
 			allocation->frames_ = RtlCaptureStackBackTraceFunc(3, numFramesToCapture_, allocation->addrs_, NULL);
 		}
 
-		auto ptr = ::malloc(size);
+		auto ptr = wgt::internal::malloc(size);
 
 		{
 			std::lock_guard<std::mutex> allocationGuard(allocationLock_);
@@ -215,11 +262,11 @@ public:
 			liveAllocations_.insert(std::make_pair(ptr, std::move(allocation)));
 		}
 
-		if (ALLOCATOR_DEBUG_OUTPUT)
+		if (ALLOCATOR_DEBUG_OUTPUT && ALLOCATOR_LOGGING)
 		{
 			std::hash<std::thread::id> h;
-			wprintf(L"alloc ptr %#zx context %ls %#zx (thread %#zx)\n", (size_t)ptr, name_, (size_t)this,
-			        h(std::this_thread::get_id()));
+			NGT_MSG("alloc ptr %#zx context %ls %#zx (thread %#zx)\n",
+				(size_t)ptr, name_, (size_t)this, h(std::this_thread::get_id()));
 		}
 
 		return ptr;
@@ -247,11 +294,26 @@ public:
 		}
 
 		// failed to find a proper context
-		char msg[128];
-		snprintf(msg, 128, "deallocate: failed to find memory context for %p\n", ptr);
-		::OutputDebugStringA(msg);
+		if (ALLOCATOR_LOGGING)
+		{
+			NGT_MSG("deallocate: failed to find memory context for %#zx\n", (size_t)ptr);
+		}
 
 		::free(ptr);
+	}
+
+	void printCallstack(size_t framesToSkip, size_t framesToCapture, PrintFn fn)
+	{
+		std::vector<void*> addrs(framesToCapture);
+		const auto frames = RtlCaptureStackBackTraceFunc(
+			ULONG(framesToSkip + 1), ULONG(framesToCapture), &addrs[0], NULL);
+
+		initSymbols();
+		auto currentProcess = ::GetCurrentProcess();
+		for (auto i = 0; i < frames; ++i)
+		{
+			fn(resolveSymbol(currentProcess, addrs[i]).c_str());
+		}
 	}
 
 	UntrackedString resolveSymbol(HANDLE currentProcess, void* ptr)
@@ -277,10 +339,11 @@ public:
 		DWORD64 displacement64 = 0;
 		DWORD displacement = 0;
 
-		char nameBuf[1024] = { 0 };
+		char nameBuf[2048];
+		memset(nameBuf, '\0', sizeof(nameBuf));
 		if (SymFromAddrFunc(currentProcess, (DWORD64)ptr, &displacement64, info))
 		{
-			strncat(nameBuf, info->Name, info->NameLen);
+			strncpy_s(nameBuf, sizeof(nameBuf), info->Name, info->NameLen);
 		}
 		else
 		{
@@ -301,14 +364,16 @@ public:
 		}
 
 		IMAGEHLP_LINE64 source_info;
-		char lineBuffer[1024] = { 0 };
+		char lineBuffer[1024];
+		memset(lineBuffer, '\0', sizeof(lineBuffer));
 		::ZeroMemory(&source_info, sizeof(IMAGEHLP_LINE64));
 		source_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
 		if (SymGetLineFromAddr64Func(currentProcess, (DWORD64)ptr, &displacement, &source_info))
 		{
 			sprintf(lineBuffer, "%s(%d)", source_info.FileName, source_info.LineNumber);
 		}
-		char outputBuffer[2048] = { 0 };
+		char outputBuffer[4096];
+		memset(outputBuffer, '\0', sizeof(outputBuffer));
 		sprintf(outputBuffer, "%s : %s\n", lineBuffer, nameBuf);
 		builder.append(outputBuffer);
 
@@ -321,7 +386,7 @@ public:
 	{
 #ifdef _WIN32
 		HMODULE dbghelp = ::LoadLibraryA("dbghelp.dll");
-		assert(dbghelp);
+		TF_ASSERT(dbghelp);
 		SymFromAddrFunc = (SymFromAddrFuncType)::GetProcAddress(dbghelp, "SymFromAddr");
 		SymSetOptionsFunc = (SymSetOptionsFuncType)::GetProcAddress(dbghelp, "SymSetOptions");
 		SymInitializeFunc = (SymInitializeFuncType)::GetProcAddress(dbghelp, "SymInitialize");
@@ -347,8 +412,8 @@ public:
 
 		// build PDB path that should be the same as executable path
 		{
-			char path[_MAX_PATH] = { 0 };
-			wcstombs(path, name_, wcslen(name_));
+			char path[MAX_PATH];
+			GetModuleFileNameA(NULL, path, MAX_PATH);
 
 			// check that the pdb actually exists and is accessible, if it doesn't then SymInitialize will raise an
 			// obscure error dialog
@@ -412,9 +477,10 @@ public:
 	void cleanup()
 	{
 		initSymbols();
-		wchar_t contextName[2048];
-		swprintf(contextName, 2048, L"Destroying memory context for %s\n", name_);
-		::OutputDebugString(contextName);
+		if (ALLOCATOR_LOGGING)
+		{
+			NGT_MSG("Destroying memory context for %ls\n", name_);
+		}
 
 		auto currentProcess = ::GetCurrentProcess();
 
@@ -435,15 +501,15 @@ public:
 	bool printLeaks()
 	{
 		initSymbols();
-		wchar_t contextName[2048];
-		swprintf(contextName, 2048, L"Destroying memory context for %s\n", name_);
-		::OutputDebugString(contextName);
+		if (ALLOCATOR_LOGGING)
+		{
+			NGT_MSG("Destroying memory context for %ls\n", name_);
+		}
 
 		auto currentProcess = ::GetCurrentProcess();
 
 		bool hasLeaks = false;
 		{
-			UntrackedString builder;
 			std::lock_guard<std::mutex> allocationGuard(allocationLock_);
 
 			hasLeaks = !liveAllocations_.empty();
@@ -485,11 +551,11 @@ public:
 					for (size_t i = 0; i < allocStack->frames_; ++i)
 					{
 						uniqueAlloc.stackOutput_.append(
-						resolveSymbol(currentProcess, liveAllocation.second->addrs_[i]));
+							resolveSymbol(currentProcess, liveAllocation.second->addrs_[i]));
 					}
 					uniqueAlloc.allocations_.emplace_back(
-					UniqueAlloc::AllocationBasic(liveAllocation.second->allocId_, liveAllocation.first));
-					uniqueStackInstances.insert(std::make_pair(hash, uniqueAlloc));
+						UniqueAlloc::AllocationBasic(liveAllocation.second->allocId_, liveAllocation.first));
+						uniqueStackInstances.insert(std::make_pair(hash, uniqueAlloc));
 				}
 				else
 				{
@@ -498,23 +564,42 @@ public:
 					continue;
 				}
 			}
-			for (auto& uniqueStack : uniqueStackInstances)
+
+			if (ALLOCATOR_LOGGING)
 			{
+				for (auto& uniqueStack : uniqueStackInstances)
 				{
-					builder.append("Leaked allocation: [id:address] ");
+					NGT_MSG("Leaked allocation [id:address]:\n");
+
+					UntrackedString builder;
+					const int newlineMaxCount = 5;
+					int newlineCount = 0;
+					char allocationBuffer[256];
+					for (auto& allocation : uniqueStack.second.allocations_)
+					{
+						memset(allocationBuffer, '\0', sizeof(allocationBuffer));
+						sprintf(allocationBuffer, "[%lu:0x%p], ", static_cast<unsigned long>(allocation.allocId_), allocation.address_);
+						builder.append(allocationBuffer);
+
+						++newlineCount;
+						if (newlineCount >= newlineMaxCount)
+						{
+							NGT_LARGE_MSG(builder.c_str());
+							builder.clear();
+							newlineCount = 0;
+						}
+					}
+
+					if (!builder.empty())
+					{
+						NGT_LARGE_MSG(builder.c_str());
+					}
+
+					if (!uniqueStack.second.stackOutput_.empty())
+					{
+						NGT_LARGE_MSG("%s", uniqueStack.second.stackOutput_.c_str());
+					}
 				}
-				for (auto& allocation : uniqueStack.second.allocations_)
-				{
-					char allocIdBuffer[2048] = { 0 };
-					sprintf(allocIdBuffer, "[%lu:0x%p], ", static_cast<unsigned long>(allocation.allocId_),
-					        allocation.address_);
-					builder.append(allocIdBuffer);
-				}
-				builder.append("\n");
-				builder.append(uniqueStack.second.stackOutput_);
-				builder.append("\n\n");
-				::OutputDebugStringA(builder.c_str());
-				builder.clear();
 			}
 
 			for (auto& liveAllocation : liveAllocations_)
@@ -526,6 +611,10 @@ public:
 
 		{
 			std::lock_guard<std::mutex> allocationPoolGuard(allocationPoolLock_);
+			if (ALLOCATOR_LOGGING)
+			{
+				NGT_MSG("Allocation pool size %d\n", allocationPool_.size());
+			}
 			allocationPool_.clear();
 		}
 
@@ -541,12 +630,12 @@ private:
 
 		static void* operator new(size_t sz)
 		{
-			return ::malloc(sz);
+			return wgt::internal::malloc(sz);
 		}
 
 		static void operator delete(void* ptr)
 		{
-			return ::free(ptr);
+			return wgt::internal::free(ptr);
 		}
 	};
 
@@ -583,16 +672,17 @@ private:
 			return false;
 		}
 
+		bool canFree = false;
 		{
 			std::lock_guard<std::mutex> allocationGuard(allocationLock_);
 			auto findIt = liveAllocations_.find(ptr);
 			if (findIt != liveAllocations_.end())
 			{
-				if (ALLOCATOR_DEBUG_OUTPUT)
+				if (ALLOCATOR_DEBUG_OUTPUT && ALLOCATOR_LOGGING)
 				{
 					std::hash<std::thread::id> h;
-					wprintf(L"dealloc ptr %#zx context %ls %#zx (thread %#zx)\n", (size_t)ptr, name_, (size_t)this,
-					        h(std::this_thread::get_id()));
+					NGT_MSG("dealloc ptr %#zx context %ls %#zx (thread %#zx)\n",
+						(size_t)ptr, name_, (size_t)this, h(std::this_thread::get_id()));
 				}
 
 				{
@@ -601,9 +691,14 @@ private:
 				}
 
 				liveAllocations_.erase(findIt);
-				::free(ptr);
-				return true;
+				canFree = true;
 			}
+		}
+
+		if (canFree)
+		{
+			wgt::internal::free(ptr);
+			return true;
 		}
 
 		std::lock_guard<std::mutex> childContextsGuard(childContextsLock_);
@@ -624,7 +719,22 @@ private:
 #pragma init_seg(lib) // Ensure we get constructed first
 #endif // WIN32
 
-MemoryContext rootContext_;
+struct RootMemoryContext
+{
+	MemoryContext context_;
+
+	static void* operator new(size_t sz)
+	{
+		return wgt::internal::malloc(sz);
+	}
+
+	static void operator delete(void* ptr)
+	{
+		return wgt::internal::free(ptr);
+	}
+};
+
+std::unique_ptr<RootMemoryContext> rootContext_;
 THREAD_LOCAL(int)
 s_MemoryStackPos(0);
 THREAD_LOCAL(MemoryContext*)
@@ -634,16 +744,30 @@ s_MemoryContext[20];
 MemoryContext* getMemoryContext()
 {
 	int id = THREAD_LOCAL_GET(s_MemoryStackPos);
-	MemoryContext* mc = (id > 0) ? THREAD_LOCAL_GET(s_MemoryContext[id - 1]) : &rootContext_;
+
+	MemoryContext* mc = nullptr;
+	if (id > 0)
+	{
+		mc = THREAD_LOCAL_GET(s_MemoryContext[id - 1]);
+	}
+	else
+	{
+		if (!rootContext_)
+		{
+			rootContext_.reset(new RootMemoryContext());
+		}
+		mc = &rootContext_->context_;
+	}
+
 	if (!mc)
 	{
-		if (ALLOCATOR_DEBUG_OUTPUT)
+		if (ALLOCATOR_DEBUG_OUTPUT && ALLOCATOR_LOGGING)
 		{
 			std::hash<std::thread::id> h;
-			printf("ERROR - Thread id %#zx mem context %d\n", h(std::this_thread::get_id()), id);
+			NGT_MSG("ERROR - Thread id %#zx mem context %d\n", h(std::this_thread::get_id()), id);
 		}
 	}
-	assert(mc);
+	TF_ASSERT(mc);
 	return mc;
 }
 
@@ -679,15 +803,15 @@ void destroyMemoryContext(void* pContext)
 //------------------------------------------------------------------------------
 void pushMemoryContext(void* pContext)
 {
-	assert(pContext != nullptr);
+	TF_ASSERT(pContext != nullptr);
 	int id = THREAD_LOCAL_GET(s_MemoryStackPos);
 	THREAD_LOCAL_SET(s_MemoryContext[id], static_cast<MemoryContext*>(pContext));
 	id = THREAD_LOCAL_INC(s_MemoryStackPos);
 
-	if (ALLOCATOR_DEBUG_OUTPUT)
+	if (ALLOCATOR_DEBUG_OUTPUT && ALLOCATOR_LOGGING)
 	{
 		std::hash<std::thread::id> h;
-		printf("PUSH - Thread %#zx mem context id %d (%#zx)\n", h(std::this_thread::get_id()), id, (size_t)pContext);
+		NGT_MSG("PUSH - Thread %#zx mem context id %d (%#zx)\n", h(std::this_thread::get_id()), id, (size_t)pContext);
 	}
 }
 
@@ -695,14 +819,14 @@ void pushMemoryContext(void* pContext)
 void popMemoryContext()
 {
 	int id = THREAD_LOCAL_DEC(s_MemoryStackPos);
-	assert(id >= 0);
+	TF_ASSERT(id >= 0);
 	void* mc = THREAD_LOCAL_GET(s_MemoryContext[id]);
 	THREAD_LOCAL_SET(s_MemoryContext[id], nullptr);
 
-	if (ALLOCATOR_DEBUG_OUTPUT)
+	if (ALLOCATOR_DEBUG_OUTPUT && ALLOCATOR_LOGGING)
 	{
 		std::hash<std::thread::id> h;
-		printf("POP  - Thread %#zx mem context id %d (%#zx)\n", h(std::this_thread::get_id()), id, (size_t)mc);
+		NGT_MSG("POP  - Thread %#zx mem context id %d (%#zx)\n", h(std::this_thread::get_id()), id, (size_t)mc);
 	}
 }
 
@@ -720,6 +844,12 @@ void enableDebugOutput(bool enable)
 }
 
 //------------------------------------------------------------------------------
+void enableLogging(bool enable)
+{
+	ALLOCATOR_LOGGING = enable;
+}
+
+//------------------------------------------------------------------------------
 void enableStackTraces(bool enable)
 {
 	ALLOCATOR_STACK_TRACES = enable;
@@ -729,6 +859,25 @@ void enableStackTraces(bool enable)
 void enableLeakDetection(bool enable)
 {
 	ALLOCATOR_LEAK_DETECTION = enable;
+}
+
+//------------------------------------------------------------------------------
+void printCallstack(size_t framesToSkip, PrintFn fn)
+{
+	const size_t framesToCapture = 512;
+	rootContext_->context_.printCallstack(framesToSkip + 1, framesToCapture, fn);
+}
+
+//------------------------------------------------------------------------------
+void setHandles(allocateFn allocator, deallocateFn deallocator, allocateFn untrackedAllocator,
+                deallocateFn untrackedDeallocator)
+{
+#ifdef HAVE_CUSTOM_ALLOCATOR
+	ALLOCATOR_FN = allocator;
+	DEALLOCATOR_FN = deallocator;
+	UNTRACKED_ALLOCATOR_FN = untrackedAllocator;
+	UNTRACKED_DEALLOCATOR_FN = untrackedDeallocator;
+#endif
 }
 }
 } // end namespace wgt

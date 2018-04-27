@@ -1,6 +1,8 @@
 #ifndef WG_DLINK_HPP_INCLUDED
 #define WG_DLINK_HPP_INCLUDED
 
+#include "core_common/assert.hpp"
+
 #include <cstddef>
 
 /**
@@ -21,7 +23,7 @@ list.append(&holder.second);
 // get object pointer from list
 Holder* deducedHolder = dlink_holder(Holder, second, list.next());
 
-assert(deducedHolder == &holder);
+TF_ASSERT(deducedHolder == &holder);
 @endcode
 */
 #define dlink_holder(HolderType, member, link) \

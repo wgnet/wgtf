@@ -6,7 +6,7 @@ PROJECT( plg_hello_world_interface )
 INCLUDE( WGToolsCoreProject )
 
 # Then we find QT5 which should have been set up in ngt/src/core/third_party/Qt as part of getting the source from Stash.
-FIND_PACKAGE( QT5 )
+FIND_PACKAGE( QT5 ${QT_FIND_PACKAGE_VERSION} )
  
 # ALL_SRCS is a list of any uncategorized files that should be part of your project.
 # These are all of the blank files you created earlier.

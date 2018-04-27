@@ -2,6 +2,8 @@
 #define QT_PALETTE_H
 
 #include <QQuickItem>
+#include "core_ui_framework/palette.hpp"
+#include "core_common/signal.hpp"
 
 namespace wgt
 {
@@ -47,13 +49,25 @@ public:
 
 	Q_PROPERTY(QColor highlightShade MEMBER highlightShade_ WRITE dummySet NOTIFY colorChanged)
 
-	Q_PROPERTY(bool darkText MEMBER darkText_ NOTIFY darkTextChanged)
+	Q_PROPERTY(QColor readonlyColor MEMBER readonlyColor_ WRITE dummySet NOTIFY colorChanged)
+	Q_PROPERTY(QColor readonlyShade MEMBER readonlyShade_ WRITE dummySet NOTIFY colorChanged)
+	Q_PROPERTY(QColor readonlyTextColor MEMBER readonlyTextColor_ WRITE dummySet NOTIFY colorChanged)
 
-	Q_PROPERTY(int darkContrast MEMBER darkContrast_ NOTIFY darkContrastChanged)
-	Q_PROPERTY(int lightContrast MEMBER lightContrast_ NOTIFY lightContrastChanged)
+	Q_PROPERTY(bool darkText MEMBER darkText_ WRITE dummySet NOTIFY darkTextChanged)
+	Q_PROPERTY(int darkContrast MEMBER darkContrast_ WRITE dummySet NOTIFY darkContrastChanged)
+	Q_PROPERTY(int lightContrast MEMBER lightContrast_ WRITE dummySet NOTIFY lightContrastChanged)
+
+	Q_PROPERTY(bool customDarkText MEMBER customDarkText_ NOTIFY customDarkTextChanged)
+	Q_PROPERTY(int customDarkContrast MEMBER customDarkContrast_ NOTIFY customDarkContrastChanged)
+	Q_PROPERTY(int customLightContrast MEMBER customLightContrast_ NOTIFY customLightContrastChanged)
 
 	Q_PROPERTY(QColor customWindowColor MEMBER customWindowColor_ NOTIFY customWindowColorChanged)
 	Q_PROPERTY(QColor customHighlightColor MEMBER customHighlightColor_ NOTIFY customHighlightColorChanged)
+	Q_PROPERTY(QColor customReadonlyColor MEMBER customReadonlyColor_ NOTIFY customReadonlyColorChanged)
+
+	Q_PROPERTY(QColor warningHighlight MEMBER warningHighlight_ NOTIFY warningHighlightChanged)
+	Q_PROPERTY(QColor errorHighlight MEMBER errorHighlight_ NOTIFY errorHighlightChanged)
+	Q_PROPERTY(QColor successHighlight MEMBER successHighlight_ NOTIFY successHighlightChanged)
 
 	// \/\/\/\/ DEPRECATED \/\/\/\/
 
@@ -93,15 +107,9 @@ public:
 
 	Q_PROPERTY(QColor HighlightShade MEMBER highlightShade_ CONSTANT)
 
-	Q_PROPERTY(bool glowStyle MEMBER glowStyle_ NOTIFY glowChanged)
-
-	Q_PROPERTY(bool GlowStyle MEMBER glowStyle_ NOTIFY glowChanged)
-
 	// ********** DEPRECATED **********
 
-	Q_PROPERTY(Theme theme READ theme WRITE setTheme NOTIFY themeChanged)
-
-	Q_ENUMS(Theme)
+	Q_PROPERTY(int theme READ getQtTheme WRITE setQtTheme NOTIFY themeChanged)
 
 	// Fake set function to make colors read-only (for now)
 	void dummySet(QColor){};
@@ -110,46 +118,50 @@ public:
 	explicit QtPalette(QPalette& palette);
 
 	QPalette toQPalette() const;
+	const QColor& getColor(Palette::Color color) const;
+	void setCustomColor(Palette::Color color, QColor newColor);
 
-	enum Theme
-	{
-		Dark,
-		Light,
-		BattleRed,
-		ArmyBrown,
-		AirForceGreen,
-		NavyBlue,
-		Custom
-	};
+	Palette::Theme getTheme() const;
+	void setTheme(Palette::Theme theme);
 
-	Theme theme() const
-	{
-		return theme_;
-	}
+	int getCustomContrast(bool dark) const;
+	void setCustomContrast(int contrast, bool dark);
 
-	void setTheme(Theme theme);
+	bool getCustomDarkText() const;
+	void setCustomDarkText(bool dText);
+
+	typedef void PaletteThemeChanged(Palette::Theme);
+	typedef std::function<PaletteThemeChanged> PaletteThemeChangedCallback;
+	Connection connectPaletteThemeChanged(PaletteThemeChangedCallback cb);
 
 signals:
 	void colorChanged();
+
 	void darkContrastChanged();
 	void lightContrastChanged();
 	void darkTextChanged();
 
+	void customDarkTextChanged();
+	void customDarkContrastChanged();
+	void customLightContrastChanged();
+
 	void customWindowColorChanged();
 	void customHighlightColorChanged();
+	void customReadonlyColorChanged();
 
-	void themeChanged(Theme theme);
+	void warningHighlightChanged();
+	void errorHighlightChanged();
+	void successHighlightChanged();
 
-	// DEPRECATED
-	void glowChanged();
+	void themeChanged(int theme);
 
 private slots:
-	void onPaletteChanged();
 	void onColorChanged();
 
-public slots:
-
 private:
+	int getQtTheme() const;
+	void setQtTheme(int theme);
+
 	QColor mainWindowColor_;
 	QColor highlightColor_;
 	QColor toolTipColor_;
@@ -167,6 +179,7 @@ private:
 	QColor midDarkColor_;
 	QColor midLightColor_;
 	QColor darkColor_;
+	QColor lightColor_;
 
 	QColor neutralTextColor_;
 	QColor disabledTextColor_;
@@ -186,25 +199,35 @@ private:
 
 	QColor highlightShade_;
 
+	QColor readonlyColor_;
+	QColor readonlyShade_;
+	QColor readonlyTextColor_;
+
 	QColor customWindowColor_;
 	QColor customHighlightColor_;
+	QColor customReadonlyColor_;
+
+	QColor warningHighlight_;
+	QColor errorHighlight_;
+	QColor successHighlight_;
 
 	bool darkText_;
-
 	int darkContrast_;
 	int lightContrast_;
 
+
+	bool customDarkText_ = true;
+	int customDarkContrast_ = 32;
+	int customLightContrast_ = 16;
+
 	int timerid_;
-	Theme theme_;
+
+	Palette::Theme theme_;
+	Signal<PaletteThemeChanged> themeChanged_;
 
 	void createDefaultPalette();
 	void generateStyle();
-
-	// DEPRECATED No longer does anything
-	bool glowStyle_;
-
-protected:
-	virtual void timerEvent(QTimerEvent* event) override;
+	void paletteChanged();
 };
 } // end namespace wgt
 #endif // QT_PALETTE_H

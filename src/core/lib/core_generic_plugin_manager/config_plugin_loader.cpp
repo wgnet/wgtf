@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iterator>
 #include <codecvt>
+#include <algorithm>
 
 namespace wgt
 {
@@ -23,8 +24,17 @@ bool getPlugins(std::vector<std::wstring>& plugins, const std::wstring& configFi
 
 	if (inputFile.good())
 	{
-		std::vector<std::wstring> v((wistream_iterator(inputFile)), wistream_iterator());
-		plugins.swap(v);
+		std::wstring line;
+		while (getline(inputFile, line))
+		{
+			if (line.size() == 0 || line[0] == '#')
+			{
+				continue;
+			}
+
+			plugins.emplace_back(line);
+		}
+
 		return true;
 	}
 

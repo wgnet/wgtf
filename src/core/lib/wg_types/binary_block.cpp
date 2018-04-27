@@ -1,6 +1,8 @@
 #include "binary_block.hpp"
+
+#include "core_common/assert.hpp"
+
 #include <cstring>
-#include <cassert>
 #include <memory>
 
 namespace wgt
@@ -150,7 +152,7 @@ int BinaryBlock::compare(const BinaryBlock& that) const
 	{
 		return 1;
 	}
-	assert(this->length_ >= 0);
+	TF_ASSERT(this->length_ >= 0);
 	return memcmp(this->data_, that.data_, (size_t)this->length_);
 }
 } // end namespace wgt

@@ -2,7 +2,7 @@
 
 #if ENABLE_WG_CONDITION_VARIABLE_WORKAROUND
 
-#include <cassert>
+#include "core_common/assert.hpp"
 #include "ngt_windows.hpp"
 
 // evgenys: disabled to reduce number of false positive leak reports from allocator on app shutdown
@@ -132,7 +132,7 @@ wg_condition_variable::wg_condition_variable() : waitersMutex_(), waiters_()
 
 wg_condition_variable::~wg_condition_variable()
 {
-	assert(waiters_.empty());
+	TF_ASSERT(waiters_.empty());
 }
 
 void wg_condition_variable::notify_all()

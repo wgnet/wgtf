@@ -1,0 +1,222 @@
+#pragma once
+
+#include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+
+BEGIN_EXPOSE(MetaBasesHolderObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaDirectInvokeObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaComponentObj)
+EXPOSE("componentName", componentName_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaAngleObj, MetaDirectBases( MetaComponentObj ) )
+EXPOSE("storeRadians", storeRadians_)
+EXPOSE("showRadians", showRadians_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaTimeObj, MetaDirectBases(MetaComponentObj))
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaSignalObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaInvalidatesObjectObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaCallbackObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaMinMaxObj)
+EXPOSE("min", getMin)
+EXPOSE("max", getMax)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaMinMaxMappedObj, MetaDirectBases(MetaMinMaxObj))
+EXPOSE("mappedMin", getMappedMin)
+EXPOSE("mappedMax", getMappedMax)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaStepSizeObj)
+EXPOSE("stepSize", getStepSize)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaDecimalsObj)
+EXPOSE("decimals", getDecimals)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaEnumObj)
+EXPOSE("enumString", getEnumString)
+EXPOSE_METHOD("generateEnum", generateEnum)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaSliderObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaDisplayNameObj)
+EXPOSE("displayName", displayName_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaAttributeDisplayNameObj)
+EXPOSE("attributeName", getAttributeName)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaDisplayNameCallbackObj, MetaDirectBases( MetaDisplayNameObj ))
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaIconObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaDescriptionObj)
+EXPOSE("description", getDescription)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaTooltipObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaPanelLayoutObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaNoNullObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaColorObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaKelvinColorObj, MetaDirectBases(MetaComponentObj, MetaColorObj))
+EXPOSE_METHOD("convert", convert, MetaDirectInvoke())
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaHDRColorObj, MetaDirectBases(MetaComponentObj, MetaColorObj))
+EXPOSE_METHOD("tonemap", tonemap, MetaDirectInvoke())
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaHDRColorReinhardTonemapObj, MetaDirectBases(MetaHDRColorObj))
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaHiddenObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaThumbnailObj)
+EXPOSE("width", getWidth)
+EXPOSE("height", getHeight)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaInPlaceObj)
+EXPOSE("propName", getPropName)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaSelectedObj)
+EXPOSE("propName", getPropName)
+END_EXPOSE()
+
+BEGIN_EXPOSE(IMetaAnimatedObj)
+EXPOSE_METHOD("isActive", isActive)
+EXPOSE_METHOD("setActive", setActive);
+
+EXPOSE_METHOD("isLooping", isLooping);
+EXPOSE_METHOD("setLooping", setLooping);
+
+EXPOSE_METHOD("getDuration", getDuration);
+EXPOSE_METHOD("getNumberOfKeyframes", getNumberOfKeyframes);
+EXPOSE_METHOD("insertKeyframe", insertKeyframe);
+EXPOSE_METHOD("removeKeyframe", removeKeyframe);
+EXPOSE_METHOD("getKeyframeValue", getKeyframeValue);
+EXPOSE_METHOD("setKeyframeValue", setKeyframeValue);
+
+EXPOSE_METHOD("getKeyframeTime", getKeyframeTime);
+EXPOSE_METHOD("setKeyframeTime", setKeyframeTime);
+
+EXPOSE_METHOD("extrapolateValue", extrapolateValue);
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaGroupObj, MetaAttributeDisplayName("groupName"))
+EXPOSE("groupName", groupName_)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaGroupCallbackObj, MetaDirectBases( MetaGroupObj ) + MetaAttributeDisplayName("groupName"))
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaUrlObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaParamHelpObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaReturnHelpObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaConsoleHelpObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaScriptFunctionHelpObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaCheckBoxObj, MetaDirectBases(MetaComponentObj))
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaPasswordObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaMultilineObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaInPlacePropertyNameObj)
+EXPOSE("propertyName", getPropertyName)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaReadOnlyObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaUniqueIdObj)
+EXPOSE("id", getId)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaCommandObj)
+EXPOSE("commandName", getCommandName)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaActionObj)
+EXPOSE("actionName", getActionName)
+EXPOSE_METHOD("execute", execute, MetaDirectInvoke())
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaNoSerializationObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaOnStackObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaDisplayPathNameCallbackObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaCollectionItemMetaObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaStaticStringObj)
+EXPOSE_METHOD("staticString", getStaticStringExpose)
+EXPOSE_METHOD("allStaticStringIds", getAllStaticStringIdsExpose)
+EXPOSE_METHOD("staticStringId", getStaticStringId)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaDropHitTestObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaEnableValueComponentForObjectObj, MetaDirectBases(MetaComponentObj))
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaAutoActionObj)
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaInsertObj)
+END_EXPOSE()
+
+} // end namespace wgt

@@ -18,11 +18,12 @@ public:
 	virtual ~PanelManager();
 
 	wg_future<std::unique_ptr<IView>> createAssetBrowser(
-	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> assetModel) override;
+		const std::string& title,
+		ObjectHandleT<AssetBrowser20::IAssetBrowserModel> assetModel) override;
 
 private:
 	IComponentContext& contextManager_;
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 };
 } // end namespace wgt
 #endif // ASSET_BROWSER_VIEW_HPP

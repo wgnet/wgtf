@@ -2,7 +2,7 @@
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/filtering/string_filter.hpp"
 #include "core_reflection/object_handle.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include <QString>
 #include <QVariant>
 

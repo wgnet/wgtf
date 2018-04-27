@@ -39,6 +39,7 @@ public:
 	virtual bool insertRows(int row, int count) override;
 	virtual bool removeRows(int row, int count) override;
 
+	void iterateRoles(const std::function<void(const char*)>&) const override;
 	virtual std::vector<std::string> roles() const override;
 
 	// Collection interface using keys
@@ -118,10 +119,31 @@ protected:
 	Signal<AbstractListModel::VoidSignature> preModelReset_;
 	Signal<AbstractListModel::VoidSignature> postModelReset_;
 
-	std::vector<Connection> connections_;
+	ConnectionHolder connections_;
 
-	private:
-		void setSourceInternal(const Collection& collection);
+private:
+	void setSourceInternal(const Collection& collection);
+	void updateCacheAfterInsert(int row, int count, std::vector<std::unique_ptr<AbstractItem>>& items);
+	void updateCacheAfterRemove(int row, int count, std::vector<std::unique_ptr<AbstractItem>>& items);
 };
+
+class CollectionItem : public AbstractItem
+{
+public:
+	CollectionItem(CollectionModel& model, size_t index);
+	virtual ~CollectionItem()
+	{
+	}
+
+	virtual Variant getData(int row, int column, ItemRole::Id roleId) const;
+	virtual bool setData(int row, int column, ItemRole::Id roleId, const Variant& data);
+
+	friend class CollectionModel;
+
+protected:
+	CollectionModel& model_;
+	size_t index_;
+};
+
 } // end namespace wgt
 #endif // COLLECTION_LIST_MODEL_HPP

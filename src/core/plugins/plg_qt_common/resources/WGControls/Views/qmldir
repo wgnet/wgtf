@@ -1,13 +1,23 @@
 module WGControls.Views
 
 # 2.0 New Controls
+WGAssetListView 2.0 WGAssetListView20.qml
+WGAssetTreeView 2.0 WGAssetTreeView20.qml
+WGAssetIconView 2.0 WGAssetIconView20.qml
+WGFooterPreviewPane 2.0 WGFooterPreviewPane20.qml
 WGFooterRow 2.0 WGFooterRow20.qml
+WGHeaderToolbar 2.0 WGHeaderToolbar20.qml
+WGIconView 2.0 WGIconView20.qml
+WGIconViewDelegate 2.0 WGIconViewDelegate20.qml
 WGItemRow 2.0 WGItemRow20.qml
 WGItemViewCommon 2.0 WGItemViewCommon.qml
 WGListViewBase 2.0 WGListViewBase20.qml
 WGPropertyTreeView 2.0 WGPropertyTreeView20.qml
 WGScrollView 2.0 WGScrollView20.qml
 WGTreeViewBase 2.0 WGTreeViewBase20.qml
+WGTreeViewBaseChild 2.0 WGTreeViewBaseChild20.qml
+singleton WGTreeViewBaseGlobals 2.0 WGTreeViewBaseGlobals.qml
+WGIconViewBase 2.0 WGIconViewBase20.qml
 
 # 2.0 Updated Controls
 WGColumnsFrame 2.0 WGColumnsFrame20.qml

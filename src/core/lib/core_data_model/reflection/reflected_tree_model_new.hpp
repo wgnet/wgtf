@@ -29,7 +29,7 @@ Is transformed into:
 class ReflectedTreeModelNew : public AbstractTreeModel
 {
 public:
-	ReflectedTreeModelNew(IComponentContext& contextManager, const ObjectHandle& object);
+	ReflectedTreeModelNew(const ObjectHandle& object);
 	virtual ~ReflectedTreeModelNew();
 
 	/** Gets the item at an index position.
@@ -85,6 +85,7 @@ public:
 	@return True if at least one child found. */
 	virtual bool hasChildren(const AbstractItem* item) const override;
 
+	void iterateRoles(const std::function<void(const char*)>& iterFunc) const override;
 	virtual std::vector<std::string> roles() const override;
 
 	virtual bool hasController() const override;

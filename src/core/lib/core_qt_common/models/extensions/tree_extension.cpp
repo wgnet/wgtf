@@ -1,8 +1,12 @@
 #include "tree_extension.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_qt_common/models/adapters/child_list_adapter.hpp"
 #include "core_qt_common/models/adapters/indexed_adapter.hpp"
 #include "core_variant/variant.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
+#include "core_common/scoped_stop_watch.hpp"
+#include "core_reflection/reflection_batch_query.hpp"
 
 namespace wgt
 {
@@ -19,9 +23,43 @@ struct TreeExtension::Implementation
 	TreeExtension& self_;
 	std::vector<IndexedAdapter<ChildListAdapter>> childModels_;
 	std::vector<std::unique_ptr<ChildListAdapter>> redundantChildModels_;
+
+	struct ExpandHelper
+	{
+		ExpandHelper(TreeExtension::Implementation & impl, bool forceExpand);
+		~ExpandHelper();
+
+		TreeExtension::Implementation & impl_;
+		bool forceExpand_;
+		//TODO : move to core_data_model and hook a signal to tree extension
+		ReflectionBatchQuery batchQuery_;
+	};
+
+	ExpandHelper * expandHelper_;
 };
 
-TreeExtension::Implementation::Implementation(TreeExtension& self) : self_(self)
+
+//------------------------------------------------------------------------------
+TreeExtension::Implementation::ExpandHelper::ExpandHelper(
+	TreeExtension::Implementation & impl, bool forceExpand)
+	: impl_(impl)
+	, forceExpand_(forceExpand)
+{
+	impl_.expandHelper_ = forceExpand_ ? this : nullptr;
+}
+
+
+//------------------------------------------------------------------------------
+TreeExtension::Implementation::ExpandHelper::~ExpandHelper()
+{
+	impl_.expandHelper_ = nullptr;
+}
+
+
+//------------------------------------------------------------------------------
+TreeExtension::Implementation::Implementation(TreeExtension& self)
+	: self_(self)
+	, expandHelper_( nullptr )
 {
 }
 
@@ -31,7 +69,21 @@ TreeExtension::Implementation::~Implementation()
 
 bool TreeExtension::Implementation::expanded(const QModelIndex& index) const
 {
-	return self_.extensionData_->dataExt(index, ItemRole::expandedId).toBool();
+	auto currentState = self_.extensionData_->data(index, ItemRole::expandedId).toBool();
+	//TODO: Make this work for the situation where we need to expand only some properties 
+	//especially when we switch between documents / resetting the model.
+	if (expandHelper_)
+	{
+		if (currentState == false)
+		{
+			self_.extensionData_->suppressNotifications(true);
+			self_.extensionData_->setData(
+				index, true, ItemRole::expandedId);
+			self_.extensionData_->suppressNotifications(false);
+			return true;
+		}
+	}
+	return currentState;
 }
 
 TreeExtension::TreeExtension() : impl_(new Implementation(*this))
@@ -94,7 +146,7 @@ bool TreeExtension::setData(const QModelIndex& index, const QVariant& value, Ite
 
 	if (roleId == ItemRole::expandedId)
 	{
-		return extensionData_->setDataExt(index, value, roleId);
+		return extensionData_->setData(index, value, roleId);
 	}
 
 	return false;
@@ -143,7 +195,7 @@ void TreeExtension::onLayoutChanged(const QList<QPersistentModelIndex>& parents,
 	extRoles.append(ItemRole::hasChildrenId);
 	for (auto it = parents.begin(); it != parents.end(); ++it)
 	{
-		emit extensionData_->dataExtChanged(*it, *it, extRoles);
+		emit extensionData_->dataChanged(*it, *it, extRoles);
 	}
 }
 
@@ -182,11 +234,12 @@ void TreeExtension::onRowsInserted(const QModelIndex& parent, int first, int las
 		return;
 	}
 
-	if (model->rowCount() == last - first + 1)
+	if (model->rowCount(parent) == last - first + 1)
 	{
 		QVector<ItemRole::Id> extRoles;
 		extRoles.append(ItemRole::hasChildrenId);
-		emit extensionData_->dataExtChanged(parent, parent, extRoles);
+		extRoles.append(ItemRole::expandedId);
+		emit extensionData_->dataChanged(parent, parent, extRoles);
 	}
 }
 
@@ -233,7 +286,7 @@ void TreeExtension::onRowsRemoved(const QModelIndex& parent, int first, int last
 	{
 		QVector<ItemRole::Id> extRoles;
 		extRoles.append(ItemRole::hasChildrenId);
-		emit extensionData_->dataExtChanged(parent, parent, extRoles);
+		emit extensionData_->dataChanged(parent, parent, extRoles);
 	}
 }
 
@@ -247,6 +300,12 @@ void TreeExtension::onRowsMoved(const QModelIndex& sourceParent, int sourceFirst
                                 const QModelIndex& destinationParent, int destinationRow) /* override */
 {
 	impl_->redundantChildModels_.clear();
+}
+
+void TreeExtension::onModelReset()
+{
+	impl_->redundantChildModels_.clear();
+	isolateRedundantIndices(impl_->childModels_, impl_->redundantChildModels_);
 }
 
 QItemSelection TreeExtension::itemSelection(const QModelIndex& first, const QModelIndex& last) const
@@ -343,7 +402,7 @@ QItemSelection TreeExtension::itemSelection(const QModelIndex& first, const QMod
 
 		// Move next
 		const auto next = this->getNextIndex(it, const_cast<QAbstractItemModel*>(it.model()));
-		assert(it != next);
+		TF_ASSERT(it != next);
 		it = next;
 	}
 
@@ -362,7 +421,7 @@ QModelIndex TreeExtension::getNextIndex(const QModelIndex& index, QAbstractItemM
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	// Move to next child
 	// > a    - start
@@ -418,7 +477,7 @@ QModelIndex TreeExtension::getPreviousIndex(const QModelIndex& index, QAbstractI
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	// Move back to previous sibling
 	// > a
@@ -491,7 +550,7 @@ QModelIndex TreeExtension::getForwardIndex(const QModelIndex& index, QAbstractIt
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	// Make sure the current item has children
 	if (pModel->hasChildren(index))
@@ -508,7 +567,7 @@ QModelIndex TreeExtension::getForwardIndex(const QModelIndex& index, QAbstractIt
 		else
 		{
 			// Expand the current item
-			const_cast<TreeExtension*>(this)->extensionData_->setDataExt(index, true, ItemRole::expandedId);
+			const_cast<TreeExtension*>(this)->extensionData_->setData(index, true, ItemRole::expandedId);
 			return index;
 		}
 	}
@@ -528,20 +587,26 @@ QModelIndex TreeExtension::getBackwardIndex(const QModelIndex& index, QAbstractI
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	// Move up to the parent if there are no children or not expanded
 	if (pModel->hasChildren(index) && impl_->expanded(index))
 	{
 		// Collapse the current item
-		const_cast<TreeExtension*>(this)->extensionData_->setDataExt(index, false, ItemRole::expandedId);
+		const_cast<TreeExtension*>(this)->extensionData_->setData(index, false, ItemRole::expandedId);
 		return index;
 	}
 
 	return this->getPreviousIndex(index, pModel);
 }
 
-void TreeExtension::expand(const QModelIndex& index)
+void TreeExtension::expand(const QModelIndex& index, bool recursive)
+{
+	Implementation::ExpandHelper expandHelper(*impl_, recursive);
+	expandInternal(index, recursive);
+}
+
+void TreeExtension::expandInternal(const QModelIndex& index, bool recursive)
 {
 	if (!index.isValid())
 	{
@@ -549,12 +614,19 @@ void TreeExtension::expand(const QModelIndex& index)
 	}
 
 	const auto pModel = index.model();
-	assert(pModel != nullptr);
+	TF_ASSERT(pModel != nullptr);
 	if (pModel->hasChildren(index))
 	{
-		extensionData_->setDataExt(index, true, ItemRole::expandedId);
+		extensionData_->setData(index, true, ItemRole::expandedId);
+		if (recursive)
+		{
+			for (int r = 0; r < pModel->rowCount(index); ++r) {
+				QModelIndex childIndex = pModel->index(r, 0, index);
+				expand(childIndex, recursive);
+			}
+		}
 	}
-	expand(pModel->parent(index));
+	expand(pModel->parent(index), false);
 }
 
 void TreeExtension::collapse(const QModelIndex& index)
@@ -564,18 +636,19 @@ void TreeExtension::collapse(const QModelIndex& index)
 		return;
 	}
 
-	extensionData_->setDataExt(index, false, ItemRole::expandedId);
+	extensionData_->setData(index, false, ItemRole::expandedId);
 }
 
-void TreeExtension::toggle(const QModelIndex& index)
+void TreeExtension::toggle(const QModelIndex& index, bool recursiveExpand)
 {
+	SCOPE_TAG
 	if (impl_->expanded(index))
 	{
 		collapse(index);
 	}
 	else
 	{
-		expand(index);
+		expand(index, recursiveExpand);
 	}
 }
 } // end namespace wgt

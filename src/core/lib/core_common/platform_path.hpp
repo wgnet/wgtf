@@ -1,6 +1,8 @@
 #ifndef __PLATFORM_PATH_HPP__
 #define __PLATFORM_PATH_HPP__
 
+#include <string>
+
 #if defined(_WIN32)
 #include <windows.h>
 #include <shlwapi.h>
@@ -17,6 +19,8 @@ namespace wgt
 {
 void AddDllExtension(wchar_t* file);
 bool GetUserDirectoryPath(char (&path)[MAX_PATH]);
+bool GetUserAppDataPath(char(&path)[MAX_PATH]);
+bool GetWGAppDataPath(std::string& path);
 bool CreateDirectoryPath(const char* path);
 } // end namespace wgt
 

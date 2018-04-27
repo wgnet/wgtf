@@ -1,16 +1,17 @@
 #include "qt_application.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_common/ngt_windows.hpp"
 #include "core_common/platform_env.hpp"
 
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/qml_view.hpp"
+#include "core_qt_common/qt_cursor.hpp"
 #include "core_qt_common/qt_palette.hpp"
 #include "core_qt_common/qt_window.hpp"
 
 #include "core_ui_framework/i_action.hpp"
-
-#include <cassert>
+#include "core_logging/logging.hpp"
 
 #include <QAbstractEventDispatcher>
 #include <QApplication>
@@ -22,40 +23,8 @@
 
 namespace wgt
 {
-namespace
-{
-class IdleLoop : public QObject
-{
-public:
-	IdleLoop(QtApplication& qtApplication, QObject* parent) : QObject(parent), qtApplication_(qtApplication)
-	{
-		timer_ = new QTimer(this);
-		timer_->setInterval(10);
-		QObject::connect(timer_, &QTimer::timeout, [&]() { qtApplication_.update(); });
-	}
-
-public slots:
-	void start()
-	{
-		qtApplication_.update();
-		timer_->start();
-	}
-
-	void stop()
-	{
-		timer_->stop();
-	}
-
-private:
-	QtApplication& qtApplication_;
-	QTimer* timer_;
-};
-}
-
-QtApplication::QtApplication(IComponentContext& context, int& argc, char** argv)
-    : Depends<IQtFramework, ISplash>(context), application_(nullptr), argc_(argc), argv_(argv), splash_(nullptr),
-      bQuit_(false)
-
+QtApplication::QtApplication(int& argc, char** argv)
+    : application_(nullptr), argc_(argc), argv_(argv), splash_(nullptr), bQuit_(false)
 {
 	char wgtHome[MAX_PATH];
 
@@ -71,15 +40,16 @@ QtApplication::QtApplication(IComponentContext& context, int& argc, char** argv)
 	QApplication::setStyle(QStyleFactory::create("Fusion"));
 	QApplication::setFont(QFont("Noto Sans", 9));
 
-	auto dispatcher = QAbstractEventDispatcher::instance();
-	auto idleLoop = new IdleLoop(*this, application_.get());
-
-	QObject::connect(dispatcher, &QAbstractEventDispatcher::aboutToBlock, idleLoop, &IdleLoop::start);
-	QObject::connect(dispatcher, &QAbstractEventDispatcher::awake, idleLoop, &IdleLoop::stop);
+	startTimer(10, [this]() { update(); });
 }
 
 QtApplication::~QtApplication()
 {
+	for (auto& timer : timers_)
+	{
+		timer.second->stop();
+		timer.second->deleteLater();
+	}
 }
 
 void QtApplication::initialise()
@@ -111,7 +81,7 @@ void QtApplication::initialise()
 	splash_.reset(new QSplashScreen(pixmap));
 	splash_->show();
 	auto qtFramework = this->get<IQtFramework>();
-	assert(qtFramework != nullptr);
+	TF_ASSERT(qtFramework != nullptr);
 	if (qtFramework != nullptr)
 	{
 		auto palette = qtFramework->palette();
@@ -129,35 +99,77 @@ void QtApplication::finalise()
 
 void QtApplication::update()
 {
-	// Only called while app is idle
-	// App may or may not have idle time
 	layoutManager_.update();
 	auto qtFramework = this->get<IQtFramework>();
 	if (qtFramework != nullptr)
 	{
 		qtFramework->incubate();
 	}
-
 	signalUpdate();
 }
 
 int QtApplication::startApplication()
 {
-	assert(application_ != nullptr);
+	TF_ASSERT(application_ != nullptr);
 	signalStartUp();
 	splash_->close();
-	splash_ = nullptr;
 	if (bQuit_)
 	{
 		return 0;
 	}
+
+	if (auto automation = get<IAutomation>())
+	{
+		automation->notifyLoadingDone();
+	}
+
+	NGT_MSG("Starting %s\n%s",
+		application_->applicationFilePath().toUtf8().constData(),
+		splash_ ? splash_->message().toUtf8().constData() : "");
+
 	return application_->exec();
 }
 
 void QtApplication::quitApplication()
 {
+	signalExit();
 	QApplication::quit();
+	splash_ = nullptr;
 	bQuit_ = true;
+}
+
+IApplication::TimerId QtApplication::startTimer(int interval_ms, TimerCallback callback)
+{
+	if (application_ == nullptr)
+		return 0;
+
+	auto timer = new QTimer(application_.get());
+	QObject::connect(timer, &QTimer::timeout, [callback]() { callback(); });
+	timer->start(interval_ms);
+	timers_[timer->timerId()] = timer;
+	return timer->timerId();
+}
+
+void QtApplication::killTimer(TimerId id)
+{
+	auto found = timers_.find(id);
+	if (found != timers_.end())
+	{
+		auto timer = found->second;
+		timer->stop();
+		timers_.erase(found);
+		timer->deleteLater();
+	}
+}
+
+void QtApplication::setAppSettingsName(const char* name)
+{
+	applicationSettingsName_ = name;
+}
+
+const char* QtApplication::getAppSettingsName()
+{
+	return applicationSettingsName_.c_str();
 }
 
 void QtApplication::addWindow(IWindow& window)
@@ -168,6 +180,11 @@ void QtApplication::addWindow(IWindow& window)
 void QtApplication::removeWindow(IWindow& window)
 {
 	layoutManager_.removeWindow(window);
+}
+
+void QtApplication::addMenuPath(const char* path, const char* windowId)
+{
+	layoutManager_.addMenuPath(path, windowId);
 }
 
 void QtApplication::addView(IView& view)
@@ -203,6 +220,92 @@ void QtApplication::removeAction(IAction& action)
 void QtApplication::setWindowIcon(const char* path, const char* windowId)
 {
 	layoutManager_.setWindowIcon(path, windowId);
+}
+
+void QtApplication::setStatusMessage(const char* message, int timeout)
+{
+	layoutManager_.setStatusMessage(message, timeout);
+}
+
+void QtApplication::setOverrideCursor(CursorId id)
+{
+	if(id.id() <= LastCursor.id())
+	{
+		auto cursorShape = static_cast<Qt::CursorShape>(id.id());
+		application_->setOverrideCursor(cursorShape);
+	}
+	else if(auto qCursor = reinterpret_cast<QCursor*>(id.nativeCursor()))
+	{
+		application_->setOverrideCursor(*qCursor);
+	}
+}
+
+void QtApplication::restoreOverrideCursor()
+{
+	application_->restoreOverrideCursor();
+}
+
+ICursorPtr QtApplication::createCustomCursor(const char * filename, int hotX, int hotY)
+{
+	return std::make_unique<QtCursor>(filename, hotX, hotY);
+}
+
+void QtApplication::saveWindowPreferences()
+{
+	layoutManager_.saveWindowPreferences();
+}
+
+bool QtApplication::splashScreenIsShowing()
+{
+	if (!splash_.get()) return false;
+
+	bool result = splash_->isVisible();
+	return result;
+}
+
+void QtApplication::toggleShowSplashScreen()
+{
+	if (!splash_.get()) return;
+
+	if (splash_->isVisible()) splash_->hide();
+	else                      splash_->show();
+	application_->processEvents();
+}
+
+
+bool QtApplication::setSplashScreen(const char* const path)
+{
+	QPixmap pixmap;
+	if (pixmap.load(path))
+	{
+		splash_.reset(new QSplashScreen(pixmap));
+		application_->processEvents();
+		return true;
+	}
+	else 
+	{
+		return false;
+	}
+}
+
+bool QtApplication::setSplashScreenMessage(const char* const message) 
+{
+	if (!splash_.get()) return false;
+	splash_->showMessage(message);
+	application_->processEvents();
+
+	return true;
+}
+
+const char* const QtApplication::getSplashScreenMessage() 
+{
+	if (splash_.get()) {
+		QString qString = splash_->message();
+		const char *const result = qString.toUtf8().data();
+		return result;
+	}
+
+	return "";
 }
 
 const Windows& QtApplication::windows() const

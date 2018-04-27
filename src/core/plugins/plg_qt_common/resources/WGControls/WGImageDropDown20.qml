@@ -56,7 +56,7 @@ WGDropDownBox {
         wrapMode: Text.WordWrap
     }
 
-    contentItem: Image {
+    contentItem: Item {
         id: contentImage
         objectName: "ContentImage"
         anchors.centerIn: parent

@@ -1,18 +1,15 @@
 #include "thumbnail_extension.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/i_list_model.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/models/wg_list_model.hpp"
 #include "core_qt_common/qt_image_provider_old.hpp"
 
 namespace wgt
 {
-ThumbnailExtension::ThumbnailExtension()
-{
-	qtFramework_ = Context::queryInterface<IQtFramework>();
-}
-
 ThumbnailExtension::~ThumbnailExtension()
 {
 }
@@ -32,7 +29,7 @@ QVariant ThumbnailExtension::data(const QModelIndex& index, int role) const
 		return QVariant(QVariant::Invalid);
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	auto item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr)
 	{
@@ -46,7 +43,7 @@ QVariant ThumbnailExtension::data(const QModelIndex& index, int role) const
 		if (thumbnail != nullptr)
 		{
 			auto qtImageProvider = dynamic_cast<QtImageProviderOld*>(
-			qtFramework_->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
+			get<IQtFramework>()->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
 			if (qtImageProvider != nullptr)
 			{
 				return qtImageProvider->encodeImage(thumbnail);

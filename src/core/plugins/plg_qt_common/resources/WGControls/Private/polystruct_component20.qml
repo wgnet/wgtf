@@ -6,35 +6,48 @@ import WGControls 2.0
 WGDropDownBox {
     id: combobox
     objectName: typeof itemData.indexPath == "undefined" ? "polystruct_component" : itemData.indexPath
-    anchors.left: parent.left
-    anchors.right: parent.right
-    enabled: itemData.enabled && !itemData.readOnly
+    enabled: itemData.enabled && !itemData.readOnly && (typeof readOnlyComponent == "undefined" || !readOnlyComponent)
     multipleValues: itemData.multipleValues
 
-    Component.onCompleted: {
-        currentIndex = Qt.binding( function() {
-            var modelIndex = polyModel.find( itemData.definition, "value" );
-            return polyModel.indexRow( modelIndex ); } )
-    }
+    property var polyModel: typeof itemData.definitionModel != "undefined" ? itemData.definitionModel : null
+	property var definition: typeof itemData.definition != "undefined" ? itemData.definition : null
 
     model: polyModel
     textRole: "display"
 
-    WGListModel {
-        id: polyModel
-        source: itemData.definitionModel
+	Component.onCompleted: {
+		updateCurrentIndex();
+		currentIndexChanged.connect(updateDefinition)
+	}
 
-        ValueExtension {}
-    }
+	onDefinitionChanged: {
+		updateCurrentIndex();
+	}
 
-    Connections {
-        target: combobox
-        onCurrentIndexChanged: {
-            if (currentIndex < 0) {
-                return;
-            }
-            var modelIndex = polyModel.index( currentIndex );
-            itemData.definition = polyModel.data( modelIndex, "value" );
+    function updateDefinition() {
+        if (currentIndex < 0) {
+            return;
         }
+        var item = polyModel.item(currentIndex);
+		if(!multipleValues) {
+			itemData.definition = item.value;
+		} else {
+			beginUndoFrame();
+			itemData.definition = item.value;
+			endUndoFrame();
+		}
     }
+
+	function updateCurrentIndex() {
+		var count = (polyModel != null) ? polyModel.count() : 0;
+		var newIndex = -1;
+        for (var i = 0; i < count; ++i) {
+            var item = polyModel.item(i);
+            if (definition == item.value)
+                newIndex = i;
+        }
+        if (currentIndex != newIndex) {
+			currentIndex = newIndex;
+		}
+	}
 }

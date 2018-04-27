@@ -21,13 +21,9 @@ namespace wgt
 class FileSystemPlugin : public PluginMain
 {
 public:
-	FileSystemPlugin(IComponentContext& contextManager)
-	{
-	}
-
 	bool PostLoad(IComponentContext& contextManager) override
 	{
-		types_.push_back(contextManager.registerInterface(&fileSystem_, false));
+		contextManager.registerInterface(new FileSystem);
 		return true;
 	}
 
@@ -44,13 +40,12 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 
 private:
-	FileSystem fileSystem_;
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 };
 
 PLG_CALLBACK_FUNC(FileSystemPlugin)

@@ -1,7 +1,9 @@
 #include "value_extension.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/i_list_model.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/models/wg_list_model.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_reflection/interfaces/i_class_definition.hpp"
@@ -11,6 +13,7 @@ namespace wgt
 ITEMROLE(readOnly)
 ITEMROLE(enabled)
 ITEMROLE(multipleValues)
+ITEMROLE(tooltip)
 
 ValueExtension::ValueExtension()
 {
@@ -48,6 +51,7 @@ QHash<int, QByteArray> ValueExtension::roleNames() const
 	registerRole(ItemRole::readOnlyName, roleNames);
 	registerRole(ItemRole::enabledName, roleNames);
 	registerRole(ItemRole::multipleValuesName, roleNames);
+	registerRole(ItemRole::tooltipName, roleNames);
 	for (auto i = 0; i < roles_.count(); ++i)
 	{
 		registerRole(roles_[i].toUtf8().constData(), roleNames);
@@ -63,7 +67,7 @@ QVariant ValueExtension::data(const QModelIndex& index, int role) const
 		return QVariant(QVariant::Invalid);
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	auto item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr)
 	{
@@ -80,9 +84,10 @@ QVariant ValueExtension::data(const QModelIndex& index, int role) const
 	    roleId == UrlDialogTitleRole::roleId_ || roleId == UrlDialogDefaultFolderRole::roleId_ ||
 	    roleId == UrlDialogNameFiltersRole::roleId_ || roleId == UrlDialogSelectedNameFilterRole::roleId_ ||
 	    roleId == IsReadOnlyRole::roleId_ || roleId == DescriptionRole::roleId_ || roleId == ItemRole::readOnlyId ||
-	    roleId == ItemRole::enabledId || roleId == ItemRole::multipleValuesId)
+	    roleId == ItemRole::enabledId || roleId == ItemRole::multipleValuesId || roleId == ItemRole::tooltipId)
 	{
-		return QtHelpers::toQVariant(item->getData(column, roleId), const_cast<QAbstractItemModel*>(index.model()));
+		return get<IQtHelpers>()->toQVariant(item->getData(column, roleId),
+		                                     const_cast<QAbstractItemModel*>(index.model()));
 	}
 	return QVariant(QVariant::Invalid);
 }
@@ -95,7 +100,7 @@ bool ValueExtension::setData(const QModelIndex& index, const QVariant& value, in
 		return false;
 	}
 
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 	auto item = reinterpret_cast<IItem*>(index.internalPointer());
 	if (item == nullptr)
 	{
@@ -105,14 +110,15 @@ bool ValueExtension::setData(const QModelIndex& index, const QVariant& value, in
 
 	if (roleId == ValueRole::roleId_ || roleId == DefinitionRole::roleId_)
 	{
+		auto qtHelpers = get<IQtHelpers>();
 		auto oldValue =
-		QtHelpers::toQVariant(item->getData(column, roleId), const_cast<QAbstractItemModel*>(index.model()));
+		qtHelpers->toQVariant(item->getData(column, roleId), const_cast<QAbstractItemModel*>(index.model()));
 		if (value == oldValue)
 		{
 			return true;
 		}
 
-		auto data = QtHelpers::toVariant(value);
+		auto data = qtHelpers->toVariant(value);
 		return item->setData(column, roleId, data);
 	}
 
@@ -122,7 +128,7 @@ bool ValueExtension::setData(const QModelIndex& index, const QVariant& value, in
 void ValueExtension::onDataAboutToBeChanged(const QModelIndex& index, int role, const QVariant& value)
 {
 	auto model = index.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	ItemRole::Id roleId;
 	if (!decodeRole(role, roleId))
@@ -142,7 +148,7 @@ void ValueExtension::onDataAboutToBeChanged(const QModelIndex& index, int role, 
 void ValueExtension::onDataChanged(const QModelIndex& index, int role, const QVariant& value)
 {
 	auto model = index.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	ItemRole::Id roleId;
 	if (!decodeRole(role, roleId))

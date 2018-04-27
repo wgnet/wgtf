@@ -9,6 +9,9 @@ context objects and properties.
 Details: Search for NGT Reflection System on the Wargaming Confluence
 */
 
+#include "core_qt_common/qt_scripting_engine_base.hpp"
+
+#include "core_dependency_system/i_interface.hpp"
 #include "core_reflection/utilities/reflection_utilities.hpp"
 
 #include <map>
@@ -28,11 +31,10 @@ class IQtTypeConverter;
 class IComponentContext;
 class ICommandManager;
 class ICopyPasteManager;
-class WGCopyController;
 class ObjectHandle;
 class QtScriptObject;
 
-class QtScriptingEngine : public QObject
+class QtScriptingEngine : public QtScriptingEngineBase
 {
 	Q_OBJECT
 
@@ -40,40 +42,40 @@ public:
 	QtScriptingEngine();
 	virtual ~QtScriptingEngine();
 
-	void initialise(IQtFramework& qtFramework, IComponentContext& contextManager);
+	void initialise() override;
 
-	void finalise();
+	void finalise() override;
 
-	QtScriptObject* createScriptObject(const Variant& object, QObject* parent);
-	void deregisterScriptObject(QtScriptObject& scriptObject);
-	void swapParent(QtScriptObject& scriptObject, QObject* parent);
-	IDefinitionManager* getDefinitionManager();
+	QtScriptObject* createScriptObject(const Variant& object, QObject* parent) override;
+	void deregisterScriptObject(QtScriptObject& scriptObject) override;
+	void swapParent(QtScriptObject& scriptObject, QObject* parent) override;
 
 protected:
 	// TODO: These invokables need to be refactored into different modules to
 	// reduce the bloat of this class
-	Q_INVOKABLE QObject* createObject(QString definition);
-	Q_INVOKABLE bool queueCommand(QString command);
-	Q_INVOKABLE void makeFakeMouseRelease();
-	Q_INVOKABLE void beginUndoFrame();
-	Q_INVOKABLE void endUndoFrame();
-	Q_INVOKABLE void abortUndoFrame();
-	Q_INVOKABLE QObject* iterator(const QVariant& collection);
-	Q_INVOKABLE QVariant getProperty(const QVariant& object, QString propertyPath);
-	Q_INVOKABLE void deleteMacro(QString command);
-	Q_INVOKABLE void selectControl(wgt::WGCopyController* control, bool append = true);
-	Q_INVOKABLE void deselectControl(wgt::WGCopyController* control, bool reset = false);
-	Q_INVOKABLE QColor grabScreenColor(int x, int y, QObject* mouseArea);
-	// this function is used to resolve breaking binding issue for checkbox and pushbutton, since
-	// clicking on checkbox or pushbutton will break the "checked" property binding
-	// see: https://bugreports.qt.io/browse/QTBUG-42505 for reference
-	Q_INVOKABLE bool setValueHelper(QObject* object, QString property, QVariant value);
+	Q_INVOKABLE bool queueCommand(QString command) override;
+	Q_INVOKABLE void beginUndoFrame() override;
+	Q_INVOKABLE void endUndoFrame() override;
+	Q_INVOKABLE void abortUndoFrame() override;
+	Q_INVOKABLE QObject* iterator(const QVariant& collection) override;
+	Q_INVOKABLE QVariant getProperty(const QVariant& object, QString propertyPath) override;
+	Q_INVOKABLE void deleteMacro(QString command) override;
+	Q_INVOKABLE QColor grabScreenColor(int x, int y, QObject* mouseArea) override;
+	Q_INVOKABLE bool isValidColor(QVariant value) override;
+	Q_INVOKABLE bool writeStringToFile(const QString& string, const QString& destPath) override;
+	Q_INVOKABLE QString readStringFromFile(const QString& srcPath) override;
 
 	// TODO: remove this when we support dynamically add properties in QML for GenericObject
-	Q_INVOKABLE void addPreference(const QString& preferenceId, const QString& propertyName, QVariant value);
+	Q_INVOKABLE void addPreference(const QString& preferenceId, const QString& propertyName, QVariant value) override;
+	Q_INVOKABLE QVariant getPreferenceValueByName(const QString& preferenceId, const QString& propertyName) override;
 
 	// this temp function is used by the child controls of a window when they try to close the parent window
-	Q_INVOKABLE void closeWindow(const QString& windowId);
+	Q_INVOKABLE void closeWindow(const QString& windowId) override;
+
+	Q_INVOKABLE QString getIconUrlFromImageProvider(const QString& iconKey) override;
+
+	Q_INVOKABLE void executeAction(const QString& actionId, const QVariant& contextObject) override;
+	Q_INVOKABLE bool canExecuteAction(const QString& actionId, const QVariant& contextObject) override;
 
 private:
 	struct Implementation;

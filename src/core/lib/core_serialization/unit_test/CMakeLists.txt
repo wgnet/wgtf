@@ -12,7 +12,7 @@ SET( ALL_SRCS
 )
 SOURCE_GROUP( "" FILES ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
+WG_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 
 IF( BW_PLATFORM_WINDOWS )
 	INCLUDE( "CMakeLists.windows.txt" )
@@ -30,9 +30,10 @@ ENDIF()
 
 BW_TARGET_LINK_LIBRARIES(  ${PROJECT_NAME} PRIVATE
 	core_common
-	core_reflection
+    core_command_system
 	core_string_utils
 	core_unit_test
+	core_serialization_xml
 
 	# external libraries
 	${PLATFORM_LIBRARIES}
@@ -40,5 +41,5 @@ BW_TARGET_LINK_LIBRARIES(  ${PROJECT_NAME} PRIVATE
 
 BW_ADD_TOOL_TEST( ${PROJECT_NAME} )
 
-BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
+WG_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Unit Tests" )

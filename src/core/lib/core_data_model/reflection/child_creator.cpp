@@ -40,8 +40,7 @@ struct PropertyNodeEqual
 
 } // namespace CCDetails
 
-ChildCreator::ChildCreator(IComponentContext& context)
-    : interfaceHolder(context), extensions(ChildCreatorExtension::createDummy()), allocator(createDefaultAllocator())
+ChildCreator::ChildCreator() : extensions(ChildCreatorExtension::createDummy()), allocator(createDefaultAllocator())
 {
 }
 
@@ -60,7 +59,7 @@ std::shared_ptr<const PropertyNode> ChildCreator::createRoot(const ObjectHandle&
 
 void ChildCreator::updateSubTree(const std::shared_ptr<const PropertyNode>& parent)
 {
-	IDefinitionManager* defManager = interfaceHolder.get<IDefinitionManager>();
+	IDefinitionManager* defManager = get<IDefinitionManager>();
 	if (defManager == nullptr)
 	{
 		return;

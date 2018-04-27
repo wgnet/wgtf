@@ -12,7 +12,6 @@
 
 namespace wgt
 {
-class IComponentContext;
 class ILoggingSystem;
 
 typedef std::vector<std::string> CommandIdList;
@@ -20,7 +19,7 @@ typedef std::vector<std::string> CommandIdList;
 class ProgressManager : public ICommandEventListener, public Depends<ILoggingSystem, ICommandManager, IUIFramework>
 {
 public:
-	ProgressManager(IComponentContext& contextManager);
+	ProgressManager();
 	~ProgressManager();
 
 	/// Register command status listener

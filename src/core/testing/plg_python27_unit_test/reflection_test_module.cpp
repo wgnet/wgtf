@@ -12,9 +12,10 @@
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/class_definition.hpp"
-#include "core_reflection/object_handle_storage_shared.hpp"
+#include "core_object/object_handle_storage_shared.hpp"
 #include "core_reflection/reflected_method_parameters.hpp"
 #include "core_reflection/type_class_definition.hpp"
+#include "core_reflection/property_accessor.hpp"
 
 namespace wgt
 {
@@ -89,8 +90,8 @@ static PyObject* py_create(PyObject* self, PyObject* args, PyObject* kw)
 		return nullptr;
 	}
 
-	ObjectHandle object = pDefinition->create();
-	CHECK(object != nullptr);
+	auto storage = pDefinition->createObjectStorage();
+	CHECK(storage != nullptr);
 
 	// TODO NGT-1052
 
@@ -2743,9 +2744,9 @@ void checkSequencePaths(const ReflectedPython::DefinedInstance& instance, const 
 		std::string expectedValueFullPath = "childTest";
 		expectedValueFullPath += IClassDefinition::DOT_OPERATOR;
 		expectedValueFullPath += collectionName;
-		expectedValueFullPath += IClassDefinition::INDEX_OPEN;
+		expectedValueFullPath += Collection::getIndexOpen();
 		expectedValueFullPath += std::to_string(expectedKey);
-		expectedValueFullPath += IClassDefinition::INDEX_CLOSE;
+		expectedValueFullPath += Collection::getIndexClose();
 		CHECK_EQUAL(expectedValueFullPath, valueFullPath);
 
 		int valueValue = -1;
@@ -2799,9 +2800,9 @@ void checkMappingPaths(const ReflectedPython::DefinedInstance& instance, const C
 		std::string expectedValueFullPath = "childTest";
 		expectedValueFullPath += IClassDefinition::DOT_OPERATOR;
 		expectedValueFullPath += collectionName;
-		expectedValueFullPath += IClassDefinition::INDEX_OPEN;
+		expectedValueFullPath += Collection::getIndexOpen();
 		expectedValueFullPath += expectedKeyFullPath;
-		expectedValueFullPath += IClassDefinition::INDEX_CLOSE;
+		expectedValueFullPath += Collection::getIndexClose();
 		CHECK_EQUAL(expectedValueFullPath, valueFullPath);
 	}
 }
@@ -2893,7 +2894,7 @@ static PyObject* py_oldStyleConversionTest(PyObject* self, PyObject* args, PyObj
 	ObjectHandle parentHandle;
 	const char* childPath = "";
 	ObjectHandle handle =
-	ReflectedPython::DefinedInstance::findOrCreate(g_module->context_, scriptObject, parentHandle, childPath);
+	g_module->context_.queryInterface<IPythonObjManager>()->findOrCreate(scriptObject, parentHandle, childPath);
 	auto pInstance = static_cast<ReflectedPython::DefinedInstance*>(handle.data());
 	assert(pInstance != nullptr);
 	auto& instance = (*pInstance);
@@ -2913,7 +2914,7 @@ static PyObject* py_oldStyleConversionTest(PyObject* self, PyObject* args, PyObj
 		const bool getSuccess = instance.get<ObjectHandle>(attribute, handle);
 		CHECK(getSuccess);
 
-		auto definition = handle.getDefinition(*definitionManager);
+		auto definition = definitionManager->getDefinition(handle);
 		CHECK(definition != nullptr);
 
 		auto actualType = definition->getName();
@@ -2998,7 +2999,7 @@ static PyObject* py_newStyleConversionTest(PyObject* self, PyObject* args, PyObj
 	ObjectHandle parentHandle;
 	const char* childPath = "";
 	ObjectHandle handle =
-	ReflectedPython::DefinedInstance::findOrCreate(g_module->context_, scriptObject, parentHandle, childPath);
+	g_module->context_.queryInterface<IPythonObjManager>()->findOrCreate(scriptObject, parentHandle, childPath);
 	auto pInstance = static_cast<ReflectedPython::DefinedInstance*>(handle.data());
 	assert(pInstance != nullptr);
 	auto& instance = (*pInstance);
@@ -3018,7 +3019,7 @@ static PyObject* py_newStyleConversionTest(PyObject* self, PyObject* args, PyObj
 		const bool getSuccess = instance.get<ObjectHandle>(attribute, handle);
 		CHECK(getSuccess);
 
-		auto definition = handle.getDefinition(*definitionManager);
+		auto definition = definitionManager->getDefinition(handle);
 		CHECK(definition != nullptr);
 
 		auto actualType = definition->getName();

@@ -2,6 +2,7 @@
 
 #include "property_view_model.mpp"
 #include "view_model.mpp"
+#include "core_reflection/i_definition_manager.hpp"
 
 namespace wgt
 {

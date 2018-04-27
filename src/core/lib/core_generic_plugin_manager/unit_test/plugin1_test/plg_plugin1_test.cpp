@@ -1,13 +1,15 @@
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
+
 #include "core_generic_plugin/generic_plugin.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
-#include "core_reflection/object_manager.hpp"
-#include "core_reflection/reflected_types.hpp"
-#include "core_reflection/reflection_macros.hpp"
+
+#include "metadata/plugin_objects.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 #include "plugin_objects.hpp"
 
@@ -18,62 +20,63 @@ class TestPlugin1 : public PluginMain
 public:
 	TestPlugin1(IComponentContext& contextManager) : PluginMain()
 	{
+		registerCallback([]( IDefinitionManager & defManager )
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
 
 	bool PostLoad(IComponentContext& contextManager)
 	{
-		IObjectManager* pObjectManager = contextManager.queryInterface<IObjectManager>();
-		if (pObjectManager == nullptr)
-		{
-			return false;
-		}
-		IDefinitionManager* pDefinitionManager = contextManager.queryInterface<IDefinitionManager>();
-		if (pDefinitionManager == nullptr)
-		{
-			return false;
-		}
+        IObjectManager* pObjectManager = contextManager.queryInterface<IObjectManager>();
+        if (pObjectManager == nullptr)
+        {
+            return false;
+        }
+        IDefinitionManager* pDefinitionManager = contextManager.queryInterface<IDefinitionManager>();
+        if (pDefinitionManager == nullptr)
+        {
+            return false;
+        }
 
-		IDefinitionManager& definitionManager = (*pDefinitionManager);
-		REGISTER_DEFINITION(TestPlugin1TestObject);
-		REGISTER_DEFINITION(TestPlugin1Interface);
+        // Create plugin interface
+        std::vector<RefObjectId> objects;
+        pObjectManager->getContextObjects(objects);
 
-		// Create plugin interface
-		std::vector<RefObjectId> objects;
-		pObjectManager->getContextObjects(&definitionManager, objects);
+        // Search for the plugin interface
+        for (std::vector<RefObjectId>::iterator it = objects.begin(), end = objects.end(); it != end; ++it)
+        {
+            auto pObj = pObjectManager->getObject(*it);
+            TF_ASSERT(pObj != nullptr);
+            if (pDefinitionManager->getDefinition(pObj) == pDefinitionManager->getDefinition<TestPlugin1Interface>())
+            {
+                pInterface_ = safeCast<TestPlugin1Interface>(pObj);
+                return true;
+            }
+        }
 
-		// Search for the plugin interface
-		for (std::vector<RefObjectId>::iterator it = objects.begin(), end = objects.end(); it != end; ++it)
-		{
-			auto pObj = pObjectManager->getObject(*it);
-			assert(pObj != nullptr);
-			if (pObj.getDefinition(*pDefinitionManager) == definitionManager.getDefinition<TestPlugin1Interface>())
-			{
-				pInterface_ = safeCast<TestPlugin1Interface>(pObj);
-				return true;
-			}
-		}
+        // create new interface object
+        pObject_ = TestPlugin1InterfaceObj::make();
+        pInterface_ = pObject_.getHandleT();
+        TF_ASSERT(pInterface_ != nullptr);
 
-		// create new interface object
-		pInterface_ = definitionManager.create<TestPlugin1Interface>();
-		assert(pInterface_ != nullptr);
-
-		// Do not delete when interface is unregistered
-		// Reflection system needs to delete it
-		types_.push_back(contextManager.registerInterface(pInterface_.get(), false /*transferOwnership*/));
+        // Do not delete when interface is unregistered
+        // Reflection system needs to delete it
+        types_.push_back(contextManager.registerInterface(pInterface_.get(), false /*transferOwnership*/));
 
 		return true;
 	}
 
 	void Initialise(IComponentContext& contextManager)
 	{
-		assert(pInterface_ != nullptr);
+		TF_ASSERT(pInterface_ != nullptr);
 		auto defManager = contextManager.queryInterface<IDefinitionManager>();
-		assert(defManager != nullptr);
-
+		TF_ASSERT(defManager != nullptr);
+        
 		ITestPlugin2* plugin2 = contextManager.queryInterface<ITestPlugin2>();
 		if (plugin2 != nullptr)
 		{
-			pInterface_->setObjectFromPlugin2(plugin2->getObject(*defManager));
+			pInterface_->setObjectFromPlugin2(plugin2->getObject());
 		}
 	}
 
@@ -90,14 +93,16 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 		pInterface_ = nullptr;
+        pObject_ = nullptr;
 	}
 
 private:
-	TestPlugin1InterfacePtr pInterface_;
-	std::vector<IInterface*> types_;
+    TestPlugin1InterfacePtr pInterface_;
+    TestPlugin1InterfaceObj pObject_;
+	InterfacePtrs types_;
 };
 
 PLG_CALLBACK_FUNC(TestPlugin1)

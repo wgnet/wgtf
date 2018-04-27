@@ -1,0 +1,8 @@
+#include "private/commands/metadata/insert_default_command_arg.mpp"
+#include "private/commands/metadata/insert_item_command_arg.mpp"
+#include "private/commands/metadata/insert_rows_command_arg.mpp"
+#include "private/commands/metadata/move_item_data_command_arg.mpp"
+#include "private/commands/metadata/remove_item_command_arg.mpp"
+#include "private/commands/metadata/remove_rows_command_arg.mpp"
+#include "private/commands/metadata/set_model_data_command_arg.mpp"
+#include "private/commands/metadata/set_item_data_command_arg.mpp"

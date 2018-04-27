@@ -1,7 +1,10 @@
 #include "wg_column_layout_proxy.hpp"
+
 #include "qt_connection_holder.hpp"
 
-#include <cassert>
+#include "core_common/assert.hpp"
+#include "qt_qlist_memory_fix.hpp"
+SPECIALIZE_QLIST(QModelIndex)
 
 namespace wgt
 {
@@ -80,10 +83,10 @@ struct WGColumnLayoutProxy::Impl
 	QHash<QModelIndex, Mapping*>::const_iterator index_to_iterator(const QModelIndex& proxy_index) const
 	{
 		auto* p = proxy_index.internalPointer();
-		assert(p);
+		TF_ASSERT(p);
 		auto it = static_cast<const Mapping*>(p)->mapIter_;
-		assert(it != sourceIndexMapping_.end());
-		assert(it.value());
+		TF_ASSERT(it != sourceIndexMapping_.end());
+		TF_ASSERT(it.value());
 		return it;
 	}
 
@@ -101,7 +104,7 @@ struct WGColumnLayoutProxy::Impl
 		return it;
 	}
 
-	void removeMapping(const QModelIndex& source_parent, const WGColumnLayoutProxy& proxyModel)
+	void removeMapping(const QModelIndex& source_parent, WGColumnLayoutProxy& proxyModel)
 	{
 		if (!source_parent.isValid())
 		{
@@ -116,12 +119,19 @@ struct WGColumnLayoutProxy::Impl
 		}
 
 		auto source = source_parent.model();
-		assert(source != nullptr);
+		TF_ASSERT(source != nullptr);
 		auto rowCount = source->rowCount(source_parent);
+		auto columnCount = columnSequence_.size();
 		for (auto row = 0; row < rowCount; ++row)
 		{
-			auto source_row = proxyModel.createIndex(row, 0, *it);
+			auto source_row = source->index(row, 0, source_parent);
 			removeMapping(source_row, proxyModel);
+
+			for (auto column = 0; column < columnCount; ++column)
+			{
+				auto proxyIndex = proxyModel.createIndex(row, column, *it);
+				proxyModel.changePersistentIndex(proxyIndex, QModelIndex());
+			}
 		}
 
 		delete *it;
@@ -443,7 +453,7 @@ void WGColumnLayoutProxy::onSourceDataChanged(const QModelIndex& topLeft, const 
 		return;
 	}
 
-	assert(bottomRight.isValid());
+	TF_ASSERT(bottomRight.isValid());
 	auto source_parent = topLeft.parent();
 	auto it = impl_->createMapping(source_parent);
 
@@ -527,11 +537,7 @@ void WGColumnLayoutProxy::onSourceLayoutAboutToBeChanged(const QList<QPersistent
 		proxy_parents.append(proxy_parent);
 	}
 	emit layoutAboutToBeChanged(proxy_parents, hint);
-}
 
-void WGColumnLayoutProxy::onSourceLayoutChanged(const QList<QPersistentModelIndex>& parents,
-                                                QAbstractItemModel::LayoutChangeHint hint)
-{
 	if (parents.empty())
 	{
 		impl_->clearMapping();
@@ -543,7 +549,11 @@ void WGColumnLayoutProxy::onSourceLayoutChanged(const QList<QPersistentModelInde
 			impl_->removeMapping(parent, *this);
 		}
 	}
+}
 
+void WGColumnLayoutProxy::onSourceLayoutChanged(const QList<QPersistentModelIndex>& parents,
+                                                QAbstractItemModel::LayoutChangeHint hint)
+{
 	QList<QPersistentModelIndex> proxy_parents;
 	for (auto& parent : parents)
 	{

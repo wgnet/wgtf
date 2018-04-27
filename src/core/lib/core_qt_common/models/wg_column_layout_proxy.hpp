@@ -10,8 +10,16 @@
 namespace wgt
 {
 /**
-    *	Proxy layer to adapt a model by changing its model indices to redirect to different columns..
-    */
+* Proxy layer to adapt a model by changing its model indices to redirect to different columns.
+*
+* The columnSequence property controls the remapping. It is possible to duplicate columns using
+* this proxy, which is useful for showing different properties of an item on separate columns
+* within a view. For example, WGAssetListView uses this proxy with columnSequence set to
+* [0, 0, 0, 0] to create 4 columns for each row, all pointing to the same item in the source
+* model (which has no concept of columns). The columnDelegates property of WGListView is then used
+* to extract 4 different properties of the asset (contents, date, type and size) and populate the
+* columns of the list view with them.
+*/
 class WGColumnLayoutProxy : public QAbstractProxyModel
 {
 	Q_OBJECT

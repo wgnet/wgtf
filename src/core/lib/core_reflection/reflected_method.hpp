@@ -18,6 +18,11 @@ public:
 		return true;
 	}
 
+	bool isCollection() const
+	{
+		return false;
+	}
+
 	virtual ReflectedMethod* getUndoMethod()
 	{
 		return nullptr;

@@ -16,7 +16,7 @@ WGTextBox {
 \endcode
 */
 
-TextField {
+FocusScope {
     id: textBox
     objectName: "WGTextBox"
     WGComponent { type: "WGTextBox" }
@@ -31,17 +31,14 @@ TextField {
     */
     property bool useContextMenu : true
 
-    /*! This property determines if the context menu for this control contains the "Find In AssetBrowser" option
-        The default value is \c false
-    */
-    property bool assetBrowserContextMenu : false
-
     /*! This property determines if the text is selected when the user presses Enter or Return.
         The default value is \c true
     */
-    property bool selectTextOnAccepted: true
+    property bool selectTextOnAccepted: false
 
     property bool multipleValues: false
+
+    property string multipleValuesDisplayString: "Multiple Values"
 
     /*! This alias holds the width of the text entered into the textbox.
       */
@@ -56,95 +53,197 @@ TextField {
     /*! This signal is emitted when text field editing is cancelled */
     signal editCancelled();
 
-    Keys.onPressed: {
-        if (activeFocus)
-        {
-            if(event.key == Qt.Key_Enter || event.key == Qt.Key_Return)
-            {
-                textBox.focus = true;
-                if (selectTextOnAccepted) {
-                    selectAll();
-                }
-                editAccepted()
-            }
-            else if (event.key == Qt.Key_Escape)
-            {
-                setValueHelper( textBox, "text", oldText );
-                editCancelled();
-                textBox.focus = true;
-            }
-        }
+    /*! This function recalculates the width of the text box based on its contents */
+    function recalculateWidth(){
+        contentLengthHelper.text = textBox.text + "MM"
     }
 
-    onActiveFocusChanged: {
-        if (activeFocus)
-        {
-            selectAll()
-            setValueHelper( textBox, "oldText", text );
-        }
-        else
-        {
-            deselect()
-            if (acceptableInput && (text !== oldText))
-            {
-                editAccepted();
-            }
-        }
-    }
+    property bool editInProgress: textField.focus && !focusHolder.focus
 
-    activeFocusOnTab: readOnly ? false : true
-
-    verticalAlignment: TextInput.AlignVCenter
+    property bool passActiveFocus: true
 
     // provide default heights
     implicitHeight: defaultSpacing.minimumRowHeight
     implicitWidth: contentLengthHelper.contentWidth + defaultSpacing.doubleMargin
 
-    /*! This property denotes if the control's text should be scaled appropriately as it is resized */
-    smooth: true
+    readonly property alias acceptableInput: textField.acceptableInput
+    property alias activeFocusOnPress : textField.activeFocusOnPress
+    readonly property alias canPaste: textField.canPaste
+    readonly property alias canUndo: textField.canUndo
+    readonly property alias canRedo: textField.canRedo
+    property alias cursorPosition: textField.cursorPosition
+    readonly property alias cursorRectangle : textField.cursorRectangle
+    readonly property alias displayText: textField.displayText
+    property alias echoMode: textField.echoMode
+    readonly property alias effectiveHorizontalAlignment: textField.effectiveHorizontalAlignment
+    property alias font: textField.font
+    property alias horizontalAlignment: textField.horizontalAlignment
+    readonly property alias hovered: mouseAreaContextMenu.containsMouse
+    property alias inputMask : textField.inputMask
+    readonly property alias inputMethodComposing : textField.inputMethodComposing
+    property alias inputMethodHints: textField.inputMethodHints
+    readonly property alias length: textField.length
+    property alias maximumLength: textField.maximumLength
+    property alias menu: textField.menu
+    property alias contextMenu: contextMenu
+    property alias placeholderText: textField.placeholderText
+    property alias readOnly: textField.readOnly
+    property alias selectByMouse : textField.selectByMouse
+    readonly property alias selectedText: textField.selectedText
+    readonly property alias selectionEnd: textField.selectionEnd
+    readonly property alias selectionStart: textField.selectionStart
+    property alias style: textField.style
+    property alias text: textField.text
+    property alias textColor: textField.textColor
+    property alias validator: textField.validator
+    property alias verticalAlignment: textField.verticalAlignment
+    property alias focusHolder: focusHolder
 
-    //Placeholder text in italics
-    font.italic: text == "" ? true : false
+    signal editingFinished()
+    signal accepted()
+
+    function copy() { textField.copy() }
+    function cut() { textField.cut() }
+    function deselect() { textField.deselect() }
+    function getText(start, end) { return textField.getText(start, end) }
+    function insert(pos, text) { textField.insert(pos, text) }
+    function isRightToLeft(start, end) { return textField.isRightToLeft(start, end) }
+    function paste() { textField.paste() }
+    function redo() { textField.redo() }
+    function remove(start, end) { textField.remove(start, end) }
+    function select(start, end) { textField.select(start, end) }
+    function selectAll() { textField.selectAll() }
+    function selectWord() { textField.selectWord() }
+    function undo() { textField.undo() }
 
     onEditAccepted: {
-        contentLengthHelper.text = textBox.text + "MM"
+        recalculateWidth()
+    }
+
+    onEditCancelled: {
+        recalculateWidth()
+    }
+
+    function stopEditing() {
+        editCancelled();
+        passActiveFocus = false
+        focusHolder.focus = true
     }
 
     Text {
         id: contentLengthHelper
         visible: false
         Component.onCompleted: {
-            contentLengthHelper.text = textBox.text + "MM"
+            recalculateWidth()
         }
     }
 
-    style: WGTextBoxStyle {
-    }
+    Item {
+        id: focusHolder
+        focus: true
+        activeFocusOnTab: focus
 
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
+        Keys.forwardTo: textBox
 
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( textBox.text )
-            }
-
-            onDataPasted : {
-                textBox.text = data
-            }
-        }
-
-        onSelectedChanged : {
-            if(selected)
+        Keys.onPressed: {
+            if(event.key == Qt.Key_Enter || event.key == Qt.Key_Return)
             {
-                selectControl( copyableObject )
+                textField.focus = true
+            }
+        }
+
+        onActiveFocusChanged: {
+            if (activeFocus)
+            {
+                //if the user tabs to this it should be editable, but not if they've just interacted with it
+                if (passActiveFocus)
+                {
+                    textField.focus = true
+                }
             }
             else
             {
-                deselectControl( copyableObject )
+                passActiveFocus = true
+            }
+        }
+    }
+
+    TextField {
+        anchors.fill: parent
+        id: textField
+
+        focus: false
+
+        verticalAlignment: TextInput.AlignVCenter
+
+        /*! This property denotes if the control's text should be scaled appropriately as it is resized */
+        smooth: parent.smooth
+
+        //Placeholder text in italics
+        font.italic: text == "" ? true : false
+
+        property bool editFocus: textBox.activeFocus
+        activeFocusOnTab: focus
+
+        style: WGTextBoxStyle {
+        }
+
+        onEditingFinished: {
+            textBox.editingFinished()
+        }
+        onAccepted: {
+            textBox.editAccepted()
+        }
+
+        Keys.forwardTo: focusHolder
+
+        Keys.onPressed: {
+            if (activeFocus)
+            {
+                if(event.key == Qt.Key_Enter || event.key == Qt.Key_Return)
+                {
+                    editAccepted()
+                    if (selectTextOnAccepted) {
+                        selectAll();
+                    }
+                    else
+                    {
+                        passActiveFocus = false
+                        focusHolder.focus = true
+                    }
+                    event.accepted = true
+                }
+                else if (event.key == Qt.Key_Escape)
+                {
+                    setValueHelper( textBox, "text", oldText );
+                    stopEditing();
+                    event.accepted = true
+                }
+                else if (event.modifiers & Qt.ControlModifier)
+                {
+                    if(event.key == Qt.Key_Z || event.key == Qt.Key_Y)
+                    {
+                        setValueHelper( textBox, "text", oldText );
+                        stopEditing();
+                        event.accepted = true
+                    }
+                }
+            }
+        }
+
+        onActiveFocusChanged: {
+            if (activeFocus)
+            {
+                selectAll()
+                setValueHelper( textBox, "oldText", text );
+            }
+            else
+            {
+                if (text != oldText)
+                {
+                    editAccepted()
+                }
+                deselect()
             }
         }
     }
@@ -162,7 +261,7 @@ TextField {
         onClicked:{
             if (textBox.useContextMenu)
             {
-                var highlightedText = selectedText
+                textBox.forceActiveFocus()
                 contextMenu.popup()
             }
         }
@@ -216,19 +315,11 @@ TextField {
         }
 
         MenuSeparator { }
-
-        MenuItem {
-            objectName: "FindInAssetBrowser"
-            text: "Find In AssetBrowser"
-            shortcut: "Ctrl+?"
-            visible: assetBrowserContextMenu == true ? true : false
-            onTriggered: {
-                console.log("Not yet implemented")
-            }
-        }
     }
 
     /*! Deprecated */
     property alias label_: textBox.label
 
+    /*! Deprecated */
+    property bool assetBrowserContextMenu : false
 }

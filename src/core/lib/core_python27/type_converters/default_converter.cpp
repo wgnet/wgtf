@@ -8,15 +8,11 @@ namespace wgt
 {
 namespace PythonType
 {
-DefaultConverter::DefaultConverter(IComponentContext& context) : context_(context)
-{
-}
-
 bool DefaultConverter::toVariant(const PyScript::ScriptObject& inObject, Variant& outVariant,
                                  const ObjectHandle& parentHandle, const std::string& childPath) /* override */
 {
 	// Default for anything that didn't match another type converter
-	outVariant = ReflectedPython::DefinedInstance::findOrCreate(context_, inObject, parentHandle, childPath);
+	outVariant = get<IPythonObjManager>()->findOrCreate(inObject, parentHandle, childPath);
 	return true;
 }
 

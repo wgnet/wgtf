@@ -1,0 +1,13 @@
+#include "undo_redo_command.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+
+namespace wgt
+{
+
+BEGIN_EXPOSE(UndoRedoCommandArgument, MetaNoSerialization())
+	EXPOSE("index", getIndex, MetaNone())
+END_EXPOSE()
+
+} // end namespace wgt

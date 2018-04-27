@@ -21,16 +21,16 @@ public:
 	@param property the property to use for the data for this item.
 	@param parent the parent of this property. Cannot be null.
 	@warning the parent *must* correspond to the property. */
-	ReflectedPropertyItemNew(IComponentContext& contextManager, const IBasePropertyPtr& property,
-	                         ReflectedTreeItemNew* parent, size_t index, const std::string& inPlacePath);
+	ReflectedPropertyItemNew(const IBasePropertyPtr& property, ReflectedTreeItemNew* parent, size_t index,
+	                         const std::string& inPlacePath);
 
 	/** Creates a reflected tree item to represent a reflected property.
 	@note parent must not be null.
 	@param propertyName the name of the property on the parent.
 	@param displayName the name used for display in the UI.
 	@param parent the parent of this property. Cannot be null. */
-	ReflectedPropertyItemNew(IComponentContext& contextManager, const std::string& propertyName,
-	                         std::string displayName, ReflectedTreeItemNew* parent, size_t index);
+	ReflectedPropertyItemNew(const std::string& propertyName, std::string displayName, ReflectedTreeItemNew* parent,
+	                         size_t index);
 	virtual ~ReflectedPropertyItemNew();
 
 	// AbstractItem

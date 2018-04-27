@@ -5,22 +5,15 @@
 
 #include "i_command_event_listener.hpp"
 #include "command_instance.hpp"
+#include "core_variant/variant.hpp"
+#include "core_object/i_managed_object.hpp"
+
 namespace wgt
 {
 class IDataStream;
 class ICommandManager;
-
-enum class CommandErrorCode : uint8_t
-{
-	COMMAND_NO_ERROR = 0,
-	BATCH_NO_ERROR,
-	ABORTED,
-	FAILED,
-	INVALID_VALUE,
-	INVALID_ARGUMENTS,
-	INVALID_OPERATIONS,
-	NOT_SUPPORTED
-};
+template <typename T> class ManagedObject;
+typedef ManagedObject<class GenericObject> CommandDescription;
 
 /**
  *	@param errorCode code from command to be checked.
@@ -52,7 +45,7 @@ public:
 	 *	@return the CommandErrorCode or the return value.
 	 *		Not returning a CommandErrorCode assumes the code is COMMAND_NO_ERROR.
 	 */
-	virtual ObjectHandle execute(const ObjectHandle& arguments) const = 0;
+	virtual Variant execute(const ObjectHandle& arguments) const = 0;
 
 	virtual bool validateArguments(const ObjectHandle& arguments) const
 	{
@@ -65,6 +58,11 @@ public:
 	virtual CommandThreadAffinity threadAffinity() const
 	{
 		return CommandThreadAffinity::COMMAND_THREAD;
+	}
+
+	virtual const char* getName() const
+	{
+		return getId();
 	}
 
 	virtual bool customUndo() const
@@ -83,9 +81,14 @@ public:
 	{
 		return false;
 	}
-	virtual ObjectHandle getCommandDescription(const ObjectHandle& arguments) const
+	virtual CommandDescription getCommandDescription(const ObjectHandle& arguments) const
 	{
-		return ObjectHandle();
+		return nullptr;
+	}
+
+	virtual const Collection& getSubCommands() const
+	{
+		return subCommands_;
 	}
 
 	virtual void setCommandSystemProvider(ICommandManager* commandSystemProvider);
@@ -96,6 +99,25 @@ public:
 	virtual void fireCommandStatusChanged(const CommandInstance& command) const;
 	virtual void fireProgressMade(const CommandInstance& command) const;
 	virtual void fireCommandExecuted(const CommandInstance& command, CommandOperation operation) const;
+
+	// Default implementation to call from a Command's copyArguments implementation.
+	template<class Type>
+	static ManagedObjectPtr copyArguments(const ObjectHandle& arguments)
+	{
+		if (Type* data = arguments.getBase<Type>())
+		{
+			// This assumes there is a copy constructor.
+			return ManagedObject<Type>::make_iunique(*data);
+		}
+
+		return nullptr;
+	}
+
+	// This needs to be overridden to be able to make copies of command arguments for use in macros.
+	virtual ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const = 0;
+
+protected:
+	Collection subCommands_;
 
 private:
 	typedef std::list<ICommandEventListener*> EventListenerCollection;

@@ -42,42 +42,14 @@ Rectangle {
     property string __multipleValuesString: "Multiple Values"
 
     property alias icon: icon
+    property alias sourceSize: icon.sourceSize
+    property alias paintedWidth: icon.paintedWidth
+    property alias paintedHeight: icon.paintedHeight
 
     color: palette.lightShade
 
     implicitWidth: Math.min( icon.sourceSize.width + defaultSpacing.doubleBorderSize, defaultSpacing.minimumRowHeight * 4)
-
     implicitHeight: Math.min( icon.sourceSize.height + defaultSpacing.doubleBorderSize, defaultSpacing.minimumRowHeight * 4)
-
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( thumbnail.source )
-            }
-
-            onDataPasted : {
-                // readonly control
-                console.log("ReadOnly Control WGThumbnail");
-                //thumbnail.source_ = data
-            }
-        }
-
-        onSelectedChanged : {
-            if(selected)
-            {
-                selectControl( copyableObject )
-            }
-            else
-            {
-                deselectControl( copyableObject )
-            }
-        }
-    }
 
     Item {
         anchors.fill: parent

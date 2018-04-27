@@ -85,9 +85,12 @@ WGContextMenu {
         active: contextMenuValid("NodeGroupArea")
         actionId: "NodeEditor_LockGroupBox"
         checkable: true
+        checked: typeof(contextMenu.contextObject) != "undefined" && 
+                 typeof(contextMenu.contextObject.locked) != "undefined" &&
+                 contextMenu.contextObject.locked;
+
         onTriggered: {
             contextMenu.contextObject.locked = !contextMenu.contextObject.locked
-            checked = contextMenu.contextObject.locked;
         }
     }
     
@@ -103,17 +106,10 @@ WGContextMenu {
         }
     }
     
-    WGListModel
-    {
-        id : contextMenuModel
-        source : graph.nodeClassesModel
-        ValueExtension {}
-    }
-    
     Instantiator
     {
         id : menuItemInstant
-        model : contextMenuModel
+        model : graph.nodeClassesModel
         delegate: WGAction
         {
             active: true

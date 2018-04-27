@@ -7,12 +7,13 @@ Text {
     WGComponent { type: "WGHistoryText" }
     text: "Unknown"
     clip: false
-    color: currentItem ? palette.textColor : palette.neutralTextColor
+    color: hovered ? palette.highlightColor : (currentItem ? palette.textColor : palette.neutralTextColor)
     font.bold: currentItem
     font.italic: !applied
     opacity: applied ? 1 : 0.35
 
     property bool currentItem: false
+    property bool hovered: false
     property bool applied: false
 }
 

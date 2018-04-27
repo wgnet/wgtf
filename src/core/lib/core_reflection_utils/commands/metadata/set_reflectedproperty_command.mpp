@@ -7,8 +7,8 @@
 namespace wgt
 {
 BEGIN_EXPOSE(ReflectedPropertyCommandArgument, MetaNoSerialization())
-EXPOSE(ReflectedPropertyCommandArgument::contextIdPropertyName(), contextId_, MetaNone())
-EXPOSE(ReflectedPropertyCommandArgument::pathPropertyName(), propertyPath_, MetaNone())
-EXPOSE(ReflectedPropertyCommandArgument::valuePropertyName(), value_, MetaNone())
+EXPOSE("id", contextId_, MetaNone())
+EXPOSE("path", propertyPath_, MetaNone())
+EXPOSE("propertyValue", value_, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

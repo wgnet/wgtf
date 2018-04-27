@@ -31,7 +31,7 @@ public:
 	bool PostLoad(IComponentContext& componentContext) override
 	{
 		// Create the panel
-		qmlPreferencesPanel_.reset(new QmlPreferencesPanel(componentContext));
+		qmlPreferencesPanel_.reset(new QmlPreferencesPanel);
 		return true;
 	}
 

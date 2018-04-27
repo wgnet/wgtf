@@ -5,17 +5,15 @@
 #include "i_command_event_listener.hpp"
 #include "core_common/signal.hpp"
 #include "core_variant/collection.hpp"
-
+#include "core_object/i_managed_object.hpp"
 #include <thread>
 
 namespace wgt
 {
 class IValueChangeNotifier;
-class IListModel;
 class ISerializer;
 class Command;
 class ISelectionContext;
-
 class ObjectHandle;
 
 class ISelectionContext
@@ -31,15 +29,17 @@ class ICommandManager
 	typedef Signal<void(int)> SignalIndexChanged;
 
 public:
-	virtual ~ICommandManager()
-	{
-	}
+    virtual ~ICommandManager() = default;
+
 	virtual void fini() = 0;
 	virtual void registerCommand(Command* command) = 0;
 	virtual void deregisterCommand(const char* commandId) = 0;
 	virtual Command* findCommand(const char* commandId) const = 0;
 
-	virtual CommandInstancePtr queueCommand(const char* commandId, const ObjectHandle& arguments = ObjectHandle()) = 0;
+    virtual CommandInstancePtr queueCommand(const char* commandId) = 0;
+	virtual CommandInstancePtr queueCommand(const char* commandId, const ObjectHandle& arguments) = 0;
+    virtual CommandInstancePtr queueCommand(const char* commandId, ManagedObjectPtr arguments) = 0;
+
 	virtual void waitForInstance(const CommandInstancePtr& instance) = 0;
 	virtual void registerCommandStatusListener(ICommandEventListener* listener) = 0;
 	virtual void deregisterCommandStatusListener(ICommandEventListener* listener) = 0;
@@ -59,12 +59,12 @@ public:
 	virtual const Collection& getHistory() const = 0;
 	virtual const int commandIndex() const = 0;
 	virtual void moveCommandIndex(int newIndex) = 0;
-	virtual const IListModel& getMacros() const = 0;
+	virtual Collection& getMacros() const = 0;
 	virtual bool createMacro(const Collection& commandInstanceList, const char* id = "") = 0;
 	virtual bool deleteMacroByName(const char* id) = 0;
 
 	virtual void beginBatchCommand() = 0;
-	virtual void endBatchCommand() = 0;
+	virtual void endBatchCommand(const char* description = "") = 0;
 	virtual void abortBatchCommand() = 0;
 
 	/// Notifies for Progress Manager
@@ -74,13 +74,10 @@ public:
 	virtual void notifyHandleCommandQueued(const char* commandId) = 0;
 	virtual void notifyNonBlockingProcessExecution(const char* commandId) = 0;
 
-	virtual void SetHistorySerializationEnabled(bool isEnabled) = 0; // enabled default
-	virtual bool SaveHistory(ISerializer& serializer) = 0;
-	virtual bool LoadHistory(ISerializer& serializer) = 0;
-
 	virtual ISelectionContext& selectionContext() = 0;
 
 	virtual std::thread::id ownerThreadId() = 0;
+	virtual bool executingCommandGroup() = 0;
 
 	SignalReset signalHistoryPreReset;
 	SignalReset signalHistoryPostReset;

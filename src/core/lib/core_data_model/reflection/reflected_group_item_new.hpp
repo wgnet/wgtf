@@ -3,6 +3,7 @@
 #define _REFLECTED_GROUP_ITEM_NEW_HPP
 
 #include "reflected_tree_item_new.hpp"
+#include "core_reflection/interfaces/i_reflection_controller.hpp"
 
 #include <memory>
 
@@ -10,12 +11,18 @@ namespace wgt
 {
 class MetaGroupObj;
 
+class ObjectHandle;
+template< typename T >
+class ObjectHandleT;
+
 /** Collects items together with the same group metadata. */
 class ReflectedGroupItemNew : public ReflectedTreeItemNew
 {
 public:
-	ReflectedGroupItemNew(IComponentContext& contextManager, const MetaGroupObj* groupObj, ReflectedTreeItemNew* parent,
-	                      size_t index, const std::string& inPlacePath);
+	ReflectedGroupItemNew(
+		const MetaData & metaData,
+		ObjectHandleT<MetaGroupObj> groupObj, ReflectedTreeItemNew* parent, size_t index,
+	                      const std::string& inPlacePath);
 	virtual ~ReflectedGroupItemNew();
 
 	// AbstractItem

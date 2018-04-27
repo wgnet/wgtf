@@ -1,6 +1,8 @@
 #include "plg_node_editor.hpp"
 #include "src/node_editor.hpp"
+#include "src/group.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
 
@@ -8,22 +10,29 @@
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_view.hpp"
 
-#include "metadata/i_node_editor.mpp"
-#include "metadata/i_graph.mpp"
-#include "metadata/i_group.mpp"
-#include "metadata/i_slot.mpp"
-#include "metadata/i_connection.mpp"
-#include "metadata/i_node.mpp"
-
-#include "src/connection_curve.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
+
+#include "reflection_auto_reg.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
+
+WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
-NodeEditorPlugin::NodeEditorPlugin(IComponentContext& context)
+
+BEGIN_EXPOSE(Group, IGroup, MetaNone())
+END_EXPOSE()
+
+//------------------------------------------------------------------------------
+NodeEditorPlugin::NodeEditorPlugin()
 {
+	registerCallback([]( IDefinitionManager & defManager )
+	{
+		ReflectionAutoRegistration::initAutoRegistration(defManager);
+	});
 }
 
+//------------------------------------------------------------------------------
 bool NodeEditorPlugin::PostLoad(IComponentContext& context)
 {
 	return true;
@@ -31,41 +40,28 @@ bool NodeEditorPlugin::PostLoad(IComponentContext& context)
 
 void NodeEditorPlugin::Initialise(IComponentContext& context)
 {
-	auto pDefinitionManager = context.queryInterface<IDefinitionManager>();
-
-	assert(pDefinitionManager != nullptr);
-
 	auto uiApplication = context.queryInterface<IUIApplication>();
 	auto uiFramework = context.queryInterface<IUIFramework>();
 
-	assert(uiApplication != nullptr);
-	assert(uiFramework != nullptr);
-
-	auto& definitionManager = (*pDefinitionManager);
-	REGISTER_DEFINITION(INodeEditor);
-	REGISTER_DEFINITION(IGraph);
-	REGISTER_DEFINITION(IGroup);
-	REGISTER_DEFINITION(INode);
-	REGISTER_DEFINITION(ISlot);
-	REGISTER_DEFINITION(IConnection);
-	qmlRegisterType<ConnectionCurve>("CustomConnection", 1, 0, "ConnectionCurve");
+	TF_ASSERT(uiApplication != nullptr);
+	TF_ASSERT(uiFramework != nullptr);
 
 	uiFramework->loadActionData(":/plg_node_editor/actions.xml", IUIFramework::ResourceType::File);
 
-	auto nodeEditor = std::unique_ptr<INodeEditor>(new NodeEditor(context));
-	context.registerInterface<INodeEditor>(nodeEditor.get(), false);
+	nodeEditor_ = ManagedObject<NodeEditor>::make();
+    types_.push_back(context.registerInterface<INodeEditor>(nodeEditor_.getPointer(), false));
 
 	auto viewCreator = context.queryInterface<IViewCreator>();
 	if (viewCreator)
 	{
-		view_ = viewCreator->createView("plg_node_editor/NodeEditorView.qml", std::move(nodeEditor));
+		view_ = viewCreator->createView("plg_node_editor/NodeEditorView.qml", nodeEditor_.getHandleT());
 	}
 }
 
 bool NodeEditorPlugin::Finalise(IComponentContext& context)
 {
 	auto uiApplication = context.queryInterface<IUIApplication>();
-	assert(uiApplication != nullptr);
+	TF_ASSERT(uiApplication != nullptr);
 	if (view_.valid())
 	{
 		auto view = view_.get();
@@ -78,6 +74,11 @@ bool NodeEditorPlugin::Finalise(IComponentContext& context)
 
 void NodeEditorPlugin::Unload(IComponentContext& context)
 {
+    for (auto type : types_)
+    {
+        context.deregisterInterface(type.get());
+    }
+    nodeEditor_ = nullptr;
 }
 
 } // end namespace wgt

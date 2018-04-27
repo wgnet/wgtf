@@ -6,7 +6,7 @@
 namespace wgt
 {
 class AlertManager;
-class LogMessage;
+class ILogMessage;
 
 class BasicAlertLogger : public ILogger
 {
@@ -18,7 +18,7 @@ public:
 
 	virtual ~BasicAlertLogger();
 
-	virtual void out(LogMessage* message);
+	virtual void out(ILogMessage* message);
 
 private:
 	AlertManager& alertManager_;

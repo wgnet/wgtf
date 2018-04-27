@@ -30,8 +30,7 @@ class FileSystemAssetBrowserModel : public IAssetBrowserModel
 {
 public:
 	FileSystemAssetBrowserModel(const AssetPaths& assetPaths, const CustomContentFilters& customContentFilters,
-	                            IFileSystem& fileSystem, IDefinitionManager& definitionManager,
-	                            IAssetPresentationProvider& presentationProvider);
+	                            IFileSystem& fileSystem, IAssetPresentationProvider& presentationProvider);
 	~FileSystemAssetBrowserModel();
 
 	void addAssetPath(const std::string& path);
@@ -54,8 +53,6 @@ public:
 private:
 	virtual bool fileHasFilteredExtension(const IFileInfoPtr& fileInfo);
 
-	virtual void initialise(IComponentContext& contextManager, IDefinitionManager& definitionManager) override;
-
 	virtual void finalise() override;
 
 	virtual void populateFolderContents(const IItem* item) override;
@@ -69,8 +66,6 @@ private:
 	virtual ITreeModel* getFolderTreeModel() const override;
 
 	virtual IListModel* getCustomContentFilters() const override;
-
-	virtual IValueChangeNotifier* customContentFilterIndexNotifier() const override;
 
 	virtual IActiveFiltersModel* getActiveFiltersModel() const override;
 

@@ -1,31 +1,44 @@
 #ifndef QT_HELPERS_HPP
 #define QT_HELPERS_HPP
 
+#include "../interfaces/i_qt_helpers.hpp"
 #include <string>
-#include "core_variant/variant.hpp"
-#include <QVariant>
-
-class QObject;
-class QQuickItem;
-class QUrl;
-class QQmlEngine;
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
+class IQtFramework;
 class ObjectHandle;
 class TypeId;
 
-namespace QtHelpers
+class QtHelpers : public Implements<IQtHelpers>, Depends<IQtFramework>
 {
-QVariant toQVariant(const Variant& variant, QObject* parent);
-QVariant toQVariant(const ObjectHandle& object, QObject* parent);
-Variant toVariant(const QVariant& qVariant);
+public:
+	virtual ~QtHelpers();
 
-QVariant convertToQTTypeInstance(const TypeId& type, const void* data);
-QQuickItem* findChildByObjectName(QObject* parent, const char* controlName);
+	QVariant toQVariant(const Variant& variant, QObject* parent) override;
+	QVariant toQVariant(const ObjectHandle& object, QObject* parent) override;
+	Variant toVariant(const QVariant& qVariant) override;
 
-QString resolveFilePath(const QQmlEngine& qmlEngine, const char* relativePath);
-QUrl resolveQmlPath(const QQmlEngine& qmlEngine, const char* relativePath);
+	QQuickItem* findChildByObjectName(QObject* parent, const char* controlName) override;
+
+	template <typename T>
+	static std::vector<T*> getChildren(const QObject& parent)
+	{
+		std::vector<T*> children;
+		foreach(auto child, parent.children())
+		{
+			T* childT = qobject_cast<T*>(child);
+			if (childT != nullptr)
+			{
+				children.push_back(childT);
+			}
+			auto grandChildren = getChildren<T>(*child);
+			children.insert(children.end(), grandChildren.begin(), grandChildren.end());
+		}
+		return children;
+	}
 };
+
 } // end namespace wgt
 #endif // QT_HELPERS_HPP

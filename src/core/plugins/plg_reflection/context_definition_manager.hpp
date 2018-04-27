@@ -16,18 +16,21 @@ public:
 	ContextDefinitionManager(const wchar_t* contextName);
 	virtual ~ContextDefinitionManager();
 
-	void init(IDefinitionManager* pBaseManager);
+	void init(IDefinitionManager* pBaseManager, 
+              std::function<IObjectManager*()> getContextObjManager, 
+              std::function<void(void)> onContextDestroy);
 
 	IDefinitionManager* getBaseManager() const;
 
 private:
 	// IDefinitionManager
-	IClassDefinition* getDefinition(const char* name) const override;
-	IClassDefinition* getObjectDefinition(const ObjectHandle& object) const override;
+	virtual IClassDefinition* getDefinition(const char* name) const override;
+	virtual IClassDefinition* findDefinition(const char* name) const override;
+	virtual IClassDefinition* getObjectDefinition(const ObjectHandle& object) const override;
 
 	IClassDefinition* registerDefinition(std::unique_ptr<IClassDefinitionDetails> definition) override;
-
 	bool deregisterDefinition(const IClassDefinition* definition) override;
+    virtual void deregisterDefinitions() override;
 
 	bool serializeDefinitions(ISerializer& serializer) override;
 	bool deserializeDefinitions(ISerializer& serializer) override;
@@ -51,7 +54,10 @@ private:
 	std::unique_ptr<IClassDefinitionDetails> createGenericDefinition(const char* name) const override;
 
 private:
-	IDefinitionManager* pBaseManager_;
+	mutable IObjectManager* contextObjManager_ = nullptr;
+	std::function<IObjectManager*()> getContextObjManager_ = nullptr;
+    std::function<void(void)> onContextDestroy_ = nullptr;
+	IDefinitionManager* pBaseManager_ = nullptr;
 	std::set<const IClassDefinition*> contextDefinitions_;
 	const std::wstring contextName_;
 };

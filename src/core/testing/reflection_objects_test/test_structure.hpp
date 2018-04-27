@@ -5,6 +5,7 @@
 #include <vector>
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/object/object_handle.hpp"
 
 namespace wgt
 {

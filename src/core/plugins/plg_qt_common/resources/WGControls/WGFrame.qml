@@ -84,6 +84,8 @@ Item {
     /*! This property sets the checked state of the controls checkbox. */
     property alias enableControls: toggleableBox.checked
 
+    property alias contentItem: content.item
+
     property Component childObject
 
     implicitHeight: defaultSpacing.doubleMargin + (defaultSpacing.topBottomMargin * 2)
@@ -156,11 +158,12 @@ Item {
 
         Text {
             id: frameLabel
-            color: palette.highlightTextColor
+            color: palette.textColor
             anchors.left: parent.left
             anchors.top: parent.top
             text: baseFrame.text
             visible: toggleable ? false : true
+            font.bold: true
         }
 
         WGSeparator {

@@ -1,45 +1,110 @@
 #include "meta_base.hpp"
-#include "meta_types.hpp"
-#include "core_reflection/reflection_macros.hpp"
-#include "core_reflection/function_property.hpp"
-#include "core_reflection/metadata/meta_types.hpp"
-#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+#include "meta_utilities_impl.hpp"
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
-BEGIN_EXPOSE(MetaBase, MetaNone())
-END_EXPOSE()
 
 //==============================================================================
-MetaBase::MetaBase()
+struct MetaDataStorage
+{
+	ManagedObjectPtr object_;
+	ObjectHandle handle_;
+	mutable MetaData next_ = nullptr;
+};
+
+//==============================================================================
+MetaData::MetaData(const std::nullptr_t& )
+	: storage_( nullptr )
 {
 }
 
-//==============================================================================
-/*virtual */ MetaBase::~MetaBase()
+
+//------------------------------------------------------------------------------
+MetaData::MetaData(MetaData&& rhs)
+	: storage_( std::move( rhs.storage_ ) )
 {
 }
 
-//==============================================================================
-const MetaHandle& operator+(const MetaHandle& left, const MetaHandle& right)
+
+//------------------------------------------------------------------------------
+MetaData::MetaData(ManagedObjectPtr obj, ObjectHandle & handle)
+	: storage_(new MetaDataStorage())
 {
-	if (left == nullptr)
+	storage_->object_ = std::move(obj);
+	storage_->handle_ = handle;
+}
+
+
+//------------------------------------------------------------------------------
+MetaData::~MetaData()
+{
+}
+
+
+//------------------------------------------------------------------------------
+MetaData& MetaData::operator=(MetaData&& rhs)
+{
+	if (this != &rhs)
 	{
-		return right;
+		storage_ = std::move(rhs.storage_);
 	}
-
-	// traverse to the end of the linked list
-	auto next = left->next();
-	auto last = left;
-	while (next != nullptr)
-	{
-		last = next;
-		next = next->next();
-	};
-
-	// hook into the end
-	last->setNext(right);
-
-	return left;
+	return *this;
 }
+
+
+//------------------------------------------------------------------------------
+bool MetaData::operator==(const std::nullptr_t&) const
+{
+	return storage_? storage_->object_.get() == nullptr : true;
+}
+
+
+//------------------------------------------------------------------------------
+bool MetaData::operator!=(const std::nullptr_t&) const
+{
+	return !operator==( nullptr );
+}
+
+
+//------------------------------------------------------------------------------
+const ObjectHandle & MetaData::getHandle() const
+{
+	if (storage_ == nullptr)
+	{
+		static ObjectHandle s_Empty;
+		return s_Empty;
+	}
+	return storage_->handle_;
+}
+
+
+//------------------------------------------------------------------------------
+const MetaData & MetaData::next() const
+{
+	if (storage_ == nullptr)
+	{
+		static MetaData s_Empty;
+		return s_Empty;
+	}
+	return storage_->next_;
+}
+
+
+//------------------------------------------------------------------------------
+void MetaData::setNext(MetaData next) const
+{
+	TF_ASSERT(storage_ != nullptr);
+	storage_->next_ = std::move(next);
+}
+
+
+//------------------------------------------------------------------------------
+IMetaUtilities & MetaData::getMetaUtils()
+{
+	static MetaUtilities s_MetaUtils;
+	return s_MetaUtils;
+}
+
 } // end namespace wgt

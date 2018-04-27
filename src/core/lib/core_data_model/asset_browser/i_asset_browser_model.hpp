@@ -4,6 +4,7 @@
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_variant/variant.hpp"
+#include <vector>
 
 namespace wgt
 {
@@ -13,7 +14,6 @@ class IComponentContext;
 class IItem;
 class IListModel;
 class ITreeModel;
-class IValueChangeNotifier;
 
 typedef std::vector<std::string> AssetPaths;
 
@@ -93,7 +93,6 @@ public:
 	// Expected: IListModel
 	// Note: Feature likely to be removed once active filters and more robust filter handling is introduced
 	virtual IListModel* getCustomContentFilters() const = 0;
-	virtual IValueChangeNotifier* customContentFilterIndexNotifier() const = 0;
 	virtual const int& currentCustomContentFilter() const = 0;
 	virtual void currentCustomContentFilter(const int& index) = 0;
 	virtual void setFolderContentsFilter(const std::string filter) = 0;

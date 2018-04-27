@@ -2,31 +2,24 @@ import QtQuick 2.5
 import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 import QtWebEngine 1.2
-import WGControls 1.0
 
-Rectangle {
+import WGControls 2.0
+
+WGPanel {
     id: viewport
     color: palette.mainWindowColor
-    property var title: "Viewport"
-    property var layoutHints: { 'viewport': 0.1 }
-
-	WGListModel
-        {
-            id: objectModel
-            source: listSource
-            ValueExtension {}
-        }
+    layoutHints: { 'viewport': 0.1 }
+    property var sceneDirty: getSceneDirty
+	
 	Repeater {
         id: objectRepeater
-        model: objectModel
-		
-        delegate: Item {
-		property var objData: value
+        model: listModel
+        Item {
+    		property var objData: value
         }
-		
-    }
+    }	
 
-    WebEngineView {
+    property Component webglComponent: WebEngineView {
         id: webglEngine
         anchors.fill: parent
         url: "js/main.html"
@@ -74,13 +67,15 @@ Rectangle {
             {
                 call("engineStart", [width, height], function(success) 
                 { 
-                    console.log(success ?
-                        "WebGL initialised" :
-                        "WebGL failed to initialise");
-
-                    initialized = true;
-                    webglTick.running = true;
-                });      
+					if(success) {
+						initialized = true;
+						updateScene();		
+                        console.log("WebGL initialised");
+					}
+					else {
+						console.log("WebGL failed to initialise");	
+					}
+                });
 
             }
             else if(loadRequest.status == WebEngineView.LoadFailedStatus)
@@ -90,34 +85,51 @@ Rectangle {
         }
     }
 
+    property alias webgl: loader.item
+    WGLoader {
+        id: loader
+        active: qmlView.needsToLoad
+        asynchronous: true
+        loading: !(status == Loader.Ready)
+        anchors.fill: parent
+        sourceComponent: webglComponent
+    }
+	
     onWidthChanged: {
-        if(webglEngine.initialized)
-        {
-            webglEngine.call("setViewportSize", [width, height]);
+        if(webgl != null && webgl.initialized) {
+            webgl.call("setViewportSize", [width, height]);
         }
     }
 
     onHeightChanged: {
-        if(webglEngine.initialized)
-        {
-            webglEngine.call("setViewportSize", [width, height]);
+        if(webgl != null && webgl.initialized) {
+            webgl.call("setViewportSize", [width, height]);
         }
     }
+	
+	Connections {
+		target: self
+		onSelectedIndexChanged: {
+			if(webgl != null && webgl.initialized) {
+				webgl.call("setSelectedModel", [selectedIndex]);
+			}
+		}
+	}	
+	
 
-    Timer {
-        id: webglTick
-        interval: 100
-        running: false
-        repeat: true
+	onSceneDirtyChanged: {
+		if(sceneDirty) {
+			updateScene();
+		}
+	}
 
-        property var countCache: 0
-        property var modelCache: 0
-
-        onTriggered: {
+	property int countCache: 0	
+	function updateScene(){
+        if (webgl != null && webgl.initialized) {
 			var count = objectRepeater.count;
             if(count != countCache)
             {
-                webglEngine.call("setModelCount", [count]);
+                webgl.call("setModelCount", [count]);
                 countCache = count;
             }
 			for(var i = 0; i < count; i++)
@@ -129,7 +141,7 @@ Rectangle {
                 var isVisible = obj.visible;
                 var textureName = obj.map1;
 
-                webglEngine.call("setModelProperties", 
+                webgl.call("setModelProperties", 
                 [
                     i,
                     isVisible,
@@ -145,41 +157,35 @@ Rectangle {
                     scale.z
                 ]);
 			}
-
-            var selected = rootObjectIndex;
-            if(selected != modelCache)
-            {
-                webglEngine.call("setSelectedModel", [selected]);
-                modelCache = selected;
-            }
-        }
-    }
+        }	
+	}
 
     MouseArea {
         id: webglMouseArea
         anchors.fill: parent
         onClicked: {
-			if ( webglEngine.initialized )
-			{
-                webglEngine.call("getPickedModel", [mouse.x, mouse.y], function(model)
+			if (webgl != null && webgl.initialized) {
+                webgl.call("getPickedModel", [mouse.x, mouse.y], function(model)
                 {
-                    updateRootObject(model);
+                    selectObject(model);
                 });
-            }
+			}
+
+			viewport.focus = true;
         }
 
         DropArea {
             anchors.fill: parent
             keys: ["text/uri-list"]
             onDropped: {
-                if ( webglEngine.initialized )
+                if (webgl != null && webgl.initialized)
                 {
                     if ( drop.hasUrls && drop.urls.length === 1 )
                     {
                         var path = drop.urls[0].toString();
                         if (path.toLowerCase().match(/\.(jpg|jpeg|png)$/))
                         {
-                            webglEngine.call("getPickedModel", [drop.x, drop.y], function(model)
+                            webgl.call("getPickedModel", [drop.x, drop.y], function(model)
                             {
                                 setTexture(model, getObjectTexture(model), path);
                             });

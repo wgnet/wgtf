@@ -17,11 +17,10 @@ SET( ALL_SRCS
 	test_data_model_fixture.cpp
 	test_string_data.hpp
 	test_string_data.cpp
-	test_asset_browser.cpp
     test_variant_list.cpp
 )
 
-BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
+WG_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 BW_ADD_EXECUTABLE( ${PROJECT_NAME} ${BLOB_SRCS} )
 
 IF( BW_PLATFORM_WINDOWS )
@@ -33,13 +32,13 @@ ENDIF()
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_data_model
 	core_unit_test
-    
+
 	# external libraries
 	${PLATFORM_LIBRARIES}    
 )
 
 BW_ADD_TOOL_TEST( ${PROJECT_NAME} )
 
-BW_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
+WG_PRECOMPILED_HEADER( ${PROJECT_NAME} pch.hpp )
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Unit Tests" )
 

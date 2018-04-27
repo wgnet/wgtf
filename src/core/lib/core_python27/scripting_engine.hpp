@@ -3,12 +3,12 @@
 #define PYTHON_SCRIPTING_ENGINE_HPP
 
 #include "interfaces/core_python_script/i_scripting_engine.hpp"
-#include "core_dependency_system/di_ref.hpp"
+#include "interfaces/i_python_obj_manager.hpp"
+#include "core_dependency_system/depends.hpp"
 #include "core_script/type_converter_queue.hpp"
 
 namespace wgt
 {
-class IComponentContext;
 class ICommandLineParser;
 class ObjectHandle;
 
@@ -18,9 +18,11 @@ class ObjectHandle;
  *	Not a place for providing other interfaces or storing global script stuff.
  */
 class Python27ScriptingEngine : public Implements<IPythonScriptingEngine> // Always implement latest version
+                                ,
+                                public Depends<IPythonObjManager, ICommandLineParser>
 {
 public:
-	Python27ScriptingEngine(IComponentContext& context);
+	Python27ScriptingEngine();
 	virtual ~Python27ScriptingEngine();
 
 	/**
@@ -46,9 +48,6 @@ private:
 
 	Python27ScriptingEngine& operator=(const Python27ScriptingEngine& other);
 	Python27ScriptingEngine& operator=(Python27ScriptingEngine&& other);
-
-	IComponentContext& context_;
-	DIRef<ICommandLineParser> commandLine_;
 };
 } // end namespace wgt
 #endif // PYTHON_SCRIPTING_ENGINE_HPP

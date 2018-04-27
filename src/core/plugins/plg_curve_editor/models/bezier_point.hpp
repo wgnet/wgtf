@@ -11,28 +11,31 @@
 
 #pragma once
 
-#include <core_reflection/object_handle.hpp>
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
 class Point;
-class IDefinitionManager;
 struct BezierPointData;
 
 class BezierPoint
 {
 public:
-	BezierPoint()
-	{
-	}
-	BezierPoint(IDefinitionManager& definitionManager, const Point& pos);
-	BezierPoint(IDefinitionManager& definitionManager, const Point& pos, const Point& cp1, const Point& cp2);
+    BezierPoint(const std::string& id, const BezierPointData& data);
 
-	BezierPoint& operator=(const BezierPointData& rhs);
+    BezierPointData getData() const;
+    void setData(const BezierPointData& data);
 
-	ObjectHandleT<Point> pos;
-	ObjectHandleT<Point> cp1;
-	ObjectHandleT<Point> cp2;
+	Point* pos() const;
+	Point* cp1() const;
+    Point* cp2() const;
+    const std::string& id() const;
+
+private:
+    std::unique_ptr<Point> pos_;
+	std::unique_ptr<Point> cp1_;
+	std::unique_ptr<Point> cp2_;
+    std::string id_;
 };
 
 bool operator==(const BezierPoint& lhs, const BezierPoint& rhs);

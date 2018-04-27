@@ -51,7 +51,7 @@ T.ItemDelegate {
     /*! The QtObject for the icon/image in the dropDownBox
         By default this is an image that points to the imageRole URL but can be made any Item based QML object.
     */
-    property Component imageDelegate: Image {
+    property Component imageDelegate: WGImage {
         id: imageDelegate
         source: parentControl.imageRole ? control.image : ""
         height: sourceSize.height < parentControl.imageMaxHeight ? sourceSize.height : parentControl.imageMaxHeight
@@ -115,6 +115,8 @@ T.ItemDelegate {
             visible: control.text
             horizontalAlignment: Text.AlignLeft
             verticalAlignment: Text.AlignVCenter
+
+            color: parentControl.__textColor
         }
     }
     //! [label]
@@ -131,7 +133,7 @@ T.ItemDelegate {
         font.family : "Marlett"
         font.pixelSize: Math.round(parent.height)
 
-        color: palette.textColor
+        color: parentControl.__textColor
 
         visible: control.checked && parentControl.showRowIndicator && !parentControl.multipleValues
         text: control.checkable ? "\uF062" : ""

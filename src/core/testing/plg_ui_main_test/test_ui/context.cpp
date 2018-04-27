@@ -1,14 +1,15 @@
 #include "context.hpp"
-#include "metadata/context.mpp"
-
-#include "core_data_model/abstract_item_model.hpp"
+#include "pages/test_page.hpp"
+#include "core_data_model/reflection_proto/property_tree_model.hpp"
 #include "core_data_model/i_item_role.hpp"
-
+#include "core_environment_system/i_env_system.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include <cassert>
 #include <string>
 
 namespace wgt
 {
+const std::string NO_ID("NO_ID");
 ITEMROLE(value)
 
 TestUIContext::TestUIContext()
@@ -19,26 +20,81 @@ TestUIContext::~TestUIContext()
 {
 }
 
-void TestUIContext::initialize(std::unique_ptr<AbstractTreeModel>&& model)
+void TestUIContext::initialise(ObjectHandle model)
 {
-	model_ = std::move(model);
+	auto definitionManager = get<IDefinitionManager>();
+	definition_ = definitionManager->getDefinition<TestUIContext>();
+	assert(definition_);
+
+	selectedModel_ = model;
+	selectedTree_ = std::make_shared<proto::PropertyTreeModel>(selectedModel_);
+	selectedId_ = NO_ID;
 }
 
-AbstractTreeModel* TestUIContext::treeModel() const
+void TestUIContext::open(std::string id, ObjectHandle model)
 {
-	return model_.get();
+	assert(models_.find(id) == models_.end());
+	models_[id] = model;
+	select(id);
+}
+
+void TestUIContext::close(std::string id)
+{
+	if (id == selectedId_)
+	{
+		select(NO_ID);
+	}
+
+	assert(models_.find(id) != models_.end());
+	models_.erase(id);
+}
+
+void TestUIContext::select(std::string id)
+{
+	std::string oldId = selectedId_;
+	selectedId_ = models_.find(id) != models_.end() ? id : NO_ID;
+	treeVisible_ = selectedId_ != NO_ID;
+	selectedModel_ = treeVisible_ ? models_.at(selectedId_) : ObjectHandle();
+	definition_->bindProperty("treeVisible", handle()).setValue(treeVisible_);
+
+	if (oldId != selectedId_)
+	{
+		auto tree = std::static_pointer_cast<proto::PropertyTreeModel>(selectedTree_);
+		tree->setObject(selectedModel_);
+	}
+}
+
+AbstractTreeModel* TestUIContext::getTreeModel()
+{
+	return selectedTree_.get();
+}
+
+void TestUIContext::reloadEnvironment()
+{
+	get<IEnvManager>()->resetCurrentEnvironment();
+}
+
+void TestUIContext::toggleReadOnly()
+{
+	TestPage::toggleReadOnly();
 }
 
 void TestUIContext::updateValues()
 {
-	assert(model_ != nullptr);
+	if (selectedId_ == NO_ID)
+	{
+		return;
+	}
+
+	auto model = getTreeModel();
+
 	const AbstractTreeModel::ItemIndex rootIndex(0, nullptr);
-	auto pRoot = model_->item(rootIndex);
+	auto pRoot = model->item(rootIndex);
 	const AbstractTreeModel::ItemIndex simpleCasesIndex(0, pRoot);
-	auto pSimpleCases = model_->item(simpleCasesIndex);
+	auto pSimpleCases = model->item(simpleCasesIndex);
 
 	const AbstractTreeModel::ItemIndex boolIndex(0, pRoot);
-	auto pBool = model_->item(boolIndex);
+	auto pBool = model->item(boolIndex);
 	if (pBool != nullptr)
 	{
 		const auto oldVariant = pBool->getData(0, 0, ItemRole::valueId);
@@ -50,7 +106,7 @@ void TestUIContext::updateValues()
 	}
 
 	const AbstractTreeModel::ItemIndex checkBoxIndex(1, pRoot);
-	auto pCheckBox = model_->item(checkBoxIndex);
+	auto pCheckBox = model->item(checkBoxIndex);
 	if (pCheckBox != nullptr)
 	{
 		const auto oldVariant = pCheckBox->getData(0, 0, ItemRole::valueId);
@@ -62,7 +118,7 @@ void TestUIContext::updateValues()
 	}
 
 	const AbstractTreeModel::ItemIndex slideIndex(3, pRoot);
-	auto pSlide = model_->item(slideIndex);
+	auto pSlide = model->item(slideIndex);
 	if (pSlide != nullptr)
 	{
 		const auto oldVariant = pSlide->getData(0, 0, ItemRole::valueId);
@@ -74,7 +130,7 @@ void TestUIContext::updateValues()
 	}
 
 	const AbstractTreeModel::ItemIndex numberIndex(4, pRoot);
-	auto pNumber = model_->item(numberIndex);
+	auto pNumber = model->item(numberIndex);
 	if (pNumber != nullptr)
 	{
 		const auto oldVariant = pNumber->getData(0, 0, ItemRole::valueId);
@@ -86,7 +142,7 @@ void TestUIContext::updateValues()
 	}
 
 	const AbstractTreeModel::ItemIndex textFieldIndex(2, pRoot);
-	auto pTextField = model_->item(textFieldIndex);
+	auto pTextField = model->item(textFieldIndex);
 	if ((pTextField != nullptr) && (pNumber != nullptr))
 	{
 		const auto oldVariant = pNumber->getData(0, 0, ItemRole::valueId);
@@ -100,12 +156,12 @@ void TestUIContext::updateValues()
 	}
 }
 
-void TestUIContext::undoUpdateValues(const ObjectHandle&, Variant)
+void TestUIContext::undoUpdateValues(Variant, Variant)
 {
 	// values automatically undone
 }
 
-void TestUIContext::redoUpdateValues(const ObjectHandle&, Variant)
+void TestUIContext::redoUpdateValues(Variant, Variant)
 {
 	// values automatically redone
 }

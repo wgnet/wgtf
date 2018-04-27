@@ -21,7 +21,10 @@ public:
 		DynamicRole = Qt::UserRole + 256
 	};
 
-	void registerRole(const char* roleName, QHash<int, QByteArray>& o_RoleNames) const;
+	static int convertRole(const char* roleName);
+	static int convertRole(ItemRole::Id roleId);
+
+	bool registerRole(const char* roleName, QHash<int, QByteArray>& o_RoleNames) const;
 
 	virtual bool encodeRole(ItemRole::Id roleId, int& o_Role) const;
 	virtual bool decodeRole(int role, ItemRole::Id& o_RoleId) const;

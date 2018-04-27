@@ -1,6 +1,8 @@
 #include "variant_list.hpp"
+
 #include "i_item.hpp"
 #include "i_item_role.hpp"
+#include "core_common/assert.hpp"
 #include "core_variant/variant.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_serialization/resizing_memory_stream.hpp"
@@ -67,7 +69,7 @@ Variant VariantListItem::getData(int column, ItemRole::Id roleId) const
 			{
 				ObjectHandle objHandle;
 				bool isOk = value_.tryCast(objHandle);
-				assert(isOk);
+				TF_ASSERT(isOk);
 				typeId = objHandle.type();
 			}
 			return typeId.getName();
@@ -264,7 +266,7 @@ size_t VariantList::index(const IItem* item) const
 	for (; it != items_.end() && it->get() != item; ++index, ++it)
 	{
 	}
-	assert(it != items_.end());
+	TF_ASSERT(it != items_.end());
 	return index;
 }
 

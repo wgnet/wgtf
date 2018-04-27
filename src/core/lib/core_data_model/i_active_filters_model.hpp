@@ -4,6 +4,7 @@
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/object_handle.hpp"
 #include <string>
+#include "i_list_model.hpp"
 
 namespace wgt
 {

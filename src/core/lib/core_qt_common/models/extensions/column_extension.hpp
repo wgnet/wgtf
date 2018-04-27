@@ -1,12 +1,12 @@
 #ifndef COLUMN_EXTENSION_HPP
 #define COLUMN_EXTENSION_HPP
 
-#include "i_model_extension.hpp"
+#include "qt_model_extension.hpp"
 #include <memory>
 
 namespace wgt
 {
-class ColumnExtension : public IModelExtension
+class ColumnExtension : public QtModelExtension
 {
 public:
 	ColumnExtension();
@@ -20,6 +20,7 @@ public:
 	                     QAbstractItemModel::LayoutChangeHint hint) override;
 	void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last) override;
 	void onRowsRemoved(const QModelIndex& parent, int first, int last) override;
+	void onModelReset() override;
 
 private:
 	struct Implementation;

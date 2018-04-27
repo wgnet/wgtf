@@ -2,12 +2,13 @@
 #define LOG_MESSAGE_HPP
 
 #include "log_level.hpp"
+#include "interfaces/i_log_message.hpp"
 #include <string>
 #include <vector>
 
 namespace wgt
 {
-class LogMessage
+class LogMessage : public ILogMessage
 {
 public:
 	LogMessage(LogLevel level, const char* format, ...);
@@ -17,14 +18,23 @@ public:
 	{
 	}
 
-	const char* c_str();
-	const std::string& str();
+	LogMessage(const LogMessage&) = default;
+	LogMessage(LogMessage&&) = default;
+	LogMessage& operator=(const LogMessage&) = default;
+	LogMessage& operator=(LogMessage&&) = default;
 
-	LogLevel getLevel();
-	const char* getLevelString();
+	const char* c_str() const override;
+	const std::string& str() const override;
 
-	bool addTag(std::string tag);
-	bool hasTag(const char* needle);
+	LogLevel getLevel() const override;
+	const char* getLevelString() const override;
+	static const char* getLevelString(LogLevel level);
+
+	std::string getAsHtml() const override;
+	static std::string getAsHtml(std::string remark, LogLevel level);
+
+	bool addTag(std::string tag) override;
+	bool hasTag(const char* needle) const override;
 
 private:
 	LogMessage();

@@ -1,4 +1,7 @@
 #include "thread_local_value.hpp"
+
+#include "core_common/assert.hpp"
+
 #include <vector>
 #include <algorithm>
 
@@ -51,7 +54,7 @@ ThreadLocalBase::~ThreadLocalBase()
 	if (newEnd != end)
 	{
 		--g_numThreadLocalBases;
-		assert(newEnd == end - 1);
+		TF_ASSERT(newEnd == end - 1);
 	}
 }
 

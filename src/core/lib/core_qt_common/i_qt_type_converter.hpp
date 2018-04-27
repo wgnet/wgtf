@@ -2,11 +2,13 @@
 #define I_QT_TYPE_CONVERTER_HPP
 
 #include "wg_types/binary_block.hpp"
-#include <core_variant/variant.hpp>
+#include "core_variant/variant.hpp"
+#include "core_reflection/ref_object_id.hpp"
 #include <QVariant>
 
 Q_DECLARE_METATYPE(std::shared_ptr<wgt::BinaryBlock>);
 Q_DECLARE_METATYPE(wgt::Variant);
+Q_DECLARE_METATYPE(wgt::RefObjectId);
 
 namespace wgt
 {
@@ -18,6 +20,10 @@ class ObjectHandle;
 class IQtTypeConverter
 {
 public:
+	virtual ~IQtTypeConverter()
+	{
+	}
+
 	/**
 	 *	Interface required by TypeConverterQueue.
 	 */
@@ -68,7 +74,7 @@ public:
 			{
 				return false;
 			}
-			// handle pointer like IListModel*/ITreeModel*/IComponentContext* or reflected property which return
+			// handle pointer like IComponentContext* or reflected property which return
 			// reference value
 			o_qVariant = QVariant::fromValue(variant);
 			return true;

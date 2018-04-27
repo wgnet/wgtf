@@ -1,5 +1,5 @@
-#include "third_party/CppUnitLite2/src/CppUnitLite2.h"
-#include "third_party/CppUnitLite2/src/Test.h"
+#include "CppUnitLite2/src/CppUnitLite2.h"
+#include "CppUnitLite2/src/Test.h"
 #include "core_common/objects_pool.hpp"
 
 #include <memory>

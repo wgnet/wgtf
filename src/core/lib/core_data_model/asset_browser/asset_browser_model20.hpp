@@ -13,6 +13,7 @@
 #pragma once
 
 #include "core_data_model/asset_browser/i_asset_browser_model20.hpp"
+#include "core_dependency_system/i_interface.hpp"
 
 #include <memory>
 
@@ -20,7 +21,8 @@ namespace wgt
 {
 namespace AssetBrowser20
 {
-class AssetBrowserModel : public IAssetBrowserModel
+class AssetBrowserModel
+	: public Implements< IAssetBrowserModel >
 {
 public:
 	AssetBrowserModel();
@@ -29,15 +31,20 @@ public:
 	virtual AbstractItemModel* getAssetModel() const override;
 	virtual const std::vector<std::string>& getNameFilters() const override;
 	virtual int getIconSize() const override;
+	virtual Variant assetPreview(std::string assetPath) override;
 
-	void setAssetModel(AbstractItemModel* assetModel);
-	void setNameFilters(const std::vector<std::string>& nameFilters);
-	void setIconSize(int iconSize);
+	virtual void programSelectItemByPath(const char* path) override;
+	virtual const char* getProgramSelectedItemPath() const override;
+	virtual void getProgramSelectedItemSignal(Signal<void(Variant&)>** result) const override;
+
+	void setAssetModel(AbstractItemModel* assetModel) override;
+	void setNameFilters(const std::vector<std::string>& nameFilters) override;
+	void setIconSize(int iconSize) override;
+	void setAssetPreviewProvider(std::shared_ptr<IAssetPreviewProvider> assetPreviewProvider) override;
 
 private:
-	AbstractItemModel* assetModel_;
-	std::vector<std::string> nameFilters_;
-	int iconSize_;
+	struct Impl;
+	std::unique_ptr<Impl> pImpl_;
 };
 }
 } // end namespace wgt

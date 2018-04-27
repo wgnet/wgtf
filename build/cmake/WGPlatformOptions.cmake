@@ -1,5 +1,4 @@
 # Enable C and C++ to force compiler detection so we can determine 32 or 64 bit
-ENABLE_LANGUAGE( C )
 ENABLE_LANGUAGE( CXX )
 
 # Determine platform
@@ -14,7 +13,6 @@ ELSEIF( APPLE )
 	SET( BW_PLATFORM_MAC ON )
 	SET( BW_PLATFORM "mac" )
 	SET( BW_COMPILER_TOKEN "clang" )
-	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -stdlib=libc++" )
 ELSE()
 	MESSAGE( FATAL_ERROR "Only Windows builds are currently supported." )
 ENDIF()

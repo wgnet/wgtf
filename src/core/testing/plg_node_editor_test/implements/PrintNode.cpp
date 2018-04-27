@@ -1,4 +1,6 @@
 #include "PrintNode.h"
+#include "core_object\managed_object.hpp"
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
@@ -11,19 +13,29 @@ PrintNode::PrintNode(const std::string& nodeClass)
     : m_x(0.0f), m_y(0.0f), m_class(nodeClass), m_title(PRINT_NODE_TITLE), m_subTitle(PRINT_NODE_SUBTITLE),
       m_icon(PRINT_NODE_ICON), m_color(PRINT_NODE_COLOR), m_enabled(true), m_minimized(false)
 {
-	m_id = reinterpret_cast<size_t>(this);
-
-	m_inputSlotsModel.push_back(new EventSlot(this, true));
-	m_inputSlotsModel.back()->setLabel("input");
-	m_inputSlotsModel.push_back(new StringSlot(this, true));
-	m_inputSlotsModel.back()->setLabel("value");
-
-	m_outputSlotsModel.push_back(new EventSlot(this, false));
-	m_outputSlotsModel.back()->setLabel("out");
 }
 
 PrintNode::~PrintNode()
 {
+}
+
+void PrintNode::Init()
+{
+	m_id = reinterpret_cast<size_t>(this);
+
+	ownedSlots_.emplace_back(std::unique_ptr<ISlot>(new EventSlot(getThis(), true)));
+	inputSlots_.push_back(ownedSlots_.back().getHandleT());
+	inputSlots_.back()->setLabel("input");
+	ownedSlots_.emplace_back(std::unique_ptr<ISlot>(new StringSlot(getThis(), true)));
+	inputSlots_.push_back(ownedSlots_.back().getHandleT());
+	inputSlots_.back()->setLabel("value");
+
+	ownedSlots_.emplace_back(std::unique_ptr<ISlot>(new EventSlot(getThis(), false)));
+	outputSlots_.push_back(ownedSlots_.back().getHandleT());
+	outputSlots_.back()->setLabel("out");
+
+	inputSlotsModel_.setSource(Collection(inputSlots_));
+	outputSlotsModel_.setSource(Collection(outputSlots_));
 }
 
 void PrintNode::SetPos(float x, float y)
@@ -35,19 +47,19 @@ void PrintNode::SetPos(float x, float y)
 ObjectHandleT<ISlot> PrintNode::GetSlotById(size_t slotId) const
 {
 	auto inputSlotPos =
-	std::find_if(m_inputSlotsModel.begin(), m_inputSlotsModel.end(),
+	std::find_if(inputSlots_.begin(), inputSlots_.end(),
 	             [slotId](const ObjectHandleT<ISlot>& inputSlot) { return slotId == inputSlot->Id(); });
 
-	if (inputSlotPos != m_inputSlotsModel.end())
+	if (inputSlotPos != inputSlots_.end())
 	{
 		return *inputSlotPos;
 	}
 
 	auto outputSlotPos =
-	std::find_if(m_outputSlotsModel.begin(), m_outputSlotsModel.end(),
+	std::find_if(outputSlots_.begin(), outputSlots_.end(),
 	             [slotId](const ObjectHandleT<ISlot>& outputSlot) { return slotId == outputSlot->Id(); });
 
-	if (outputSlotPos != m_outputSlotsModel.end())
+	if (outputSlotPos != outputSlots_.end())
 	{
 		return *outputSlotPos;
 	}
@@ -62,7 +74,7 @@ bool PrintNode::CanConnect(ObjectHandleT<ISlot> mySlot, ObjectHandleT<ISlot> oth
 
 	while (true)
 	{
-		ObjectHandleT<INode> otherNode = otherSlot->Node();
+		auto otherNode = otherSlot->Node();
 		if (this == otherNode.get())
 			break;
 
@@ -75,10 +87,13 @@ bool PrintNode::CanConnect(ObjectHandleT<ISlot> mySlot, ObjectHandleT<ISlot> oth
 		if (mySlot->Color() != otherSlot->Color())
 			break;
 
-		auto connectedSlots = mySlot->GetConnectedSlots();
-		result = (std::find_if(connectedSlots->begin(), connectedSlots->end(), [&otherSlot](const ISlot* slot) {
-			          return otherSlot->Id() == slot->Id();
-			      }) == connectedSlots->end());
+		auto connectedSlots = mySlot->GetConnectedSlots()->getSource();
+		auto callback = [&otherSlot](const Variant& slotVariant) {
+			auto slot = slotVariant.value<ObjectHandleT<ISlot>>();
+			return otherSlot->Id() == slot->Id();
+		};
+
+		result = (std::find_if(connectedSlots.begin(), connectedSlots.end(), callback) == connectedSlots.end());
 		break;
 	}
 

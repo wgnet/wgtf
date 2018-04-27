@@ -1,8 +1,12 @@
 #include "qt_desktop_application.hpp"
+#include "core_common/assert.hpp"
 #include "core_common/platform_path.hpp"
 #include "core_common/platform_env.hpp"
 #include "core_qt_common/qt_palette.hpp"
+#include "core_qt_common/qt_cursor.hpp"
+#include "core_logging/logging.hpp"
 
+#include <QtNetwork>
 #include <QTimer>
 #include <QApplication>
 #include <QCoreApplication>
@@ -11,51 +15,108 @@
 
 namespace wgt
 {
-IComponentContext* QtDesktopApplication::globalContext_ = nullptr;
 
-namespace
+MultiInstanceServer::MultiInstanceServer(QLocalServer *server) 
+	: server_(server)
 {
-class IdleLoop : public QObject
-{
-public:
-	IdleLoop(QtDesktopApplication& qtApplication, QObject* parent) : QObject(parent), qtApplication_(qtApplication)
-	{
-		timer_ = new QTimer(this);
-		timer_->setInterval(10);
-		QObject::connect(timer_, &QTimer::timeout, [&]() { qtApplication_.update(); });
-	}
-
-public slots:
-	void start()
-	{
-		qtApplication_.update();
-		timer_->start();
-	}
-
-	void stop()
-	{
-		timer_->stop();
-	}
-
-private:
-	QtDesktopApplication& qtApplication_;
-	QTimer* timer_;
-};
 }
 
-QtDesktopApplication::QtDesktopApplication(IComponentContext& context, QApplication* qApplication)
-    : Depends<IQtFramework, ISplash>(context), application_(nullptr), splash_(nullptr), bQuit_(false)
+MultiInstanceServer::~MultiInstanceServer() 
 {
-	globalContext_ = &context;
+	if (server_) server_->close();
+}
 
+void MultiInstanceServer::serverHasQueuedConnections() 
+{
+	QLocalSocket *socket = server_->nextPendingConnection();
+	readySockets_.push(socket);
+	QObject::connect(socket, SIGNAL(readyRead()), this, SLOT(socketReadyForRead()));
+}
+
+void MultiInstanceServer::socketReadyForRead()
+{
+	QLocalSocket *socket = readySockets_.front();
+	if (!socket) return;
+
+	QDataStream in(socket); in.setVersion(QDataStream::Qt_5_6);
+	QString message; in >> message;
+
+	QFileInfo path(message);
+	if (path.exists() && path.isFile()) 
+	{
+		QString filePath = path.filePath();
+		queuedFiles_.push_back(filePath.toUtf8().data());
+	}
+
+	socket->disconnectFromServer();
+	readySockets_.pop();
+}
+
+const std::string& MultiInstanceServer::getServerName() {
+	static std::string serverName;
+	if (serverName.empty()) 
+	{
+		char userName[MAX_PATH] = {};
+		if (!Environment::getValue<MAX_PATH>("USERNAME", userName))
+			Environment::getValue<MAX_PATH>("USER", userName);
+		serverName.append(userName);
+		serverName.append("_WGTitanEditor_");
+	}
+
+	return serverName;
+}
+
+QtDesktopApplication::QtDesktopApplication(QApplication* qApplication, QLocalServer *server)
+	: application_(qApplication), splash_(nullptr), bQuit_(false), multiInstanceServer_(server)
+{
 	char wgtHome[MAX_PATH];
-
 	if (Environment::getValue<MAX_PATH>("WGT_HOME", wgtHome))
 	{
 		QCoreApplication::addLibraryPath(wgtHome);
 	}
 
-	application_ = qApplication;
+	// Startup multiple instance servers
+	if (server)
+	{
+		QObject::connect(server, SIGNAL(newConnection()), &multiInstanceServer_, SLOT(serverHasQueuedConnections()));
+		if (!server->isListening())
+		{
+			server->setSocketOptions(QLocalServer::UserAccessOption);
+			QString serverName = QString(multiInstanceServer_.getServerName().c_str());
+			if (!server->listen(serverName)) 
+			{
+				switch (server->serverError()) 
+				{
+					case QAbstractSocket::AddressInUseError:
+					case QAbstractSocket::SocketAddressNotAvailableError:
+					{
+						// Try recover once, otherwise move on.
+						QLocalServer::removeServer(serverName);
+						server->listen(serverName);
+						break;
+					}
+
+					default: break;
+				}
+			}
+		}
+	}
+
+	// Queue load any files sitting on the argv line
+	{
+		QStringList args = qApplication->arguments();
+		for (int i = 1; i < args.count(); i++) 
+		{
+			const QString& arg = args[i];
+			QFileInfo path(arg);
+
+			if (path.exists() && path.isFile())
+			{
+				std::string argv = arg.toUtf8().toStdString();
+				multiInstanceServer_.queuedFiles_.push_back(argv);
+			}
+		}
+	}
 
 	// all this qapplication setup should probably be moved out of here
 	// the whole point is to let the user set up all the Qt stuff
@@ -63,48 +124,23 @@ QtDesktopApplication::QtDesktopApplication(IComponentContext& context, QApplicat
 	QApplication::setDesktopSettingsAware(false);
 	QApplication::setStyle(QStyleFactory::create("Fusion"));
 	QApplication::setFont(QFont("Noto Sans", 9));
-	auto dispatcher = QAbstractEventDispatcher::instance();
-	auto idleLoop = new IdleLoop(*this, application_);
 
-	QObject::connect(dispatcher, &QAbstractEventDispatcher::aboutToBlock, idleLoop, &IdleLoop::start);
-	QObject::connect(dispatcher, &QAbstractEventDispatcher::awake, idleLoop, &IdleLoop::stop);
-
-	// Splash
-	QPixmap pixmap;
-
-	// Query for custom splash screens
-	bool foundCustomSplash = false;
-	const auto pSplash = this->get<ISplash>();
-	if (pSplash != nullptr)
-	{
-		std::unique_ptr<BinaryBlock> splashData;
-		std::string format;
-		const auto loaded = pSplash->loadData(splashData, format);
-		if (loaded)
-		{
-			foundCustomSplash = pixmap.loadFromData(static_cast<const uchar*>(splashData->data()),
-			                                        static_cast<uint>(splashData->length()), format.c_str());
-		}
-	}
-
-	// Use default splash screen
-	if (!foundCustomSplash)
-	{
-		pixmap.load(":/qt_app/splash");
-	}
-
-	splash_.reset(new QSplashScreen(pixmap));
-	splash_->show();
+	startTimer(10, [this]() { update(); });
 }
 
 QtDesktopApplication::~QtDesktopApplication()
 {
+	for (auto& timer : timers_)
+	{
+		timer.second->stop();
+		timer.second->deleteLater();
+	}
 }
 
 void QtDesktopApplication::initialise()
 {
 	auto qtFramework = this->get<IQtFramework>();
-	assert(qtFramework != nullptr);
+	TF_ASSERT(qtFramework != nullptr);
 	if (qtFramework != nullptr)
 	{
 		auto palette = qtFramework->palette();
@@ -118,39 +154,88 @@ void QtDesktopApplication::initialise()
 void QtDesktopApplication::finalise()
 {
 	signalUpdate.clear();
+	signalStartUp.clear();
 }
 
 void QtDesktopApplication::update()
 {
-	// Only called while app is idle
-	// App may or may not have idle time
 	layoutManager_.update();
 	auto qtFramework = this->get<IQtFramework>();
 	if (qtFramework != nullptr)
 	{
 		qtFramework->incubate();
 	}
-
 	signalUpdate();
 }
 
 int QtDesktopApplication::startApplication()
 {
-	assert(application_ != nullptr);
+	TF_ASSERT(application_ != nullptr);
 	signalStartUp();
-	splash_->close();
-	splash_ = nullptr;
+	layoutManager_.loadWindowPreferences();
+
+	if(splash_)
+	{
+		splash_->close();
+	}
+
 	if (bQuit_)
 	{
 		return 0;
 	}
+
+	if (auto automation = get<IAutomation>())
+	{
+		automation->notifyLoadingDone();
+	}
+
+	NGT_MSG("Starting %s\n%s",
+		application_->applicationFilePath().toUtf8().constData(),
+		splash_ ? splash_->message().toUtf8().constData() : "");
+
 	return application_->exec();
 }
 
 void QtDesktopApplication::quitApplication()
 {
+	signalExit();
 	QApplication::quit();
+	splash_ = nullptr;
 	bQuit_ = true;
+}
+
+IApplication::TimerId QtDesktopApplication::startTimer(int interval_ms, TimerCallback callback)
+{
+	if (application_ == nullptr)
+		return 0;
+
+	auto timer = new QTimer(application_);
+	QObject::connect(timer, &QTimer::timeout, [callback]() { callback(); });
+	timer->start(interval_ms);
+	timers_[timer->timerId()] = timer;
+	return timer->timerId();
+}
+
+void QtDesktopApplication::killTimer(TimerId id)
+{
+	auto found = timers_.find(id);
+	if (found != timers_.end())
+	{
+		auto timer = found->second;
+		timer->stop();
+		timers_.erase(found);
+		timer->deleteLater();
+	}
+}
+
+void QtDesktopApplication::setAppSettingsName(const char* name)
+{
+	applicationSettingsName_ = name;
+}
+
+const char* QtDesktopApplication::getAppSettingsName()
+{
+	return applicationSettingsName_.c_str();
 }
 
 void QtDesktopApplication::addWindow(IWindow& window)
@@ -178,6 +263,11 @@ void QtDesktopApplication::addMenu(IMenu& menu)
 	layoutManager_.addMenu(menu);
 }
 
+void QtDesktopApplication::addMenuPath(const char* path, const char* windowId)
+{
+	layoutManager_.addMenuPath(path, windowId);
+}
+
 void QtDesktopApplication::removeMenu(IMenu& menu)
 {
 	layoutManager_.removeMenu(menu);
@@ -198,38 +288,104 @@ void QtDesktopApplication::setWindowIcon(const char* path, const char* windowId)
 	layoutManager_.setWindowIcon(path, windowId);
 }
 
+void QtDesktopApplication::setStatusMessage(const char* message, int timeout)
+{
+	layoutManager_.setStatusMessage(message, timeout);
+}
+
+void QtDesktopApplication::setOverrideCursor(CursorId id)
+{
+	if(id.id() <= LastCursor.id())
+	{
+		auto cursorShape = static_cast<Qt::CursorShape>(id.id());
+		application_->setOverrideCursor(cursorShape);
+	}
+	else if(auto qCursor = reinterpret_cast<QCursor*>(id.nativeCursor()))
+	{
+		application_->setOverrideCursor(*qCursor);
+	}
+}
+
+void QtDesktopApplication::restoreOverrideCursor()
+{
+	application_->restoreOverrideCursor();
+}
+
+ICursorPtr QtDesktopApplication::createCustomCursor(const char * filename, int hotX, int hotY)
+{
+	return std::make_unique<QtCursor>(filename, hotX, hotY);
+}
+
+void QtDesktopApplication::saveWindowPreferences()
+{
+	layoutManager_.saveWindowPreferences();
+}
+
+bool QtDesktopApplication::splashScreenIsShowing()
+{
+	if (!splash_.get()) return false;
+
+	bool result = splash_->isVisible();
+	return result;
+}
+
+void QtDesktopApplication::toggleShowSplashScreen()
+{
+	if (!splash_.get()) return;
+
+	if (splash_->isVisible()) 
+	{
+		splash_->hide();
+	}
+	else 
+	{
+		splash_->show();
+	}
+	application_->processEvents();
+}
+
+bool QtDesktopApplication::setSplashScreen(const char* const path)
+{
+	QPixmap pixmap;
+	if (pixmap.load(path))
+	{
+		splash_.reset(new QSplashScreen(pixmap));
+		application_->processEvents();
+		return true;
+	}
+	else 
+	{
+		return false;
+	}
+}
+
+bool QtDesktopApplication::setSplashScreenMessage(const char* const message) 
+{
+	if (!splash_.get()) return false;
+	splash_->showMessage(message);
+	application_->processEvents();
+
+	return true;
+}
+
+const char* const QtDesktopApplication::getSplashScreenMessage() 
+{
+	if (splash_.get()) {
+		QString qString = splash_->message();
+		const char *const result = qString.toUtf8().data();
+		return result;
+	}
+
+	return "";
+}
+
+std::vector<std::string> *QtDesktopApplication::getQueuedFileLoads()
+{
+	return &multiInstanceServer_.queuedFiles_;
+}
+
 const Windows& QtDesktopApplication::windows() const
 {
 	return layoutManager_.windows();
 }
-
-IComponentContext* QtDesktopApplication::getContext()
-{
-	return globalContext_;
-}
-
-namespace Context
-{
-bool deregisterInterface(IInterface* pImpl)
-{
-	IComponentContext* context = QtDesktopApplication::getContext();
-	assert(context != nullptr);
-	return context->deregisterInterface(pImpl);
-}
-
-void* queryInterface(const TypeId& name)
-{
-	IComponentContext* context = QtDesktopApplication::getContext();
-	assert(context != nullptr);
-	return context->queryInterface(name);
-}
-
-void queryInterface(const TypeId& name, std::vector<void*>& o_Impls)
-{
-	IComponentContext* context = QtDesktopApplication::getContext();
-	assert(context != nullptr);
-	return context->queryInterface(name, o_Impls);
-}
-
-} /* Namespace context*/
 }

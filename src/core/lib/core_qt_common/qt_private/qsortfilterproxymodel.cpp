@@ -48,6 +48,9 @@
 
 #include <algorithm>
 
+#include "qt_qlist_memory_fix.hpp"
+SPECIALIZE_QLIST(QModelIndex)
+
 QT_BEGIN_NAMESPACE
 
 namespace wgt
@@ -1945,6 +1948,12 @@ void QSortFilterProxyModel::setSourceModel(QAbstractItemModel* sourceModel)
 		d->sort();
 }
 
+QAbstractItemModel * QSortFilterProxyModel::sourceModel() const
+{
+	Q_D(const QSortFilterProxyModel);
+	return d->model;
+}
+
 /*!
         \reimp
     */
@@ -2283,6 +2292,11 @@ bool QSortFilterProxyModel::moveRows(const QModelIndex& sourceParent, int source
 	}
 
 	if (sourceParent != destinationParent)
+	{
+		return false;
+	}
+
+	if (destinationChild < 0)
 	{
 		return false;
 	}
@@ -2788,6 +2802,20 @@ void QSortFilterProxyModel::invalidateFilter()
 	Q_D(QSortFilterProxyModel);
 	d->filter_changed();
 }
+
+// BEGIN WARGAMING MODIFICATION
+void QSortFilterProxyModel::recalculateFilter()
+{
+	Q_D(QSortFilterProxyModel);
+	emit layoutAboutToBeChanged();
+	auto source_index_mapping_backup = d->source_index_mapping;
+	d->source_index_mapping.clear();
+	QModelIndexPairList source_indexes = d->store_persistent_indexes();
+	d->update_persistent_indexes(source_indexes);
+	emit layoutChanged();
+	qDeleteAll(source_index_mapping_backup);
+}
+// END WARGAMING MODIFICATION
 
 /*!
         Returns \c true if the value of the item referred to by the given

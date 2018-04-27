@@ -13,6 +13,7 @@ ENDIF()
 
 # Set the Wargaming source directory
 SET( WG_TOOLS_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR} )
+SET( WG_TOOLS_INTERFACE_DIR ${CMAKE_CURRENT_LIST_DIR}/core/interfaces )
 
 # Still set BW_SOURCE_DIR here for just back compatibility, don't use BW_SOURCE_DIR for new code
 SET( BW_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR} )
@@ -20,6 +21,22 @@ SET( BW_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR} )
 # Set serach location for CMake include files
 SET( CMAKE_MODULE_PATH "${WG_TOOLS_SOURCE_DIR}/../build/cmake" )
 
+IF ( NOT "${WG_HUB_DIR}" )
+	SET( WG_HUB_DIR "${WG_TOOLS_SOURCE_DIR}/core/third_party/packages/")
+ENDIF()
+
+SET(WGTF_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}")
+LIST( APPEND CMAKE_PREFIX_PATH "${WG_TOOLS_SOURCE_DIR}/../build/cmake/external_modules" )
+LIST( APPEND CMAKE_PREFIX_PATH ${WG_HUB_DIR} )
+
+SET(QT_FIND_PACKAGE_VERSION "${QT_VERSION}")
+IF ("${QT_VERSION}" STREQUAL "5.6.1-1")
+	SET(QT_FIND_PACKAGE_VERSION "5.6.1.1")
+ENDIF()
+
+# Configure wgBuild
+FIND_PACKAGE( wgBuild )
+WGBUILD_USE()
 
 # Override the default CMake configs: Debug Release MinSizeRel RelWithDebInfo
 # This must appear before ENABLE_LANGUAGE to override the defaults
@@ -29,6 +46,11 @@ SET( CMAKE_CONFIGURATION_TYPES Debug;Hybrid;Release
 
 # Include useful macros
 INCLUDE( WGMacros )
+INCLUDE( WGTFMacros )
+
+IF (MSVC11)
+    ADD_DEFINITIONS( -DDISABLE_CODE_FOR_2012 )
+ENDIF()
 
 # Detect clang-cl
 IF( ${CMAKE_C_COMPILER_ID} MATCHES "Clang" )
@@ -36,7 +58,7 @@ IF( ${CMAKE_C_COMPILER_ID} MATCHES "Clang" )
 ENDIF()
 
 # Set compiler and linker options
-INCLUDE( WGCompilerAndLinkerOptions )
+INCLUDE( WGGlobalCompilerAndLinkerOptions )
 
 # Ensure we have a functioning compiler. Work around CMake failing to detect
 # that the compiler is unknown, do this by making sure there's some flags
@@ -55,11 +77,11 @@ GET_FILENAME_COMPONENT( WG_TOOLS_BIN_DIR "${PROJECT_SOURCE_DIR}/../bin" REALPATH
 GET_FILENAME_COMPONENT( BW_GAME_DIR "${PROJECT_SOURCE_DIR}/../bin" REALPATH )
 
 # Options
-OPTION( BW_UNIT_TESTS_ENABLED "Enable unit tests" ON )
+OPTION( WG_UNIT_TESTS_ENABLED "Enable unit tests" ON )
 
 # Discover available Wargaming projects to generate. These are defined by
 # WGConfiguration_<name>.cmake files in the cmake module path.
-FILE( GLOB _target_cmake_files "${CMAKE_MODULE_PATH}/WGConfiguration_*.cmake" )
+FILE( GLOB _target_cmake_files "${WG_TOOLS_SOURCE_DIR}/../build/cmake/WGConfiguration_*.cmake" )
 FOREACH( _filename ${_target_cmake_files} )
 	GET_FILENAME_COMPONENT( _target_name ${_filename} NAME_WE )
 	STRING( REPLACE "WGConfiguration_" "" _target_name ${_target_name} )
@@ -102,9 +124,13 @@ SET( BW_SPEEDTREE_SUPPORT ON )
 SET( BW_UMBRA_SUPPORT ON )
 SET( NGT_SUPPORT OFF )
 SET( CORE_PYTHON_SUPPORT OFF )
+SET( Maya_SUPPORT OFF )
+SET( Perforce_SUPPORT OFF )
 SET( DEPLOY_QT_SUPPORT OFF )
 SET( DEPLOY_PYTHON_SUPPORT OFF )
 SET( ALL_THIRD_PARTY_REQUIRED OFF )
+SET( QT_CUSTOM_DEPLOY_ARGS )
+SET( FIND_CORE_PYTHON_PACKAGE ON )
 
 # Include target specific configuration
 INCLUDE( WGConfiguration_${BW_CMAKE_TARGET} )
@@ -176,7 +202,9 @@ ELSE()
 	MESSAGE( STATUS "Build configurations: ${CMAKE_CONFIGURATION_TYPES}" )
 ENDIF()
 
-BW_SET_DEBUG_POSTFIX("_d")
+BW_SET_DEBUG_POSTFIX( "_d" )
+BW_SET_HYBRID_POSTFIX( "_h" )
+BW_SET_RELEASE_POSTFIX( "" )
 BW_SET_TEST_DST_DIR("${BW_GAME_DIR}/unit_tests/${BW_PLATFORM}")
 
 IF( NGT_OUTPUT_DIR )

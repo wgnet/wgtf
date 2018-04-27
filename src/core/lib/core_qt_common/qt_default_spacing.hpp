@@ -16,7 +16,7 @@ public:
 		rowSpacing_ = 3;
 		leftMargin_ = 10;
 		rightMargin_ = 10;
-		scrollBarSize_ = rightMargin_ - rowSpacing_ * 2;
+		scrollBarSize_ = 5;
 		topBottomMargin_ = 3;
 		separatorWidth_ = 2;
 		childIndentation_ = 0;

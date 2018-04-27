@@ -1,9 +1,11 @@
 #include "reflected_collection_insert_command.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/generic/generic_object.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -22,20 +24,26 @@ const char* ReflectedCollectionInsertCommand::getId() const
 	return s_Id;
 }
 
-ObjectHandle ReflectedCollectionInsertCommand::execute(const ObjectHandle& arguments) const
+const char* ReflectedCollectionInsertCommand::getName() const
+{
+	static const char* s_name = "Insert an item to a reflected collection";
+	return s_name;
+}
+
+Variant ReflectedCollectionInsertCommand::execute(const ObjectHandle& arguments) const
 {
 	ReflectedCollectionInsertCommandParameters* commandArgs =
 	arguments.getBase<ReflectedCollectionInsertCommandParameters>();
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert(objManager != nullptr);
+	TF_ASSERT(objManager != nullptr);
 	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 
-	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
+	auto property = definitionManager_.getDefinition(object)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
@@ -47,7 +55,7 @@ ObjectHandle ReflectedCollectionInsertCommand::execute(const ObjectHandle& argum
 		return CommandErrorCode::INVALID_VALUE;
 	}
 
-	return nullptr;
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 bool ReflectedCollectionInsertCommand::customUndo() const
@@ -64,14 +72,14 @@ bool ReflectedCollectionInsertCommand::undo(const ObjectHandle& arguments) const
 	}
 
 	auto objManager = definitionManager_.getObjectManager();
-	assert(objManager != nullptr);
+	TF_ASSERT(objManager != nullptr);
 	auto object = objManager->getObject(commandArgs->id_);
 	if (!object.isValid())
 	{
 		return false;
 	}
 
-	auto property = object.getDefinition(definitionManager_)->bindProperty(commandArgs->path_.c_str(), object);
+	auto property = definitionManager_.getDefinition(object)->bindProperty(commandArgs->path_.c_str(), object);
 	if (property.isValid() == false)
 	{
 		return false;
@@ -86,17 +94,21 @@ bool ReflectedCollectionInsertCommand::redo(const ObjectHandle& arguments) const
 	return true;
 }
 
-ObjectHandle ReflectedCollectionInsertCommand::getCommandDescription(const ObjectHandle& arguments) const
+CommandDescription ReflectedCollectionInsertCommand::getCommandDescription(const ObjectHandle&) const
 {
-	auto object = GenericObject::create(definitionManager_);
-	assert(object != nullptr);
-	object->set("Name", "Insert");
-	object->set("Type", "Unknown");
-	return object;
+    auto object = GenericObject::create();
+    object->set("Name", "Insert");
+    object->set("Type", "Unknown");
+    return std::move(object);
 }
 
 CommandThreadAffinity ReflectedCollectionInsertCommand::threadAffinity() const
 {
 	return CommandThreadAffinity::UI_THREAD;
+}
+
+ManagedObjectPtr ReflectedCollectionInsertCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<ReflectedCollectionInsertCommandParameters>(arguments);
 }
 } // end namespace wgt

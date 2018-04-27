@@ -29,6 +29,7 @@ public:
 	virtual bool removeRows(int row, int count) override;
 	virtual bool moveRows(int sourceRow, int count, int destinationRow) override;
 
+	void iterateRoles(const std::function<void(const char*)>& iterFunc) const override;
 	virtual std::vector<std::string> roles() const override;
 
 	virtual Connection connectPreItemDataChanged(DataCallback callback) override;

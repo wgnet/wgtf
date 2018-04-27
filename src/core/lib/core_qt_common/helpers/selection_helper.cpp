@@ -1,5 +1,7 @@
 #include "selection_helper.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+
+#include "core_common/assert.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_variant/variant.hpp"
 #include "core_data_model/i_selection_handler.hpp"
@@ -35,13 +37,19 @@ const SelectionHelper::SourceType* SelectionHelper::source() const
 QVariant SelectionHelper::getSource() const
 {
 	Variant variant = source_;
-	return QtHelpers::toQVariant(variant, const_cast<SelectionHelper*>(this));
+	return get<IQtHelpers>()->toQVariant(variant, const_cast<SelectionHelper*>(this));
 }
 
 //==============================================================================
 bool SelectionHelper::setSource(const QVariant& source)
 {
-	Variant variant = QtHelpers::toVariant(source);
+	Variant variant;
+
+	if (auto helpers = get<IQtHelpers>())
+	{
+		variant = helpers->toVariant(source);
+	}
+
 	if (variant.typeIs<SourceType>())
 	{
 		auto selectionHandler = const_cast<SourceType*>(variant.cast<const SourceType*>());
@@ -51,17 +59,18 @@ bool SelectionHelper::setSource(const QVariant& source)
 			return true;
 		}
 	}
+
 	return false;
 }
 
 //==============================================================================
 void SelectionHelper::select(const QModelIndexList& selectionList)
 {
-	assert(source_ != nullptr);
+	TF_ASSERT(source_ != nullptr);
 	std::vector<IItem*> selectedItems;
 	std::vector<int> selectedRows;
 
-	for (auto& index: selectionList)
+	for (auto& index : selectionList)
 	{
 		int row = index.row();
 		selectedRows.push_back(row);

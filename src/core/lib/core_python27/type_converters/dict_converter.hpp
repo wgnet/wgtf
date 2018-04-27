@@ -3,10 +3,11 @@
 #define _PYTHON_DICT_CONVERTER_HPP
 
 #include "i_parent_type_converter.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "../interfaces/i_python_obj_manager.hpp"
 
 namespace wgt
 {
-class IComponentContext;
 
 namespace PythonType
 {
@@ -15,10 +16,10 @@ class Converters;
 /**
  *	Attempts to convert ScriptDict<->Collection<->Variant.
  */
-class DictConverter final : public IParentConverter
+class DictConverter final : public IParentConverter, public Depends<IPythonObjManager>
 {
 public:
-	DictConverter(IComponentContext& context, const Converters& typeConverters);
+	DictConverter(const Converters& typeConverters);
 
 	virtual bool toVariant(const PyScript::ScriptObject& inObject, Variant& outVariant,
 	                       const ObjectHandle& parentHandle, const std::string& childPath) override;
@@ -26,7 +27,6 @@ public:
 	                          void* userData = nullptr) override;
 
 private:
-	IComponentContext& context_;
 	const Converters& typeConverters_;
 };
 

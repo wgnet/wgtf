@@ -1,0 +1,7 @@
+#include "commands/metadata/custom_command.mpp"
+#include "commands/metadata/set_reflectedproperty_command.mpp"
+#include "commands/metadata/invoke_reflected_method_command.mpp"
+#include "commands/metadata/reflected_collection_insert_command.mpp"
+#include "commands/metadata/reflected_collection_erase_command.mpp"
+
+

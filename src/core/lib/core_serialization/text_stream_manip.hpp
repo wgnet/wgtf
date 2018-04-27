@@ -128,8 +128,8 @@ inline text_stream_manip_details::CharMatcher match(char pattern)
 namespace text_stream_manip_details
 {
 /**
-    Utility class used for quoted string serialization.
-    */
+Utility class used for quoted string serialization.
+*/
 class QuotedCStr
 {
 public:

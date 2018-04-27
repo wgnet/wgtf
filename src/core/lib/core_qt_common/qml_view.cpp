@@ -1,17 +1,17 @@
 #include "qml_view.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_logging/logging.hpp"
 #include "i_qt_framework.hpp"
 #include "core_ui_framework/i_preferences.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
 #include "core_qt_common/helpers/qml_component_loader_helper.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/qt_component_finder.hpp"
 #include "core_qt_common/qt_script_object.hpp"
 #include "core_string_utils/string_utils.hpp"
 #include "core_string_utils/file_path.hpp"
 
-#include <cassert>
 #include <functional>
 
 #include <QQmlComponent>
@@ -26,85 +26,72 @@
 
 namespace wgt
 {
-//==============================================================================
-struct QmlView::Impl
+struct QmlView::Implementation : Depends<IQtFramework>
 {
-	Impl(QmlView& qmlView, const char* id, IQtFramework& qtFramework, QQmlEngine& qmlEngine)
-	    : qtFramework_(qtFramework), id_(id), qmlView_(qmlView), quickView_(new QQuickWidget(&qmlEngine, nullptr)),
-	      qmlContext_(new QQmlContext(qmlEngine.rootContext())), qmlEngine_(qmlEngine), released_(false),
-	      watched_(false)
+	Implementation(QmlView& qmlView, QQmlEngine& qmlEngine)
+	    : qmlView_(qmlView),
+	      qmlContext_(new QQmlContext(qmlEngine.rootContext())), qmlEngine_(qmlEngine),
+	      watched_(false), loadNeeded_(false)
 	{
-		QQmlEngine::setContextForObject(quickView_, qmlContext_.get());
+		qmlView.setWidget(new QQuickWidget(&qmlEngine, nullptr));
+		QQmlEngine::setContextForObject(qmlView.widget(), qmlContext_.get());
 	}
 
-	~Impl()
+	virtual ~Implementation()
 	{
 		std::unique_lock<std::mutex> holder(loadMutex_);
 		setWatched(false);
-		if (!released_)
-		{
-			delete quickView_;
-		}
+		qmlView_.deleteWidget();
 		qmlEngine_.collectGarbage();
 	}
 
 	void handleLoaded(QQmlComponent* qmlComponent)
 	{
 		auto content = std::unique_ptr<QObject>(qmlComponent->create(qmlContext_.get()));
+		qmlView_.QtViewCommon::initialise(content.get());
 
-		auto hintsProperty = content->property("layoutHints");
-		hint_.clear();
+		auto property = content->property("layoutHints");
+		auto& hint = qmlView_.hint();
+		hint.clear();
 
-		if (hintsProperty.isValid())
+		if (property.isValid())
 		{
-			auto hintsMap = hintsProperty.value<QVariantMap>();
+			auto hintsMap = property.value<QVariantMap>();
+
 			for (auto it = hintsMap.cbegin(); it != hintsMap.cend(); ++it)
 			{
-				hint_ += LayoutHint(it.key().toUtf8(), it.value().toFloat());
+				hint += LayoutHint(it.key().toUtf8(), it.value().toFloat());
 			}
 		}
 
-		QVariant windowProperty = content->property("windowId");
-		windowId_ = "";
-		if (windowProperty.isValid())
-		{
-			windowId_ = windowProperty.toString().toUtf8().data();
-		}
-
-		QVariant titleProperty = content->property("title");
-		title_ = "";
-		if (titleProperty.isValid())
-		{
-			title_ = titleProperty.toString().toUtf8().data();
-		}
-
 		bool shouldBeWatched = false;
+
 		if (url_.scheme() == "file")
 		{
 			QVariant autoReload = content->property("autoReload");
 			shouldBeWatched = !autoReload.isValid() || (autoReload.isValid() && autoReload.toBool());
 		}
-		setWatched(shouldBeWatched, content.get());
 
-		QObject* rootObject = quickView_->rootObject();
-		if (rootObject)
+		setWatched(shouldBeWatched, content.get());
+		auto view = static_cast<QQuickWidget*>(qmlView_.widget());
+
+		if (QObject* rootObject = view->rootObject())
 		{
 			rootObject->deleteLater();
 		}
 
-		quickView_->setContent(url_, qmlComponent, content.release());
-		quickView_->setResizeMode(QQuickWidget::SizeRootObjectToView);
-		for (auto& l : listeners_)
-		{
-			l->onLoaded(&qmlView_);
-		}
+		view->setContent(url_, qmlComponent, content.release());
+		view->setResizeMode(QQuickWidget::SizeRootObjectToView);
+		view->setFocusPolicy(Qt::ClickFocus);
+
+		qmlView_.connect(view->rootObject(), SIGNAL(activeFocusChanged(bool)), SLOT(onFocusChanged(bool)));
 	}
 
 	void setWatched(bool isWatched, QObject* root = nullptr)
 	{
 		if (isWatched != watched_)
 		{
-			auto watcher = qtFramework_.qmlWatcher();
+			auto watcher = get<IQtFramework>()->qmlWatcher();
 			if (isWatched)
 			{
 				QObject::connect(watcher, SIGNAL(fileChanged(const QString&)), &qmlView_, SLOT(reload(const QString&)));
@@ -130,12 +117,12 @@ struct QmlView::Impl
 	{
 		std::unique_lock<std::mutex> holder(loadMutex_);
 		auto qmlEngine = qmlContext_->engine();
-
-		auto qmlComponent = new QQmlComponent(qmlEngine, quickView_);
+		auto qmlComponent = new QQmlComponent(qmlEngine, qmlView_.widget());
 
 		QmlComponentLoaderHelper helper(qmlComponent, qUrl);
 		using namespace std::placeholders;
-		helper.data_->connections_ += helper.data_->sig_Loaded_.connect(std::bind(&Impl::handleLoaded, this, _1));
+		helper.data_->connections_ += helper.data_->sig_Loaded_.connect(
+			std::bind(&Implementation::handleLoaded, this, _1));
 		helper.data_->connections_ +=
 		helper.data_->sig_Loaded_.connect([loadedHandler](QQmlComponent*) { loadedHandler(); });
 		helper.data_->connections_ +=
@@ -144,30 +131,23 @@ struct QmlView::Impl
 		return true;
 	}
 
-	IQtFramework& qtFramework_;
-	std::string id_;
-	typedef std::vector<IViewEventListener*> Listeners;
-	Listeners listeners_;
 	QmlView& qmlView_;
-	std::string windowId_;
-	std::string title_;
-	QQuickWidget* quickView_;
+	CursorId cursorId_ = ArrowCursor;
 	QtComponentFinder components_;
 	QUrl url_;
 	std::unique_ptr<QQmlContext> qmlContext_;
 	QQmlEngine& qmlEngine_;
-	LayoutHint hint_;
-	bool released_;
 	std::mutex loadMutex_;
 	bool watched_;
+	bool loadNeeded_;
 	std::set<QString> watchedComponents_;
 };
 
 //==============================================================================
-QmlView::QmlView(const char* id, IQtFramework& qtFramework, QQmlEngine& qmlEngine)
-    : impl_(new Impl(*this, id, qtFramework, qmlEngine)), needLoad_(false)
+QmlView::QmlView(const char* id, QQmlEngine& qmlEngine)
+	: QtViewCommon(id), impl_(new Implementation(*this, qmlEngine))
 {
-	QObject::connect(impl_->quickView_, SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)), this,
+	QObject::connect(widget(), SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)), this,
 	                 SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
 }
 
@@ -178,51 +158,6 @@ QmlView::~QmlView()
 	QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
-//------------------------------------------------------------------------------
-const char* QmlView::id() const
-{
-	return impl_->id_.c_str();
-}
-
-//------------------------------------------------------------------------------
-const char* QmlView::title() const
-{
-	return impl_->title_.c_str();
-}
-
-//------------------------------------------------------------------------------
-const char* QmlView::windowId() const
-{
-	return impl_->windowId_.c_str();
-}
-
-//------------------------------------------------------------------------------
-const LayoutHint& QmlView::hint() const
-{
-	return impl_->hint_;
-}
-
-//------------------------------------------------------------------------------
-QWidget* QmlView::releaseView()
-{
-	impl_->released_ = true;
-	return view();
-}
-
-//------------------------------------------------------------------------------
-void QmlView::retainView()
-{
-	impl_->released_ = false;
-	impl_->quickView_->setParent(nullptr);
-}
-
-//------------------------------------------------------------------------------
-QWidget* QmlView::view() const
-{
-	return impl_->quickView_;
-}
-
-//------------------------------------------------------------------------------
 const std::set<QString>& QmlView::componentTypes() const
 {
 	return impl_->components_.getTypes();
@@ -231,6 +166,25 @@ const std::set<QString>& QmlView::componentTypes() const
 //------------------------------------------------------------------------------
 void QmlView::update()
 {
+}
+
+//------------------------------------------------------------------------------
+void QmlView::reload()
+{
+	impl_->doLoad(impl_->url_);
+}
+
+void QmlView::setFocus(bool focus)
+{
+	QtViewCommon::setFocus(focus);
+	auto rootObject = static_cast<QQuickWidget*>(widget())->rootObject();
+
+	if (!rootObject || focus == rootObject->hasActiveFocus())
+	{
+		return;
+	}
+
+	focus ? rootObject->forceActiveFocus() : rootObject->setFocus(false);
 }
 
 //------------------------------------------------------------------------------
@@ -304,12 +258,13 @@ bool QmlView::load(const QUrl& qUrl, std::function<void()> loadedHandler, std::f
 		}
 	}
 
-	auto preferences = impl_->qtFramework_.getPreferences();
-	auto preference = preferences->getPreference(impl_->id_.c_str());
-	auto value = impl_->qtFramework_.toQVariant(preference, view());
-	this->setContextProperty(QString("preference"), value);
-	this->setContextProperty(QString("viewId"), impl_->id_.c_str());
-	this->setContextProperty(QString("View"), QVariant::fromValue(impl_->quickView_));
+	auto qtFramework = impl_->get<IQtFramework>();
+	auto preferences = qtFramework->getPreferences();
+	auto preference = preferences->getPreference(id());
+	auto value = qtFramework->toQVariant(preference, widget());
+	this->setContextProperty(QString("viewPreference"), value);
+	this->setContextProperty(QString("viewId"), id());
+	this->setContextProperty(QString("viewWidget"), QVariant::fromValue(widget()));
 	impl_->qmlContext_->setContextProperty(QString("qmlView"), this);
 	impl_->qmlContext_->setContextProperty(QString("qmlComponents"), &impl_->components_);
 
@@ -322,67 +277,63 @@ void QmlView::reload(const QString& url)
 	const QString name(FilePath::getFileNoExtension(url.toUtf8().constData()).c_str());
 	if (impl_->watchedComponents_.find(name) != impl_->watchedComponents_.end())
 	{
-		impl_->doLoad(impl_->url_);
+		reload();
 	}
 }
 
-//------------------------------------------------------------------------------
-void QmlView::focusInEvent()
-{
-	for (auto& l : impl_->listeners_)
-	{
-		l->onFocusIn(this);
-	}
-	auto rootObject = impl_->quickView_->rootObject();
-	if (rootObject)
-	{
-		rootObject->setFocus(true);
-	}
-}
-
-//------------------------------------------------------------------------------
-void QmlView::focusOutEvent()
-{
-	for (auto& l : impl_->listeners_)
-	{
-		l->onFocusOut(this);
-	}
-	auto rootObject = impl_->quickView_->rootObject();
-	if (rootObject)
-	{
-		rootObject->setFocus(false);
-	}
-}
-
-//------------------------------------------------------------------------------
 void QmlView::setNeedsToLoad(bool load)
 {
-	if (load == needLoad_)
+	if (load == impl_->loadNeeded_)
 	{
 		return;
 	}
-	needLoad_ = load;
+
+	impl_->loadNeeded_ = load;
 	emit needsToLoadChanged();
 }
 
-//------------------------------------------------------------------------------
 bool QmlView::getNeedsToLoad() const
 {
-	return needLoad_;
+	return impl_->loadNeeded_;
 }
 
-//------------------------------------------------------------------------------
-void QmlView::registerListener(IViewEventListener* listener)
+void QmlView::onFocusChanged(bool focused)
 {
-	assert(std::find(impl_->listeners_.begin(), impl_->listeners_.end(), listener) == impl_->listeners_.end());
-	impl_->listeners_.push_back(listener);
+	setFocus(focused);
 }
 
-//------------------------------------------------------------------------------
-void QmlView::deregisterListener(IViewEventListener* listener)
+CursorId QmlView::getCursor() const
 {
-	auto it = std::find(impl_->listeners_.begin(), impl_->listeners_.end(), listener);
-	assert(it != impl_->listeners_.end());
-	impl_->listeners_.erase(it);
+	if (impl_->cursorId_ != ArrowCursor)
+	{
+		return impl_->cursorId_;
+	}
+
+	auto shape = widget()->cursor().shape();
+	TF_ASSERT(shape <= LastCursor.id());
+	return CursorId::make(shape, nullptr);
+}
+
+void QmlView::setCursor(CursorId cursorId)
+{
+	impl_->cursorId_ = cursorId;
+	auto widget = this->widget();
+
+	if(cursorId.id() > LastCursor.id())
+	{
+		auto qCursor = reinterpret_cast<QCursor*>(cursorId.nativeCursor());
+		widget->setCursor(*qCursor);
+	}
+	else
+	{
+		auto shape = static_cast<Qt::CursorShape>(cursorId.id());
+		widget->setCursor(shape);
+	}
+}
+
+void QmlView::unsetCursor()
+{
+	impl_->cursorId_ = ArrowCursor;
+	widget()->unsetCursor();
 }
 } // end namespace wgt

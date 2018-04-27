@@ -17,10 +17,13 @@ import WGControls.Private 1.0
 
 Example:
 \code{.js}
-WGScrollPanel {
+WGScrollView {
+anchors.fill: parent
+anchors.leftMargin: defaultSpacing.doubleMargin
+anchors.rightMargin: defaultSpacing.doubleMargin
 
-    childObject :
     WGDraggableColumn {
+        width: parent.width
 
         WGSubPanel {
             text: "Form Layout"
@@ -48,7 +51,7 @@ WGColumnLayout {
     id: mainColumn
     objectName: "WGDraggableColumn"
     WGComponent { type: "WGDraggableColumn" }
-    
+
     rows: children.length + 1
     columns: 1
 

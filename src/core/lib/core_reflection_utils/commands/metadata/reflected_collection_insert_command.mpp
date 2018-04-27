@@ -9,7 +9,7 @@ namespace wgt
 BEGIN_EXPOSE(ReflectedCollectionInsertCommandParameters, MetaNoSerialization())
 EXPOSE("id", id_, MetaNone())
 EXPOSE("path", path_, MetaNone())
-EXPOSE("key", key_, MetaNone())
+EXPOSE("insertKey", key_, MetaNone())
 EXPOSE("value", value_, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

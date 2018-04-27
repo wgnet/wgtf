@@ -10,10 +10,30 @@
 #include "core_serialization/file_system.hpp"
 #include "core_serialization/file_info.hpp"
 #include "core_serialization/file_data_stream.hpp"
+#include "core_logging/logging.hpp"
+#include "core_string_utils/string_utils.hpp"
+#include "core_common/signal.hpp"
+
+#include <array>
+#include <direct.h>
+#include <mutex>
+#include <io.h>
 
 namespace wgt
 {
 using namespace FileAttributes;
+
+struct FileSystem::Implementation
+{
+	Implementation(FileSystem& self)
+		: self_(self)
+	{
+	}
+
+	FileSystem& self_;
+	Signal<IFileSystem::PathChangedSignature> pathChangedSignal_;
+	std::mutex pathChangedMutex_;
+};
 
 HANDLE FindFirstFileExAHelper(const char* path, WIN32_FIND_DATAA& findData)
 {
@@ -36,6 +56,16 @@ HANDLE FindFirstFileExAHelper(const char* path, WIN32_FIND_DATAA& findData)
 		handle = FindFirstFileExA(findPath.c_str(), FindExInfoBasic, &findData, FindExSearchNameMatch, NULL, 0);
 	}
 	return handle;
+}
+
+FileSystem::FileSystem()
+	: impl_(new Implementation(*this))
+{
+}
+
+FileSystem::~FileSystem()
+{
+	impl_.reset();
 }
 
 bool FileSystem::copy(const char* path, const char* new_path)
@@ -76,6 +106,7 @@ void FileSystem::enumerate(const char* dir, EnumerateCallback callback) const
 	}
 	std::string directory(filter);
 	directory.erase(--directory.end());
+
 	// Using the ANSI version of FindFirstFileEx, the name is limited to MAX_PATH characters.
 	// To extend this limit to approximately 32,000 wide characters, use the Unicode version of the function and prepend
 	// "\\?\" to the path.
@@ -84,12 +115,17 @@ void FileSystem::enumerate(const char* dir, EnumerateCallback callback) const
 	{
 		do
 		{
-			auto info = std::make_shared<FileInfo>(
+			std::string path = directory + findData.cFileName;
+			char absolutePath[MAX_PATH];
+			GetFullPathNameA(path.c_str(), MAX_PATH, absolutePath, NULL);
+
+			auto info = std::shared_ptr<FileInfo>(new FileInfo(
 			uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
 			uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
 			uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
-			uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime,
-			directory + findData.cFileName, static_cast<FileAttribute>(findData.dwFileAttributes));
+			uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime, path,
+			absolutePath, static_cast<FileAttribute>(findData.dwFileAttributes)));
+
 			if (!callback(std::move(info)))
 				break;
 		} while (FindNextFileA(handle, &findData));
@@ -122,21 +158,21 @@ IFileInfoPtr FileSystem::getFileInfo(const char* path) const
 	WIN32_FIND_DATAA findData;
 	auto handle = FindFirstFileExAHelper(path, findData);
 
-	char fullPath[MAX_PATH] = {};
-	GetFullPathNameA(path, MAX_PATH, fullPath, 0);
+	char absolutePath[MAX_PATH] = {};
+	GetFullPathNameA(path, MAX_PATH, absolutePath, 0);
 
 	if (handle != INVALID_HANDLE_VALUE)
 	{
-		auto info = std::make_shared<FileInfo>(
-		uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
-		uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
-		uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
-		uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime, fullPath,
-		static_cast<FileAttribute>(findData.dwFileAttributes));
+		auto info = std::shared_ptr<FileInfo>(
+		new FileInfo(uint64_t(findData.nFileSizeHigh) << 32 | findData.nFileSizeLow,
+		             uint64_t(findData.ftCreationTime.dwHighDateTime) << 32 | findData.ftCreationTime.dwLowDateTime,
+		             uint64_t(findData.ftLastWriteTime.dwHighDateTime) << 32 | findData.ftLastWriteTime.dwLowDateTime,
+		             uint64_t(findData.ftLastAccessTime.dwHighDateTime) << 32 | findData.ftLastAccessTime.dwLowDateTime,
+		             path, absolutePath, static_cast<FileAttribute>(findData.dwFileAttributes)));
 		FindClose(handle);
 		return info;
 	}
-	return std::make_shared<FileInfo>(0, 0, 0, 0, std::string(), None);
+	return std::shared_ptr<FileInfo>(new FileInfo(0, 0, 0, 0, "", "", None));
 }
 bool FileSystem::move(const char* path, const char* new_path)
 {
@@ -156,5 +192,68 @@ bool FileSystem::writeFile(const char* path, const void* data, size_t len, std::
 		return true;
 	}
 	return false;
+}
+
+bool FileSystem::createDirectory(const char* path)
+{
+	if (_mkdir(path) != 0 && errno != EEXIST)
+	{
+		return false;
+	}
+
+	pathChanged(path);
+	return true;
+}
+
+bool FileSystem::removeDirectory(const char* path)
+{
+	// this could potentially fail if the OS races on the state of the file.
+	// rmdir used to be used here but there were problems that would show up
+	// on some test cases. So far ::RemoveDirectory has been reliable in this
+	// regard.
+	//
+	// SHFileOperation was also tried, this also appeared reliable but
+	// but was much slower. If the tests fail again then we'll have to use
+	// SHFileOperation, perhaps setting different flags will make it faster
+
+	if (::RemoveDirectoryA(path) != TRUE || GetLastError() == ERROR_DIR_NOT_EMPTY)
+	{
+		return false;
+	}
+
+	pathChanged(path);
+	return true;
+}
+
+bool FileSystem::makeWritable(const char* path)
+{
+	struct _stat buf;
+
+	if (_stat(path, &buf) != 0)
+	{
+		return false;
+	}
+
+	_chmod(path, buf.st_mode | _S_IWRITE);
+	pathChanged(path);
+	return true;
+}
+
+void FileSystem::invalidateFileInfo(const char* path)
+{
+	pathChanged(path);
+}
+
+Connection FileSystem::listenForChanges(PathChangedCallback& callback)
+{
+	std::lock_guard<std::mutex> lock(impl_->pathChangedMutex_);
+	return impl_->pathChangedSignal_.connect(callback);
+}
+
+void FileSystem::pathChanged(const char* path) const
+{
+	IFileInfoPtr info = getFileInfo(path);
+	std::lock_guard<std::mutex> lock(impl_->pathChangedMutex_);
+	impl_->pathChangedSignal_(path, info);
 }
 } // end namespace wgt

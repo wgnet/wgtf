@@ -1,0 +1,1 @@
+#include "core_reflection/interfaces/i_managed_object.hpp"

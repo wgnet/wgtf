@@ -5,21 +5,20 @@
 #include <vector>
 #include <memory>
 
-#include "mutable_vector.hpp"
-#include "core_serialization/i_datastream.hpp"
 #include "reflected_object.hpp"
-#include "object_handle.hpp"
 #include "reflection_dll.hpp"
+#include "interfaces/i_class_definition.hpp"
 
 namespace wgt
 {
 class IClassDefinitionModifier;
 class IClassDefinitionDetails;
-class IClassDefinition;
 class IDefinitionHelper;
 class IObjectManager;
 class PropertyAccessorListener;
+class GenericObjectListener;
 class ISerializer;
+class GenericObjectListener;
 
 /**
  * IDefinitionManager
@@ -31,17 +30,37 @@ public:
 	{
 	}
 
-	typedef MutableVector<std::weak_ptr<PropertyAccessorListener>> PropertyAccessorListeners;
+	typedef std::vector<std::shared_ptr<PropertyAccessorListener>> PropertyAccessorListeners;
+
 
 	/**
 	 *	Get a definition for the type represented by 'name'.
 	 */
 	virtual IClassDefinition* getDefinition(const char* name) const = 0;
+
 	/**
-	 *	Get a definition for an object instance. Will fall back to object type if no definition can be found for the
-	 *specific instance
+	* Finds the definition that includes 'name'
+	*/
+	virtual IClassDefinition* findDefinition(const char* name) const = 0;
+
+	/**
+	 *	Get the class definition for the object instance.
+	 *	If it is a generic object, different instances may have different definitions.
+	 *	e.g. if a property has been added at runtime to an object, it will
+	 *	have a different definition to before.
 	 */
 	virtual IClassDefinition* getObjectDefinition(const ObjectHandle& object) const = 0;
+
+	/**
+	 *	Get the class definition for the object instance.
+	 *	If it is a generic object, different instances may have different definitions.
+	 *	e.g. if a property has been added at runtime to an object, it will
+	 *	have a different definition to before.
+	 */
+	IClassDefinition* getDefinition(const ObjectHandle& object) const
+	{
+		return getObjectDefinition(object);
+	}
 
 	virtual std::unique_ptr<IClassDefinitionDetails> createGenericDefinition(const char* name) const = 0;
 
@@ -54,6 +73,7 @@ public:
 
 	virtual IClassDefinition* registerDefinition(std::unique_ptr<IClassDefinitionDetails> definition) = 0;
 	virtual bool deregisterDefinition(const IClassDefinition* definition) = 0;
+    virtual void deregisterDefinitions() = 0;
 
 	virtual void registerDefinitionHelper(const IDefinitionHelper& helper) = 0;
 	virtual void deregisterDefinitionHelper(const IDefinitionHelper& helper) = 0;
@@ -72,23 +92,19 @@ public:
 		return getDefinition(defName);
 	}
 
-	/**
-	 *	@see TypeClassDefinition::create to construct with arguments.
-	 */
-	template <class T>
-	ObjectHandleT<T> create(bool managed = true) const
+	template<class T>
+	ObjectHandleStoragePtr createObjectStorage() const
 	{
-		auto definition = getDefinition<T>();
-		if (definition == nullptr)
+		if (definition = getDefinition<T>())
 		{
-			return ObjectHandleT<T>();
+			return definition->createObjectStorage();
 		}
-		auto object = managed ? definition->createManagedObject() : definition->create();
-		return safeCast<T>(object);
+
+		return nullptr;
 	}
 
 	template <class TDefinition>
-	IClassDefinition* registerDefinition()
+	IClassDefinition * registerDefinition()
 	{
 		return registerDefinition(std::unique_ptr<IClassDefinitionDetails>(new TDefinition()));
 	}

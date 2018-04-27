@@ -5,7 +5,7 @@
 #include "core_reflection/object_handle.hpp"
 #include "core_dependency_system/depends.hpp"
 #include "core_common/wg_future.hpp"
-
+#include "core_object/i_managed_object.hpp"
 #include <memory>
 
 namespace wgt
@@ -22,7 +22,7 @@ class IViewCreator;
 class PythonPanel : Depends<DEPENDS_ON_CLASSES>
 {
 public:
-	PythonPanel(IComponentContext& context, ObjectHandle& contextObject);
+	PythonPanel(ManagedObjectPtr contextObject);
 	~PythonPanel();
 
 private:
@@ -38,8 +38,7 @@ private:
 	/// Remove the panel from the window.
 	void removePanel();
 
-	IComponentContext& context_;
 	wg_future<std::unique_ptr<IView>> pythonView_;
-	ObjectHandle contextObject_;
+    ManagedObjectPtr contextObject_;
 };
 } // end namespace wgt

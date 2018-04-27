@@ -11,25 +11,31 @@ import WGControls 1.0
 Example:
 \code{.js}
 WGLoggingPanel {
-	text: loggingModel.text
+    text: loggingModel.text
 }
 \endcode
 */
- 
+
 WGPanel {
     id: loggingPanel
     WGComponent { type: "WGLoggingPanel" }
-    
+
     title: "Log"
     color: palette.mainWindowColor
 
     property alias text: logTextArea.text
-    property color textColor: palette.textColor
-    property color scrollBarColor: palette.highlightColor
+    property color textColor: Qt.darker(Qt.lighter(palette.textColor, 1.5),1.5)
+    property color scrollBarColor: palette.highlightShade
     property color scrollBarTrackColor: palette.mainWindowColor
+    property bool showToolbar : true
+    property bool autoScrollEnabled: true
+    property bool readOnly: false
     signal clearText;
 
-    onColorChanged: _.updatePage()
+    onColorChanged: _.updateColors()
+    onTextColorChanged: _.updateColors()
+    onScrollBarColorChanged: _.updateColors()
+    onScrollBarTrackColorChanged: _.updateColors()
 
     Action {
         id: selectAll
@@ -80,9 +86,10 @@ WGPanel {
         RowLayout
         {
             id: toolbar
+            visible: showToolbar
             WGPushButton { action: selectAll }
             WGPushButton { action: copy }
-            WGPushButton { action: clear }
+            WGPushButton { visible: !readOnly; action: clear }
             WGTextBox{
                 id: findText
                 implicitWidth: 200
@@ -142,9 +149,10 @@ WGPanel {
                 QtObject
                 {
                     id: _
-                    property bool autoScroll: true
+                    property bool autoScroll: autoScrollEnabled
                     property int scrollX: 0
                     property int scrollY: 0
+                    property bool initialized: false
 
                     function rgbaString(color)
                     {
@@ -152,7 +160,7 @@ WGPanel {
                                 color.r * 255 + "," +
                                 color.g * 255 + "," +
                                 color.b * 255 + "," +
-                                color.a + ");";
+                                color.a + ")";
                     }
 
                     function updatePage()
@@ -167,7 +175,7 @@ WGPanel {
                                     scrollY = y
                                     // If the page is scrolled all the way to the bottom enable autoscroll
                                     logTextArea.runJavaScript("document.body ? window.scrollY >= document.body.scrollHeight - document.body.clientHeight : false", function(scroll){
-                                        autoScroll = scroll
+                                        autoScroll = autoScrollEnabled && scroll
                                         loadPage()
                                     });
                                 });
@@ -181,16 +189,46 @@ WGPanel {
 
                     function loadPage()
                     {
-                        var safeText = text.replace("\"", "'")
-                        var head = "<head>\
+                        var scriptText = 'updateLogText(\"' + text.replace(/(\\|\")/g, '\\$1') + '\")';
+                        logTextArea.runJavaScript(scriptText);
+                    }
+
+                    function updateColors()
+                    {
+                        if(!initialized)
+                            return;
+
+                        var bodyColor = rgbaString(loggingPanel.textColor)
+                        var bodyBackgroundColor = rgbaString(palette.textBoxColor)
+                        var bodyScrollbarBackgroundColor = rgbaString(loggingPanel.scrollBarTrackColor)
+                        var bodyScrollbarThumbBackgroundColor = rgbaString(loggingPanel.scrollBarColor)
+                        var bodyScrollbarThumbOutlineColor = rgbaString(loggingPanel.color)
+                        var bodyScrollbarCornerBackgroundColor = rgbaString(loggingPanel.color)
+                        var infoColor = rgbaString(loggingPanel.textColor)
+                        var scriptText = 'updateStyle("' +
+                                bodyColor + '","' +
+                                bodyBackgroundColor + '","' +
+                                bodyScrollbarBackgroundColor + '","' +
+                                bodyScrollbarThumbBackgroundColor + '","' +
+                                bodyScrollbarThumbOutlineColor + '","' +
+                                bodyScrollbarCornerBackgroundColor + '","' +
+                                infoColor + '")'
+                        logTextArea.runJavaScript(scriptText);
+                    }
+
+                    function initPage()
+                    {
+                        var html = "<html>\
+                        <head>\
                         <style>\
                             body {\
-                                background-color: " + rgbaString(palette.textBoxColor) + "\
+                                color: " + rgbaString(loggingPanel.textColor) + ";\
+                                background-color: " + rgbaString(palette.textBoxColor) + ";\
                                 font-family:Lucida Console;\
                                 font-size:0.8em;\
                             }\
                             body::-webkit-scrollbar {\
-                                background-color: " + rgbaString(loggingPanel.scrollBarTrackColor) + "\
+                                background-color: " + rgbaString(loggingPanel.scrollBarTrackColor) + ";\
                                 width: .8em;\
                                 height: .8em;\
                             }\
@@ -198,44 +236,83 @@ WGPanel {
                                 -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);\
                             }\
                             body::-webkit-scrollbar-thumb {\
-                                background-color: " + rgbaString(loggingPanel.scrollBarColor) + "\
-                                outline: 1px solid " + rgbaString(loggingPanel.color) + "\
+                                background-color: " + rgbaString(loggingPanel.scrollBarColor) + ";\
+                                outline: 1px solid " + rgbaString(loggingPanel.color) + ";\
                             }\
-                            body::-webkit-scrollbar-corner { background-color: " + rgbaString(loggingPanel.color) + " }\
+                            body::-webkit-scrollbar-corner { background-color: " + rgbaString(loggingPanel.color) + "; }\
                             .error{\
                                 color: red\
                             }\
                             .warning{\
-                                color: gold\
+                                color: #bea231\
                             }\
                             .alert{\
                                 color: green\
                             }\
+                            .header{\
+                                color: " + rgbaString(loggingPanel.textColor) + ";\
+                                font-weight: bold;\
+                            }\
                             .info{\
-                                color: " + rgbaString(loggingPanel.textColor) + "\
+                                color: " + rgbaString(loggingPanel.textColor) + ";\
                             }\
                         </style>\
                         <script language='javascript'>\
-                            document.onreadystatechange = function ()\
+                            function updateLogText(text)\
                             {\
-                                if(document.readyState === 'interactive' || document.readyState === 'complete')\
+                                /* TODO: Fix this as setting innerHTML causes QtWebEngineProcess.exe to leak memory\
+                                   But reloading the page every time causes a focus change*/\
+                                document.body.innerHTML = text;\
+                                window.scrollTo(" + scrollX + "," + (autoScroll ? "document.body.scrollHeight" : scrollY) +");\
+                            }\
+                            function updateStyle(bodyColor, bodyBackgroundColor, bodyScrollbarBackgroundColor, bodyScrollbarThumbBackgroundColor, bodyScrollbarThumbOutlineColor, bodyScrollbarCornerBackgroundColor, infoColor)\
+                            {\
+                                for(var i = 0; i < document.styleSheets.length; ++i)\
                                 {\
-                                    window.scrollTo(" + scrollX + "," + (autoScroll ? "document.body.scrollHeight" : scrollY) +")\
+                                    sheet = document.styleSheets.item(i);\
+                                    for (var j = 0; j < sheet.cssRules.length; ++j)\
+                                    {\
+                                        var rule = sheet.cssRules.item(j);\
+                                        if(rule.selectorText == 'body'){\
+                                                rule.style.color = bodyColor;\
+                                                rule.style.backgroundColor = bodyBackgroundColor;\
+                                        }\
+                                        else if(rule.selectorText == 'body::-webkit-scrollbar'){\
+                                                rule.style.backgroundColor = bodyScrollbarBackgroundColor;\
+                                        }\
+                                        else if(rule.selectorText == 'body::-webkit-scrollbar-thumb'){\
+                                                rule.style.backgroundColor = bodyScrollbarThumbBackgroundColor;\
+                                                rule.style.outline = bodyScrollbarThumbOutlineColor;\
+                                        }\
+                                        else if(rule.selectorText == 'body::-webkit-scrollbar-corner'){\
+                                                rule.style.backgroundColor = bodyScrollbarCornerBackgroundColor;\
+                                        }\
+                                        else if(rule.selectorText == '.info'){\
+                                                rule.style.color = infoColor;\
+                                        }\
+                                    }\
                                 }\
                             }\
                         </script>\
-                        </head>";
+                        </head>\
+                        <body></body>\
+                        </html>";
 
-                        var html = "<html>" + head + "<body>" + safeText + "</body></html>";
                         logTextArea.loadHtml(html);
+                        initialized = true;
                     }
+
+                    Component.onCompleted: initPage();
                 }
             }
             WGContextArea{
                 contextMenu: WGMenu{
                     MenuItem { action: copy }
                     MenuItem { action: selectAll }
-                    MenuItem { action: clear }
+                    MenuItem {
+                        visible: readOnly
+                        action: clear
+                    }
                 }
             }
         }

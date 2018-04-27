@@ -1,5 +1,5 @@
 #include "pch.hpp"
-
+#include "core_dependency_system/depends.hpp"
 #include "core_unit_test/unit_test.hpp"
 
 #include "test_objects.hpp"
@@ -7,9 +7,7 @@
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection_utils/reflection_controller.hpp"
 #include "core_command_system/i_command_manager.hpp"
-#include "core_data_model/variant_list.hpp"
 #include "core_command_system/compound_command.hpp"
-#include "core_command_system/macro_object.hpp"
 
 namespace wgt
 {
@@ -17,9 +15,9 @@ TEST_F(TestCommandFixture, runSingleCommand)
 {
 	auto& controller = getReflectionController();
 
-	auto objHandle = klass_->createManagedObject();
+	auto objHandle = ManagedObject<TestCommandObject>::make();
 
-	PropertyAccessor counter = klass_->bindProperty("counter", objHandle);
+	PropertyAccessor counter = klass_->bindProperty("counter", objHandle.getHandle());
 	CHECK(counter.isValid());
 
 	const int TEST_VALUE = 57;
@@ -40,16 +38,16 @@ TEST_F(TestCommandFixture, runBatchCommand)
 {
 	auto& controller = getReflectionController();
 
-	auto objHandle = klass_->createManagedObject();
+	auto objHandle = ManagedObject<TestCommandObject>::make();
 
 	const int TEST_VALUE = 57;
 	const char* TEST_TEXT = "HelloCommand";
 
-	PropertyAccessor counter = klass_->bindProperty("counter", objHandle);
+	PropertyAccessor counter = klass_->bindProperty("counter", objHandle.getHandle());
 	CHECK(counter.isValid());
-	PropertyAccessor text = klass_->bindProperty("text", objHandle);
+	PropertyAccessor text = klass_->bindProperty("text", objHandle.getHandle());
 	CHECK(text.isValid());
-	PropertyAccessor incrementCounter = klass_->bindProperty("incrementCounter", objHandle);
+	PropertyAccessor incrementCounter = klass_->bindProperty("incrementCounter", objHandle.getHandle());
 	CHECK(incrementCounter.isValid());
 
 	{
@@ -171,9 +169,9 @@ TEST_F(TestCommandFixture, undo_redo)
 {
 	auto& controller = getReflectionController();
 
-	auto objHandle = klass_->createManagedObject();
+	auto objHandle = ManagedObject<TestCommandObject>::make();
 
-	PropertyAccessor counter = klass_->bindProperty("counter", objHandle);
+	PropertyAccessor counter = klass_->bindProperty("counter", objHandle.getHandle());
 	CHECK(counter.isValid());
 	int oldValue = -1;
 	{
@@ -222,9 +220,9 @@ TEST_F(TestCommandFixture, creatMacro)
 {
 	auto& controller = getReflectionController();
 
-	auto objHandle = klass_->createManagedObject();
+	auto objHandle = ManagedObject<TestCommandObject>::make();
 
-	PropertyAccessor counter = klass_->bindProperty("counter", objHandle);
+	PropertyAccessor counter = klass_->bindProperty("counter", objHandle.getHandle());
 	CHECK(counter.isValid());
 
 	const int TEST_VALUE = 57;
@@ -250,9 +248,9 @@ TEST_F(TestCommandFixture, executeMacro)
 {
 	auto& controller = getReflectionController();
 
-	auto objHandle = klass_->createManagedObject();
+	auto objHandle = ManagedObject<TestCommandObject>::make();
 
-	PropertyAccessor counter = klass_->bindProperty("counter", objHandle);
+	PropertyAccessor counter = klass_->bindProperty("counter", objHandle.getHandle());
 	CHECK(counter.isValid());
 
 	const int TEST_VALUE = 57;
@@ -272,12 +270,10 @@ TEST_F(TestCommandFixture, executeMacro)
 		auto& history = commandSystemProvider.getHistory();
 		commandSystemProvider.createMacro(history, "Macro1");
 		CHECK(commandSystemProvider.getMacros().empty() == false);
-		auto macroObj = static_cast<CompoundCommand*>(commandSystemProvider.findCommand("Macro1"))->getMacroObject();
-		auto instObj = macroObj.getBase<MacroObject>()->executeMacro();
-		CommandInstancePtr inst = instObj.getBase<CommandInstance>();
+		CommandInstancePtr inst = commandSystemProvider.queueCommand("Macro1");
 		commandSystemProvider.waitForInstance(inst);
 		{
-			PropertyAccessor counter = klass_->bindProperty("counter", objHandle);
+			PropertyAccessor counter = klass_->bindProperty("counter", objHandle.getHandle());
 			int value = 0;
 			Variant variant = controller.getValue(counter);
 			CHECK(variant.tryCast(value));

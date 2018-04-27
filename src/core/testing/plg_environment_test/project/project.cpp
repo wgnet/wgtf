@@ -4,13 +4,14 @@
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_preferences.hpp"
-#include "core_data_model/reflection/reflected_tree_model.hpp"
+#include "core_data_model/reflection_proto/reflected_tree_model.hpp"
 #include "core_serialization/resizing_memory_stream.hpp"
-#include "core_serialization/serializer/xml_serializer.hpp"
+#include "core_serialization_xml/xml_serializer.hpp"
 #include "core_serialization/i_file_system.hpp"
-#include "core_command_system/i_env_system.hpp"
 #include "core_command_system/i_command_manager.hpp"
-#include "core_reflection/interfaces/i_reflection_controller.hpp"
+#include "core_ui_framework/interfaces/i_view_creator.hpp"
+#include "core_viewport/viewport.hpp"
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
@@ -44,10 +45,25 @@ std::string genProjectSettingFileName(const char* projectName)
 	s += s_projectPreferenceExtension;
 	return s;
 }
+
+class ProjectViewport : public Viewport
+{
+public:
+	ProjectViewport(const std::string& name)
+	    : Viewport(name, ":/TestingProjectControl/viewport.ui", ObjectHandle(), IUIFramework::ResourceType::File)
+	{
+		get<IEnvManager>()->createNewEnvironment(name, this);
+	}
+
+	~ProjectViewport()
+	{
+		get<IEnvManager>()->removeEnvironment(getId());
+	}
+};
 }
 
 //////////////////////////////////////////////////////////////////////////
-Project::Project(IComponentContext& contextManager) : contextManager_(contextManager)
+Project::Project()
 {
 }
 
@@ -58,13 +74,13 @@ Project::~Project()
 bool Project::init(const char* projectName, const char* dataFile)
 {
 	projectName_ = projectName;
-	auto defManager = contextManager_.queryInterface<IDefinitionManager>();
-	auto controller = contextManager_.queryInterface<IReflectionController>();
-	auto fileSystem = contextManager_.queryInterface<IFileSystem>();
-	assert(defManager != nullptr && controller != nullptr && fileSystem != nullptr);
+	auto defManager = get<IDefinitionManager>();
+	auto fileSystem = get<IFileSystem>();
+	assert(defManager != nullptr && fileSystem != nullptr);
 	if (dataFile == nullptr || !fileSystem->exists(dataFile))
 	{
-		projectData_ = defManager->create<ProjectData>();
+		projectData_ = ManagedObject<ProjectData>::make();
+        projectHandle_ = projectData_.getHandleT();
 	}
 	else
 	{
@@ -79,7 +95,7 @@ bool Project::init(const char* projectName, const char* dataFile)
 			NGT_WARNING_MSG("Error loading project data\n");
 			return false;
 		}
-		br = variant.tryCast(projectData_);
+		br = variant.tryCast(projectHandle_);
 		assert(br);
 		if (!br)
 		{
@@ -88,55 +104,45 @@ bool Project::init(const char* projectName, const char* dataFile)
 		}
 	}
 
-	auto model = std::unique_ptr<ITreeModel>(new ReflectedTreeModel(projectData_, *defManager, controller));
+	auto modelPointer = new proto::ReflectedTreeModel(projectHandle_);
+	model_ = std::unique_ptr<AbstractTreeModel>(modelPointer);
+	viewport_ = std::make_unique<ProjectViewport>(projectName_);
 
-	auto em = contextManager_.queryInterface<IEnvManager>();
-	envId_ = em->addEnv(projectName_.c_str());
-	em->loadEnvState(envId_);
-	em->selectEnv(envId_);
+	auto viewCreator = get<IViewCreator>();
+	view_ = viewCreator->createView("TestingProjectControl/ProjectDataPanel.qml", model_.get());
 
-	auto uiFramework = contextManager_.queryInterface<IUIFramework>();
-	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
-	assert(uiFramework != nullptr && uiApplication != nullptr);
-	view_ = uiFramework->createView(projectName_.c_str(), "TestingProjectControl/ProjectDataPanel.qml",
-	                                IUIFramework::ResourceType::Url, std::move(model));
-	if (view_ == nullptr)
-	{
-		return false;
-	}
-	uiApplication->addView(*view_);
 	return true;
 }
 
 void Project::fini()
 {
-	auto uiApplication = contextManager_.queryInterface<IUIApplication>();
-	assert(uiApplication != nullptr);
-	if (view_ != nullptr)
+	auto app = get<IUIApplication>();
+	assert(app != nullptr);
+
+	if (view_.valid())
 	{
-		uiApplication->removeView(*view_);
+		auto view = view_.get();
+		app->removeView(*view);
+		view = nullptr;
 	}
-	auto em = contextManager_.queryInterface<IEnvManager>();
-	em->removeEnv(envId_);
-	view_ = nullptr;
+
+	viewport_.reset();
 	projectData_ = nullptr;
+    projectHandle_ = nullptr;
 }
 
 void Project::saveData(const char* dataFile) const
 {
-	auto defManager = contextManager_.queryInterface<IDefinitionManager>();
-	auto fileSystem = contextManager_.queryInterface<IFileSystem>();
-	auto cmdManager = contextManager_.queryInterface<ICommandManager>();
+	auto defManager = get<IDefinitionManager>();
+	auto fileSystem = get<IFileSystem>();
+	auto cmdManager = get<ICommandManager>();
 	assert(defManager && fileSystem && cmdManager);
 	ResizingMemoryStream stream;
 	XMLSerializer serializer(stream, *defManager);
 	defManager->serializeDefinitions(serializer);
-	serializer.serialize(projectData_);
+	serializer.serialize(projectHandle_);
 	serializer.sync();
 	fileSystem->writeFile(dataFile, stream.buffer().c_str(), stream.buffer().size(), std::ios::out | std::ios::binary);
-
-	auto em = contextManager_.queryInterface<IEnvManager>();
-	em->saveEnvState(envId_);
 }
 
 const char* Project::getProjectName() const
@@ -146,16 +152,15 @@ const char* Project::getProjectName() const
 
 const ObjectHandle& Project::getProjectData() const
 {
-	return projectData_;
+	return projectHandle_;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ProjectManager::ProjectManager()
 {
 }
-void ProjectManager::init(IComponentContext& contextManager)
+void ProjectManager::init()
 {
-	contextManager_ = &contextManager;
 }
 void ProjectManager::fini()
 {
@@ -169,7 +174,7 @@ void ProjectManager::createProject()
 		return;
 	}
 	this->closeProject();
-	curProject_.reset(new Project(*contextManager_));
+	curProject_.reset(new Project());
 	if (!curProject_->init(newProjectName_.c_str()))
 	{
 		this->closeProject();
@@ -184,9 +189,9 @@ void ProjectManager::openProject()
 
 	this->closeProject();
 
-	auto defManager = contextManager_->queryInterface<IDefinitionManager>();
-	auto fileSystem = contextManager_->queryInterface<IFileSystem>();
-	auto uiFramework = contextManager_->queryInterface<IUIFramework>();
+	auto defManager = get<IDefinitionManager>();
+	auto fileSystem = get<IFileSystem>();
+	auto uiFramework = get<IUIFramework>();
 	assert(defManager && fileSystem && uiFramework);
 
 	IFileSystem::IStreamPtr fileStream =
@@ -199,23 +204,23 @@ void ProjectManager::openProject()
 	serializer.deserialize(projectDataFile);
 
 	// load data
-	curProject_.reset(new Project(*contextManager_));
+	curProject_.reset(new Project());
 	if (!curProject_->init(projectName.c_str(), projectDataFile.c_str()))
 	{
 		this->closeProject();
 	}
 
 	// load the project settings
-	auto preferences = contextManager_->queryInterface<IPreferences>();
+	auto preferences = get<IPreferences>();
 	assert(preferences);
 	preferences->loadPreferenceFromFile(genProjectSettingFileName(curProject_->getProjectName()).c_str());
 }
 
 void ProjectManager::saveProject() const
 {
-	auto defManager = contextManager_->queryInterface<IDefinitionManager>();
-	auto fileSystem = contextManager_->queryInterface<IFileSystem>();
-	auto uiFramework = contextManager_->queryInterface<IUIFramework>();
+	auto defManager = get<IDefinitionManager>();
+	auto fileSystem = get<IFileSystem>();
+	auto uiFramework = get<IUIFramework>();
 	if (uiFramework && defManager && fileSystem)
 	{
 		std::string projectFile = genProjectFileName(curProject_->getProjectName());
@@ -235,7 +240,7 @@ void ProjectManager::saveProject() const
 		                      std::ios::out | std::ios::binary);
 
 		// save the project settings
-		auto preferences = contextManager_->queryInterface<IPreferences>();
+		auto preferences = get<IPreferences>();
 		assert(preferences);
 		preferences->writePreferenceToFile(genProjectSettingFileName(curProject_->getProjectName()).c_str());
 	}
@@ -273,7 +278,7 @@ bool ProjectManager::isProjectNameOk(const Variant& strProjectName)
 	std::string projectName;
 	strProjectName.tryCast(projectName);
 	std::string projectFile = genProjectFileName(projectName.c_str());
-	auto fileSystem = contextManager_->queryInterface<IFileSystem>();
+	auto fileSystem = get<IFileSystem>();
 	assert(fileSystem != nullptr);
 	return !fileSystem->exists(projectFile.c_str());
 }

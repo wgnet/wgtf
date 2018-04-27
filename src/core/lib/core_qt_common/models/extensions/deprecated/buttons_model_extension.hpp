@@ -2,10 +2,13 @@
 #define BUTTONS_MODEL_EXTENSION_HPP
 
 #include "i_model_extension_old.hpp"
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
-class ButtonsModelExtension : public IModelExtensionOld
+class IQtHelpers;
+
+class ButtonsModelExtension : public IModelExtensionOld, Depends<IQtHelpers>
 {
 public:
 	QHash<int, QByteArray> roleNames() const override;

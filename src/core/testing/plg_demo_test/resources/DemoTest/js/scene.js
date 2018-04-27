@@ -16,17 +16,7 @@ function Scene()
         var vertexBuffers_;
         var faceBuffer_;
         var texture_;
-        var pX_;
-        var pY_;
-        var pZ_;
-        var rX_;
-        var rY_;
-        var rZ_;
-        var sX_;
-        var sY_;
-        var sZ_;
         var visible_;
-        var dirty_;
     }
  
     var engine_; 
@@ -195,43 +185,7 @@ function Scene()
     * @param deltatime The time passed between ticks
     */
     this.tick = function( deltatime )
-    {
-        if( cubes_.length < modelCount_ )
-        {
-            var amount = modelCount_ - cubes_.length;
-            for( var i = 0; i < amount; ++i )
-            {
-                this.createCube();
-            }
-        }
-        else if( cubes_.length > modelCount_ )
-        {
-            var amount = cubes_.length - modelCount_;
-            for( var i = 0; i < amount; ++i )
-            {
-                cubes_.pop();
-            }            
-        }
-        
-        for( var index in cubes_ )
-        {
-            var cube = cubes_[index];
-            if( cube.dirty_ )
-            {
-                mat4.identity( cube.worldMat_ );
-                
-                mat4.translate( cube.worldMat_, [ 0.0, 0.0, -7.0 ] );
-                mat4.translate( cube.worldMat_, [ cube.pX_, cube.pY_, cube.pZ_ ] );
-                
-                mat4.rotate( cube.worldMat_, degToRad( cube.rX_ ), [ 1, 0, 0 ] );
-                mat4.rotate( cube.worldMat_, degToRad( cube.rY_ ), [ 0, 1, 0 ] );
-                mat4.rotate( cube.worldMat_, degToRad( cube.rZ_ ), [ 0, 0, 1 ] );
-                
-                mat4.scale( cube.worldMat_, [ cube.sX_, cube.sY_, cube.sZ_ ] );
-
-                cube.dirty_ = false;
-            }
-        }         
+    {            
     }
     
     /**
@@ -320,18 +274,20 @@ function Scene()
         if( index >= 0 && index < cubes_.length && cubes_[index] != null )
         {
             var cube = cubes_[index];
-            cube.pX_ = pX;
-            cube.pY_ = pY;
-            cube.pZ_ = pZ;
-            cube.rX_ = rX;
-            cube.rY_ = rY;
-            cube.rZ_ = rZ;
-            cube.sX_ = sX;
-            cube.sY_ = sY;
-            cube.sZ_ = sZ;
+			
             cube.visible_ = visible;
-            cube.dirty_ = true;
             cube.texture_ = engine_.getTexture(textureName);
+			
+			mat4.identity( cube.worldMat_ );
+			
+			mat4.translate( cube.worldMat_, [ 0.0, 0.0, -7.0 ] );
+			mat4.translate( cube.worldMat_, [ pX, pY, pZ ] );
+			
+			mat4.rotate( cube.worldMat_, degToRad( rX ), [ 1, 0, 0 ] );
+			mat4.rotate( cube.worldMat_, degToRad( rY ), [ 0, 1, 0 ] );
+			mat4.rotate( cube.worldMat_, degToRad( rZ ), [ 0, 0, 1 ] );
+			
+			mat4.scale( cube.worldMat_, [ sX, sY, sZ ] );			
         }
     }
     
@@ -341,6 +297,22 @@ function Scene()
     this.setModelCount = function( count )
     {
         modelCount_ = count;
+        if( cubes_.length < modelCount_ )
+        {
+            var amount = modelCount_ - cubes_.length;
+            for( var i = 0; i < amount; ++i )
+            {
+                this.createCube();
+            }
+        }
+        else if( cubes_.length > modelCount_ )
+        {
+            var amount = cubes_.length - modelCount_;
+            for( var i = 0; i < amount; ++i )
+            {
+                cubes_.pop();
+            }            
+        }		
     }
 }
 

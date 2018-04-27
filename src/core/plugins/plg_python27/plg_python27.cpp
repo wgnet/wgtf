@@ -5,6 +5,7 @@
 #include "core_python27/scripting_engine.hpp"
 #include "core_python27/script_object_definition_registry.hpp"
 #include "core_python27/type_converters/converter_queue.hpp"
+#include "core_python27/python_obj_manager.hpp"
 
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
@@ -23,8 +24,7 @@ class Python27Plugin : public PluginMain
 {
 public:
 	Python27Plugin(IComponentContext& contextManager)
-	    : interpreter_(contextManager), definitionRegistry_(contextManager), typeConverterQueue_(contextManager),
-	      hookListener_(new ReflectedPython::HookListener())
+	    : typeConverterQueue_(contextManager), hookListener_(new ReflectedPython::HookListener())
 	{
 	}
 
@@ -33,6 +33,8 @@ public:
 		const bool transferOwnership = false;
 		interfaces_.push(contextManager.registerInterface(&interpreter_, transferOwnership));
 		interfaces_.push(contextManager.registerInterface(&definitionRegistry_, transferOwnership));
+		interfaces_.push(contextManager.registerInterface(&pyObjManager_, transferOwnership));
+
 		return true;
 	}
 
@@ -52,12 +54,14 @@ public:
 
 		interpreter_.init();
 		definitionRegistry_.init();
+		pyObjManager_.init();
 		typeConverterQueue_.init();
 	}
 
 	bool Finalise(IComponentContext& contextManager) override
 	{
 		typeConverterQueue_.fini();
+		pyObjManager_.fini();
 		definitionRegistry_.fini();
 		interpreter_.fini();
 
@@ -81,15 +85,16 @@ public:
 	{
 		while (!interfaces_.empty())
 		{
-			contextManager.deregisterInterface(interfaces_.top());
+			contextManager.deregisterInterface(interfaces_.top().get());
 			interfaces_.pop();
 		}
 	}
 
 private:
-	std::stack<IInterface*> interfaces_;
+	std::stack<InterfacePtr> interfaces_;
 	Python27ScriptingEngine interpreter_;
 	ReflectedPython::ScriptObjectDefinitionRegistry definitionRegistry_;
+	PythonObjManager pyObjManager_;
 	PythonType::ConverterQueue typeConverterQueue_;
 	std::shared_ptr<ReflectedPython::HookListener> hookListener_;
 };

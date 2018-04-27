@@ -12,4 +12,21 @@
 #define REFLECTION_DLL
 #endif
 
+namespace wgt
+{
+
+class IComponentContext;
+class IDefinitionManager;
+
+namespace ReflectionShared
+{
+
+REFLECTION_DLL void initContext(IComponentContext & componentContext);
+REFLECTION_DLL void initDefinitionManager(IDefinitionManager & defManager);
+
+} // end namespace ReflectionShared
+
+} //end namespace wgt
+ 
+
 #endif

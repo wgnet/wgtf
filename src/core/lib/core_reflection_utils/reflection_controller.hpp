@@ -22,6 +22,11 @@ public:
 	Variant invoke(const PropertyAccessor& pa, const ReflectedMethodParameters& parameters) override;
 	void insert(const PropertyAccessor& pa, const Variant& key, const Variant& value) override;
 	void erase(const PropertyAccessor& pa, const Variant& key) override;
+	void customCommand(ExecuteFunc executeFunc, UndoFunc undoFunc, const std::string& description) override;
+	void setEditor(IEditor* editor) override;
+	void setCustomSetValue(CustomSetValueFunc setFunc) override;
+	void setCustomErase(CustomEraseFunc eraseFunc) override;
+	void setCustomInsert(CustomInsertFunc insertFunc) override;
 
 private:
 	class Impl;

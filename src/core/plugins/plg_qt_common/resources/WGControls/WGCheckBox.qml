@@ -57,35 +57,6 @@ WGCheckBase {
         {
             checkedState = Qt.Checked
         }
-        forceActiveFocus()
-    }
-
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( checkBox.checked )
-            }
-
-            onDataPasted : {
-                setValueHelper( checkBox, "checked", data );
-            }
-        }
-
-        onSelectedChanged : {
-            if (selected)
-            {
-                selectControl( copyableObject )
-            }
-            else
-            {
-                deselectControl( copyableObject )
-            }
-        }
     }
 
     //Fix to stop half pixel offsets making the checkmarks look off centre

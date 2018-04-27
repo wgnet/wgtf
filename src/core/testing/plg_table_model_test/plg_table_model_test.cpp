@@ -26,16 +26,11 @@ namespace wgt
 class TableModelTestPlugin : public PluginMain, public Depends<IViewCreator>
 {
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	wg_future<std::unique_ptr<IView>> tableView_;
 	std::shared_ptr<AbstractTableModel> tableModel_;
 
 public:
-	//==========================================================================
-	TableModelTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
-	{
-	}
-
 	//==========================================================================
 	bool PostLoad(IComponentContext& contextManager)
 	{
@@ -77,7 +72,7 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 };

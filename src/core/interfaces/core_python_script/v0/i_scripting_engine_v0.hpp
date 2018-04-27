@@ -41,26 +41,26 @@ virtual bool appendSourcePath(const wchar_t* path) = 0;
 virtual bool appendBinPath(const wchar_t* path) = 0;
 
 /**
-     *	Import a Python module using the search paths in "sys.path".
-     *
-     *	@pre interpreter must be initialized.
-     *
-     *	@param name the name of the module to import.
-     *		e.g. import( "test" ) will search for "test.py".
-     *		A null or empty path to not import anything.
-     *		Always use forward-slashes in the path '/'.
-     *
-     *	@return module that has been imported or nullptr on failure.
-     */
+ *	Import a Python module using the search paths in "sys.path".
+ *
+ *	@pre interpreter must be initialized.
+ *
+ *	@param name the name of the module to import.
+ *		e.g. import( "test" ) will search for "test.py".
+ *		A null or empty path to not import anything.
+ *		Always use forward-slashes in the path '/'.
+ *
+ *	@return module that has been imported or nullptr on failure.
+ */
 virtual ObjectHandle import(const char* moduleName) = 0;
 
 /**
-     *	Check for any errors during script execution and print them.
-     *
-     *	@pre interpreter must be initialized.
-     *
-     *	@return true if errors occurred.
-     */
+ *	Check for any errors during script execution and print them.
+ *
+ *	@pre interpreter must be initialized.
+ *
+ *	@return true if errors occurred.
+ */
 virtual bool checkErrors() = 0;
 
 DECLARE_INTERFACE_END()

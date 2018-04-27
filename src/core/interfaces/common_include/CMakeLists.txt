@@ -8,6 +8,7 @@ SET( ALL_SRCS
 	env_pointer.hpp
 	qrc_loader.hpp
 	qrc_loader_helper.hpp
+	i_static_initializer.hpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 

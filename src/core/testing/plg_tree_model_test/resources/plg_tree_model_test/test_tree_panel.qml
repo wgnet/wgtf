@@ -8,39 +8,156 @@ import WGControls.Views 2.0
 WGPanel {
     id: testTreePanel
 
-	ListModel {
-		id: qmlModel
-		ListElement { 
-			display: "This"
-		}
-        ListElement {
-			display: "Is"
-		}
-        ListElement {
-			display: "A"
-		}
-        ListElement {
-			display: "QML"
-		}
-        ListElement {
-			display: "Model"
-		}
-	}
+    WGTreeModel {
+        id: qmlModel
 
+        header: WGModelRow {
+            WGModelData {
+                roles: {"headerText": "h1", "footerText": "f1"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h2", "footerText": "f2"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h3", "footerText": "f3"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h4", "footerText": "f4"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h5", "footerText": "f5"}
+            }
+        }
+
+        WGModelRow {
+            WGModelData {
+                roles: {"display": "This"}
+            }
+
+            WGModelData {
+                roles: {"display": "is"}
+            }
+
+            WGModelData {
+                roles: {"display": "a"}
+            }
+
+            WGModelData {
+                roles: {"display": "QML"}
+            }
+
+            WGModelData {
+                roles: {"display": "model"}
+            }
+        }
+
+        WGModelRow {
+            WGModelData {
+                roles: {"display": "This"}
+            }
+
+            WGModelData {
+                roles: {"display": "is"}
+            }
+
+            WGModelData {
+                roles: {"display": "a"}
+            }
+
+            WGModelData {
+                roles: {"display": "QML"}
+            }
+
+            WGModelData {
+                roles: {"display": "model"}
+            }
+
+            children: [
+                WGModelRow {
+                    WGModelData {
+                        roles: {"display": "This"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "is"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "a"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "child"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "row"}
+                    }
+
+                    children: [
+                        WGModelRow {
+                            WGModelData {
+                                roles: {"display": "This"}
+                            }
+
+                            WGModelData {
+                                roles: {"display": "is"}
+                            }
+
+                            WGModelData {
+                                roles: {"display": "a"}
+                            }
+
+                            WGModelData {
+                                roles: {"display": "grandchild"}
+                            }
+
+                            WGModelData {
+                                roles: {"display": "row"}
+                            }
+                        }]
+                },
+
+                WGModelRow {
+                    WGModelData {
+                        roles: {"display": "This"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "is"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "another"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "child"}
+                    }
+
+                    WGModelData {
+                        roles: {"display": "row"}
+                    }
+                }]
+        }
+    }
+
+    property var columnProxyModel: WGColumnLayoutProxy {
+        sourceModel: source
+        columnSequence: [0,0,0]
+    }
+
+    property var sourceModel: useCppModel ? columnProxyModel : qmlModel
     property bool useCppModel: true
-    property var sourceModel: WGColumnLayoutProxy {
-		sourceModel: useCppModel ? source : qmlModel
-		columnSequence: [0,0,0]
-	}
     property int topControlsHeight: 20
 
     title: "TreeModel Test"
     layoutHints: { 'test': 0.1 }
     color: palette.mainWindowColor
-
-    // TODO NGT-2493 ScrollView steals keyboard focus
-    Keys.forwardTo: [treeView1, treeView2]
-    focus: true
 
     Button {
         id: switchModelButton
@@ -105,7 +222,7 @@ WGPanel {
             id: editDelegate
             WGTextBox {
                 objectName: "editDelegate_" + text
-                width: parent.width
+                width: parent !== null ? parent.width : 0
                 implicitWidth: contentWidth + defaultSpacing.standardMargin
                 text: itemValue !== undefined ? itemValue : ""
                 textColor: palette.textColor
@@ -124,7 +241,7 @@ WGPanel {
                 id: textBoxHeader
                 textColor: palette.textColor
                 text: valid ? headerData.headerText : ""
-                width: parent.width
+                width: parent !== null ? parent.width : 0
                 height: 24
 
                 property bool valid: headerData !== null &&

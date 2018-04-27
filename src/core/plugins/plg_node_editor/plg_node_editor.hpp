@@ -4,11 +4,13 @@
 #include <memory>
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_common/wg_future.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
 class IView;
 class IComponentContext;
+class NodeEditor;
 
 /**
 * A plugin which registers an INodeEditor interface and panel which can be used to create, remove and manipulate nodes
@@ -21,8 +23,7 @@ class IComponentContext;
 class NodeEditorPlugin : public PluginMain
 {
 public:
-	NodeEditorPlugin(IComponentContext& context);
-
+	NodeEditorPlugin();
 	bool PostLoad(IComponentContext& context) override;
 	void Initialise(IComponentContext& context) override;
 	bool Finalise(IComponentContext& context) override;
@@ -30,6 +31,8 @@ public:
 
 private:
 	wg_future<std::unique_ptr<IView>> view_;
+    ManagedObject<NodeEditor> nodeEditor_;
+    InterfacePtrs types_;
 };
 
 PLG_CALLBACK_FUNC(NodeEditorPlugin)

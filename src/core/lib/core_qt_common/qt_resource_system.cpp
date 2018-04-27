@@ -1,7 +1,8 @@
 #include "qt_resource_system.hpp"
+
+#include "core_common/assert.hpp"
 #include "wg_types/binary_block.hpp"
 #include "core_logging/logging.hpp"
-#include <cassert>
 #include <QFile>
 
 namespace wgt
@@ -33,7 +34,7 @@ IResourceSystem::BinaryBlockPtr QtResourceSystem::readBinaryContent(const char* 
 	device.reset(new QFile(resource));
 	device->open(QFile::ReadOnly);
 
-	assert(device != nullptr);
+	TF_ASSERT(device != nullptr);
 	auto size = device->size();
 	auto data = device->readAll();
 	device->close();

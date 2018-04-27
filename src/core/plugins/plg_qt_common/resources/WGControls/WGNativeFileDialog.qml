@@ -13,13 +13,13 @@ WGFileDialog {
     objectName: "WGNativeFileDialog"
     WGComponent { type: "WGNativeFileDialog" }
 
-    onOpen: {
+    function open(dWidth, dHeight, curValue) {
         var dir = curValue.substring(0, curValue.lastIndexOf('/'));
         fileDialogInstance.folder = Qt.resolvedUrl(dir);
         fileDialogInstance.open()
     }
 
-    onClose: {
+    function close() {
         fileDialogInstance.close()
     }
 
@@ -28,7 +28,7 @@ WGFileDialog {
         id: fileDialogInstance
         folder: mainDialog.folder
         modality: mainDialog.modality
-        nameFilters: mainDialog.nameFilters
+        nameFilters: typeof mainDialog.nameFilters == "undefined" ? ["All files (*)"] : mainDialog.nameFilters
         selectedNameFilter: mainDialog.selectedNameFilter
         title: mainDialog.title
 
@@ -38,6 +38,15 @@ WGFileDialog {
 
         onRejected: {
             mainDialog.rejected()
+        }
+
+        onVisibleChanged: {
+            if (!visible) {
+                mainDialog.closed();
+            }
+            else {
+                mainDialog.opened();
+            }
         }
     }
 }

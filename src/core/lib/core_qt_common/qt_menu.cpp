@@ -1,17 +1,70 @@
 #include "qt_menu.hpp"
+
 #include "core_ui_framework/i_action.hpp"
 #include "core_logging/logging.hpp"
+#include "core_common/assert.hpp"
 #include "core_common/signal.hpp"
+#include "core_string_utils/string_utils.hpp"
 #include <QApplication>
 #include <QAction>
 #include <QObject>
 #include <QString>
 #include <QMenu>
-
-#include <cassert>
+#include <QPainter>
+#include <QWindow>
+#include <qevent.h>
 
 namespace wgt
 {
+
+/*! 
+	This class resolves ambiguous actions by forwarding to the action for current context
+*/
+class QForwardingAction : public QAction
+{
+public:
+	QForwardingAction(const QString &text, QObject* parent)
+		: QAction(text, parent)
+	{
+	}
+
+	bool event(QEvent * e) override
+	{
+		if (e->type() == QEvent::Shortcut)
+		{
+			auto se = static_cast<QShortcutEvent *>(e);
+			auto focusWidget = QApplication::focusWidget();
+			if (se->isAmbiguous() && focusWidget != nullptr)
+			{
+				for (const auto& action : QtMenu::sharedQActions_)
+				{
+					auto qAction = action.second.lock();
+					if(!qAction)
+					{
+						continue;
+					}
+					bool keyMatches = qAction->shortcut() == se->key();
+					bool isContextual = qAction->shortcutContext() == Qt::WidgetShortcut;
+					auto associatedWidgets = qAction->associatedWidgets();
+					if (!keyMatches || !isContextual)
+					{
+						continue;
+					}
+					for(auto& widget : associatedWidgets)
+					{
+						if(widget == focusWidget && qAction->isEnabled() && qAction->isVisible())
+						{
+							qAction->trigger();
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return QAction::event(e);
+	}
+};
+
 namespace QtMenu_Locals
 {
 const char* modeDisabled = "_disabled";
@@ -19,24 +72,60 @@ const char* modeActive = "_active";
 const char* modeSelected = "_selected";
 const char* stateOn = "_checked";
 
-QIcon generateIcon(IAction& action)
+QIcon generateIcon(const char* iconPath)
 {
 	QIcon icon;
 
-	QString normalPath(action.icon());
-	QString disabledPath(normalPath + modeDisabled);
-	QString activePath(normalPath + modeActive);
-	QString selectedPath(normalPath + modeSelected);
-	QString normalOnPath(normalPath + stateOn);
-	QString disabledOnPath(normalOnPath + modeDisabled);
-	QString activeOnPath(normalOnPath + modeActive);
-	QString selectedOnPath(normalOnPath + modeSelected);
+	QString normalPath(iconPath);
+	auto tokens = normalPath.split('.');
+	TF_ASSERT(tokens.length() == 2);
 
-	icon.addPixmap(QPixmap(normalPath), QIcon::Normal, QIcon::Off);
+	QString off(tokens[0]);
+	QString on(tokens[0] + stateOn);
+	QString ext("." + tokens[1]);
+
+	QString disabledPath(off + modeDisabled + ext);
+	QString activePath(off + modeActive + ext);
+	QString selectedPath(off + modeSelected + ext);
+
+	QString normalOnPath(on + ext);
+	QString disabledOnPath(on + modeDisabled + ext);
+	QString activeOnPath(on + modeActive + ext);
+	QString selectedOnPath(on + modeSelected + ext);
+
+	auto offIcon = QPixmap(normalPath);
+	icon.addPixmap(offIcon, QIcon::Normal, QIcon::Off);
 	icon.addPixmap(QPixmap(disabledPath), QIcon::Disabled, QIcon::Off);
 	icon.addPixmap(QPixmap(activePath), QIcon::Active, QIcon::Off);
 	icon.addPixmap(QPixmap(selectedPath), QIcon::Selected, QIcon::Off);
-	icon.addPixmap(QPixmap(normalOnPath), QIcon::Normal, QIcon::On);
+
+	auto onIcon = QPixmap(normalOnPath);
+	if (onIcon.isNull())
+	{
+		QPainter p;
+
+		auto img = offIcon.toImage().convertToFormat(QImage::Format_ARGB32);
+		auto mask(img);
+
+		auto width = mask.width();
+		auto height = mask.height();
+		auto outerRect = mask.rect();
+		auto innerRect = QRect(width / 16, height / 16, width - width / 8, height - height / 8);
+
+		p.begin(&mask);
+		p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+		p.fillRect(outerRect, QApplication::palette().highlight());
+		p.fillRect(innerRect, Qt::transparent);
+		p.end();
+
+		p.begin(&img);
+		p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+		p.drawImage(0, 0, mask);
+		p.end();
+
+		onIcon.convertFromImage(img);
+	}
+	icon.addPixmap(onIcon, QIcon::Normal, QIcon::On);
 	icon.addPixmap(QPixmap(disabledOnPath), QIcon::Disabled, QIcon::On);
 	icon.addPixmap(QPixmap(activeOnPath), QIcon::Active, QIcon::On);
 	icon.addPixmap(QPixmap(selectedOnPath), QIcon::Selected, QIcon::On);
@@ -47,8 +136,10 @@ QIcon generateIcon(IAction& action)
 
 SharedActions QtMenu::sharedQActions_;
 
-QtMenu::QtMenu(QObject& menu, const char* windowId) : menu_(menu), windowId_(windowId)
+QtMenu::QtMenu(QObject& menu, const char* windowId)
+	: menu_(menu), windowId_(windowId)
 {
+	allInvisible_ = true;
 	auto pathProperty = menu_.property("path");
 	if (pathProperty.isValid())
 	{
@@ -74,14 +165,21 @@ const char* QtMenu::windowId() const
 
 void QtMenu::update()
 {
+	allInvisible_ = true;
 	for (auto& action : actions_)
 	{
-		action.second->setEnabled(action.first->enabled());
-		if (action.second->isCheckable())
+		bool visible = action.first->visible();
+		allInvisible_ = !visible && allInvisible_;
+		action.second->setVisible(visible);
+		if(action.second->isVisible())
 		{
-			action.second->setChecked(action.second->actionGroup() ?
-			                          action.second->actionGroup()->checkedAction() == action.second.data() :
-			                          action.first->checked());
+			action.second->setEnabled(action.first->enabled());
+			if (action.second->isCheckable())
+			{
+				action.second->setChecked(action.second->actionGroup() ?
+					action.second->actionGroup()->checkedAction() == action.second.data() :
+					action.first->checked());
+			}
 		}
 	}
 }
@@ -151,7 +249,7 @@ QAction* QtMenu::createQAction(IAction& action)
 
 	actions_[&action] = createSharedQAction(action);
 	qAction = getQAction(action);
-	assert(qAction != nullptr);
+	TF_ASSERT(qAction != nullptr);
 
 	return qAction;
 }
@@ -199,7 +297,7 @@ const Actions& QtMenu::getActions() const
 	return actions_;
 }
 
-void QtMenu::addMenuAction(QMenu& qMenu, QAction& qAction, const char* path)
+QMenu* QtMenu::addMenuPath(QMenu& qMenu, const char* path)
 {
 	QMenu* menu = &qMenu;
 	while (path != nullptr)
@@ -208,7 +306,18 @@ void QtMenu::addMenuAction(QMenu& qMenu, QAction& qAction, const char* path)
 		auto subPath = tok != nullptr ? QString::fromUtf8(path, tok - path) : path;
 		if (!subPath.isEmpty())
 		{
-			QMenu* subMenu = menu->findChild<QMenu*>(subPath, Qt::FindDirectChildrenOnly);
+			QMenu* subMenu = nullptr;
+			auto actions = menu->actions();
+			for (auto& action : actions)
+			{
+				subMenu = action->menu();
+				if (subMenu != nullptr &&
+					subMenu->objectName() == subPath)
+				{
+					break;
+				}
+				subMenu = nullptr;
+			}
 
 			if (subMenu == nullptr)
 			{
@@ -219,8 +328,14 @@ void QtMenu::addMenuAction(QMenu& qMenu, QAction& qAction, const char* path)
 		}
 		path = tok != nullptr ? tok + 1 : nullptr;
 	}
+	return menu;
+}
 
-	assert(menu != nullptr);
+void QtMenu::addMenuAction(QMenu& qMenu, QAction& qAction, const char* path)
+{
+	QMenu* menu = addMenuPath(qMenu, path);
+
+	TF_ASSERT(menu != nullptr);
 	auto order = qAction.property("order").toInt();
 
 	auto actions = menu->actions();
@@ -236,11 +351,25 @@ void QtMenu::removeMenuAction(QMenu& qMenu, QAction& qAction)
 	for (auto& child : children)
 	{
 		removeMenuAction(*child, qAction);
-		if (child->isEmpty())
+		// we check actions.isEmpty rather than child.isEmpty as child.isEmpty doesnt include hidden actions
+		if (child->actions().isEmpty())
 		{
+			auto childAction = child->menuAction();
+			qMenu.removeAction(childAction);
 			child->deleteLater();
 		}
 	}
+}
+
+void QtMenu::updateMenuVisibility(QMenu& qMenu)
+{
+	auto children = qMenu.findChildren<QMenu*>(QString(), Qt::FindDirectChildrenOnly);
+	for (auto& child : children)
+	{
+		updateMenuVisibility(*child);
+	}
+
+	qMenu.menuAction()->setVisible(!qMenu.isEmpty());
 }
 
 QSharedPointer<QAction> QtMenu::createSharedQAction(IAction& action)
@@ -251,18 +380,34 @@ QSharedPointer<QAction> QtMenu::createSharedQAction(IAction& action)
 		return qAction;
 	}
 
-	qAction.reset(new QAction(action.text(), QApplication::instance()), &QObject::deleteLater);
+	qAction.reset(new QForwardingAction(action.text(), QApplication::instance()), &QObject::deleteLater);
 	sharedQActions_[&action] = qAction;
+
 	qAction->setProperty("order", action.order());
+	qAction->setEnabled(action.enabled());
+	qAction->setVisible(action.visible());
+
 	if (action.isSeparator())
 	{
 		qAction->setSeparator(true);
 	}
 	else
 	{
-		qAction->setIcon(QtMenu_Locals::generateIcon(action));
+		std::vector<QIcon> qIcons;
+		auto icons = StringUtils::split(std::string(action.icon()), '|');
+		for(auto& icon : icons)
+		{			
+			StringUtils::trim_string(icon);
+			qIcons.push_back(QtMenu_Locals::generateIcon(icon.c_str()));
+		}
+
+		if(!qIcons.empty())
+		{
+			qAction->setIcon(qIcons[0]);
+		}
+
 		qAction->setShortcut(QKeySequence(action.shortcut()));
-		qAction->setEnabled(action.enabled());
+
 		if (action.isCheckable())
 		{
 			qAction->setCheckable(true);
@@ -278,9 +423,28 @@ QSharedPointer<QAction> QtMenu::createSharedQAction(IAction& action)
 		});
 
 		connections_[&action] = action.signalShortcutChanged.connect([qAction](const char* shortcut) {
-			assert(qAction != nullptr);
+			TF_ASSERT(qAction != nullptr);
 			qAction->setShortcut(QKeySequence(shortcut));
 		});
+
+		connections_[&action] = action.signalTextChanged.connect([qAction](const char* text) {
+			TF_ASSERT(qAction != nullptr);
+			qAction->setText(text);
+		});
+
+		connections_[&action] = action.signalVisibilityChanged.connect([qAction](bool visible) {
+			TF_ASSERT(qAction != nullptr);
+			qAction->setVisible(visible);
+		});
+
+		connections_[&action] = action.signalIconChanged.connect([qAction, qIcons](int index) {
+			TF_ASSERT(qAction != nullptr);
+			if(index >= 0 && index < (int)qIcons.size())
+			{
+				qAction->setIcon(qIcons[index]);
+			}
+		});
+
 		const std::string groupID(action.group());
 		if (!groupID.empty())
 		{
@@ -291,7 +455,7 @@ QSharedPointer<QAction> QtMenu::createSharedQAction(IAction& action)
 			}
 
 			groups_.at(groupID)->addAction(qAction.data());
-			assert(qAction->actionGroup());
+			TF_ASSERT(qAction->actionGroup());
 		}
 	}
 

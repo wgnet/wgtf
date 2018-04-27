@@ -3,6 +3,7 @@
 
 #include "core_reflection/reflected_object.hpp"
 #include <string>
+#include <vector>
 
 namespace wgt
 {
@@ -22,8 +23,11 @@ class TestClass : public TestBase
 {
 	DECLARE_REFLECTED
 public:
-	TestClass() : TestBase(), name_("TestClassName"), string_("TestClassString"), innerClass_("TestClassInnerName")
+	TestClass()
+	    : TestBase(), name_("TestClassName"), string_("TestClassString"), strings_(), innerClass_("TestClassInnerName")
 	{
+		strings_.push_back("TestClassString1");
+		strings_.push_back("TestClassString2");
 	}
 
 	const std::string& getString() const
@@ -56,6 +60,7 @@ public:
 private:
 	const char* name_;
 	std::string string_;
+	std::vector<std::string> strings_;
 	InnerClass innerClass_;
 };
 } // end namespace wgt

@@ -11,11 +11,11 @@
 #pragma once
 
 #include "serialization_dll.hpp"
+#include "core_dependency_system/i_interface.hpp"
+#include "core_serialization/i_file_system.hpp"
 
 #include <typeinfo>
-
-#include <core_dependency_system/i_interface.hpp>
-#include "core_serialization/i_file_system.hpp"
+#include <memory>
 
 namespace wgt
 {
@@ -25,6 +25,9 @@ namespace wgt
 class SERIALIZATION_DLL FileSystem : public Implements<IFileSystem>
 {
 public:
+	FileSystem();
+	virtual ~FileSystem();
+
 	virtual bool copy(const char* path, const char* new_path) override;
 	virtual bool remove(const char* path) override;
 	virtual bool exists(const char* path) const override;
@@ -34,6 +37,19 @@ public:
 	virtual bool move(const char* path, const char* new_path) override;
 	virtual IStreamPtr readFile(const char* path, std::ios::openmode mode) const override;
 	virtual bool writeFile(const char* path, const void* data, size_t len, std::ios::openmode mode) override;
+	virtual bool createDirectory(const char* path) override;
+	virtual bool removeDirectory(const char* path) override;
+	virtual bool makeWritable(const char* path) override;
+	virtual void invalidateFileInfo(const char* path) override;
+	virtual Connection listenForChanges(PathChangedCallback& callback) override;
+
+protected:
+	void pathChanged(const char* path) const;
+
+private:
+	struct Implementation;
+	friend Implementation;
+	std::unique_ptr<Implementation> impl_;
 };
 
 #pragma warning(pop)

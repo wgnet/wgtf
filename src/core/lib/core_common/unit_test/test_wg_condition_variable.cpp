@@ -1,4 +1,4 @@
-#include "third_party/CppUnitLite2/src/CppUnitLite2.h"
+#include "CppUnitLite2/src/CppUnitLite2.h"
 #include "core_common/wg_condition_variable.hpp"
 
 #include <thread>

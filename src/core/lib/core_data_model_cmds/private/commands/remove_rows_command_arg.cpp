@@ -1,4 +1,6 @@
 #include "remove_rows_command_arg.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_variant/collection.hpp"
@@ -45,7 +47,7 @@ void extractRows(const AbstractItemModel& model, const AbstractItemModel::ItemIn
 		for (int column = 0; column < columnCount; ++column)
 		{
 			const auto pItem = model.item(index);
-			assert(pItem != nullptr);
+			TF_ASSERT(pItem != nullptr);
 			for (const auto& roleId : roleIds)
 			{
 				RemoveRowsCommandArgument::ExtractedRows extractedRows;
@@ -136,7 +138,7 @@ void RemoveRowsCommandArgument::setParent(const AbstractItem* pParent)
 
 void RemoveRowsCommandArgument::saveRows()
 {
-	assert(pModel_ != nullptr);
+	TF_ASSERT(pModel_ != nullptr);
 
 	const AbstractItemModel::ItemIndex startIndex(type_ == Type::ROW ? startPos_ : 0,
 	                                              type_ == Type::COLUMN ? startPos_ : 0, pParent_);

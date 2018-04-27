@@ -15,7 +15,7 @@ Rectangle{
     color: palette.mainWindowColor
     implicitWidth: 350
     implicitHeight: 200
-    property var source: getSource
+	property var dataEdited: getDataEdited
 
     WGColumnLayout{
         id: columnLayout
@@ -86,11 +86,8 @@ Rectangle{
         }
     }
 
-    Connections {
-        target: source
-        onDataEditedChanged: {
-            exitButton.text = dataEdited ? "Cancel" : "Close";
-            saveButton.enabled = dataEdited ? true : false;
-        }
-    }
+	onDataEditedChanged: {
+		exitButton.text = dataEdited ? "Cancel" : "Close";
+		saveButton.enabled = dataEdited ? true : false;
+	}
 }

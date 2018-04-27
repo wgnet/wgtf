@@ -5,6 +5,7 @@
 #include "core_reflection/base_property.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_data_model/i_item_role.hpp"
+#include <vector>
 
 namespace wgt
 {

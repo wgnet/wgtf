@@ -8,9 +8,10 @@ namespace wgt
 {
 BEGIN_EXPOSE(DialogReflectedData, MetaNone())
 
-EXPOSE("CheckBox", getCheckBoxState, setCheckBoxState, MetaNone())
 EXPOSE("TextField", getTextField, setTextField, MetaNone())
 EXPOSE("Vector", getVector, setVector, MetaNone())
+EXPOSE("CheckBox", checkBoxes_, MetaCollectionItemMeta(MetaCheckBox() + 
+    MetaDisplayPathNameCallback(&DialogReflectedData::getDisplayName)))
 
 // NGT-3043 Re-enable the colour property once this issue is fixed
 // EXPOSE("Color", getColor, setColor, MetaColor())

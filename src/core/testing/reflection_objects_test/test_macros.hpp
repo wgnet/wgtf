@@ -80,26 +80,25 @@
 	_DEFINE_TEST_DATA_TYPES_METADATA(Derived, _col_std, TestObjectCommon::s_MemberStdCollectionVariableGroup) \
 //_DEFINE_TEST_DATA_TYPES_METADATA( Derived, _col_bw, s_MemberBWCollectionVariableGroup )
 
-#define _DEFINE_TEST_DATA_TYPES_METADATA(prefix, postFix, groupName)                           \
-	\
-EXPOSE(#prefix "Bool" #postFix, prefix##boolean##postFix##_, MetaGroup(groupName))             \
-	\
-EXPOSE(#prefix "Signed int" #postFix, prefix##signedInt##postFix##_, MetaGroup(groupName))     \
-	\
-EXPOSE(#prefix "Unsigned int" #postFix, prefix##unsignedInt##postFix##_, MetaGroup(groupName)) \
-	\
-EXPOSE(#prefix "Signed int64" #postFix, prefix##signedInt64##postFix##_, MetaGroup(groupName)) \
-	\
-EXPOSE(#prefix "Unsigned int64" #postFix, prefix##unsignedInt64##postFix##_, MetaGroup(groupName)) \
-EXPOSE(#prefix "float" #postFix, prefix##float##postFix##_,                                    \
-	   MetaGroup(groupName) + MetaDecimals(5) + MetaStepSize(0.00001)) \
-EXPOSE(#prefix "double" #postFix, prefix##double##postFix##_,                                  \
-	   MetaGroup(groupName) + MetaDecimals(5) + MetaStepSize(0.00001)) \
-EXPOSE(#prefix "const char *" #postFix, prefix##raw_string##postFix##_, MetaGroup(groupName)) \
-EXPOSE(#prefix "BW::string" #postFix, prefix##string##postFix##_, MetaGroup(groupName)) \
-EXPOSE(#prefix "const wchar_t *" #postFix, prefix##raw_wstring##postFix##_, MetaGroup(groupName)) \
-EXPOSE(#prefix "BW::wstring" #postFix, prefix##wstring##postFix##_, MetaGroup(groupName)) \
-EXPOSE(#prefix "TestPolyStruct" #postFix, prefix##testPolyStruct##postFix##_, MetaGroup(groupName)) \
-EXPOSE(#prefix "TestEmptyStructure" #postFix, prefix##testEmptyStructure##postFix##_, MetaGroup(groupName))
+#define _DEFINE_TEST_DATA_TYPES_METADATA(prefix, postFix, groupName)                                    \
+                                                                                                        \
+	EXPOSE(#prefix "Bool" #postFix, prefix##boolean##postFix##_, MetaGroup(groupName))                  \
+                                                                                                        \
+	EXPOSE(#prefix "Signed int" #postFix, prefix##signedInt##postFix##_, MetaGroup(groupName))          \
+                                                                                                        \
+	EXPOSE(#prefix "Unsigned int" #postFix, prefix##unsignedInt##postFix##_, MetaGroup(groupName))      \
+                                                                                                        \
+	EXPOSE(#prefix "Signed int64" #postFix, prefix##signedInt64##postFix##_, MetaGroup(groupName))      \
+	EXPOSE(#prefix "Unsigned int64" #postFix, prefix##unsignedInt64##postFix##_, MetaGroup(groupName))  \
+	EXPOSE(#prefix "float" #postFix, prefix##float##postFix##_,                                         \
+	       MetaGroup(groupName) + MetaDecimals(5) + MetaStepSize(0.00001))                              \
+	EXPOSE(#prefix "double" #postFix, prefix##double##postFix##_,                                       \
+	       MetaGroup(groupName) + MetaDecimals(5) + MetaStepSize(0.00001))                              \
+	EXPOSE(#prefix "const char *" #postFix, prefix##raw_string##postFix##_, MetaGroup(groupName))       \
+	EXPOSE(#prefix "BW::string" #postFix, prefix##string##postFix##_, MetaGroup(groupName))             \
+	EXPOSE(#prefix "const wchar_t *" #postFix, prefix##raw_wstring##postFix##_, MetaGroup(groupName))   \
+	EXPOSE(#prefix "BW::wstring" #postFix, prefix##wstring##postFix##_, MetaGroup(groupName))           \
+	EXPOSE(#prefix "TestPolyStruct" #postFix, prefix##testPolyStruct##postFix##_, MetaGroup(groupName)) \
+	EXPOSE(#prefix "TestEmptyStructure" #postFix, prefix##testEmptyStructure##postFix##_, MetaGroup(groupName))
 
 #endif // REFLECTION_TEST_MACROS_HPP

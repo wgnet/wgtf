@@ -1,5 +1,8 @@
 #include "generic_definition_helper.hpp"
+
 #include "generic_object.hpp"
+
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
@@ -12,7 +15,7 @@ TypeId GenericDefinitionHelper::typeId() const
 IClassDefinition* GenericDefinitionHelper::getDefinition(const ObjectHandle& object) const
 {
 	auto genericObject = object.getBase<GenericObject>();
-	assert(genericObject != nullptr);
+	TF_ASSERT(genericObject != nullptr);
 	return genericObject->getDefinition();
 }
 } // end namespace wgt

@@ -1,0 +1,14 @@
+#include "../models/curve_editor.hpp"
+#include "../models/curve.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(CurveEditor, ICurveEditor, MetaNone())
+END_EXPOSE()
+
+BEGIN_EXPOSE(Curve, ICurve, MetaNone())
+END_EXPOSE()
+
+} // end namespace wgt

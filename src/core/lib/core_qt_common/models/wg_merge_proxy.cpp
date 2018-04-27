@@ -1,10 +1,13 @@
 #include "wg_merge_proxy.hpp"
+#include <QMimeData>
+#include <assert.h>
 
 namespace wgt
 {
 WGMergeProxy::WGMergeProxy() : orientation_(Qt::Horizontal)
 {
 	roleNames_ = QAbstractItemModel::roleNames();
+	roleNames_.insert(Qt::UserRole, "columnKey");
 	for (auto role : roleNames_.keys())
 	{
 		roles_[role] = 1;
@@ -369,138 +372,40 @@ int WGMergeProxy::columnCount(const QModelIndex& parent) const
 
 QVariant WGMergeProxy::data(const QModelIndex& index, int role) const
 {
-	if (orientation_ == Qt::Horizontal)
+	auto pair = mappingFromIndex(index);
+	auto mapping = pair.first;
+	if(!mapping)
 	{
-		auto sourceColumn = index.column();
-		for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
-		{
-			auto mapping = it->get();
-
-			auto sourceColumnCount = mapping->model_->columnCount();
-			if (sourceColumn >= sourceColumnCount)
-			{
-				sourceColumn -= sourceColumnCount;
-				continue;
-			}
-
-			auto entryIt = mapping->entries_.find(index.row());
-			if (entryIt == mapping->entries_.end())
-			{
-				return QVariant();
-			}
-			auto sourceRow = entryIt.value();
-
-			auto roleIt = mapping->roles_.find(role);
-			if (roleIt == mapping->roles_.end())
-			{
-				return QVariant();
-			}
-			auto sourceRole = roleIt.value();
-
-			return mapping->model_->data(mapping->model_->index(sourceRow, sourceColumn), sourceRole);
-		}
-	}
-	else
-	{
-		auto sourceRow = index.row();
-		for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
-		{
-			auto mapping = it->get();
-
-			auto sourceRowCount = mapping->model_->rowCount();
-			if (sourceRow >= sourceRowCount)
-			{
-				sourceRow -= sourceRowCount;
-				continue;
-			}
-
-			auto entryIt = mapping->entries_.find(index.column());
-			if (entryIt == mapping->entries_.end())
-			{
-				return QVariant();
-			}
-			auto sourceColumn = entryIt.value();
-
-			auto roleIt = mapping->roles_.find(role);
-			if (roleIt == mapping->roles_.end())
-			{
-				return QVariant();
-			}
-			auto sourceRole = roleIt.value();
-
-			return mapping->model_->data(mapping->model_->index(sourceRow, sourceColumn), sourceRole);
-		}
+		return QVariant();
 	}
 
-	return QVariant();
+	auto roleIt = mapping->roles_.find(role);
+	if (roleIt == mapping->roles_.end())
+	{
+		return QVariant();
+	}
+	auto sourceRole = roleIt.value();
+
+	return mapping->model_->data(pair.second, sourceRole);
 }
 
 bool WGMergeProxy::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-	if (orientation_ == Qt::Horizontal)
+	auto pair = mappingFromIndex(index);
+	auto mapping = pair.first;
+	if(!mapping)
 	{
-		auto sourceColumn = index.column();
-		for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
-		{
-			auto mapping = it->get();
-
-			auto sourceColumnCount = mapping->model_->columnCount();
-			if (sourceColumn >= sourceColumnCount)
-			{
-				sourceColumn -= sourceColumnCount;
-				continue;
-			}
-
-			auto entryIt = mapping->entries_.find(index.row());
-			if (entryIt == mapping->entries_.end())
-			{
-				return false;
-			}
-			auto sourceRow = entryIt.value();
-
-			auto roleIt = mapping->roles_.find(role);
-			if (roleIt == mapping->roles_.end())
-			{
-				return false;
-			}
-			auto sourceRole = roleIt.value();
-
-			return mapping->model_->setData(mapping->model_->index(sourceRow, sourceColumn), value, sourceRole);
-		}
-	}
-	else
-	{
-		auto sourceRow = index.row();
-		for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
-		{
-			auto mapping = it->get();
-
-			auto sourceRowCount = mapping->model_->rowCount();
-			if (sourceRow >= sourceRowCount)
-			{
-				sourceRow -= sourceRowCount;
-				continue;
-			}
-
-			auto entryIt = mapping->entries_.find(index.column());
-			if (entryIt == mapping->entries_.end())
-			{
-				return false;
-			}
-			auto sourceColumn = entryIt.value();
-
-			auto roleIt = mapping->roles_.find(role);
-			if (roleIt == mapping->roles_.end())
-			{
-				return false;
-			}
-			auto sourceRole = roleIt.value();
-
-			return mapping->model_->setData(mapping->model_->index(sourceRow, sourceColumn), value, sourceRole);
-		}
+		return false;
 	}
 
-	return false;
+	auto roleIt = mapping->roles_.find(role);
+	if (roleIt == mapping->roles_.end())
+	{
+		return false;
+	}
+	auto sourceRole = roleIt.value();
+
+	return mapping->model_->setData(pair.second, value, sourceRole);
 }
 
 QVariant WGMergeProxy::headerData(int section, Qt::Orientation orientation, int role) const
@@ -510,14 +415,23 @@ QVariant WGMergeProxy::headerData(int section, Qt::Orientation orientation, int 
 		return QVariant();
 	}
 
-	if (role == Qt::DisplayRole)
+	if (role == Qt::UserRole)
 	{
-		if (section < 0 || section >= entries_.count())
+		int count = section;
+		for (auto it = entries_.begin(); it != entries_.end(); ++it)
 		{
-			return QVariant();
+			if (it->second == 0)
+			{
+				continue;
+			}
+
+			if (--count < 0)
+			{
+				return it->first;
+			}
 		}
 
-		return entries_.at(section).first;
+		return QVariant();
 	}
 
 	for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
@@ -548,8 +462,125 @@ QVariant WGMergeProxy::headerData(int section, Qt::Orientation orientation, int 
 	return QVariant();
 }
 
+int WGMergeProxy::roleId(const QString& roleName) const
+{
+	for (auto existingIt = roleNames_.begin(); existingIt != roleNames_.end(); ++existingIt)
+	{
+		if (roleName == existingIt.value())
+		{
+			return existingIt.key();
+		}
+	}
+	return 0;
+}
+
 QHash<int, QByteArray> WGMergeProxy::roleNames() const
 {
 	return roleNames_;
+}
+
+std::pair<WGMergeProxy::Mapping*, QModelIndex> WGMergeProxy::mappingFromIndex(const QModelIndex& index) const
+{
+	return mappingFromIndex(index.row(), index.column());
+}
+
+std::pair<WGMergeProxy::Mapping*, QModelIndex> WGMergeProxy::mappingFromIndex(int row, int column) const
+{
+	std::pair<Mapping*, QModelIndex> pair = std::make_pair(nullptr, QModelIndex());
+
+	if (orientation_ == Qt::Horizontal)
+	{
+		auto sourceColumn = column;
+		for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
+		{
+			auto mapping = it->get();
+
+			auto sourceColumnCount = mapping->model_->columnCount();
+			if (sourceColumn >= sourceColumnCount)
+			{
+				sourceColumn -= sourceColumnCount;
+				continue;
+			}
+
+			auto entryIt = mapping->entries_.find(row);
+			if (entryIt == mapping->entries_.end())
+			{
+				return pair;
+			}
+			auto sourceRow = entryIt.value();
+
+			pair.first = mapping;
+			pair.second = mapping->model_->index(sourceRow, sourceColumn);
+			return pair;
+		}
+	}
+	else
+	{
+		auto sourceRow = row;
+		for (auto it = mappings_.begin(); it != mappings_.end(); ++it)
+		{
+			auto mapping = it->get();
+
+			auto sourceRowCount = mapping->model_->rowCount();
+			if (sourceRow >= sourceRowCount)
+			{
+				sourceRow -= sourceRowCount;
+				continue;
+			}
+
+			auto entryIt = mapping->entries_.find(column);
+			if (entryIt == mapping->entries_.end())
+			{
+				return pair;
+			}
+			auto sourceColumn = entryIt.value();
+
+			pair.first = mapping;
+			pair.second = mapping->model_->index(sourceRow, sourceColumn);
+			return pair;
+		}
+	}
+
+	return pair;
+}
+
+QMimeData* WGMergeProxy::mimeData(const QModelIndexList &indexes) const
+{
+	QMimeData* data = new QMimeData();
+
+	for(const auto& index : indexes)
+	{
+		auto pair = mappingFromIndex(index);
+		if(pair.first)
+		{
+			QMimeData* mimeData = pair.first->model_->mimeData({index});
+			for (auto& format : mimeData->formats())
+			{
+				data->setData(format, mimeData->data(format));
+			}
+		}
+	}
+
+	return data;
+}
+
+bool WGMergeProxy::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)
+{
+	auto pair = mappingFromIndex(row, column);
+	if(pair.first)
+	{
+		return pair.first->model_->dropMimeData(data, action, pair.second.row(), pair.second.column(), parent);
+	}
+	return false;
+}
+
+QStringList WGMergeProxy::mimeTypes() const
+{
+	QStringList types;
+	for(const auto& mapping : mappings_)
+	{
+		types.append(mapping->model_->mimeTypes());
+	}
+	return types;
 }
 }

@@ -25,6 +25,7 @@ public:
 	virtual int columnCount() const override;
 
 	virtual std::vector<std::string> roles() const override;
+	void iterateRoles(const std::function<void(const char*)>& iterFunc) const override;
 
 private:
 	struct Impl;

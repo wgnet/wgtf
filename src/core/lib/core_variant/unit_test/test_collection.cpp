@@ -1,8 +1,8 @@
 #include "pch.hpp"
 
 #include "core_variant/collection.hpp"
-#include <vector>
 #include <map>
+#include <vector>
 
 #define EXTRA_ARGS_DECLARE TestResult &result_, const char *m_name
 #define EXTRA_ARGS result_, m_name

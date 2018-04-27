@@ -2,6 +2,7 @@
 #define PROPERTY_ACCESSOR_LISTENER_HPP
 
 #include "core_variant/collection.hpp"
+#include "reflection_dll.hpp"
 
 namespace wgt
 {
@@ -9,7 +10,7 @@ class Variant;
 class PropertyAccessor;
 class ReflectedMethodParameters;
 
-class PropertyAccessorListener
+class REFLECTION_DLL PropertyAccessorListener
 {
 public:
 	virtual void preSetValue(const PropertyAccessor& accessor, const Variant& value)

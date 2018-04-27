@@ -9,6 +9,6 @@ namespace wgt
 {
 BEGIN_EXPOSE(InsertDefaultCommandArgument, MetaNoSerialization())
 EXPOSE("model", pModel_, MetaNone())
-EXPOSE("key", key_, MetaNone())
+EXPOSE("defaultKey", key_, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

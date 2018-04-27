@@ -3,7 +3,7 @@
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/property_accessor_listener.hpp"
 #include "core_reflection/definition_manager.hpp"
-
+#include "core_reflection/interfaces/i_class_definition_details.hpp"
 #include "core_data_model/i_item_role.hpp"
 
 namespace wgt
@@ -20,8 +20,7 @@ public:
 	void postSetValue(const PropertyAccessor& accessor, const Variant& value) override;
 
 private:
-	const IItem* find(const PropertyAccessor& accessor);
-	size_t findIndex(const Variant obj);
+	size_t findIndex(const PropertyAccessor& accessor);
 
 	const ReflectedList& list_;
 };
@@ -29,6 +28,7 @@ private:
 ReflectedList::ReflectedList(IDefinitionManager* defManager)
     : listener_(new ReflectedListListener(*this)), defManager_(defManager)
 {
+	setSource(Collection(data_));
 	defManager_->registerPropertyAccessorListener(listener_);
 }
 
@@ -37,32 +37,32 @@ ReflectedList::~ReflectedList()
 	defManager_->deregisterPropertyAccessorListener(listener_);
 }
 
-const IItem* ReflectedListListener::find(const PropertyAccessor& accessor)
+size_t ReflectedListListener::findIndex(const PropertyAccessor& accessor)
 {
 	const Variant obj = accessor.getRootObject();
-	auto it = std::find_if(list_.cbegin(), list_.cend(), [&](const Variant& item) { return obj == item; });
-	return (it != list_.cend()) ? list_.item(it - list_.cbegin()) : nullptr;
-}
+	const Collection& collection = list_.getSource();
+	const auto data = collection.container<std::vector<Variant>>();
 
-size_t ReflectedListListener::findIndex(const Variant obj)
-{
-	auto it = std::find_if(list_.cbegin(), list_.cend(), [&](const Variant& item) { return obj == item; });
-	return (it != list_.cend()) ? it - list_.cbegin() : -1;
+	auto callback = [&](const Variant& item) { return obj == item; };
+
+	auto it = std::find_if(data->cbegin(), data->cend(), callback);
+	return (it != data->cend()) ? it - data->cbegin() : -1;
 }
 
 void ReflectedListListener::preSetValue(const PropertyAccessor& accessor, const Variant& value)
 {
-	if (auto item = find(accessor))
+	if (auto row = findIndex(accessor))
 	{
-		list_.signalPreItemDataChanged(item, 0, DefinitionRole::roleId_, value);
+		// int row, int column, ItemRole::Id role, const Variant& newValue
+		list_.preItemDataChanged_(int(row), 0, DefinitionRole::roleId_, value);
 	}
 }
 
 void ReflectedListListener::postSetValue(const PropertyAccessor& accessor, const Variant& value)
 {
-	if (auto item = find(accessor))
+	if (auto row = findIndex(accessor))
 	{
-		list_.signalPostItemDataChanged(item, 0, DefinitionRole::roleId_, value);
+		list_.postItemDataChanged_(int(row), 0, DefinitionRole::roleId_, value);
 	}
 }
 } // end namespace wgt

@@ -11,7 +11,7 @@ import WGControls.Layouts 2.0
  preset values.
 */
 
-WGExpandingRowLayout {
+FocusScope {
     id: mainLayout
     objectName: "WGVectorN"
 
@@ -30,7 +30,6 @@ WGExpandingRowLayout {
     property bool multipleValues: false
     property bool readOnly: false
 
-
     //binding changes in value back to data
     signal elementChanged (var value_, int index)
 
@@ -41,7 +40,7 @@ WGExpandingRowLayout {
     Text {
         id: textWidthHelper
         visible: false
-        text: "9999.999"
+        text: "999.999"
     }
 
     Text {
@@ -50,54 +49,68 @@ WGExpandingRowLayout {
         text: vectorLabels.toString()
     }
 
-    spacing: 0
-    implicitHeight: defaultSpacing.minimumRowHeight ? defaultSpacing.minimumRowHeight : 22
-    implicitWidth: (textWidthHelper.contentWidth + defaultSpacing.doubleMargin) * vectorData.length + labelWidthHelper.contentWidth
+    implicitHeight: mainLayout.width <= mainLayout.rowLayoutImplicitWidth ? defaultSpacing.minimumRowHeight * vectorData.length : defaultSpacing.minimumRowHeight
 
-    Repeater {
-        id: spinBoxRepeater
-        model: vectorData.length
-        delegate: Item {
-            id: layoutN
-            Layout.preferredHeight: parent.height
-            Layout.fillWidth: true
-            Layout.minimumWidth: numboxN.implicitWidth + labelN.width
+    property int rowLayoutImplicitWidth: (textWidthHelper.contentWidth + defaultSpacing.doubleMargin) * vectorData.length + labelWidthHelper.contentWidth
 
-            property var value_: vectorData[index]
+    implicitWidth: textWidthHelper.contentWidth + defaultSpacing.doubleMargin + labelWidthHelper.contentWidth
 
-            WGLabel{
-                id: labelN
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: contentWidth + defaultSpacing.doubleMargin
-                height: parent.height
-                text: vectorLabels[index]
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
+    GridLayout {
+        id: grid
+        anchors.fill: parent
+        columnSpacing: 0
+        rowSpacing: 0
+        flow: mainLayout.width > mainLayout.rowLayoutImplicitWidth ? GridLayout.LeftToRight : GridLayout.TopToBottom
+        columns: vectorData.length
+        rows: vectorData.length
+        Repeater {
+            id: spinBoxRepeater
+            model: vectorData.length
+            delegate: Item {
+                id: layoutN
+                Layout.preferredHeight: defaultSpacing.minimumRowHeight
+                Layout.fillWidth: true
+                Layout.preferredWidth: numboxN.implicitWidth + labelN.width
+                Layout.minimumWidth: textWidthHelper.contentWidth + labelN.width
 
-            WGNumberBox {
-                id: numboxN
-                objectName: mainLayout.objectName + "_numbox_" + index
-                anchors.left: labelN.right
-                anchors.right: parent.right
-                height: parent.height
+                property var value_: vectorData[index]
 
-                multipleValues: mainLayout.multipleValues
-                readOnly: mainLayout.readOnly
-
-                number: layoutN.value_
-
-                onNumberChanged: {
-                    mainLayout.elementChanged(number, index)
+                WGLabel{
+                    id: labelN
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: contentWidth + defaultSpacing.doubleMargin
+                    height: parent.height
+                    text: vectorLabels[index]
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
 
-                maximumValue: mainLayout.maximumValues[index]
-                minimumValue: mainLayout.minimumValues[index]
-                stepSize: mainLayout.stepSizes[index]
-                decimals: mainLayout.decimals[index]
-                defaultValue: mainLayout.defaultValues[index]
-            }
-        } //end delegate
-    }//end repeater
+                WGNumberBox {
+                    id: numboxN
+                    objectName: mainLayout.objectName + "_numbox_" + index
+                    anchors.left: labelN.right
+                    anchors.right: parent.right
+                    height: parent.height
+
+                    multipleValues: mainLayout.multipleValues
+                    readOnly: mainLayout.readOnly
+
+                    value: layoutN.value_
+
+                    focus: true
+
+                    onEditingFinished: {
+                        mainLayout.elementChanged(value, index)
+                    }
+
+                    maximumValue: mainLayout.maximumValues[index]
+                    minimumValue: mainLayout.minimumValues[index]
+                    stepSize: mainLayout.stepSizes[index]
+                    decimals: mainLayout.decimals[index]
+                    defaultValue: mainLayout.defaultValues[index]
+                }
+            } //end delegate
+        }
+    }
 }

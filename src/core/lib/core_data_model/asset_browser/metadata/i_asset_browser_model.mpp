@@ -18,7 +18,6 @@ EXPOSE_METHOD("findAssetWithPath", findAssetWithPath)
 // Functionality added to support custom content filters. This feature can be removed when more robust
 // filtering options (regex, and/or, tokenized string input, chained filters) are added.
 EXPOSE("customContentFilters", getCustomContentFilters, MetaDisplayName(L"CustomContentFilters"))
-EXPOSE("customContentFilterIndexNotifier", customContentFilterIndexNotifier, MetaNone())
 EXPOSE("currentCustomContentFilter", currentCustomContentFilter, currentCustomContentFilter, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

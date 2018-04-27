@@ -7,7 +7,7 @@
 
 namespace wgt
 {
-PanelManager::PanelManager(IComponentContext& contextManager) : contextManager_(contextManager), Depends(contextManager)
+PanelManager::PanelManager(IComponentContext& contextManager) : contextManager_(contextManager)
 {
 }
 
@@ -15,17 +15,21 @@ PanelManager::~PanelManager()
 {
 	for (auto type : types_)
 	{
-		contextManager_.deregisterInterface(type);
+		contextManager_.deregisterInterface(type.get());
 	}
 }
 
 wg_future<std::unique_ptr<IView>> PanelManager::createAssetBrowser(
-ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel)
+	const std::string& title,
+	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel)
 {
 	auto viewCreator = get<IViewCreator>();
 	if (viewCreator)
 	{
-		return viewCreator->createView("plg_panel_manager/asset_browser_panel20.qml", dataModel);
+		return viewCreator->createView("plg_panel_manager/asset_browser_panel20.qml", dataModel, [title](IView& view) 
+		{
+			view.title(title.c_str());
+		});
 	}
 	return std::future<std::unique_ptr<IView>>();
 }

@@ -4,7 +4,7 @@ PROJECT( plg_alert_ui )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 find_package( Qt5Quick REQUIRED )
 
 BW_QT_ADD_QRC(plg_alert_ui resources/plg_alert_ui)
@@ -20,7 +20,7 @@ SET( ALL_SRCS
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 
@@ -32,6 +32,7 @@ BW_ADD_TOOL_PLUGIN( plg_alert_ui SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_alert_ui PRIVATE
 	core_generic_plugin
+	core_object
 	core_data_model
 	core_reflection
 	core_logging_system

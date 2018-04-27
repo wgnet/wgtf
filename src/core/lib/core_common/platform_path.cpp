@@ -1,4 +1,6 @@
 #include "platform_path.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_string_utils/string_utils.hpp"
 #include "core_string_utils/file_path.hpp"
 #include "core_common/platform_env.hpp"
@@ -27,14 +29,17 @@ void AddDllExtension(wchar_t* file)
 #endif
 }
 
+#define ARRAY_COUNT(array) (sizeof(array) / sizeof(array[0]))
 bool GetUserDirectoryPath(char (&path)[MAX_PATH])
 {
-	memset(path, '\0', MAX_PATH);
+	memset(path, '\0', ARRAY_COUNT(path));
 #ifdef _WIN32
 	PWSTR userDirectory = nullptr;
 	if (!FAILED(SHGetKnownFolderPath(FOLDERID_Documents, 0, 0, &userDirectory)))
 	{
-		strcpy(path, StringUtils::to_string(userDirectory).c_str());
+		strncpy(path, StringUtils::to_string(userDirectory).c_str(), ARRAY_COUNT(path));
+		path[ARRAY_COUNT(path) - 1] = '\0';
+		CoTaskMemFree(userDirectory);
 		return true;
 	}
 #elif __APPLE__
@@ -45,6 +50,42 @@ bool GetUserDirectoryPath(char (&path)[MAX_PATH])
 #endif
 	return false;
 }
+
+bool GetWGAppDataPath(std::string& path)
+{
+	char appDataPath[MAX_PATH] = {};
+	if (GetUserAppDataPath(appDataPath))
+	{
+		path = appDataPath;
+		path += FilePath::kNativeDirectorySeparator;
+		path.append("Wargaming.net");
+		path += FilePath::kNativeDirectorySeparator;
+		path.append("TF");
+		path += FilePath::kNativeDirectorySeparator;
+		return true;
+	}
+	return false;
+}
+
+bool GetUserAppDataPath(char (&path)[MAX_PATH])
+{
+	memset(path, '\0', ARRAY_COUNT(path));
+#ifdef _WIN32
+	PWSTR appDirectory = nullptr;
+	if (!FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, 0, &appDirectory)))
+	{
+		strncpy(path, StringUtils::to_string(appDirectory).c_str(), ARRAY_COUNT(path));
+		path[ARRAY_COUNT(path) - 1] = '\0';
+		CoTaskMemFree(appDirectory);
+		return true;
+	}
+
+#elif __APPLE__
+	// TODO: Implement
+#endif
+	return false;
+}
+
 
 bool CreateDirectoryPath(const char* path)
 {
@@ -66,13 +107,13 @@ bool CreateDirectoryPath(const char* path)
 
 bool PathIsRelative(const char* path)
 {
-	assert(path);
+	TF_ASSERT(path);
 	return *path != '/';
 }
 
 bool PathIsRelative(const wchar_t* path)
 {
-	assert(path);
+	TF_ASSERT(path);
 	return *path != L'/';
 }
 

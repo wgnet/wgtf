@@ -1,5 +1,5 @@
 #include "reflected_collection_item.hpp"
-
+#include "wg_types/hash_utilities.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 
@@ -7,13 +7,12 @@
 
 namespace wgt
 {
-ReflectedIteratorProperty::ReflectedIteratorProperty(std::string&& name_, const TypeId& type_,
-                                                     IDefinitionManager& defMng)
-    : name(std::move(name_)), nameHash(HashUtilities::compute(name)), type(std::move(type_)), definitionManager(defMng)
+ReflectedIteratorProperty::ReflectedIteratorProperty(std::string&& name_, const TypeId& type_)
+    : name(std::move(name_)), nameHash(HashUtilities::compute(name)), type(std::move(type_))
 {
 }
 
-bool ReflectedIteratorProperty::readOnly() const
+bool ReflectedIteratorProperty::readOnly(const ObjectHandle&) const
 {
 	return true;
 }
@@ -59,12 +58,18 @@ uint64_t ReflectedIteratorProperty::getNameHash() const
 	return nameHash;
 }
 
-MetaHandle ReflectedIteratorProperty::getMetaData() const
+const MetaData & ReflectedIteratorProperty::getMetaData() const
 {
-	return MetaHandle(nullptr);
+	static MetaData s_Data;
+	return s_Data;
 }
 
 bool ReflectedIteratorProperty::isMethod() const
+{
+	return false;
+}
+
+bool ReflectedIteratorProperty::isCollection() const
 {
 	return false;
 }
@@ -83,11 +88,11 @@ size_t ReflectedIteratorProperty::parameterCount() const
 std::string BuildIteratorPropertyName(const Collection::Iterator& iterator)
 {
 	std::stringstream ss;
-	ss << "[";
+	ss << Collection::getIndexOpen();
 	std::string keyName;
 	iterator.key().tryCast(keyName);
 	ss << keyName;
-	ss << "]";
+	ss << Collection::getIndexClose();
 
 	return ss.str();
 }

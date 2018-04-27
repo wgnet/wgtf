@@ -14,6 +14,7 @@
 #include "core_serialization/i_datastream.hpp"
 #include "core_string_utils/file_path.hpp"
 #include "core_serialization/i_file_info.hpp"
+#include "core_common/signal.hpp"
 
 #include <functional>
 #include <memory>
@@ -26,6 +27,9 @@ public:
 	typedef std::function<bool(IFileInfoPtr&&)> EnumerateCallback;
 	typedef std::unique_ptr<IDataStream> IStreamPtr;
 
+	typedef void PathChangedSignature(const char* path, const IFileInfoPtr);
+	typedef std::function<PathChangedSignature> PathChangedCallback;
+
 	enum FileType
 	{
 		NotFound,
@@ -37,6 +41,7 @@ public:
 	virtual ~IFileSystem()
 	{
 	}
+
 	virtual bool copy(const char* path, const char* new_path) = 0;
 	virtual bool remove(const char* path) = 0;
 	virtual bool exists(const char* path) const = 0;
@@ -46,6 +51,11 @@ public:
 	virtual bool move(const char* path, const char* new_path) = 0;
 	virtual IStreamPtr readFile(const char* path, std::ios::openmode mode) const = 0;
 	virtual bool writeFile(const char* path, const void* data, size_t len, std::ios::openmode mode) = 0;
+	virtual bool createDirectory(const char* path) = 0;
+	virtual bool removeDirectory(const char* path) = 0;
+	virtual bool makeWritable(const char* path) = 0;
+	virtual void invalidateFileInfo(const char* path) = 0;
+	virtual Connection listenForChanges(PathChangedCallback& callback) = 0;
 };
 } // end namespace wgt
 #endif // I_FILE_SYSTEM_HPP_

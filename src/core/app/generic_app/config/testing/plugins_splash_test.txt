@@ -3,6 +3,7 @@ plugins/plg_reflection
 plugins/plg_object
 plugins/plg_file_system
 plugins/plg_serialization
+plugins/plg_environment_system
 plugins/plg_command_system
 plugins/plg_qt_common
 plugins/plg_splash_test

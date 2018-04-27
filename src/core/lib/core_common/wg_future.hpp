@@ -1,7 +1,6 @@
 #ifndef WG_FUTURE_HPP_INCLUDED
 #define WG_FUTURE_HPP_INCLUDED
 
-#define ENABLE_WG_FUTURE_WORKAROUND (_MSC_VER == 1700) // VS2012
 #include <mutex>
 #include <chrono>
 #include <future>
@@ -13,11 +12,7 @@ namespace wgt
  * Regular futures do not pump the Qt UI thread queue and will cause the*
  * application to deadlock if called directly.                          *
  ************************************************************************/
-#if !ENABLE_WG_FUTURE_WORKAROUND
 typedef std::future_status wg_future_status;
-#else
-typedef std::future_status::future_status wg_future_status;
-#endif // !ENABLE_WG_FUTURE_WORKAROUND
 
 template <typename T>
 class wg_shared_future;
@@ -77,31 +72,22 @@ public:
 		do
 		{
 			status = wait_for(std::chrono::microseconds(1));
-			callback_();
+			if(status != std::future_status::ready)
+			{
+				callback_();
+			}
 		} while (status != std::future_status::ready);
 	}
 
 	template <class _Rep, class _Per>
 	wg_future_status wait_for(const std::chrono::duration<_Rep, _Per>& _Rel_time) const
 	{
-#if ENABLE_WG_FUTURE_WORKAROUND
-		if (future_._Is_ready())
-		{
-			return std::future_status::ready;
-		}
-#endif // ENABLE_WG_FUTURE_WORKAROUND
 		return future_.wait_for(_Rel_time);
 	}
 
 	template <class _Clock, class _Dur>
 	wg_future_status wait_until(const std::chrono::time_point<_Clock, _Dur>& _Abs_time) const
 	{
-#if ENABLE_WG_FUTURE_WORKAROUND
-		if (future_._Is_ready())
-		{
-			return std::future_status::ready;
-		}
-#endif // ENABLE_WG_FUTURE_WORKAROUND
 		return future_.wait_until(_Abs_time);
 	}
 
@@ -111,6 +97,8 @@ public:
 	}
 
 private:
+	friend class wg_shared_future<T>;
+
 	// forbid copying
 	wg_future(const wg_future&);
 	wg_future& operator=(const wg_future&);
@@ -202,31 +190,22 @@ public:
 		do
 		{
 			status = wait_for(std::chrono::microseconds(1));
-			callback_();
+			if (status != std::future_status::ready)
+			{
+				callback_();
+			}
 		} while (status != std::future_status::ready);
 	}
 
 	template <class _Rep, class _Per>
 	wg_future_status wait_for(const std::chrono::duration<_Rep, _Per>& _Rel_time) const
 	{
-#if ENABLE_WG_FUTURE_WORKAROUND
-		if (shared_future_._Is_ready())
-		{
-			return std::future_status::ready;
-		}
-#endif // ENABLE_WG_FUTURE_WORKAROUND
 		return shared_future_.wait_for(_Rel_time);
 	}
 
 	template <class _Clock, class _Dur>
 	wg_future_status wait_until(const std::chrono::time_point<_Clock, _Dur>& _Abs_time) const
 	{
-#if ENABLE_WG_FUTURE_WORKAROUND
-		if (shared_future_._Is_ready())
-		{
-			return std::future_status::ready;
-		}
-#endif // ENABLE_WG_FUTURE_WORKAROUND
 		return shared_future_.wait_until(_Abs_time);
 	}
 

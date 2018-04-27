@@ -1,6 +1,5 @@
 #include "active_filters_test_view_model.hpp"
 #include "metadata/active_filters_test_view_model.mpp"
-#include "core_data_model/simple_active_filters_model.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "testing/data_model_test/test_tree_model.hpp"
@@ -16,19 +15,16 @@ struct ActiveFiltersTestViewModel::Implementation
 	void init(IDefinitionManager& defManager, IUIFramework& uiFramework);
 
 	ActiveFiltersTestViewModel& self_;
-	std::unique_ptr<IActiveFiltersModel> simpleActiveFiltersModel_;
 	std::unique_ptr<AbstractTreeModel> sampleDataToFilter_;
 };
 
 ActiveFiltersTestViewModel::Implementation::Implementation(ActiveFiltersTestViewModel& self)
-    : self_(self), simpleActiveFiltersModel_(nullptr), sampleDataToFilter_(new TestTreeModel())
+    : self_(self), sampleDataToFilter_(new TestTreeModel())
 {
 }
 
 void ActiveFiltersTestViewModel::Implementation::init(IDefinitionManager& defManager, IUIFramework& uiFramework)
 {
-	auto def = defManager.getDefinition<IActiveFiltersModel>();
-	simpleActiveFiltersModel_.reset(new SimpleActiveFiltersModel("testActiveFilter", defManager, uiFramework));
 }
 
 //------------------------------------------------------------------------------
@@ -52,11 +48,6 @@ ActiveFiltersTestViewModel::~ActiveFiltersTestViewModel()
 void ActiveFiltersTestViewModel::init(IDefinitionManager& defManager, IUIFramework& uiFramework)
 {
 	impl_->init(defManager, uiFramework);
-}
-
-IActiveFiltersModel* ActiveFiltersTestViewModel::getSimpleActiveFiltersModel() const
-{
-	return impl_->simpleActiveFiltersModel_.get();
 }
 
 AbstractTreeModel* ActiveFiltersTestViewModel::getSampleDataToFilter() const

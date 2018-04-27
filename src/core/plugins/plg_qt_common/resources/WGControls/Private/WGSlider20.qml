@@ -103,12 +103,57 @@ Control {
     property bool tickmarksEnabled: false
 
     /*!
+        The interval (in value) between equal tickmarks, best set to a whole fraction of the max value.
+
+        The default value is stepSize.
+    */
+    property real tickmarkInterval: stepSize
+
+    /*!
+        An array of values that can be used to show tickmarks at custom intervals. These can be used in
+        addition to the default tickmarks.
+
+        The values in the array should be within the slider max and minimum values.
+
+        The default value is an empty array (no custom tickmarks)
+    */
+    property var customTickmarks: []
+
+    /*!
+        An array of values used for the labels for the customTickmarks
+
+        The default value is the customTickmarks array itself.
+    */
+    property var customTickmarkLabels: customTickmarks
+
+    /*!
+        This property indicates whether the slider should display values
+        underneath the tickmarks.
+
+        The default value is \c false.
+    */
+    property bool showTickmarkLabels: false
+
+    /*!
+        An array of values that the slider handle will 'stick' to when dragged.
+
+        The default value is empty.
+    */
+    property var stickyValues: []
+
+    /*!
+        The amount of space in pixels on either side of the values where the mouse will be 'sticky'
+
+        The default value is the standard margin width plus the standard border size (6 pixels on each side).
+    */
+    property int stickyMargin: defaultSpacing.standardMargin + defaultSpacing.standardBorderSize
+
+    /*!
         This property holds the minimum value of the slider.
         The default value is \c{0.0}.
 
         This is not always the same as the minimumValue of the slider handle.
     */
-
     property real minimumValue: 0
     /*!
         This property holds the maximum value of the slider.
@@ -116,7 +161,6 @@ Control {
 
         This is not always the same as the maximumValue of the slider handle.
     */
-
     property real maximumValue: 100
 
     /*!
@@ -208,7 +252,7 @@ Control {
         The default value is WGColorSliderHandle.
         It can be set to any Item based component.
     */
-    property Component handleType: WGSliderHandle{}
+    property Component handleType: showTickmarkLabels ? tickmarkValueHandle : defaultSliderHandle
 
     /*!
         The cursorShape within the slider area.
@@ -249,6 +293,8 @@ Control {
         This property holds the number of handle objects.
     */
     property int __handleCount: 0
+
+    property bool sliderHovered: mouseArea.containsMouse || hoveredHandle > -1
 
     activeFocusOnTab: true
 
@@ -319,7 +365,7 @@ Control {
     /*!
         This signal is fired when the bar is double clicked
     */
-    signal sliderDoubleClicked(int index)
+    signal sliderDoubleClicked(int index, int mouseModifiers)
 
     /*!
         This signal is fired when a handle (index) is pressed with the mouse button (mouseButton) and mouse modifiers (mouseModifiers)
@@ -524,7 +570,7 @@ Control {
     }
 
     onChangeValue: {
-        if (__handleCount == 1)
+        if (__handleCount == 1 && slider.value != val)
         {
             setValueHelper(slider, "value", val);
         }
@@ -582,6 +628,10 @@ Control {
             return Math.max(__handlePosList[__activeHandle].range.positionAtMinimum, Math.min(__handlePosList[__activeHandle].range.positionAtMaximum, val))
         }
 
+        onEntered: {
+            hoveredHandle = -1
+        }
+
         function updateHandlePosition(mouse, force) {
 
             if (__draggable)
@@ -594,7 +644,28 @@ Control {
                 }
 
                 pos = clamp (mouse.x)
-                __handlePosList[__activeHandle].range.position = pos
+                if (stickyValues.length > 0)
+                {
+                    var sVal = (((pos - (__handleWidth / 2)) / __clampedLength) * (maximumValue - minimumValue) + minimumValue)
+                    var sRange = (maximumValue - minimumValue) * (stickyMargin / __clampedLength)
+                    var updatePosition = true
+                    for (var i=0; i < stickyValues.length; i++)
+                    {
+                        if (sVal >= stickyValues[i] - sRange && sVal <= stickyValues[i] + sRange)
+                        {
+                            setValueHelper(slider.__handlePosList[__activeHandle], "value", stickyValues[i]);
+                            // leaving here if you want to calculate by position instead of value
+                            //pos = ((stickyValues[i] - minimumValue) / (maximumValue - minimumValue) * __clampedLength) + (__handleWidth / 2)
+                            updatePosition = false
+                            break;
+                        }
+                    }
+                    if (updatePosition) { __handlePosList[__activeHandle].range.position = pos }
+                }
+                else
+                {
+                    __handlePosList[__activeHandle].range.position = pos
+                }
             }
         }
 
@@ -657,7 +728,10 @@ Control {
         onDoubleClicked: {
             if (hoveredHandle >= 0)
             {
-                sliderDoubleClicked(__activeHandle)
+                abortUndoFrame();
+                __draggable = grooveClickable
+                hoveredHandle = -1
+                sliderDoubleClicked(__activeHandle, mouse.modifiers)
             }
         }
 
@@ -712,6 +786,16 @@ Control {
         {
             slider.__activeHandle--
         }
+    }
+
+    Component {
+        id: defaultSliderHandle
+        WGSliderHandle {}
+    }
+
+    Component {
+        id: tickmarkValueHandle
+        WGTickmarkSliderHandle {}
     }
 
     /* Deprecated */

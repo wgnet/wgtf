@@ -3,7 +3,7 @@ PROJECT( plg_controls_test )
 
 INCLUDE( WGToolsCoreProject )
 
-FIND_PACKAGE( QT5 )
+FIND_PACKAGE( QT5 ${QT_FIND_PACKAGE_VERSION} )
 
 
 SET( ALL_SRCS
@@ -13,8 +13,14 @@ SET( ALL_SRCS
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+SET(METADATA
+	metadata/controls_test_panel.mpp
+)
+SOURCE_GROUP("metadata" FILES ${METADATA})
+
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
+	${METADATA}
 )
 
 BW_QT_ADD_QRC( WGControlsTest resources/plg_controls_test )

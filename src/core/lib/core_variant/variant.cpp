@@ -1,4 +1,6 @@
 #include "variant.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_string_utils/string_utils.hpp"
 #include "core_serialization/text_stream.hpp"
 #include "core_serialization/fixed_memory_stream.hpp"
@@ -10,7 +12,6 @@
 #include <cmath>
 #include <cctype>
 #include <cstdio>
-#include <cassert>
 
 namespace wgt
 {
@@ -78,11 +79,41 @@ Variant::COWData* Variant::COWData::allocate(size_t payloadSize)
 	return new (data) COWData();
 }
 
+//------------------------------------------------------------------------------
+Variant::COWData::COWData() : refs_(0)
+{
+}
+
+//------------------------------------------------------------------------------
+bool Variant::COWData::isExclusive() const
+{
+	return refs_ == 1;
+}
+
+//------------------------------------------------------------------------------
+void* Variant::COWData::payload()
+{
+	return this + 1;
+}
+
+//------------------------------------------------------------------------------
+const void* Variant::COWData::payload() const
+{
+	return this + 1;
+}
+
+//------------------------------------------------------------------------------
+void Variant::COWData::incRef()
+{
+	refs_.fetch_add(1);
+}
+
+//------------------------------------------------------------------------------
 void Variant::COWData::decRef(const MetaType* type)
 {
-	if (refs_.fetch_sub(1) == 0)
+	if (refs_.fetch_sub(1) == 1)
 	{
-		assert(type);
+		TF_ASSERT(type);
 		type->destroy(payload());
 		this->~COWData();
 		delete[] reinterpret_cast<char*>(this);
@@ -108,7 +139,7 @@ Variant::Variant(Variant&& value)
 
 Variant::Variant(const MetaType* type)
 {
-	assert(type);
+	TF_ASSERT(type);
 
 	auto qualifiedType = type->qualified(0);
 	void* p;
@@ -122,6 +153,7 @@ Variant::Variant(const MetaType* type)
 		setTypeInternal(qualifiedType, COW);
 		data_.cow_ = COWData::allocate(type->size());
 		p = data_.cow()->payload();
+		data_.cow()->incRef();
 	}
 
 	type->init(p);
@@ -183,7 +215,7 @@ Variant& Variant::operator=(const Variant& value)
 			break;
 
 		default:
-			assert(false);
+			TF_ASSERT(false);
 			break;
 		}
 	}
@@ -231,7 +263,7 @@ Variant& Variant::operator=(Variant&& value)
 			break;
 
 		default:
-			assert(false);
+			TF_ASSERT(false);
 			break;
 		}
 	}
@@ -243,6 +275,46 @@ Variant& Variant::operator=(Variant&& value)
 	}
 
 	return *this;
+}
+
+bool Variant::operator<(const Variant& that) const
+{
+	if (this == &that)
+	{
+		return false;
+	}
+
+	auto thisType = type();
+	auto thatType = that.type();
+
+	if (thisType == thatType)
+	{
+		auto lp = value<const void*>();
+		auto rp = that.value<const void*>();
+
+		return lp != rp && thisType->lessThan(lp, rp);
+	}
+
+	bool succeeded = false;
+	Variant tmp = that.convert(thisType, &succeeded);
+	if (!succeeded)
+	{
+		tmp = this->convert(thatType, &succeeded);
+		if (!succeeded)
+		{
+			return thisType < thatType;
+		}
+
+		auto lp = tmp.value<const void*>();
+		auto rp = that.value<const void*>();
+
+		return thatType->lessThan(lp, rp);
+	}
+
+	auto lp = value<const void*>();
+	auto rp = tmp.value<const void*>();
+
+	return thisType->lessThan(lp, rp);
 }
 
 bool Variant::operator==(const Variant& that) const
@@ -274,6 +346,15 @@ bool Variant::operator==(const Variant& that) const
 	auto rp = tmp.value<const void*>();
 
 	return thisType->equal(lp, rp);
+}
+
+uint64_t Variant::getHashCode() const
+{
+	if (type() == nullptr)
+	{
+		return 0;
+	}
+	return type()->hashCode( value<const void*>() );
 }
 
 bool Variant::setType(const MetaType* type)
@@ -313,7 +394,7 @@ bool Variant::isPointer() const
 		return false;
 
 	default:
-		assert(false);
+		TF_ASSERT(false);
 		return false;
 	};
 }
@@ -333,7 +414,7 @@ bool Variant::isNullPointer() const
 		return false;
 
 	default:
-		assert(false);
+		TF_ASSERT(false);
 		return false;
 	};
 }
@@ -354,7 +435,7 @@ so it should be used with care.
 void Variant::init(const Variant& value)
 {
 	type_ = value.type_;
-	assert(type_);
+	TF_ASSERT(type_);
 
 	switch (storageKind())
 	{
@@ -384,7 +465,7 @@ void Variant::init(const Variant& value)
 void Variant::init(Variant&& value)
 {
 	type_ = value.type_;
-	assert(type_);
+	TF_ASSERT(type_);
 
 	switch (storageKind())
 	{
@@ -405,8 +486,12 @@ void Variant::init(Variant&& value)
 		break;
 
 	case COW:
+		// Since we are moving the data, there is no need to
+		// change the ref counts, just transfer ownership across
 		data_.cow_ = value.data_.cow_;
-		data_.cow_->incRef();
+		// Clear out the moved value, so successive moves don't work
+		value.initVoid();
+		value.data_.cow_ = nullptr;
 		break;
 	}
 }
@@ -437,6 +522,7 @@ bool Variant::convertInit(const MetaType* type, const Variant& that)
 		setTypeInternal(qualifiedType, COW);
 		data_.cow_ = COWData::allocate(type->size());
 		p = data_.cow()->payload();
+		data_.cow()->incRef();
 	}
 
 	type->init(p);
@@ -486,7 +572,7 @@ should be copied to a new one. Otherwise new value is left default-initialized.
 */
 void Variant::detach(bool copy)
 {
-	assert(storageKind() == COW);
+	TF_ASSERT(storageKind() == COW);
 	if (data_.cow_->isExclusive())
 	{
 		return;
@@ -587,10 +673,10 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			{
 				stream.unget();
 				auto stringType = MetaType::get<std::string>();
-				assert(stringType);
+				TF_ASSERT(stringType);
 				Variant tmp(stringType);
 				auto ptr = tmp.value<void*>();
-				assert(ptr);
+				TF_ASSERT(ptr);
 				stringType->streamIn(stream, ptr);
 				if (!stream.fail())
 				{
@@ -606,10 +692,10 @@ TextStream& operator>>(TextStream& stream, Variant& value)
 			{
 				stream.unget();
 				auto voidType = MetaType::get<void>();
-				assert(voidType);
+				TF_ASSERT(voidType);
 				Variant tmp(voidType);
 				auto ptr = tmp.value<void*>();
-				assert(ptr);
+				TF_ASSERT(ptr);
 				voidType->streamIn(stream, ptr);
 				if (!stream.fail())
 				{

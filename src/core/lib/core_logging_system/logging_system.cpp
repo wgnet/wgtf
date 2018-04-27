@@ -1,23 +1,24 @@
 #include "logging_system.hpp"
+
 #include "log_message.hpp"
 #include "interfaces/i_logger.hpp"
 #include "interfaces/i_logging_model.hpp"
 #include "interfaces/metadata/i_logging_model.mpp"
 #include "alerts/alert_manager.hpp"
 #include "alerts/basic_alert_logger.hpp"
+#include "core_common/assert.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include <cstdarg>
 #include <cstdio>
-#include <assert.h>
 
 namespace wgt
 {
-LoggingSystem::LoggingSystem(DIRef<IDefinitionManager> definitionManager)
+LoggingSystem::LoggingSystem()
     : alertManager_(new AlertManager()), basicAlertLogger_(nullptr), hasAlertManagement_(false), running_(true)
 {
 	processor_ = new std::thread(&LoggingSystem::process, this);
-	definitionManager.get()->registerDefinition<TypeClassDefinition<ILoggingModel>>();
+	get<IDefinitionManager>()->registerDefinition<TypeClassDefinition<ILoggingModel>>();
 }
 
 LoggingSystem::~LoggingSystem()
@@ -53,15 +54,13 @@ void LoggingSystem::disableAlertManagement()
 }
 
 void LoggingSystem::shutdown()
-{
+{	
 	if (processor_ != nullptr)
 	{
 		while (!messages_.empty())
 		{
-			// Spin and wait until all messages have been handled by
-			// the processor.
-			// TODO - possibly add a sleep() here, but find a way to do
-			// this in a multi-platform way
+			using namespace std::chrono_literals;
+			std::this_thread::sleep_for(1ms);
 		}
 
 		{
@@ -111,13 +110,13 @@ void LoggingSystem::log(LogLevel level, const char* format, ...)
 {
 	va_list arguments;
 	va_start(arguments, format);
-	LogMessage* message = new LogMessage(level, format, arguments);
+	ILogMessage* message = new LogMessage(level, format, arguments);
 	va_end(arguments);
 
 	log(message);
 }
 
-void LoggingSystem::log(LogMessage* message)
+void LoggingSystem::log(ILogMessage* message)
 {
 	{
 		tMessageLock guard(messageMutex_);
@@ -126,8 +125,22 @@ void LoggingSystem::log(LogMessage* message)
 	processorCV_.notify_one();
 }
 
+void LoggingSystem::flush()
+{
+	if (std::this_thread::get_id() == processorID_)
+	{
+		return;
+	}
+	tMessageLock guard(messageMutex_);
+	if(!messages_.empty())
+	{
+		flushCV_.wait(guard);
+	}
+}
+
 void LoggingSystem::process()
 {
+	processorID_ = std::this_thread::get_id();
 	while (true)
 	{
 		bool isEmpty = true;
@@ -139,11 +152,10 @@ void LoggingSystem::process()
 		if (!isEmpty)
 		{
 			// Pop a message and broadcast it
-			LogMessage* currentMessage = nullptr;
+			ILogMessage* currentMessage = nullptr;
 			{
 				tMessageLock guard(messageMutex_);
 				currentMessage = messages_.front();
-				messages_.pop();
 			}
 
 			if (currentMessage != nullptr)
@@ -153,7 +165,7 @@ void LoggingSystem::process()
 
 					for (auto& logger : loggers_)
 					{
-						assert(logger != nullptr);
+						TF_ASSERT(logger != nullptr);
 						logger->out(currentMessage);
 					}
 				}
@@ -161,13 +173,21 @@ void LoggingSystem::process()
 				delete currentMessage;
 				currentMessage = nullptr;
 			}
+
+			{
+				tMessageLock guard(messageMutex_);
+				messages_.pop();
+			}
 		}
 		else
 		{
 			if (!running_)
 				break;
-			tMessageLock lock(messageMutex_);
-			processorCV_.wait(lock, [this]() { return !running_ || !messages_.empty(); });
+			{
+				flushCV_.notify_all();
+				tMessageLock lock(messageMutex_);
+				processorCV_.wait(lock, [this]() { return !running_ || !messages_.empty(); });
+			}
 		}
 	}
 }

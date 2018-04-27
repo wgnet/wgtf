@@ -14,6 +14,7 @@ public:
 	QString encode(const QColor& color);
 	QString encode(const QIcon& icon);
 	QString encode(const QPixmap& pixmap);
+	QString encode(const char* iconPath);
 	QString encode(const QImage& image);
 
 	QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override;

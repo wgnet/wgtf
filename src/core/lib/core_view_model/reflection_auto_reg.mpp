@@ -1,0 +1,2 @@
+#include "metadata/property_view_model.mpp"
+#include "metadata/view_model.mpp"

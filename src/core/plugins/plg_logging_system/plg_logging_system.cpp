@@ -1,7 +1,6 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_generic_plugin_manager/generic_plugin_manager.hpp"
 #include "core_logging_system/logging_system.hpp"
-#include "core_reflection/i_definition_manager.hpp"
 #include <vector>
 #include <memory>
 
@@ -18,15 +17,10 @@ namespace wgt
 class LoggingSystemPlugin : public PluginMain
 {
 public:
-	LoggingSystemPlugin(IComponentContext& contextManager)
-	{
-	}
-
 	bool PostLoad(IComponentContext& contextManager) override
 	{
-		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
-		loggingSystem_ = new LoggingSystem(DIRef<IDefinitionManager>(contextManager));
-		contextManager.registerInterface(loggingSystem_);
+		loggingSystem_ = new LoggingSystem();
+		types_.emplace_back(contextManager.registerInterface(loggingSystem_));
 
 		return true;
 	}
@@ -49,12 +43,12 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	LoggingSystem* loggingSystem_;
 };
 

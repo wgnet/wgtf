@@ -1,5 +1,8 @@
 #include "pch.hpp"
+
 #include "test_application.hpp"
+
+#include "core_common/assert.hpp"
 
 #include <chrono>
 
@@ -34,4 +37,26 @@ void TestApplication::quitApplication()
 {
 	exiting_ = true;
 }
+
+IApplication::TimerId TestApplication::startTimer(int, TimerCallback)
+{
+	TF_ASSERT(!"Not implemented");
+	return 0;
+}
+
+void TestApplication::killTimer(TimerId)
+{
+	TF_ASSERT(!"Not implemented");
+}
+
+void TestApplication::setAppSettingsName(const char* name)
+{
+	applicationSettingsName_ = name;
+}
+
+const char* TestApplication::getAppSettingsName()
+{
+	return applicationSettingsName_.c_str();
+}
+
 } // end namespace wgt

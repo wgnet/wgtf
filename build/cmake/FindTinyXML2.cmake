@@ -1,0 +1,7 @@
+IF( TINYXML2_FOUND )
+	RETURN()
+ENDIF()
+
+SET( TINYXML2_FOUND 1 )
+
+ADD_SUBDIRECTORY(${BW_SOURCE_DIR}/core/third_party/tinyxml2 tinyxml2)

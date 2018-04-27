@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED( VERSION 2.8.8 )
 
 PROJECT( plg_hotloading_test )
 INCLUDE( WGToolsCoreProject )
-FIND_PACKAGE( QT5 )
+FIND_PACKAGE( QT5 ${QT_FIND_PACKAGE_VERSION} )
 
 SET( ALL_SRCS
     plg_hotloading_test.cpp

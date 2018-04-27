@@ -18,7 +18,7 @@ WGCheckBoxStyle {
 
     /*! \internal */
     // helper property for text color so states can all be in the indicator object
-    property color __textColor: palette.neutralTextColor
+    property color __textColor: control.readonly ? palette.readonlyTextColor : palette.neutralTextColor
 
     label: Text {
         text: control.text
@@ -45,7 +45,7 @@ WGCheckBoxStyle {
 
         color: palette.textBoxColor
 
-        border.color: control.activeFocus && control.text == "" ? palette.lighterShade : palette.darkestShade
+        border.color: control.activeFocus && control.text == "" ? palette.highlightShade : palette.lighterShade
 
         states: [
             State {
@@ -67,6 +67,7 @@ WGCheckBoxStyle {
                 PropertyChanges {target: checkContainer; visible: true}
                 PropertyChanges {target: checkboxFrame; color: "transparent"}
                 PropertyChanges {target: tickMark; visible: true}
+                PropertyChanges {target: checkboxFrame; border.color: control.readonly ? palette.readonlyColor : palette.darkestShade}
             },
             State {
                 name: "HOVERED CHECKED"
@@ -75,6 +76,7 @@ WGCheckBoxStyle {
                 PropertyChanges {target: checkContainer; visible: true}
                 PropertyChanges {target: checkboxFrame; color: palette.lighterShade}
                 PropertyChanges {target: tickMark; visible: true}
+                PropertyChanges {target: checkboxFrame; border.color: palette.darkestShade}
             },
             State {
                 name: "CHECKED DISABLED"
@@ -94,6 +96,7 @@ WGCheckBoxStyle {
                 PropertyChanges {target: checkContainer; anchors.margins: 2}
                 PropertyChanges {target: checkContainer; color: palette.highlightShade}
                 PropertyChanges {target: checkContainer; z: 1}
+                PropertyChanges {target: checkboxFrame; border.color: palette.darkestShade}
             },
             State {
                 name: "HOVERED PART CHECKED"
@@ -104,6 +107,7 @@ WGCheckBoxStyle {
                 PropertyChanges {target: checkContainer; anchors.margins: 2}
                 PropertyChanges {target: checkContainer; color: palette.highlightShade}
                 PropertyChanges {target: checkContainer; z: 1}
+                PropertyChanges {target: checkboxFrame; border.color: palette.darkestShade}
             },
             State {
                 name: "PART CHECKED DISABLED"

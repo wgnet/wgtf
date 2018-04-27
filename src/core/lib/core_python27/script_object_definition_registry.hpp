@@ -1,9 +1,10 @@
 #pragma once
 
-#include "core_dependency_system/di_ref.hpp"
+#include "core_dependency_system/depends.hpp"
 #include "core_dependency_system/i_interface.hpp"
 #include "i_script_object_definition_registry.hpp"
 #include "wg_pyscript/py_script_object.hpp"
+#include "core_reflection/interfaces/i_definition_helper.hpp"
 
 #include <mutex>
 #include <vector>
@@ -12,7 +13,6 @@ namespace wgt
 {
 class IClassDefinition;
 class IComponentContext;
-class IDefinitionHelper;
 class IDefinitionManager;
 
 namespace ReflectedPython
@@ -24,10 +24,10 @@ struct ScriptObjectDefinitionDeleter;
  *	So that duplicate IClassDefinitions are created for the same
  *	PyScript::ScriptObject instance.
  */
-class ScriptObjectDefinitionRegistry : public Implements<IScriptObjectDefinitionRegistry>
+class ScriptObjectDefinitionRegistry : public Implements<IScriptObjectDefinitionRegistry>,
+                                       public Depends<IDefinitionManager>
 {
 public:
-	ScriptObjectDefinitionRegistry(IComponentContext& context);
 	virtual ~ScriptObjectDefinitionRegistry();
 
 	void init();
@@ -61,8 +61,6 @@ private:
 	// because Python scripts should only be run from a single thread
 	std::mutex definitionsMutex_;
 
-	IComponentContext& context_;
-	DIRef<IDefinitionManager> definitionManager_;
 	std::unique_ptr<IDefinitionHelper> definitionHelper_;
 
 	typedef std::pair<PyScript::ScriptObject, RefObjectId> IdPair;

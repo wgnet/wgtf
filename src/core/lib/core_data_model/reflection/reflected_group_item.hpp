@@ -2,15 +2,19 @@
 #define REFLECTED_GROUP_ITEM_HPP
 
 #include "reflected_item.hpp"
+#include "core_reflection/object/object_handle.hpp"
 
 namespace wgt
 {
+class MetaData;
 class MetaGroupObj;
 
 class ReflectedGroupItem : public ReflectedItem
 {
 public:
-	ReflectedGroupItem(const MetaGroupObj* groupObj, ReflectedItem* parent, const std::string& inplacePath);
+	ReflectedGroupItem(
+		const MetaData & metaData,
+		ObjectHandleT<MetaGroupObj> groupObj, ReflectedItem* parent, const std::string& inplacePath);
 	virtual ~ReflectedGroupItem()
 	{
 	}
@@ -43,9 +47,10 @@ private:
 	typedef std::vector<Variant> Variants;
 
 	void getChildValues(Variants& childValues_) const;
-	bool isSameGroup(const MetaGroupObj* group) const;
+	bool isSameGroup(ObjectHandleT<MetaGroupObj> group) const;
 
-	const MetaGroupObj* groupObj_;
+	ObjectHandleT<MetaGroupObj> groupObj_;
+	const MetaData * metaData_;
 	std::string displayName_;
 	mutable std::vector<std::unique_ptr<ReflectedItem>> children_;
 };

@@ -8,7 +8,10 @@
 #include "core_reflection/interfaces/i_class_definition_modifier.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/property_storage.hpp"
+#include "core_reflection/property_iterator.hpp"
 #include "core_reflection/base_property_with_metadata.hpp"
+#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -22,7 +25,7 @@ namespace
  *	@return metadata or null.
  *		Caller is responsible for deleting metadata.
  */
-MetaHandle extractMetaData(const char* name, const PyScript::ScriptDict& metaData)
+MetaData extractMetaData(const char* name, const PyScript::ScriptDict& metaData)
 {
 	assert(name != nullptr);
 	assert(strlen(name) > 0);
@@ -67,6 +70,14 @@ MetaHandle extractMetaData(const char* name, const PyScript::ScriptDict& metaDat
 	{
 		return MetaColor();
 	}
+	else if (strcmp(metaTypeString.c_str(), "MetaHDRColor") == 0)
+	{
+		return MetaHDRColor();
+	}
+	else if (strcmp(metaTypeString.c_str(), "MetaKelvinColor") == 0)
+	{
+		return MetaKelvinColor();
+	}
 	else if (strcmp(metaTypeString.c_str(), "MetaSlider") == 0)
 	{
 		return MetaMinMax(0.0f, 5.0f) + MetaStepSize(1.0f) + MetaDecimals(1) + MetaSlider();
@@ -98,9 +109,8 @@ namespace ReflectedPython
 class PropertyIterator : public PropertyIteratorImplBase
 {
 public:
-	PropertyIterator(IComponentContext& context, const PyScript::ScriptObject& pythonObject,
-	                 const PyScript::ScriptDict& metaDataDict)
-	    : context_(context), object_(pythonObject), metaDataDict_(metaDataDict)
+	PropertyIterator(const PyScript::ScriptObject& pythonObject, const PyScript::ScriptDict& metaDataDict)
+	    : object_(pythonObject), metaDataDict_(metaDataDict)
 	{
 		if (object_.get() == nullptr)
 		{
@@ -143,12 +153,12 @@ public:
 			auto meta = extractMetaData(name, metaDataDict_);
 			if (current_ == nullptr)
 			{
-				current_ = std::make_shared<ReflectedPython::Property>(context_, name, object_, meta);
+				current_ = std::make_shared<ReflectedPython::Property>(name, object_, std::move(meta));
 			}
 			else
 			{
 				auto property = static_cast<ReflectedPython::Property*>(current_.get());
-				property->updatePropertyData(name, object_, meta);
+				property->updatePropertyData(name, object_, std::move(meta));
 			}
 			return true;
 		}
@@ -157,16 +167,14 @@ public:
 	}
 
 private:
-	IComponentContext& context_;
 	PyScript::ScriptObject object_;
 	PyScript::ScriptDict metaDataDict_;
 	PyScript::ScriptIter iterator_;
 	IBasePropertyPtr current_;
 };
 
-DefinitionDetails::DefinitionDetails(IComponentContext& context, const PyScript::ScriptObject& pythonObject)
-    : context_(context), name_(DefinitionDetails::generateName(pythonObject)), pythonObject_(pythonObject),
-      metaData_(MetaNone())
+DefinitionDetails::DefinitionDetails(const PyScript::ScriptObject& pythonObject)
+    : name_(DefinitionDetails::generateName(pythonObject)), pythonObject_(pythonObject), metaData_(MetaNone())
 {
 	assert(!name_.empty());
 
@@ -174,6 +182,9 @@ DefinitionDetails::DefinitionDetails(IComponentContext& context, const PyScript:
 	const char* metaDataName = "_metaData";
 	const auto metaDataAttribute = pythonObject.getAttribute(metaDataName, PyScript::ScriptErrorClear());
 	metaDataDict_ = PyScript::ScriptDict::create(metaDataAttribute);
+
+	// TODO NGT-1225 inheritance not implemented
+	// All new-style Python classes inherit from 'object'
 
 	attachListenerHooks(pythonObject_);
 }
@@ -198,46 +209,42 @@ const char* DefinitionDetails::getName() const
 	return name_.c_str();
 }
 
-const char* DefinitionDetails::getParentName() const
-{
-	// TODO NGT-1225 inheritance not implemented
-	// All new-style Python classes inherit from 'object'
-	return nullptr;
-}
 
-MetaHandle DefinitionDetails::getMetaData() const
+const MetaData & DefinitionDetails::getMetaData() const
 {
 	return metaData_;
 }
 
-ObjectHandle DefinitionDetails::create(const IClassDefinition& classDefinition) const
+ObjectHandleStoragePtr DefinitionDetails::createObjectStorage(const IClassDefinition& definition) const
 {
-	// Python definitions should be created based on a PyScript::PyObject
+    // Python definitions should be created based on a PyScript::PyObject
 
-	// If this Python object is a type; create an instance of that type
-	auto scriptType = PyScript::ScriptType::create(pythonObject_);
-	if (!scriptType.exists())
-	{
-		// If this Python object is an instance; clone the instance
-		scriptType = PyScript::ScriptType::getType(pythonObject_);
-	}
+    // If this Python object is a type; create an instance of that type
+    auto scriptType = PyScript::ScriptType::create(pythonObject_);
+    if (!scriptType.exists())
+    {
+        // If this Python object is an instance; clone the instance
+        scriptType = PyScript::ScriptType::getType(pythonObject_);
+    }
 
-	// Clone instance
-	auto newPyObject = scriptType.genericAlloc(PyScript::ScriptErrorPrint());
-	if (newPyObject == nullptr)
-	{
-		return nullptr;
-	}
+    // Clone instance
+    auto newPyObject = scriptType.genericAlloc(PyScript::ScriptErrorPrint());
+    if (newPyObject == nullptr)
+    {
+        return nullptr;
+    }
 
-	ObjectHandle parentHandle;
-	const char* childPath = "";
-	return DefinedInstance::findOrCreate(
-	context_, PyScript::ScriptObject(newPyObject, PyScript::ScriptObject::FROM_NEW_REFERENCE), parentHandle, childPath);
+    ObjectHandle parentHandle;
+    const char* childPath = "";
+
+    auto objManager = get<IPythonObjManager>();
+    return objManager->create(PyScript::ScriptObject(newPyObject, PyScript::ScriptObject::FROM_NEW_REFERENCE), parentHandle, childPath);
 }
 
-void* DefinitionDetails::upCast(void* object) const
+ManagedObjectPtr DefinitionDetails::createManaged(const IClassDefinition& definition, RefObjectId id) const
 {
-	return nullptr;
+	auto storage = createObjectStorage(definition);
+	return ManagedObjectPtr(new ManagedObject<ReflectedPython::DefinedInstance>(storage, id));
 }
 
 bool DefinitionDetails::canDirectLookupProperty() const /* override */
@@ -254,13 +261,12 @@ IBasePropertyPtr DefinitionDetails::directLookupProperty(const char* name) const
 		return nullptr;
 	}
 
-	auto meta = extractMetaData(name, metaDataDict_);
-	return std::make_shared<ReflectedPython::Property>(context_, name, pythonObject_, meta);
+	return std::make_shared<ReflectedPython::Property>(name, pythonObject_, extractMetaData(name, metaDataDict_));
 }
 
 PropertyIteratorImplPtr DefinitionDetails::getPropertyIterator() const
 {
-	return std::make_shared<PropertyIterator>(context_, pythonObject_, metaDataDict_);
+	return PropertyIteratorImplPtr(new PropertyIterator(pythonObject_, metaDataDict_));
 }
 
 IClassDefinitionModifier* DefinitionDetails::getDefinitionModifier() const
@@ -268,9 +274,17 @@ IClassDefinitionModifier* DefinitionDetails::getDefinitionModifier() const
 	return const_cast<DefinitionDetails*>(this);
 }
 
-IBasePropertyPtr DefinitionDetails::addProperty(const char* name, const TypeId& typeId, MetaHandle metaData)
+IBasePropertyPtr DefinitionDetails::addProperty(const char* name, const TypeId& typeId, MetaData metaData,
+                                                bool isCollection)
 {
-	return std::make_shared<ReflectedPython::Property>(context_, name, typeId, pythonObject_, metaData);
+	prePropertyAdded(name);
+	auto prop = std::make_shared<ReflectedPython::Property>(name, typeId, pythonObject_, std::move(metaData));
+	postPropertyAdded(name);
+	return prop;
+}
+
+void DefinitionDetails::removeProperty(const char* name)
+{
 }
 
 std::string DefinitionDetails::generateName(const PyScript::ScriptObject& object)

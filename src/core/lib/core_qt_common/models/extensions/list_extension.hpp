@@ -1,13 +1,13 @@
 #ifndef LIST_EXTENSION_HPP
 #define LIST_EXTENSION_HPP
 
-#include "i_model_extension.hpp"
+#include "qt_model_extension.hpp"
 
 #include <QItemSelection>
 
 namespace wgt
 {
-class ListExtension : public IModelExtension
+class ListExtension : public QtModelExtension
 {
 	Q_OBJECT
 

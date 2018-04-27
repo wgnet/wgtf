@@ -1,9 +1,10 @@
 #ifndef MAP_CONTAINER_COLLECTION_HPP
 #define MAP_CONTAINER_COLLECTION_HPP
 
+#include "core_common/assert.hpp"
+
 #include <map>
 #include <unordered_map>
-#include <cassert>
 #include <utility>
 
 namespace wgt
@@ -81,9 +82,9 @@ public:
 		return SetImpl<can_set>::setValue(this, v);
 	}
 
-	void inc() override
+	void inc( size_t advAmount ) override
 	{
-		++iterator_;
+		std::advance( iterator_, advAmount );
 	}
 
 	bool equals(const CollectionIteratorImplBase& that) const override
@@ -219,7 +220,7 @@ struct MapCollectionGetNew<IteratorImpl, false>
 		if (range.first == range.second)
 		{
 			value_type val;
-			if (!value.tryCast(val))
+			if (!value.isVoid() && !value.tryCast(val))
 			{
 				return result_type(collectionImpl.container_.end(), false);
 			}
@@ -463,8 +464,8 @@ public:
 	CollectionIteratorImplPtr erase(const CollectionIteratorImplPtr& pos) override
 	{
 		iterator_impl_type* ii = dynamic_cast<iterator_impl_type*>(pos.get());
-		assert(ii);
-		assert(&ii->container() == &container_);
+		TF_ASSERT(ii);
+		TF_ASSERT(&ii->container() == &container_);
 
 		onPreErase_(pos, 1);
 		auto r = container_.erase(ii->base());
@@ -497,8 +498,8 @@ public:
 	{
 		iterator_impl_type* ii_first = dynamic_cast<iterator_impl_type*>(first.get());
 		iterator_impl_type* ii_last = dynamic_cast<iterator_impl_type*>(last.get());
-		assert(ii_first && ii_last);
-		assert(&ii_first->container() == &container_ && &ii_last->container() == &container_);
+		TF_ASSERT(ii_first && ii_last);
+		TF_ASSERT(&ii_first->container() == &container_ && &ii_last->container() == &container_);
 
 		size_t count = std::distance(ii_first->base(), ii_last->base());
 		if (count > 0)

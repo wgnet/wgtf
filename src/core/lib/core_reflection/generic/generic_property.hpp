@@ -10,30 +10,22 @@ class GenericObject;
 class GenericProperty : public BaseProperty
 {
 public:
-	GenericProperty(const char* name, const TypeId& typeName)
-	    : BaseProperty(name, typeName), propertyName_(name), typeName_(typeName.getName())
-	{
-		setType(typeName_.c_str());
-	}
-	const char* getName() const override;
+	GenericProperty(const char* name, const TypeId& typeName, bool isCollection);
 
-	virtual bool isValue() const override;
+	bool isValue() const override;
 	Variant get(const ObjectHandle& pBase, const IDefinitionManager& definitionManager) const override;
 	bool set(const ObjectHandle& pBase, const Variant& value,
 	         const IDefinitionManager& definitionManager) const override;
 
-	bool isCollection() const
-	{
-		// No support for collections for now
-		return false;
-	}
-
+	bool isCollection() const override;
+	bool isByReference() const override;
 protected:
 	friend class GenericObject;
 
 private:
 	const std::string propertyName_;
 	const std::string typeName_;
+	bool isCollection_;
 };
 } // end namespace wgt
 #endif // GENERIC_PROPERTY_HPP

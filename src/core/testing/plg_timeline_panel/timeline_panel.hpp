@@ -16,7 +16,7 @@ namespace wgt
 class TimelinePanel : Depends<IUIApplication, IViewCreator>
 {
 public:
-	TimelinePanel(IComponentContext& context);
+	TimelinePanel();
 
 	bool addPanel();
 	void removePanel();

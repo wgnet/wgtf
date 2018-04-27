@@ -8,9 +8,8 @@
 namespace wgt
 {
 BEGIN_EXPOSE(ReflectedMethodCommandParameters, MetaNoSerialization())
-EXPOSE(ReflectedMethodCommandParameters::idName(), getId, MetaNone())
-EXPOSE(ReflectedMethodCommandParameters::pathName(), getPath, MetaNone())
-// TODO: Add ability to show parameters on the history panel.
-//	EXPOSE( ReflectedMethodCommandParameters::parametersName(), getParameterList, MetaNone() )
+EXPOSE("id", getId, setId, MetaNone())
+EXPOSE("path", getPath, setPath, MetaNone())
+EXPOSE("methodParameters", getParameterList, MetaNone())
 END_EXPOSE()
 } // end namespace wgt

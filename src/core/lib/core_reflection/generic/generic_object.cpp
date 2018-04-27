@@ -4,6 +4,8 @@
 #include "core_reflection/generic/generic_property.hpp"
 #include "core_reflection/interfaces/i_class_definition_modifier.hpp"
 #include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/interfaces/i_class_definition.hpp"
+#include "core_object/i_object_manager.hpp"
 #include "core_variant/variant.hpp"
 
 namespace wgt
@@ -18,15 +20,13 @@ GenericObjectPtr GenericObject::create(IDefinitionManager& definitionManager, co
 
 ObjectHandle GenericObject::getDerivedType() const
 {
-	// MUST pass this as a pointer and NOT (*this) as a reference or
-	// ObjectHandleT will make a copy
-	return ObjectHandleT<GenericObject>(this);
+	auto objManager = definition_->getDefinitionManager()->getObjectManager();
+	return objManager->createObject(const_cast<GenericObject*>(this), false);
 }
 
 ObjectHandle GenericObject::getDerivedType()
 {
-	// MUST pass this as a pointer and NOT (*this) as a reference or
-	// ObjectHandleT will make a copy
-	return ObjectHandleT<GenericObject>(this);
+	auto objManager = definition_->getDefinitionManager()->getObjectManager();
+	return objManager->createObject(this, false);
 }
 } // end namespace wgt

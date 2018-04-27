@@ -22,15 +22,15 @@ public:
 		this->updateClickDescription("Click");
 	}
 
-	void undoClickButton(const ObjectHandle& params, Variant result)
+	void undoClickButton(Variant params, Variant result)
 	{
-		clickCount_ -= (*params.getBase<ReflectedMethodParameters>())[0].cast<int>();
+		clickCount_ -= params.cast<ReflectedMethodParameters>()[0].cast<int>();
 		this->updateClickDescription("Undo");
 	}
 
-	void redoClickButton(const ObjectHandle& params, Variant result)
+	void redoClickButton(Variant params, Variant result)
 	{
-		clickCount_ += (*params.getBase<ReflectedMethodParameters>())[0].cast<int>();
+		clickCount_ += params.cast<ReflectedMethodParameters>()[0].cast<int>();
 		this->updateClickDescription("Redo");
 	}
 

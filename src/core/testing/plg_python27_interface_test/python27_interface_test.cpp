@@ -1,9 +1,10 @@
 #include "pch.hpp"
 #include "python27_interface_test.hpp"
-#include "core_dependency_system/di_ref.hpp"
 #include "core_python_script/i_scripting_engine.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/property_accessor_listener.hpp"
+#include "core_generic_plugin/interfaces/i_component_context.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 
 namespace wgt
 {
@@ -54,9 +55,9 @@ TEST(Python27Interface)
 	}
 	IComponentContext& contextManager(*g_contextManager);
 
-	DIRef<IPythonScriptingEngine> scriptingEngine(contextManager);
-	CHECK(scriptingEngine.get() != nullptr);
-	if (scriptingEngine.get() == nullptr)
+	auto scriptingEngine = contextManager.queryInterface<IPythonScriptingEngine>();
+	CHECK(scriptingEngine != nullptr);
+	if (scriptingEngine == nullptr)
 	{
 		return;
 	}
@@ -102,9 +103,9 @@ TEST(Python27Interface)
 			return;
 		}
 
-		DIRef<IDefinitionManager> definitionManager(contextManager);
-		CHECK(definitionManager.get() != nullptr);
-		if (definitionManager.get() == nullptr)
+		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
+		CHECK(definitionManager != nullptr);
+		if (definitionManager == nullptr)
 		{
 			return;
 		}
@@ -115,7 +116,7 @@ TEST(Python27Interface)
 		definitionManager->registerPropertyAccessorListener(paListener);
 
 		// Listen to object
-		auto moduleDefinition = module.getDefinition(*definitionManager);
+		auto moduleDefinition = definitionManager->getDefinition(module);
 		auto testDataAccessor = moduleDefinition->bindProperty("testData", module);
 
 		// Set value, notify listeners

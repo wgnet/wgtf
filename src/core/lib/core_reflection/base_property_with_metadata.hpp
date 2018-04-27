@@ -12,8 +12,11 @@ namespace wgt
 class REFLECTION_DLL BasePropertyWithMetaData : public IBaseProperty
 {
 public:
-	BasePropertyWithMetaData(const IBasePropertyPtr& property, MetaHandle metaData);
+	BasePropertyWithMetaData(const IBasePropertyPtr& property, MetaData metaData);
 	virtual ~BasePropertyWithMetaData();
+
+	std::shared_ptr< IPropertyPath> generatePropertyName(
+		const std::shared_ptr< const IPropertyPath > & parent) const override;
 
 	virtual const TypeId& getType() const override;
 
@@ -21,14 +24,18 @@ public:
 
 	virtual uint64_t getNameHash() const override;
 
-	virtual MetaHandle getMetaData() const override;
+	virtual const MetaData & getMetaData() const override;
 
-	virtual bool readOnly() const override;
+	virtual bool readOnly(const ObjectHandle& handle) const override;
 
 	// TODO: remove isMethod and add separate accessors to the class definition for properties and methods.
 	virtual bool isMethod() const override;
 
 	virtual bool isValue() const override;
+
+	virtual bool isCollection() const override;
+
+	virtual bool isByReference() const override;
 
 	virtual bool set(const ObjectHandle& handle, const Variant& value,
 	                 const IDefinitionManager& definitionManager) const override;
@@ -44,7 +51,7 @@ public:
 
 private:
 	IBasePropertyPtr property_;
-	MetaHandle metaData_;
+    MetaData metaData_;
 };
 
 } // end namespace wgt

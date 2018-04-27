@@ -42,7 +42,6 @@ WGDial {
 
     showValue: true
     zeroValue: 0
-    snapToClick: false
 
     decimals: 0
     stepSize: 1
@@ -98,6 +97,31 @@ WGDial {
     minorTickInterval: 0
 }
 
+// 'Infinite' Degrees dial that accepts multiple rotations
+WGDial {
+    Layout.preferredHeight: defaultSpacing.minimumRowHeight * 3
+    Layout.preferredWidth: defaultSpacing.minimumRowHeight * 3
+
+    value: 0
+
+    minimumValue: -36000
+    maximumValue: 36000
+    minRotation: 0
+    maxRotation: 360
+
+    showValue: true
+    showRotations: true
+    clockwise: true
+    zeroValue: 0
+    loopAtBounds: true
+
+    decimals: 0
+    stepSize: 1
+
+    tickInterval: 45
+    minorTickInterval: 15
+}
+
 \endcode
 */
 
@@ -123,11 +147,11 @@ Item {
 
     /*! Shows the value rounded to the decimals and stepSize
     */
-    property real roundedValue: Number(range.value).toFixed(decimals)
+    property real roundedValue: Number(value).toFixed(decimals)
 
     /*! Value of the dial between the minimum and maximum Values
     */
-    property alias value: range.value
+    property real value: 0
 
     /*! Number of decimal points after the 0.
     */
@@ -157,6 +181,10 @@ Item {
     */
     property bool showValue: false
 
+    /*! Shows the number of rotations in the textbox.
+    */
+    property bool showRotations: multipleRotations
+
     /*! String for the suffix after the value in the centre of the dial if showValue is true.
     */
     property string unitString: "°"
@@ -170,12 +198,29 @@ Item {
     /*! property indicates if the dial will spin around from min to max when the upper and lower values are reached.  */
     property bool loopAtBounds: true
 
-    /*! If true, snaps the dial marker to the current mouse position when pressed.
+    /*! The minimum value of a single 'rotation' if multiple rotations are possible.
 
-        The default is false if loopAtBounds is true.
+        Strongly recommend this being zero if minimumValue < 0
 
-        Recommend not making snapToClick true if loopAtBounds is true or the dial will behave strangely when it nears the bounds. */
-    property bool snapToClick: !loopAtBounds
+        The default value is the minimumValue (no multiple rotations) */
+    property real minRotation: minimumValue
+
+    /*! The maximum value of a single 'rotation' if multiple rotations are possible.
+
+        The default value is the maximumValue (no multiple rotations) */
+    property real maxRotation: maximumValue
+
+    /*! The number of units in a single rotation  */
+    readonly property real singleRotation: (maxRotation - minRotation)
+
+    /*! The number of rotations of the dial beyond the initial rotation. */
+    readonly property int rotations: multipleRotations ? (value > 0 ? Math.floor(value / singleRotation) : Math.ceil(value / singleRotation)) : 0
+
+    /*! The current value of the dial ignoring multiple rotations.  */
+    readonly property real rotationValue: value % singleRotation
+
+    /*! True if either of the minimum and maximum values do not == the minimum and maximum rotations.  */
+    readonly property bool multipleRotations: minRotation != minimumValue || maxRotation != maximumValue
 
     /*! The gap between the dial itself and the edge of the control. Also affects the tickmark heights. */
     property int dialMargin: defaultSpacing.standardMargin + defaultSpacing.standardBorderSize
@@ -193,24 +238,92 @@ Item {
     /*! The RangeModel for the dial control */
     property alias range: range
 
+    signal changeValue(var val)
+
+    function clamp(val) {
+        return Math.min(maximumValue, Math.max(minimumValue, val))
+    }
+
+    function setValue(newValue) {
+        setValueHelper(control, "value", newValue)
+        changeValue(newValue)
+    }
+
     implicitHeight: defaultSpacing.minimumRowHeight ? defaultSpacing.minimumRowHeight * 4 : 88
     implicitWidth: defaultSpacing.minimumRowHeight ? defaultSpacing.minimumRowHeight * 4 : 88
 
     RangeModel {
+        // if multiple rotations are possible this becomes a double range with + and - values.
         id: range
-        minimumValue: control.minimumValue
-        maximumValue: control.maximumValue
-        positionAtMinimum: 0
+        minimumValue: multipleRotations ? minRotation - maxRotation : minRotation
+        maximumValue: maxRotation
+        value: rotationValue
+        positionAtMinimum: multipleRotations ? -360 : 0
         positionAtMaximum: 360
     }
 
     Item {
-        id: zeroRotationFrame
+        id: zeroFrame
         anchors.centerIn: parent
         height: parent.height
         width: parent.width
 
         rotation: zeroValue
+
+        property int rotationChange: 0
+        property real initValue: 0
+        property real offset: 0
+
+        function checkBounds(val)
+        {
+            // reset any changes to the number of rotations
+            zeroFrame.rotationChange = 0
+
+            // checks if the dial has hit the minimum or maximum rotation point and updates the changes to rotations.
+            if (multipleRotations)
+            {
+                if (value == 0)
+                {
+                    zeroFrame.rotationChange = rotations * -1
+                }
+                else if (value > 0)
+                {
+                    if (val <= maxRotation && val > (singleRotation * 0.8) && rotationValue < (singleRotation * 0.2) && rotationValue >= minRotation)
+                    {
+                        zeroFrame.rotationChange -= 1
+                    }
+                    else if (val >= minRotation && val < (singleRotation * 0.2) && rotationValue <= maxRotation && rotationValue > (singleRotation * 0.8))
+                    {
+                        zeroFrame.rotationChange += 1
+                    }
+                }
+                else
+                {
+                    if (val <= minRotation && val > (singleRotation * -0.2) && rotationValue < (singleRotation * -0.8) && rotationValue >= minRotation - maxRotation)
+                    {
+                        zeroFrame.rotationChange -= 1
+                    }
+                    else if (val >= minRotation - maxRotation && val < (maxRotation * -0.8) && rotationValue <= 0 && rotationValue > (singleRotation * -0.2))
+                    {
+                        zeroFrame.rotationChange += 1
+                    }
+                }
+            }
+            else if (!loopAtBounds)
+            {
+                // stops the dial from jumping over the min/max value if it's near the stop point and loopAtBounds is false.
+                if (value > ((maxRotation - minRotation) * 0.80) + minRotation && val < ((maxRotation - minRotation) / 2) + minRotation)
+                {
+                    val = maxRotation
+                }
+                else if (value < ((maxRotation - minRotation) * 0.20) + minRotation && val > ((maxRotation - minRotation) / 2) + minRotation)
+                {
+                    val = minRotation
+                }
+            }
+            val = clamp(val + ((rotations + zeroFrame.rotationChange) * singleRotation))
+            return val
+        }
 
         // draggable dial control
         WGButtonFrame {
@@ -248,8 +361,7 @@ Item {
 
             preventStealing: true
 
-            property real initValue: 0
-            property real offset: 0
+            property bool negativeRotation: false
 
             //Gets the mouse location around the circle in degrees.
             function getMouseDegrees(mx, my, object) {
@@ -264,74 +376,62 @@ Item {
                     mouseAngle = 360 - mouseAngle;
                 }
 
+                // checks if the dial has reached the min or max rotation in a particular direction to change the sign of the value if multipleRotations
+                if (mouseAngle > (360 * 0.8) && range.position < (360 * 0.2) && !negativeRotation && multipleRotations)
+                {
+                    negativeRotation = true
+                }
+                else if (mouseAngle < (360 * 0.2) && range.position > (-360 * 0.2) && negativeRotation && multipleRotations)
+                {
+                    negativeRotation = false
+                }
+                // changes the sign of the value if multipleRotations
+                if (value < 0 && multipleRotations)
+                {
+                    mouseAngle = mouseAngle - 360
+                }
+
                 return mouseAngle
             }
 
             //set the initial values before rotating
             onPressed: {
-                initValue = value;
+                zeroFrame.initValue = rotationValue
 
                 var deg = getMouseDegrees(mouse.x, mouse.y, dialDrag);
 
-                deg = Math.abs(deg %= 360)
+                deg = deg %= 360
 
                 var newValue = range.valueForPosition(deg);
 
+                zeroFrame.rotationChange = 0
+
                 beginUndoFrame();
 
-                if (snapToClick)
-                {
-                    value = newValue
-                }
-                else
-                {
-                    offset = initValue - newValue
-                }
+                newValue = clamp(newValue + (rotations * singleRotation))
+                setValue(newValue)
             }
 
             //rotate the dial
             onPositionChanged: {
                 var deg = getMouseDegrees(mouse.x, mouse.y, dialDrag)
-                deg = Math.abs(deg %= 360)
+
+                deg = deg %= 360
+
                 var newValue = range.valueForPosition(deg);
 
-                multipleValues = false
+                newValue = zeroFrame.checkBounds(newValue)
 
-                if(!snapToClick)
-                {
-                    newValue = (newValue + offset)
-                }
-
-                // loops around if loopAtBounds or stays at max or min value if !loopAtBounds
-                if (newValue < minimumValue)
-                {
-                    newValue = loopAtBounds ? maximumValue + (newValue - minimumValue) : minimumValue
-                }
-                else if (newValue > maximumValue)
-                {
-                    newValue = loopAtBounds ? minimumValue + (newValue - maximumValue) : maximumValue
-                }
-
-                // stops the dial from jumping over the min/max value if it's near the stop point and loopAtBounds is false.
-                if (!loopAtBounds)
-                {
-                    if (value > ((maximumValue - minimumValue) * 0.80) + minimumValue && newValue < ((maximumValue - minimumValue) / 2) + minimumValue)
-                    {
-                        newValue = maximumValue
-                    }
-                    else if (value < ((maximumValue - minimumValue) * 0.20) + minimumValue && newValue > ((maximumValue - minimumValue) / 2) + minimumValue)
-                    {
-                        newValue = minimumValue
-                    }
-                }
-
-                value = Number(newValue).toFixed(decimals);
+                setValue(newValue)
+                zeroFrame.rotationChange = 0
             }
 
             onReleased: {
-                if (value != initValue)
+                if (rotationValue != zeroFrame.initValue || zeroFrame.rotationChange != 0 )
                 {
-                    endUndoFrame();
+                    var newValue = rotationValue;
+                    abortUndoFrame();
+                    setValue(newValue);
                 }
                 else
                 {
@@ -351,20 +451,11 @@ Item {
 
             //change value on mouse wheel
             onWheel: {
-                var wheelAngle = wheel.angleDelta.y > 0 ? value + stepSize : value - stepSize
+                var wheelAngle = wheel.angleDelta.y > 0 ? rotationValue + stepSize : rotationValue - stepSize
 
-                if (wheelAngle < minimumValue)
-                {
-                    wheelAngle = loopAtBounds ? maximumValue + (wheelAngle - minimumValue) : minimumValue
-                }
-                else if (wheelAngle > maximumValue)
-                {
-                    wheelAngle = loopAtBounds ? minimumValue + (wheelAngle - maximumValue) : maximumValue
-                }
-
-                multipleValues = false
-
-                value = wheelAngle
+                wheelAngle = zeroFrame.checkBounds(wheelAngle)
+                setValue(wheelAngle)
+                zeroFrame.rotationChange = 0
             }
         }
 
@@ -423,7 +514,7 @@ Item {
 
                 color: "transparent"
                 border.width: 1
-                border.color: value == 0 ? palette.highlightColor : control.enabled ? palette.neutralTextColor : palette.disabledTextColor
+                border.color: rotationValue == 0 ? palette.highlightColor : control.enabled ? palette.neutralTextColor : palette.disabledTextColor
 
                 rotation: -zeroValue + tickRotator.rotation
 
@@ -435,8 +526,7 @@ Item {
                     enabled: !dialPressed
 
                     onClicked: {
-                        multipleValues = false
-                        control.value = 0
+                        setValue(clamp(rotations * singleRotation))
                     }
                 }
             }
@@ -479,11 +569,11 @@ Item {
                         color:
                             if (clockwise)
                             {
-                                control.value == range.valueForPosition(Math.abs((topMarker.parent.rotation + tickRotator.rotation) % 360)) ? onColor : offColor
+                                control.rotationValue == range.valueForPosition((topMarker.parent.rotation + tickRotator.rotation) % 360) ? onColor : offColor
                             }
                             else
                             {
-                                control.value == range.valueForPosition(Math.abs((360 - topMarker.parent.rotation - tickRotator.rotation) % 360)) ? onColor : offColor
+                                control.rotationValue == range.valueForPosition((360 - topMarker.parent.rotation - tickRotator.rotation) % 360) ? onColor : offColor
                             }
 
                         MouseArea {
@@ -495,14 +585,30 @@ Item {
                             enabled: !dialPressed
 
                             onClicked: {
-                                multipleValues = false
+                                var newVal = 0
                                 if (clockwise)
                                 {
-                                    control.value = range.valueForPosition(Math.abs((topMarker.parent.rotation + tickRotator.rotation) % 360))
+                                    if (value >= 0)
+                                    {
+                                        newVal = clamp(range.valueForPosition((topMarker.parent.rotation + tickRotator.rotation) % 360) + (rotations * singleRotation))
+                                    }
+                                    else
+                                    {
+                                        newVal = clamp(range.valueForPosition((topMarker.parent.rotation + tickRotator.rotation) % 360) + (rotations * singleRotation) - 360)
+                                    }
+                                    setValue(newVal)
                                 }
                                 else
                                 {
-                                    control.value = range.valueForPosition(Math.abs((360 - topMarker.parent.rotation - tickRotator.rotation) % 360))
+                                    if (value >= 0)
+                                    {
+                                        newVal = clamp(range.valueForPosition((360 - topMarker.parent.rotation - tickRotator.rotation) % 360) + (rotations * singleRotation))
+                                    }
+                                    else
+                                    {
+                                        newVal = clamp(range.valueForPosition((360 - topMarker.parent.rotation - tickRotator.rotation) % 360) + (rotations * singleRotation) - 360)
+                                    }
+                                    setValue(newVal)
                                 }
                             }
                         }
@@ -527,11 +633,11 @@ Item {
                         color:
                             if (clockwise)
                             {
-                                control.value == range.valueForPosition(Math.abs(bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) ? onColor : offColor
+                                control.rotationValue == range.valueForPosition((bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) ? onColor : offColor
                             }
                             else
                             {
-                                control.value ==  range.valueForPosition(Math.abs(360 - bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) ? onColor : offColor
+                                control.rotationValue ==  range.valueForPosition((360 - bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) ? onColor : offColor
                             }
 
                         MouseArea {
@@ -543,14 +649,30 @@ Item {
                             enabled: !dialPressed
 
                             onClicked: {
-                                multipleValues = false
+                                var newVal = 0
                                 if (clockwise)
                                 {
-                                    control.value = range.valueForPosition(Math.abs(bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360)
+                                    if (value >= 0)
+                                    {
+                                        newVal = clamp(range.valueForPosition((bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) + (rotations * singleRotation))
+                                    }
+                                    else
+                                    {
+                                        newVal = clamp(range.valueForPosition((bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) + (rotations * singleRotation) - 360)
+                                    }
+                                    setValue(newVal)
                                 }
                                 else
                                 {
-                                    control.value =  range.valueForPosition(Math.abs(360 - bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360)
+                                    if (value >= 0)
+                                    {
+                                        newVal = clamp(range.valueForPosition((360 - bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) + (rotations * singleRotation))
+                                    }
+                                    else
+                                    {
+                                        newVal = clamp(range.valueForPosition((360 - bottomMarker.parent.rotation + 180 + tickRotator.rotation) % 360) + (rotations * singleRotation) - 360)
+                                    }
+                                    setValue(newVal)
                                 }
                             }
                         }
@@ -612,15 +734,32 @@ Item {
         }
     }
 
-    // Optional text value in centre of dial
     Text {
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: showValue ? -font.pixelSize - defaultSpacing.rowSpacing : 0
         color: control.enabled ? palette.textColor : palette.disabledTextColor
-        text: multipleValues ? __multipleValuesString : (roundedValue + unitString)
+        text: multipleValues ? "" : showRotations && rotations != 0 ? rotations + "x" : ""
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        visible: showRotations
+
+        font.pixelSize: valueText.font.pixelSize - 2
+    }
+
+    // Optional text value in centre of dial
+    Text {
+        id: valueText
+        anchors.centerIn: parent
+        anchors.horizontalCenterOffset: -unitString.length
+        color: control.enabled ? palette.textColor : palette.disabledTextColor
+        text: multipleValues ? __multipleValuesString : ((showRotations ? Number(rotationValue).toFixed(decimals) : roundedValue ) + unitString )
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         visible: showValue
 
         font.pixelSize: (parent.height - dialMargin) * (0.21 - (0.01 * (unitString.length + decimals)))
     }
+
+    /* DEPRECATED */
+    property bool snapToClick: false
 }

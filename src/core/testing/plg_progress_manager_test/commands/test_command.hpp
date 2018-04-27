@@ -18,6 +18,11 @@ public:
 		return false;
 	}
 
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override
+	{
+		return nullptr;
+	}
+
 protected:
 	uint8_t processCounter_;
 };
@@ -32,7 +37,7 @@ public:
 	}
 
 	const char* getId() const override;
-	ObjectHandle execute(const ObjectHandle& arguments) const override;
+	virtual Variant execute(const ObjectHandle& arguments) const override;
 };
 
 /// Test command class that will emulate 5 second wait and log the process to output window each second when the command
@@ -45,7 +50,7 @@ public:
 	}
 
 	const char* getId() const override;
-	ObjectHandle execute(const ObjectHandle& arguments) const override;
+	virtual Variant execute(const ObjectHandle& arguments) const override;
 };
 } // end namespace wgt
 #endif // TEST_COMMAND_HPP

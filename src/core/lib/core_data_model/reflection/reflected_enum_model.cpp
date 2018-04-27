@@ -1,6 +1,7 @@
 #include "reflected_enum_model.hpp"
 #include "reflected_item.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
@@ -56,7 +57,6 @@ private:
 
 void generateFromString(std::vector<IItem*>& items, const wchar_t* enumString)
 {
-	std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
 	int index = 0;
 	const wchar_t* start = enumString;
 	const wchar_t* enumStringEnd = start + wcslen(start);
@@ -77,7 +77,7 @@ void generateFromString(std::vector<IItem*>& items, const wchar_t* enumString)
 		}
 		std::wstring text(start, end);
 
-		items.push_back(new ReflectedEnumItem(index, conversion.to_bytes(text)));
+		items.push_back(new ReflectedEnumItem(index, StringUtils::to_string(text)));
 		start = trueEnd + 1;
 		++index;
 	}
@@ -93,7 +93,7 @@ ReflectedEnumModel::ReflectedEnumModel(const MetaEnumObj* enumObj)
 	}
 }
 
-ReflectedEnumModel::ReflectedEnumModel(const PropertyAccessor& pA, const MetaEnumObj* enumObj)
+ReflectedEnumModel::ReflectedEnumModel(const PropertyAccessor& pA, ObjectHandleT<MetaEnumObj> enumObj)
 {
 	const wchar_t* enumString = enumObj->getEnumString();
 	if (enumString != nullptr)
@@ -102,10 +102,7 @@ ReflectedEnumModel::ReflectedEnumModel(const PropertyAccessor& pA, const MetaEnu
 		return;
 	}
 
-	auto value = pA.getParent().getValue();
-	ObjectHandle baseProvider;
-	value.tryCast(baseProvider);
-	Collection collection = enumObj->generateEnum(baseProvider, *pA.getDefinitionManager());
+	Collection collection = enumObj->generateEnum(pA.getObject());
 	auto it = collection.begin();
 	auto itEnd = collection.end();
 	for (; it != itEnd; ++it)
@@ -129,14 +126,14 @@ ReflectedEnumModel::~ReflectedEnumModel()
 
 IItem* ReflectedEnumModel::item(size_t index) const
 {
-	assert(index < items_.size());
+	TF_ASSERT(index < items_.size());
 	return items_[index];
 }
 
 size_t ReflectedEnumModel::index(const IItem* item) const
 {
 	auto it = std::find(items_.begin(), items_.end(), item);
-	assert(it != items_.end());
+	TF_ASSERT(it != items_.end());
 	return it - items_.begin();
 }
 

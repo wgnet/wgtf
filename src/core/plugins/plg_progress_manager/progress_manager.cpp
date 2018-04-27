@@ -1,5 +1,6 @@
 #include "progress_manager.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_command_system/command_instance.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_command_system/i_command_event_listener.hpp"
@@ -9,8 +10,7 @@
 
 namespace wgt
 {
-ProgressManager::ProgressManager(IComponentContext& contextManager)
-    : Depends(contextManager), progressValue_(0), isMultiCommandProgress_(false), isViewVisible_(false)
+ProgressManager::ProgressManager() : progressValue_(0), isMultiCommandProgress_(false), isViewVisible_(false)
 {
 }
 
@@ -22,7 +22,7 @@ ProgressManager::~ProgressManager()
 void ProgressManager::init()
 {
 	ICommandManager* commandSystemProvider = get<ICommandManager>();
-	assert(nullptr != commandSystemProvider);
+	TF_ASSERT(nullptr != commandSystemProvider);
 
 	commandSystemProvider->registerCommandStatusListener(this);
 }
@@ -31,7 +31,7 @@ void ProgressManager::init()
 void ProgressManager::fini()
 {
 	ICommandManager* commandSystemProvider = get<ICommandManager>();
-	assert(nullptr != commandSystemProvider);
+	TF_ASSERT(nullptr != commandSystemProvider);
 	commandSystemProvider->deregisterCommandStatusListener(this);
 }
 
@@ -153,7 +153,7 @@ void ProgressManager::onNonBlockingProcessExecution(const char* commandId) const
 	if (loggingSystem == nullptr)
 	{
 		// Logging system is not available, nothing to handle.
-		assert(false && "Missing - plg_logging_system");
+		TF_ASSERT(false && "Missing - plg_logging_system");
 
 		// Early return here!
 		return;
@@ -264,7 +264,7 @@ void ProgressManager::cancelCurrentCommand() const
 	if (isCurrentCommandActive())
 	{
 		ICommandManager* commandSystemProvider = get<ICommandManager>();
-		assert(nullptr != commandSystemProvider);
+		TF_ASSERT(nullptr != commandSystemProvider);
 
 		// NOTE: By calling undo function here, the status changes to Complete which will trigger our
 		//		 progressCompleted function that will remove a command from our list.

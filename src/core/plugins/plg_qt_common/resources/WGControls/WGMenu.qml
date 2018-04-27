@@ -23,7 +23,7 @@ WGContextMenu {
     id: menu
     objectName: "WGMenu"
     WGComponent { type: "WGMenu" }
-    
+
     path: "WGMenu"
     property alias title: menu.path
 
@@ -59,10 +59,10 @@ WGContextMenu {
 
     function activate() {
         for (var actionKey in actions) {
-			var action = actions[actionKey];
-			if (action == null) {
-				continue;
-			}
+            var action = actions[actionKey];
+            if (action == null) {
+                continue;
+            }
             action.active = true;
         }
 
@@ -75,10 +75,10 @@ WGContextMenu {
 
     function deactivate() {
         for (var actionKey in actions) {
-			var action = actions[actionKey];
-			if (action == null) {
-				continue;
-			}
+            var action = actions[actionKey];
+            if (action == null) {
+                continue;
+            }
             action.active = false;
         }
 
@@ -107,6 +107,14 @@ WGContextMenu {
         return (typeof text !== "undefined" && typeof trigger !== "undefined");
     }
 
+    function isSeparator(object) {
+        if(object == null)
+        {
+            return false;
+        }
+        return object.toString().indexOf("MenuSeparator") !== -1;
+    }
+
     function isMenu(object) {
         if(object == null)
         {
@@ -125,27 +133,29 @@ WGContextMenu {
             var qmlString = "import QtQuick 2.5; import QtQuick.Controls 1.4; import WGControls 1.0; WGAction {}";
             var action = Qt.createQmlObject( qmlString, menu );
             action.actionId = Qt.binding( function() { return menu.fullPath + "." + object.text; } );
-			action.actionText = Qt.binding( function() { return object.text; } );
-			action.actionPath = Qt.binding( function() { return menu.fullPath; } );
+            action.actionText = Qt.binding( function() { return object.text; } );
+            action.actionPath = Qt.binding( function() { return menu.fullPath; } );
             action.checkable = Qt.binding( function() { return object.checkable; } );
             action.checked = Qt.binding( function() { return object.checked; } );
             action.enabled = Qt.binding( function() { return object.enabled; } );
             action.visible = Qt.binding( function() { return object.visible; } );
             action.triggered.connect(object.trigger);
-            actions[object.text] = action;
-            return;
-        }
-
-        if (isMenu(object)) {
+            actions[object] = action;
+        } else if (isSeparator(object)){
+            var qmlSeparator = "import QtQuick 2.5; import QtQuick.Controls 1.4; import WGControls 1.0; WGAction { separator: true }";
+            var separator = Qt.createQmlObject( qmlSeparator, menu )
+            separator.actionPath = Qt.binding( function() { return menu.fullPath; } );
+            actions[object] = separator;
+        } else if (isMenu(object)) {
             object.fullPath = Qt.binding( function() { return menu.fullPath + "." + object.path; } )
         }
     }
 
     function destroyAction(object, menu) {
          if (isMenuItem(object)) {
-            var action = actions[object.text];
+            var action = actions[object];
             action.destroy();
-            actions[object.text] = null;
+            actions[object] = null;
             return;
         }
     }

@@ -198,18 +198,10 @@ Item
                     id: inputSlotsLayout
                     Layout.alignment : Qt.AlignTop | Qt.AlignLeft
 
-                    WGListModel
-                    {
-                        id : inputSlotsListModel
-                        source : inputSlotsModel
-
-                        ValueExtension {}
-                    }
-
                     Repeater
                     {
                         id : inputSlotsRepeater
-                        model : inputSlotsListModel
+                        model : inputSlotsModel
                         delegate : Slot
                         {
                             z : nodeContainer.z + 10
@@ -231,19 +223,10 @@ Item
                     id: outputSlotsLayout
                     Layout.alignment : Qt.AlignTop | Qt.AlignRight
 
-                    WGListModel
-                    {
-                        id: outputSlotsListModel
-                        source: outputSlotsModel
-
-                        ValueExtension {}
-                    }
-
-
                     Repeater
                     {
                         id : outputSlotsRepeater
-                        model : outputSlotsListModel
+                        model : outputSlotsModel
                         Layout.alignment : Qt.AlignTop | Qt.AlignRight
                         delegate : Slot
                         {

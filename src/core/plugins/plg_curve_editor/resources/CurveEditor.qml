@@ -5,14 +5,16 @@ import QtQuick.Layouts 1.0
 
 import WGControls 2.0
 import WGControls.Canvas 2.0
+import WGControls.Global 2.0
 
+import "qrc:///WGControls/wg_utils.js" as WGUtils
 
-Rectangle {
+WGPanel {
     id: curveEditor
     WGComponent { type: "CurveEditor" }
-    
-    property string title: "Curve Editor"
-    property var layoutHints: { 'curveeditor': 1.0, 'bottom': 0.5 }
+
+    title: "Curve Editor"
+    layoutHints: { 'curveeditor': 1.0, 'bottom': 0.5 }
 
     // TODO: Enable unlocked curves
     property bool lockCurves: true
@@ -69,7 +71,7 @@ Rectangle {
         function addPoint(index)
         {
             // Ignore add requests if the handle has already been added
-            if(binarySearch(handleIndexes, index) < 0)
+            if(WGUtils.binarySearch(handleIndexes, index) < 0)
             {
                 addIndex(addedPointIndexes, index)
             }
@@ -87,7 +89,7 @@ Rectangle {
         function removePoint(index)
         {
             // Ignore remove requests if the handle has already been removed
-            if(binarySearch(handleIndexes, index) < 0)
+            if(WGUtils.binarySearch(handleIndexes, index) < 0)
             {
                 addIndex(removedPointIndexes, index)
             }
@@ -106,7 +108,7 @@ Rectangle {
         {
             if(index >= 0)
             {
-                var valueIndex = binarySearch(collection, index)
+                var valueIndex = WGUtils.binarySearch(collection, index)
                 if(valueIndex < 0)
                 {
                     collection.splice(-valueIndex-1, 0, index)
@@ -128,6 +130,16 @@ Rectangle {
             curveIt.current.addAt( pos.x, true )
         }
         endUndoFrame();
+    }
+
+    function hasCurves()
+    {
+        var i = 0;
+        var curveIt = iterator(curves)
+        if(curveIt.moveNext()){
+            return true
+        }
+        return false
     }
 
     function clearSelection()
@@ -156,6 +168,15 @@ Rectangle {
         selection = newSelection
     }
 
+    function canRemoveFromCurve(curve)
+    {
+        if(allowEmptyCurves)
+            return true;
+        // Determine if there are at least two points on the curve
+        var pointIter = iterator(curve.points)
+        return pointIter.moveNext() && pointIter.moveNext();
+    }
+
     function deletePointsAt(valuesToDelete)
     {
         if(valuesToDelete.length > 0)
@@ -166,7 +187,10 @@ Rectangle {
             {
                 var curveIt = iterator(curves)
                 while(curveIt.moveNext()){
-                    curveIt.current.removeAt( valuesToDelete[i], true );
+                    if(canRemoveFromCurve(curveIt.current))
+                    {
+                        curveIt.current.removeAt( valuesToDelete[i], true );
+                    }
                 }
             }
             endUndoFrame();
@@ -184,7 +208,7 @@ Rectangle {
                 var point = currentCurve.pointRepeater.itemAt(i);
                 if(point.selected){
                     point.selected = false;
-                    var valueIndex = binarySearch(valuesToDelete, point.point.pos.x)
+                    var valueIndex = WGUtils.binarySearch(valuesToDelete, point.point.pos.x)
                     if(valueIndex < 0)
                     {
                         valuesToDelete.splice(-valueIndex -1, 0, point.point.pos.x);
@@ -197,7 +221,7 @@ Rectangle {
 
     function getColorAt(index)
     {
-        return Qt.rgba(
+        return Qt.vector4d(
             curveRepeater.itemAt(0).getPoint(index).point.pos.y,
             curveRepeater.itemAt(1).getPoint(index).point.pos.y,
             curveRepeater.itemAt(2).getPoint(index).point.pos.y,
@@ -223,23 +247,6 @@ Rectangle {
             newSelection.push(point)
         }
         selection = newSelection;
-    }
-
-    function binarySearch(ar, el) {
-        var m = 0;
-        var n = ar.length - 1;
-        while (m <= n) {
-            var k = (n + m) >> 1;
-            var cmp = el - ar[k];
-            if (cmp > 0) {
-                m = k + 1;
-            } else if(cmp < 0) {
-                n = k - 1;
-            } else {
-                return k;
-            }
-        }
-        return -m - 1;
     }
 
     function updateLockedCurves(point)
@@ -275,7 +282,7 @@ Rectangle {
                 var newX = selectedPoint.point.pos.x + xDelta;
                 var newY = selectedPoint.point.pos.y + yDelta;
 
-                var index = binarySearch(modifiedIndexes, selectedPoint.pointIndex)
+                var index = WGUtils.binarySearch(modifiedIndexes, selectedPoint.pointIndex)
                 if (index < 0)
                 {
                     modifiedIndexes.splice(-index - 1, 0, selectedPoint.pointIndex)
@@ -344,6 +351,7 @@ Rectangle {
                 timeScale: xScale
                 valueScale: yScale
                 editEnabled: selection.length > 0
+                scalesEnabled: hasCurves()
                 timeScaleEnabled: timeScaleEditEnabled
 
                 anchors.top: parent.top
@@ -393,7 +401,7 @@ Rectangle {
             property int oldHeight: timeline.height
 
             onWidthChanged: {
-                if(oldWidth > 0 && oldHeight > 0)
+                if(width > 0 && oldWidth > 0)
                 {
                     var leftMargin = timeline.viewTransform.origin.x / oldWidth
                     var rightMargin = timeline.viewTransform.xScale / oldWidth
@@ -403,17 +411,18 @@ Rectangle {
 
                     timeline.requestPaint();
                     curveEditor.repaintCurves();
+
+                    oldWidth = timeline.width
                 }
                 if( !isInitialized && width > 0 && height > 0 )
                 {
                     timeline.zoomExtents();
                     isInitialized = true;
                 }
-                oldWidth = timeline.width
             }
 
             onHeightChanged: {
-                if(oldWidth > 0 && oldHeight > 0)
+                if(height > 0 && oldHeight > 0)
                 {
                     var topMargin = timeline.viewTransform.origin.y / oldHeight
                     var botMargin = timeline.viewTransform.yScale / oldHeight
@@ -423,13 +432,14 @@ Rectangle {
 
                     timeline.requestPaint();
                     curveEditor.repaintCurves();
+
+                    oldHeight = timeline.height
                 }
                 if( !isInitialized && width > 0 && height > 0 )
                 {
                     timeline.zoomExtents();
                     isInitialized = true;
                 }
-                oldHeight = timeline.height
             }
 
             // Zoom to the extents of the curve, always zooms the full X axis and zooms to the available y extremes
@@ -508,30 +518,22 @@ Rectangle {
                 {
                     curveEditor.deleteSelected();
                 }
-                else if(event.key === Qt.Key_X)
+                else if((event.key === Qt.Key_X) && (event.modifiers == Qt.NoModifier))
                 {
                     toggleCurve(0)
                 }
-                else if(event.key === Qt.Key_Y)
+                else if((event.key === Qt.Key_Y) && (event.modifiers == Qt.NoModifier))
                 {
                     toggleCurve(1)
                 }
-                else if(event.key === Qt.Key_Z)
+                else if((event.key === Qt.Key_Z) && (event.modifiers == Qt.NoModifier))
                 {
                     toggleCurve(2)
                 }
-                else if(event.key === Qt.Key_W)
+                else if((event.key === Qt.Key_W) && (event.modifiers == Qt.NoModifier))
                 {
                     toggleCurve(3)
                 }
-            }
-
-            // Data model coming from C++
-            WGListModel
-            {
-                id: curvesModel
-                source: curves
-                ValueExtension {}
             }
 
             WGSelectionArea
@@ -586,11 +588,12 @@ Rectangle {
             Repeater
             {
                 id: curveRepeater
-                model: curvesModel
+                model: curves
 
                 onCountChanged: {
                     _.resetAll = true
                     updateGradientTimer.restart()
+                    toolbar.scalesEnabled = hasCurves()
                 }
 
                 delegate: Curve{
@@ -600,8 +603,8 @@ Rectangle {
                     curveModel: value
                     viewTransform: timeline.viewTransform;
                     Component.onCompleted:{
-                        // Assign and don't bind the color, otherwise we get qml errors when the curvesModel changes
-                        // Should we update colors when the curvesModel Changes?
+                        // Assign and don't bind the color, otherwise we get qml errors when the curves changes
+                        // Should we update colors when the curves Changes?
                         color = ["#b45b4e", "#99dc74", "#92cfdd", "#808080"][index%4]
                     }
                     onPointSelectionChanged:{
@@ -645,6 +648,7 @@ Rectangle {
                 onItemRemoved:
                 {
                     curveEditor.curveRemoved(item);
+                    toolbar.scalesEnabled = hasCurves()
                 }
             }
 
@@ -694,6 +698,14 @@ Rectangle {
                 stepSize: .0001
                 onVisibleChanged: updateGradientTimer.restart()
 
+                useHDR: true
+
+                tonemap: function(col) {
+                    var hsv = WGColor.rgbToHsv(col.x, col.y, col.z);
+                    hsv.z = Math.min(hsv.z, 1.0);
+                    return WGColor.hsvToRgb(hsv.x, hsv.y, hsv.z);
+                }
+
                 onChangeValue: {
                     if(!Qt._updatingPosition && !Qt._updatingCurveGradient)
                     {
@@ -723,11 +735,11 @@ Rectangle {
                         var alpha = curveRepeater.count == 4 ?
                                     curveRepeater.itemAt(3).getPoint(index) : null
                         beginUndoFrame()
-                        red.setPosition(red.point.pos.x, color.r)
-                        green.setPosition(green.point.pos.x, color.g)
-                        blue.setPosition(blue.point.pos.x, color.b)
+                        red.setPosition(red.point.pos.x, color.x)
+                        green.setPosition(green.point.pos.x, color.y)
+                        blue.setPosition(blue.point.pos.x, color.z)
                         if(alpha){
-                            alpha.setPosition(alpha.point.pos.x, color.a)
+                            alpha.setPosition(alpha.point.pos.x, color.w)
                         }
                         endUndoFrame()
                     }
@@ -756,14 +768,24 @@ Rectangle {
                         // Prevent deleting points multiple times if the deletion of the point removed this handle
                         if(colorGradient.__handleCount === curveRepeater.itemAt(0).pointRepeater.count)
                             return
-                        var red = curveRepeater.itemAt(0).getPoint(index).point;
-                        _.handleModified(index)
-                        curveEditor.deletePointsAt([red.pos.x]);
+
+                        // Check to see if we need to add the handle back in if we can't delete it
+                        if(!allowEmptyCurves && curveRepeater.itemAt(0).pointRepeater.count == 1)
+                        {
+                            _.resetAll = true;
+                            updateGradientTimer.restart();
+                        }
+                        else
+                        {
+                            var red = curveRepeater.itemAt(0).getPoint(index).point;
+                            _.handleModified(index)
+                            curveEditor.deletePointsAt([red.pos.x]);
+                        }
                     }
                 }
 
                 onSliderDoubleClicked: {
-                    if (useColorPicker)
+                    if (useColorPicker && mouse.modifiers == Qt.NoModifier)
                     {
                         clearSelection();
                     }
@@ -809,9 +831,12 @@ Rectangle {
                             var newG = subCurves.length >= 2 ? subCurves[1][j].y : 1
                             var newB = subCurves.length >= 3 ? subCurves[2][j].y : 1
                             var newA = subCurves.length == 4 ? subCurves[3][j].y : 1
-                            var newColor = Qt.rgba(newR, newG, newB, newA)
 
-                            subCols[j] = newColor
+                            var newCol = Qt.vector4d(newR, newG, newB, newA)
+                            var tmCol = tonemap(Qt.vector3d(newCol.x, newCol.y, newCol.z))
+                            var rgbaCol = Qt.rgba(tmCol.x, tmCol.y, tmCol.z, newCol.w)
+
+                            subCols[j] = rgbaCol
                             subVals[j] = t
 
                             gradString += "GradientStop { position: " + subVals[j] + "; color: '" + subCols[j] + "' } "

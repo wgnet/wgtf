@@ -2,12 +2,13 @@
 #define COMPONENT_EXTENSION_OLD_HPP
 
 #include "i_model_extension_old.hpp"
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
 class IQtFramework;
 
-class ComponentExtensionOld : public IModelExtensionOld
+class ComponentExtensionOld : public IModelExtensionOld, Depends<IQtFramework>
 {
 public:
 	ComponentExtensionOld();
@@ -16,9 +17,6 @@ public:
 	QHash<int, QByteArray> roleNames() const override;
 	QVariant data(const QModelIndex& index, int role) const override;
 	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
-
-private:
-	IQtFramework* qtFramework_;
 };
 } // end namespace wgt
 #endif // COMPONENT_EXTENSION_HPP

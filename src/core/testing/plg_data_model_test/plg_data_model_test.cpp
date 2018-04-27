@@ -17,20 +17,15 @@ class TestDataModelPlugin : public PluginMain
 {
 public:
 	//==========================================================================
-	TestDataModelPlugin(IComponentContext& contextManager) : customModelInterfaceTest(contextManager)
-	{
-	}
-
-	//==========================================================================
 	void Initialise(IComponentContext& contextManager) override
 	{
-		customModelInterfaceTest.initialise(contextManager);
+		customModelInterfaceTest.initialise();
 	}
 
 	//==========================================================================
 	bool Finalise(IComponentContext& contextManager) override
 	{
-		customModelInterfaceTest.fini(contextManager);
+		customModelInterfaceTest.fini();
 		return true;
 	}
 

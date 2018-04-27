@@ -12,7 +12,7 @@ Item
     objectName: "groupItem"
     WGComponent { type: componentType }
     property var componentType: "NodeGroupArea"
-    
+
     property var globalMinPosition: mapToItem(graphView, x, y)
     property var globalMaxPosition: mapToItem(graphView, x + width, y + height)
 
@@ -20,7 +20,7 @@ Item
 
     property string groupTitle
 
-    property color groupColor
+    property vector4d groupColor
 
     property bool selected: false
 
@@ -87,7 +87,7 @@ Item
 
         style: WGTextBoxStyle {
             background: Item {}
-            textColor: Qt.rgba(groupColor.r, groupColor.g, groupColor.b, 0.7)
+            textColor: Qt.rgba(groupColor.x, groupColor.y, groupColor.z, 0.7)
         }
 
         // focus is not dropping because nothing else in node editor has focus items. Bit of a hack to stop editing state.
@@ -121,7 +121,7 @@ Item
         horizontalAlignment: Text.AlignRight
         text: "(locked)"
         visible: locked
-        color: groupColor
+        color: Qt.rgba(groupColor.x, groupColor.y, groupColor.z, groupColor.w)
     }
 
     WGResizeableFrame {
@@ -135,9 +135,9 @@ Item
 
         //visual appearance of the actual group box
         frameStyle: Rectangle {
-            color: selected ? Qt.rgba(groupColor.r, groupColor.g, groupColor.b, 0.3) : Qt.rgba(groupColor.r, groupColor.g, groupColor.b, 0.15)
+            color: selected ? Qt.rgba(groupColor.x, groupColor.y, groupColor.z, 0.3) : Qt.rgba(groupColor.x, groupColor.y, groupColor.z, 0.15)
             border.width: defaultSpacing.doubleBorderSize
-            border.color: selected ? groupColor : Qt.rgba(groupColor.r, groupColor.g, groupColor.b, 0.5)
+            border.color: selected ? Qt.rgba(groupColor.x, groupColor.y, groupColor.z, groupColor.w) : Qt.rgba(groupColor.x, groupColor.y, groupColor.z, 0.5)
             radius: defaultSpacing.standardRadius
         }
 
@@ -145,7 +145,7 @@ Item
             parent.setDimensions(newX, newY, newWidth, newHeight);
         }
     }
-    
+
     MouseArea
     {
         id: contextMenuMouseArea
@@ -163,7 +163,7 @@ Item
             var coord = mapToItem(graphView, mouse.x, mouse.y);
             graphView.contextMenu.popupPointX = coord.x;
             graphView.contextMenu.popupPointY = coord.y;
-            graphView.contextMenu.contextObject = groupItem; 
+            graphView.contextMenu.contextObject = groupItem;
             graphView.contextMenu.popup();
         }
     }
@@ -173,7 +173,7 @@ Item
         id: nodeGroupMouseArea
         anchors.fill: parent
         anchors.margins: defaultSpacing.doubleMargin
-        drag.target: groupItem
+        drag.target: groupItem.locked ? null : groupItem
         drag.axis: Drag.XAndYAxis
         acceptedButtons: Qt.LeftButton
         preventStealing: true
@@ -185,19 +185,19 @@ Item
                 graphView.selectNode(groupItem);
             }
         }
-        
+
         onPressed: {
             if (!locked && !(mouse.modifiers & Qt.ControlModifier)) {
                 graphView.resetNodesSelection();
                 graphView.selectNode(groupItem);
-                
+
                 canvasContainer.selectArea(
                     canvasContainer.mapFromItem(canvasItem, groupItem.x, groupItem.y),
                     canvasContainer.mapFromItem(canvasItem, groupItem.x + groupItem.width, groupItem.y + groupItem.height),
                     mouse.modifiers & Qt.ShiftModifier)
-            }   
+            }
         }
-        
+
         onReleased: {
             if(groupItem.selected) {
                 graphView.resetNodesSelection();

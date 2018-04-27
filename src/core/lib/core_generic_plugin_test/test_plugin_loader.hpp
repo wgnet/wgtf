@@ -1,8 +1,7 @@
 #ifndef TEST_PLUGIN_LOADER_HPP
 #define TEST_PLUGIN_LOADER_HPP
 
-#include "core_generic_plugin_manager/generic_plugin_manager.hpp"
-
+#include "core_unit_test/test_global_context.hpp"
 #include <string>
 #include <vector>
 
@@ -18,13 +17,9 @@ public:
 	TestPluginLoader();
 	virtual ~TestPluginLoader();
 
-	/**
-	 *	Call from the constructor of derived classes.
-	 *	@param plugins list of plugins to load.
-	 */
-	void load(const PluginList& pluginList);
-
-	GenericPluginManager pluginManager_;
+private:
+	InterfacePtr interface_ = nullptr;
+	GenericPluginManager& pluginManager_;
 	PluginList plugins_;
 };
 } // end namespace wgt

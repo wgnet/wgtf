@@ -8,6 +8,7 @@
 namespace wgt
 {
 class Variant;
+class Collection;
 
 class REFLECTION_DLL ReflectedMethodParameters
 {
@@ -27,6 +28,7 @@ public:
 	ReflectedMethodParameters& operator=(const ReflectedMethodParameters& rhs);
 
 	ReflectedMethodParameters& operator,(const Variant& variant);
+	operator Collection();
 
 	bool empty() const;
 	size_t size() const;

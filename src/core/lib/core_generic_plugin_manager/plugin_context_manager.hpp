@@ -5,6 +5,7 @@
 #include "core_dependency_system/i_interface.hpp"
 #include "core_generic_plugin/interfaces/i_component_context_creator.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
+#include "core_common/holder_collection.hpp"
 
 #include <map>
 #include <memory>
@@ -32,13 +33,26 @@ public:
 	const char* getExecutablePath() const override;
 
 private:
-	typedef std::vector<IInterface*> InterfaceCollection;
+	typedef std::vector< std::weak_ptr< IInterface > > InterfaceCollection;
 	typedef std::map<IComponentContextCreator*, InterfaceCollection> ContextChildrenCollection;
 	ContextChildrenCollection childContexts_;
-	std::map<PluginId, std::pair<IComponentContext*, std::wstring>> contexts_;
+
+	struct ContextMetaData
+	{
+		~ContextMetaData()
+		{
+			delete context_;
+		}
+		IComponentContext* context_;
+		std::wstring contextName_;
+		HolderCollection<IComponentContext::ConnectionHolder> connections_;
+	};
+	std::map<PluginId, std::unique_ptr<ContextMetaData>> contexts_;
 	std::map<std::string, IComponentContextCreator*> contextCreators_;
 	std::unique_ptr<IComponentContext> globalContext_;
 	const char* executablepath_;
+
+	HolderCollection<IComponentContext::ConnectionHolder> connections_;
 };
 } // end namespace wgt
 #endif // PLUGIN_CONTEXT_MANAGER_HPP

@@ -2,8 +2,9 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
-import WGControls 1.0
-import WGControls.Layouts 1.0
+import WGControls 2.0
+import WGControls.Layouts 2.0
+import WGControls.Views 2.0
 
 
 Rectangle {
@@ -22,8 +23,11 @@ Rectangle {
     signal progressCancelled(bool cancelled)
 
     WGScrollPanel {
-        childObject_ :
+        anchors.fill: parent
+        anchors.leftMargin: defaultSpacing.doubleMargin
+        anchors.rightMargin: defaultSpacing.doubleMargin
         WGDraggableColumn {
+            width: parent.width
             WGInternalPanel {
                 text: "Command In Progress"
                 hasIcon_: false

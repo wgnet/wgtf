@@ -45,6 +45,7 @@ SET( BW_COMPILER_FLAGS_DEBUG
 	# Code generation
 	/MDd	# Multi-threaded debug DLL runtime library
 	/RTC1	# Basic runtime checks
+	/bigobj
 	)
 
 # Flags used by C and C++ compilers for Hybrid Consumer_Release builds
@@ -215,4 +216,4 @@ ELSE()
 	MESSAGE( FATAL_ERROR "Compiler '${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}' not currently supported by Wargaming." )
 ENDIF()
 
-ADD_DEFINITIONS( -DNGT_ALLOCATOR )
+

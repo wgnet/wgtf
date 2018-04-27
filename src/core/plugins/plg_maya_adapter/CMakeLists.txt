@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
 PROJECT( plg_maya_adapter )
 
 INCLUDE( WGToolsCoreProject )
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 SET( PLUGIN_QT_COMMON_DIR ${CMAKE_CURRENT_LIST_DIR}/../plg_qt_common )
 SET( MAYA_APP_PLUGIN_DIR ${CMAKE_CURRENT_LIST_DIR}/../../app/maya_plugin )
@@ -31,7 +31,7 @@ SET( ALL_SRCS
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_TOOL_PLUGIN( ${PROJECT_NAME} SHARED
@@ -58,6 +58,7 @@ BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_generic_plugin
 	core_qt_common
 	core_ui_framework
+	core_serialization_xml
     Qt5::Core
     Qt5::Gui
     Qt5::Quick

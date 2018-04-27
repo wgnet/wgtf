@@ -1,8 +1,10 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 
+#include "core_common/assert.hpp"
 #include "history_object.hpp"
 #include "metadata/history_object.mpp"
 #include "metadata/display_object.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_command_system/i_history_panel.h"
 
@@ -10,8 +12,10 @@
 
 #include "core_qt_common/i_qt_framework.hpp"
 
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/type_class_definition.hpp"
+#include "core_reflection/property_accessor.hpp"
 
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
@@ -29,11 +33,11 @@ class HistoryPanel : public IHistoryPanel
 public:
 	void init(ObjectHandle object, IDefinitionManager& definitionManager)
 	{
-		const IClassDefinition* classDefinition = object.getDefinition(definitionManager);
+		const IClassDefinition* classDefinition = definitionManager.getDefinition(object);
 		clearButtonVisibility = classDefinition->bindProperty("IsClearButtonVisible", object);
 		makeMacroButtonVisibility = classDefinition->bindProperty("IsMakeMacroButtonVisible", object);
-		assert(clearButtonVisibility.isValid());
-		assert(makeMacroButtonVisibility.isValid());
+		TF_ASSERT(clearButtonVisibility.isValid());
+		TF_ASSERT(makeMacroButtonVisibility.isValid());
 	}
 
 	void setClearButtonVisible(bool show) override
@@ -70,10 +74,13 @@ private:
 class HistoryUIPlugin : public PluginMain, public Depends<IViewCreator>
 {
 public:
-	HistoryUIPlugin(IComponentContext& contextManager) : Depends(contextManager)
+	HistoryUIPlugin()
 	{
+		registerCallback([]( IDefinitionManager & defManager )
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
-
 	void createActions(IUIFramework& uiFramework, IUIApplication& uiApplication)
 	{
 		// hook undo/redo
@@ -99,7 +106,7 @@ public:
 
 	void undo(IAction* action)
 	{
-		assert(commandSystemProvider_);
+		TF_ASSERT(commandSystemProvider_);
 		if (commandSystemProvider_ == nullptr)
 		{
 			return;
@@ -109,7 +116,7 @@ public:
 
 	void redo(IAction* action)
 	{
-		assert(commandSystemProvider_);
+		TF_ASSERT(commandSystemProvider_);
 		if (commandSystemProvider_ == nullptr)
 		{
 			return;
@@ -148,8 +155,6 @@ public:
 			return;
 		}
 		auto& definitionManager = *pDefinitionManager;
-		REGISTER_DEFINITION(HistoryObject);
-		REGISTER_DEFINITION(DisplayObject);
 
 		commandSystemProvider_ = contextManager.queryInterface<ICommandManager>();
 		if (commandSystemProvider_ == nullptr)
@@ -157,15 +162,13 @@ public:
 			return;
 		}
 
-		auto pHistoryDefinition = pDefinitionManager->getDefinition(getClassIdentifier<HistoryObject>());
-		assert(pHistoryDefinition != nullptr);
-		history_ = pHistoryDefinition->create();
-		history_.getBase<HistoryObject>()->init(*commandSystemProvider_, definitionManager);
+		history_ = ManagedObject<HistoryObject>::make_unique();
+		(*history_)->init(*commandSystemProvider_, definitionManager);
 
 		auto viewCreator = get<IViewCreator>();
 		if (viewCreator)
 		{
-			panel_ = viewCreator->createView("WGHistory/WGHistoryView.qml", history_);
+			panel_ = viewCreator->createView("WGHistory/WGHistoryView.qml", history_->getHandle());
 		}
 
 		auto pQtFramework = contextManager.queryInterface<IQtFramework>();
@@ -176,42 +179,40 @@ public:
 		auto uiApplication = contextManager.queryInterface<IUIApplication>();
 		createActions(*pQtFramework, *uiApplication);
 		HistoryPanel* historyPanelinterface = new HistoryPanel();
-		historyPanelinterface->init(history_, *pDefinitionManager);
+		historyPanelinterface->init(history_->getHandle(), *pDefinitionManager);
 		historyPanelInterface_.reset(historyPanelinterface);
 		historyPanelInterfaceID = contextManager.registerInterface(historyPanelInterface_.get(), false);
 	}
 
 	bool Finalise(IComponentContext& contextManager) override
 	{
-		contextManager.deregisterInterface(historyPanelInterfaceID);
+		contextManager.deregisterInterface(historyPanelInterfaceID.get());
 		auto uiApplication = contextManager.queryInterface<IUIApplication>();
-		if (uiApplication == nullptr)
+		if (uiApplication != nullptr)
 		{
-			return true;
+			if (panel_.valid())
+			{
+				auto view = panel_.get();
+				uiApplication->removeView(*view);
+				view = nullptr;
+			}
+			destroyActions(*uiApplication);
 		}
-		if (panel_.valid())
-		{
-			auto view = panel_.get();
-			uiApplication->removeView(*view);
-			view = nullptr;
-		}
-		destroyActions(*uiApplication);
-		auto historyObject = history_.getBase<HistoryObject>();
-		assert(historyObject != nullptr);
-		historyObject->fini();
+		(*history_)->fini();
+		history_.reset();
 		return true;
 	}
 
 private:
 	wg_future<std::unique_ptr<IView>> panel_;
-	ObjectHandle history_;
+	std::unique_ptr<ManagedObject<HistoryObject>> history_;
 	std::unique_ptr<IHistoryPanel> historyPanelInterface_;
-	IInterface* historyPanelInterfaceID;
+	InterfacePtr historyPanelInterfaceID;
 
 	ICommandManager* commandSystemProvider_;
 	std::unique_ptr<IAction> undo_;
 	std::unique_ptr<IAction> redo_;
 };
-
+    
 PLG_CALLBACK_FUNC(HistoryUIPlugin)
 } // end namespace wgt

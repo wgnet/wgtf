@@ -1,23 +1,24 @@
 #include "invoke_reflected_method_command.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_variant/variant.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_reflection/reflected_method_parameters.hpp"
 #include "core_reflection/property_accessor.hpp"
-#include "core_data_model/variant_list.hpp"
 #include "core_reflection/interfaces/i_base_property.hpp"
 #include "core_reflection/reflected_method.hpp"
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_reflection/base_property_with_metadata.hpp"
 #include "core_reflection/generic/generic_object.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
 struct ReflectedMethodCommandParameters::Implementation
 {
-	Implementation(ReflectedMethodCommandParameters& self, RefObjectId id = std::string(), std::string path = "",
+	Implementation(ReflectedMethodCommandParameters& self, std::string id = "", std::string path = "",
 	               ReflectedMethodParameters parameters = ReflectedMethodParameters())
 	    : self_(self), id_(id), path_(path), parameters_(parameters)
 	{
@@ -27,30 +28,7 @@ struct ReflectedMethodCommandParameters::Implementation
 	RefObjectId id_;
 	std::string path_;
 	ReflectedMethodParameters parameters_;
-
-	static const char* s_IdName;
-	static const char* s_PathName;
-	static const char* s_ParametersName;
 };
-
-const char* ReflectedMethodCommandParameters::Implementation::s_IdName = "MethodContextId";
-const char* ReflectedMethodCommandParameters::Implementation::s_PathName = "MethodPath";
-const char* ReflectedMethodCommandParameters::Implementation::s_ParametersName = "MethodParameters";
-
-const char* ReflectedMethodCommandParameters::idName()
-{
-	return Implementation::s_IdName;
-}
-
-const char* ReflectedMethodCommandParameters::pathName()
-{
-	return Implementation::s_PathName;
-}
-
-const char* ReflectedMethodCommandParameters::parametersName()
-{
-	return Implementation::s_ParametersName;
-}
 
 ReflectedMethodCommandParameters::ReflectedMethodCommandParameters() : impl_(new Implementation(*this))
 {
@@ -83,12 +61,17 @@ const RefObjectId& ReflectedMethodCommandParameters::getId() const
 	return impl_->id_;
 }
 
-const char* ReflectedMethodCommandParameters::getPath() const
+const std::string& ReflectedMethodCommandParameters::getPath() const
 {
-	return impl_->path_.c_str();
+	return impl_->path_;
 }
 
 const ReflectedMethodParameters& ReflectedMethodCommandParameters::getParameters() const
+{
+	return impl_->parameters_;
+}
+
+Collection ReflectedMethodCommandParameters::getParameterList() const
 {
 	return impl_->parameters_;
 }
@@ -103,7 +86,7 @@ void ReflectedMethodCommandParameters::setId(const RefObjectId& id)
 	impl_->id_ = id;
 }
 
-void ReflectedMethodCommandParameters::setPath(const char* path)
+void ReflectedMethodCommandParameters::setPath(const std::string& path)
 {
 	impl_->path_ = path;
 }
@@ -123,15 +106,16 @@ struct InvokeReflectedMethodCommand::Implementation
 	IBasePropertyPtr getProperty(const ObjectHandle& arguments) const
 	{
 		auto objectManager = definitionManager_.getObjectManager();
-		assert(objectManager != nullptr);
+		TF_ASSERT(objectManager != nullptr);
 
 		auto commandParameters = arguments.getBase<ReflectedMethodCommandParameters>();
-		const ObjectHandle& object = objectManager->getObject(commandParameters->getId());
-		auto definition = object.getDefinition(definitionManager_);
+		auto object = objectManager->getObject(commandParameters->getId());
+		auto definition = definitionManager_.getDefinition(object);
+		TF_ASSERT(definition);
 
-		PropertyAccessor methodAccessor = definition->bindProperty(commandParameters->getPath(), object);
+		PropertyAccessor methodAccessor = definition->bindProperty(commandParameters->getPath().c_str(), object);
 		IBasePropertyPtr classMember = methodAccessor.getProperty();
-		assert(classMember->isMethod());
+		TF_ASSERT(classMember->isMethod());
 
 		return classMember;
 	}
@@ -165,6 +149,12 @@ const char* InvokeReflectedMethodCommand::getId() const
 	return s_Id;
 }
 
+const char* InvokeReflectedMethodCommand::getName() const
+{
+	static const char* s_name = "Invoke method";
+	return s_name;
+}
+
 bool InvokeReflectedMethodCommand::validateArguments(const ObjectHandle& arguments) const
 {
 	auto objectManager = impl_->definitionManager_.getObjectManager();
@@ -179,19 +169,19 @@ bool InvokeReflectedMethodCommand::validateArguments(const ObjectHandle& argumen
 		return false;
 	}
 
-	const ObjectHandle& object = objectManager->getObject(commandParameters->getId());
+	auto object = objectManager->getObject(commandParameters->getId());
 	if (!object.isValid())
 	{
 		return false;
 	}
 
-	auto defintion = object.getDefinition(impl_->definitionManager_);
+	auto defintion = impl_->definitionManager_.getDefinition(object);
 	if (defintion == nullptr)
 	{
 		return false;
 	}
 
-	PropertyAccessor methodAccessor = defintion->bindProperty(commandParameters->getPath(), object);
+	PropertyAccessor methodAccessor = defintion->bindProperty(commandParameters->getPath().c_str(), object);
 	if (!methodAccessor.isValid())
 	{
 		return false;
@@ -200,24 +190,26 @@ bool InvokeReflectedMethodCommand::validateArguments(const ObjectHandle& argumen
 	return true;
 }
 
-ObjectHandle InvokeReflectedMethodCommand::execute(const ObjectHandle& arguments) const
+Variant InvokeReflectedMethodCommand::execute(const ObjectHandle& arguments) const
 {
 	auto objectManager = impl_->definitionManager_.getObjectManager();
-	assert(objectManager != nullptr);
+	TF_ASSERT(objectManager != nullptr);
 
 	auto commandParameters = arguments.getBase<ReflectedMethodCommandParameters>();
-	const ObjectHandle& object = objectManager->getObject(commandParameters->getId());
-	auto defintion = object.getDefinition(impl_->definitionManager_);
-	PropertyAccessor methodAccessor = defintion->bindProperty(commandParameters->getPath(), object);
+	auto object = objectManager->getObject(commandParameters->getId());
+	TF_ASSERT(object.isValid());
 
+	auto definition = impl_->definitionManager_.getDefinition(object);
+	TF_ASSERT(definition);
+
+	PropertyAccessor methodAccessor = definition->bindProperty(commandParameters->getPath().c_str(), object);
 	if (!methodAccessor.isValid())
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 
 	const ReflectedMethodParameters& parameters = commandParameters->getParameters();
-	Variant result = methodAccessor.invoke(parameters);
-	return result;
+	return methodAccessor.invoke(parameters);
 }
 
 CommandThreadAffinity InvokeReflectedMethodCommand::threadAffinity() const
@@ -225,7 +217,7 @@ CommandThreadAffinity InvokeReflectedMethodCommand::threadAffinity() const
 	return CommandThreadAffinity::UI_THREAD;
 }
 
-ObjectHandle InvokeReflectedMethodCommand::getCommandDescription(const ObjectHandle& arguments) const
+CommandDescription InvokeReflectedMethodCommand::getCommandDescription(const ObjectHandle& arguments) const
 {
 	IBasePropertyPtr classMember = impl_->getProperty(arguments);
 
@@ -238,15 +230,14 @@ ObjectHandle InvokeReflectedMethodCommand::getCommandDescription(const ObjectHan
 
 		if (description != nullptr && description->getDescription() != nullptr)
 		{
-			auto object = GenericObject::create(impl_->definitionManager_);
-			assert(object != nullptr);
-			object->set("Name", std::wstring(description->getDescription()));
-			object->set("Type", "Unknown");
-			return object;
+            auto object = GenericObject::create();
+            object->set("Name", std::wstring(description->getDescription()));
+            object->set("Type", "Unknown");
+            return std::move(object);
 		}
 	}
 
-	return ObjectHandle();
+	return nullptr;
 }
 
 bool InvokeReflectedMethodCommand::canUndo(const ObjectHandle& arguments) const
@@ -269,5 +260,10 @@ bool InvokeReflectedMethodCommand::canUndo(const ObjectHandle& arguments) const
 	}
 
 	return false;
+}
+
+ManagedObjectPtr InvokeReflectedMethodCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<ReflectedMethodCommandParameters>(arguments);
 }
 } // end namespace wgt

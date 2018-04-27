@@ -8,6 +8,11 @@ using namespace wgt;
 
 bool convertToString(std::string* to, const MetaType* fromType, const void* from)
 {
+	if (!to || !from)
+	{
+		return true;
+	}
+
 	ResizingMemoryStream dataStream;
 	TextStream stream(dataStream);
 	fromType->streamOut(stream, from);
@@ -68,6 +73,11 @@ void MetaTypeImpl<void>::destroy(void* value) const
 	// nop
 }
 
+bool MetaTypeImpl<void>::lessThan(const void* lhs, const void* rhs) const
+{
+	return false;
+}
+
 bool MetaTypeImpl<void>::equal(const void* lhs, const void* rhs) const
 {
 	return true;
@@ -98,30 +108,71 @@ bool MetaTypeImpl<void>::convertFrom(void* to, const MetaType* fromType, const v
 	return base::convertFrom(to, fromType, from) || true;
 }
 
-////////////////////////////////////////////////////////////////////////////
-
-MetaTypeImpl<uintmax_t>::MetaTypeImpl() : base("uint", DeducibleFromText)
+uint64_t MetaTypeImpl<void>::hashCode(const void * value) const
 {
+	std::hash<uint64_t> hash_fn;
+	return hash_fn(reinterpret_cast<uint64_t> (value));
 }
 
-bool MetaTypeImpl<uintmax_t>::convertFrom(void* to, const MetaType* fromType, const void* from) const
-{
-	return base::convertFrom(to, fromType, from) ||
-	straightConvert<uintmax_t, intmax_t>(&base::cast(to), fromType, from) ||
-	straightConvert<uintmax_t, double>(&base::cast(to), fromType, from);
-}
 
 ////////////////////////////////////////////////////////////////////////////
 
-MetaTypeImpl<intmax_t>::MetaTypeImpl() : base("int", DeducibleFromText)
+MetaTypeImpl<uint32_t>::MetaTypeImpl() : base("uint", DeducibleFromText)
 {
 }
 
-bool MetaTypeImpl<intmax_t>::convertFrom(void* to, const MetaType* fromType, const void* from) const
+bool MetaTypeImpl<uint32_t>::convertFrom(void* to, const MetaType* fromType, const void* from) const
 {
 	return base::convertFrom(to, fromType, from) ||
-	straightConvert<intmax_t, uintmax_t>(&base::cast(to), fromType, from) ||
-	straightConvert<intmax_t, double>(&base::cast(to), fromType, from);
+	straightConvert<uint32_t, int32_t>(&base::cast(to), fromType, from) ||
+	straightConvert<uint32_t, uint64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<uint32_t, int64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<uint32_t, double>(&base::cast(to), fromType, from);
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+MetaTypeImpl<int32_t>::MetaTypeImpl() : base("int", DeducibleFromText)
+{
+}
+
+bool MetaTypeImpl<int32_t>::convertFrom(void* to, const MetaType* fromType, const void* from) const
+{
+	return base::convertFrom(to, fromType, from) ||
+	straightConvert<int32_t, uint32_t>(&base::cast(to), fromType, from) ||
+	straightConvert<int32_t, int64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<int32_t, uint64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<int32_t, double>(&base::cast(to), fromType, from);
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+MetaTypeImpl<uint64_t>::MetaTypeImpl() : base("uint64", DeducibleFromText)
+{
+}
+
+bool MetaTypeImpl<uint64_t>::convertFrom(void* to, const MetaType* fromType, const void* from) const
+{
+	return base::convertFrom(to, fromType, from) ||
+	straightConvert<uint64_t, int64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<uint64_t, uint32_t>(&base::cast(to), fromType, from) ||
+	straightConvert<uint64_t, int32_t>(&base::cast(to), fromType, from) ||
+	straightConvert<uint64_t, double>(&base::cast(to), fromType, from);
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+MetaTypeImpl<int64_t>::MetaTypeImpl() : base("int64", DeducibleFromText)
+{
+}
+
+bool MetaTypeImpl<int64_t>::convertFrom(void* to, const MetaType* fromType, const void* from) const
+{
+	return base::convertFrom(to, fromType, from) ||
+	straightConvert<int64_t, uint64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<int64_t, uint32_t>(&base::cast(to), fromType, from) ||
+	straightConvert<int64_t, int32_t>(&base::cast(to), fromType, from) ||
+	straightConvert<int64_t, double>(&base::cast(to), fromType, from);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -133,8 +184,10 @@ MetaTypeImpl<double>::MetaTypeImpl() : base("real", DeducibleFromText)
 bool MetaTypeImpl<double>::convertFrom(void* to, const MetaType* fromType, const void* from) const
 {
 	return base::convertFrom(to, fromType, from) ||
-	straightConvert<double, uintmax_t>(&base::cast(to), fromType, from) ||
-	straightConvert<double, intmax_t>(&base::cast(to), fromType, from);
+	straightConvert<double, uint64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<double, int64_t>(&base::cast(to), fromType, from) ||
+	straightConvert<double, uint32_t>(&base::cast(to), fromType, from) ||
+	straightConvert<double, int32_t>(&base::cast(to), fromType, from);
 }
 
 ////////////////////////////////////////////////////////////////////////////

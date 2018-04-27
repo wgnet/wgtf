@@ -10,12 +10,18 @@ WGTimeBox {
     time: itemData.value
     minimumValue: itemData.minValue
     maximumValue: itemData.maxValue
-    readOnly: itemData.readOnly
+    readOnly: itemData.readOnly || (typeof readOnlyComponent != "undefined" && readOnlyComponent)
     enabled: itemData.enabled
     multipleValues: itemData.multipleValues
 
     onTimeChanged: {
-        itemData.value = timeBox.time;
+		if(!multipleValues) {
+			itemData.value = timeBox.time;
+		} else {
+			beginUndoFrame();
+			itemData.value = timeBox.time;
+			endUndoFrame();
+		}
     }
 }
 

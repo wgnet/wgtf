@@ -1,15 +1,18 @@
 #include "ref_object_id.hpp"
-#include <cassert>
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <wchar.h>
 
 #ifdef _WIN32
-#include <objbase.h>
+#include "objbase.h"
 #elif __APPLE__
 #include <uuid/uuid.h>
 #endif
+#include "core_common/assert.hpp"
+#include "core_serialization/resizing_memory_stream.hpp"
+#include "core_serialization/fixed_memory_stream.hpp"
+#include "wg_types/hash_utilities.hpp"
 
 namespace
 {
@@ -43,7 +46,7 @@ RefObjectId::RefObjectId(const std::string& s) : a_(0), b_(0), c_(0), d_(0)
 		}
 		else
 		{
-			assert(false && "Error parsing RefObjectId");
+			TF_ASSERT(false && "Error parsing RefObjectId");
 		}
 	}
 }
@@ -107,13 +110,12 @@ RefObjectId RefObjectId::generate()
 	RefObjectId n;
 
 #ifdef _WIN32
-	if (FAILED(CoCreateGuid(reinterpret_cast<GUID*>(&n))))
-	{
-		assert(false && "Couldn't create GUID");
-	}
+	static_assert(sizeof(GUID) == sizeof(RefObjectId), "Can't cast RefObjectId to GUID, types are not the same size");
+	CoCreateGuid(reinterpret_cast<GUID*>(&n));
 #elif __APPLE__
 	uuid_generate((unsigned char*)(&n));
 #endif
+	TF_ASSERT(n != RefObjectId::zero() && "Couldn't create GUID");
 
 	return n;
 }
@@ -150,4 +152,56 @@ bool RefObjectId::fromString(const std::string& s, unsigned int* data)
 
 	return true;
 }
+
+
+//------------------------------------------------------------------------------
+uint64_t RefObjectId::getHash() const
+{
+	uint64_t seed = 0;
+	wgt::HashUtilities::combine(seed, getA());
+	wgt::HashUtilities::combine(seed, getB());
+	wgt::HashUtilities::combine(seed, getC());
+	wgt::HashUtilities::combine(seed, getD());
+	return seed;
+}
+
+BinaryStream& operator<<(BinaryStream& stream, const RefObjectId& v)
+{
+	std::string id = v;
+	stream.serializeBuffer(id.c_str(), id.length());
+	return stream;
+}
+
+BinaryStream& operator>>(BinaryStream& stream, RefObjectId& v)
+{
+	ResizingMemoryStream dataStream;
+	stream.deserializeBuffer(dataStream);
+	if (!stream.fail())
+	{
+		v = dataStream.buffer();
+	}
+	return stream;
+}
+
+TextStream& operator<<(TextStream& stream, const RefObjectId& v)
+{
+	std::string id = v;
+	FixedMemoryStream dataStream(id.c_str(), id.length());
+	stream.serializeString(dataStream);
+	return stream;
+}
+
+TextStream& operator>>(TextStream& stream, RefObjectId& v)
+{
+	ResizingMemoryStream dataStream;
+	stream.deserializeString(dataStream);
+	if (stream.fail())
+	{
+		return stream;
+	}
+
+	v = dataStream.buffer();
+	return stream;
+}
+
 } // end namespace wgt

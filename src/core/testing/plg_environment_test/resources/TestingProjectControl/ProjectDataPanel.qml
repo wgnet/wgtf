@@ -2,16 +2,16 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
-import WGControls 1.0
-import WGControls.Views 1.0
-import WGCopyableFunctions 1.0
+import WGControls 2.0
+import WGControls.Views 2.0
 
 WGPanel {
-    color: palette.mainWindowColor
-    property var title: "Project Data"
-    property var layoutHints: { 'test': 0.1 }
-    property var sourceModel: source
+	id: projectDataPanel
 
+    color: palette.mainWindowColor
+    title: "Project Data"
+    layoutHints: { 'test': 0.1 }
+    property var sourceModel: source
 
     Label {
         id: searchBoxLabel
@@ -25,57 +25,36 @@ WGPanel {
         y: 2
         anchors.left: searchBoxLabel.right
         anchors.right: parent.right
-        Component.onCompleted: {
-            WGCopyableHelper.disableChildrenCopyable(searchBox);
+
+		onTextChanged: {
+            projectDataPanel.setFilter(text);
+            searchBox.focus = true;
+            deselect();
         }
     }
 
-    WGFilteredTreeModel {
-        id: testModel
-        source: sourceModel
+	function setFilter(text)
+    {
+        var filterText = "(" + text.replace(/ /g, "|") + ")";
+        filterObject.filter = new RegExp(filterText, "i");
+        testTreeView.view.proxyModel.invalidateFilter();
+    }
 
-        filter: WGTokenizedStringFilter {
-            id: stringFilter
-            filterText: searchBox.text
-            splitterChar: " "
-        }
+    property var filterObject: QtObject {
+        property var filter: /.*/
 
-        ValueExtension {}
-        ColumnExtension {}
-        ComponentExtension {}
-        TreeExtension {
-            id: treeModelExtension
-            selectionExtension: treeModelSelection
-        }
-        ThumbnailExtension {}
-        SelectionExtension {
-            id: treeModelSelection
-            multiSelect: true
+        function filterAcceptsItem(item) {
+            return item.column == 0 && filter.test(item.display);
         }
     }
 
-    WGTreeView {
+    WGPropertyTreeView {
         id: testTreeView
         anchors.top: searchBox.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        model: testModel
-        columnDelegates: [defaultColumnDelegate, propertyDelegate]
-        selectionExtension: treeModelSelection
-        treeExtension: treeModelExtension
-        childRowMargin: 2
-        columnSpacing: 4
-        lineSeparator: false
-
-        autoUpdateLabelWidths: true
-
-        backgroundColourMode: incrementalGroupBackgroundColours
-        backgroundColourIncrements: 5
-
-        property Component propertyDelegate: Loader {
-            clip: true
-            sourceComponent: itemData != null ? itemData.component : null
-        }
+        model: sourceModel
+		filterObject: projectDataPanel.filterObject
     }
 }

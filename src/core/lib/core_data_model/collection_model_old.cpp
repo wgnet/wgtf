@@ -1,4 +1,6 @@
 #include "collection_model_old.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_variant/collection.hpp"
@@ -139,7 +141,7 @@ size_t CollectionModelOld::index(const IItem* item) const
 	for (; it != items_.end() && it->get() != item; ++index, ++it)
 	{
 	}
-	assert(it != items_.end());
+	TF_ASSERT(it != items_.end());
 	return index;
 }
 

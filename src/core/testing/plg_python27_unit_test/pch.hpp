@@ -13,6 +13,6 @@
 #endif
 
 // TODO: reference additional headers your program requires here
-#include "third_party/CppUnitLite2/src/CppUnitLite2.h"
+#include "CppUnitLite2/src/CppUnitLite2.h"
 
 #include "core_unit_test/unit_test.hpp"

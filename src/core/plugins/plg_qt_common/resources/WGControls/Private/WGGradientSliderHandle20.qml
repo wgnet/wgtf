@@ -13,14 +13,24 @@ WGSliderHandle {
     id: sliderHandle
     objectName: "SliderHandle"
 
-    property color color: "#FFFFFF"
+    property vector4d color: Qt.vector4d(1,1,1,1)
 
-    property color minColor: "#FFFFFF"
+    property vector4d minColor: Qt.vector4d(1,1,1,1)
+
+    property var tonemap: function(col) { return col; }
 
     property Gradient gradient: Gradient {
         id: gradient
-        GradientStop {position: 0.0; color: sliderHandle.minColor}
-        GradientStop {position: 1.0; color: sliderHandle.color}
+        property color tm_Col: {
+            var newCol = tonemap(Qt.vector3d(color.x, color.y, color.z))
+            return Qt.rgba(newCol.x, newCol.y, newCol.z, color.w)
+        }
+        property color tm_MinCol: {
+            var newCol = tonemap(Qt.vector3d(minColor.x, minColor.y, minColor.z))
+            return Qt.rgba(newCol.x, newCol.y, newCol.z, color.w)
+        }
+        GradientStop {position: 0.0; color: gradient.tm_MinCol}
+        GradientStop {position: 1.0; color: gradient.tm_Col}
     }
 
     function getIntPoint(a,b,percent)
@@ -30,37 +40,21 @@ WGSliderHandle {
 
     function getInternalColor(pos) {
 
-        var newCol
-        var minCol
-        var maxCol
+        var intCol = Qt.vector4d((getIntPoint(minColor.x, color.x, pos)),
+                                 (getIntPoint(minColor.y, color.y, pos)),
+                                 (getIntPoint(minColor.z, color.z, pos)),
+                                 (getIntPoint(minColor.w, color.w, pos)))
 
-        for (var i = 0; i < gradient.stops.length; i++)
-        {
-            if (gradient.stops[i].position == pos)
-            {
-                newCol = gradient.stops[i].color
-                return(newCol)
-            }
-            else if (gradient.stops[i].position < pos)
-            {
-                minCol = gradient.stops[i].color
-            }
-            else
-            {
-                maxCol = gradient.stops[i].color
-            }
-        }
-        newCol = Qt.rgba((getIntPoint(minCol.r, maxCol.r,pos)),
-                       (getIntPoint(minCol.g, maxCol.g,pos)),
-                       (getIntPoint(minCol.b, maxCol.b,pos)),
-                       (getIntPoint(minCol.a, maxCol.a,pos)))
-        return(newCol)
+        return(intCol)
     }
+
+    handleHeight: __horizontal ? parentSlider.height - 2 : parentSlider.width - 2
+    handleWidth: 15
 
     handleStyle:
         Item {
-        implicitHeight: __horizontal ? parentSlider.height - 2 : parentSlider.width - 2
-        implicitWidth: 15
+        implicitHeight: handleHeight
+        implicitWidth: handleWidth
         Image {
             id: arrowHandleFrame
             source: "icons/arrow_handle.png"
@@ -76,7 +70,11 @@ WGSliderHandle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottomMargin: 2
 
-                color: sliderHandle.color
+                color: {
+                    var tm_Col = tonemap(Qt.vector3d(sliderHandle.color.x, sliderHandle.color.y, sliderHandle.color.z))
+                    return Qt.rgba(tm_Col.x, tm_Col.y, tm_Col.z, sliderHandle.color.w)
+                }
+
 
                 radius: handleIndex == parentSlider.__activeHandle && (parentSlider.activeFocus || parentSlider.colorPickerOpen) ? 5 : 0
 

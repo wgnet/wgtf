@@ -1,10 +1,17 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/base_property.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_reflection/reflection_macros.hpp"
+#include "core_object/managed_object.hpp"
+#include "core_serialization_xml/xml_serializer.hpp"
+#include "core_serialization/resizing_memory_stream.hpp"
+#include "core_serialization/i_file_system.hpp"
 
 #include "test_class.hpp"
+#include "metadata/test_class.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 namespace wgt
 {
@@ -20,6 +27,10 @@ class TestPluginReflection : public PluginMain
 public:
 	TestPluginReflection(IComponentContext& contextManager)
 	{
+		registerCallback([](IDefinitionManager & defManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
 
 	//==========================================================================
@@ -32,23 +43,17 @@ public:
 		}
 
 		IDefinitionManager& definitionManager = (*pDefinitionManager);
-		REGISTER_DEFINITION(TestBase);
-
-		// Inner definition must be registered before outer definition
-		REGISTER_DEFINITION(TestClass::InnerClass);
-		REGISTER_DEFINITION(TestClass);
-
 		// Access members on TestBase
 		{
-			auto testBase = definitionManager.create<TestBase>();
-			assert(testBase.get() != nullptr);
+			auto testBase = ManagedObject<TestBase>::make();
+			assert(testBase != nullptr);
 
 			auto definition = definitionManager.getDefinition<TestBase>();
 			assert(definition != nullptr);
 
 			// BaseName
 			{
-				PropertyAccessor baseNamePropertyAccessor = definition->bindProperty("Name", testBase);
+				PropertyAccessor baseNamePropertyAccessor = definition->bindProperty("Name", testBase.getHandleT());
 				assert(baseNamePropertyAccessor.isValid());
 				Variant value = baseNamePropertyAccessor.getValue();
 				std::string testBaseName;
@@ -60,15 +65,16 @@ public:
 
 		// Access members on TestClass
 		{
-			auto testClass = definitionManager.create<TestClass>();
-			assert(testClass.get() != nullptr);
+			auto testClass = ManagedObject<TestClass>::make();
+            auto testClassHandle = testClass.getHandleT();
+			assert(testClass != nullptr);
 
 			auto definition = definitionManager.getDefinition<TestClass>();
 			assert(definition != nullptr);
 
 			// Name overridden from base class
 			{
-				PropertyAccessor namePropertyAccessor = definition->bindProperty("Name", testClass);
+				PropertyAccessor namePropertyAccessor = definition->bindProperty("Name", testClassHandle);
 				assert(namePropertyAccessor.isValid());
 				std::string testClassName;
 				Variant value = namePropertyAccessor.getValue();
@@ -79,8 +85,9 @@ public:
 
 			// String
 			{
-				PropertyAccessor stringPropertyAccessor = definition->bindProperty("String", testClass);
+				PropertyAccessor stringPropertyAccessor = definition->bindProperty("String", testClassHandle);
 				assert(stringPropertyAccessor.isValid());
+				assert(!stringPropertyAccessor.getProperty()->isCollection());
 				std::string testClassString;
 				Variant value = stringPropertyAccessor.getValue();
 				bool ok = value.tryCast(testClassString);
@@ -94,9 +101,33 @@ public:
 				assert(testClassString == "Test1");
 			}
 
+			// Strings
+			{
+				PropertyAccessor stringPropertyAccessor = definition->bindProperty("Strings", testClassHandle);
+				assert(stringPropertyAccessor.isValid());
+				assert(stringPropertyAccessor.getProperty()->isCollection());
+				std::vector<std::string> testClassStrings;
+				Variant value = stringPropertyAccessor.getValue();
+				bool ok = value.tryCast(testClassStrings);
+				assert(ok);
+				std::vector<std::string> test1;
+				test1.push_back("TestClassString1");
+				test1.push_back("TestClassString2");
+				assert(testClassStrings == test1);
+
+				std::vector<std::string> test2;
+				test2.push_back("TestClassString3");
+				test2.push_back("TestClassString4");
+				stringPropertyAccessor.setValue(test2);
+				value = stringPropertyAccessor.getValue();
+				ok = value.tryCast(testClassStrings);
+				assert(ok);
+				assert(testClassStrings == test2);
+			}
+
 			// String accessors
 			{
-				PropertyAccessor stringPropertyAccessor = definition->bindProperty("StringFunc", testClass);
+				PropertyAccessor stringPropertyAccessor = definition->bindProperty("StringFunc", testClassHandle);
 				assert(stringPropertyAccessor.isValid());
 				std::string testClassString;
 				Variant value = stringPropertyAccessor.getValue();
@@ -113,8 +144,9 @@ public:
 
 			// String lambda accessors
 			{
-				PropertyAccessor stringPropertyAccessor = definition->bindProperty("StringLambda", testClass);
+				PropertyAccessor stringPropertyAccessor = definition->bindProperty("StringLambda", testClassHandle);
 				assert(stringPropertyAccessor.isValid());
+				assert(!stringPropertyAccessor.getProperty()->isCollection());
 				Variant value = stringPropertyAccessor.getValue();
 				std::string testClassString;
 				bool ok = value.tryCast(testClassString);
@@ -128,16 +160,40 @@ public:
 				assert(testClassString == "TestClassString");
 			}
 
+			// Strings lambda accessors
+			{
+				PropertyAccessor stringPropertyAccessor = definition->bindProperty("StringsLambda", testClassHandle);
+				assert(stringPropertyAccessor.isValid());
+				assert(stringPropertyAccessor.getProperty()->isCollection());
+				std::vector<std::string> testClassStrings;
+				Variant value = stringPropertyAccessor.getValue();
+				bool ok = value.tryCast(testClassStrings);
+				assert(ok);
+				std::vector<std::string> test1;
+				test1.push_back("TestClassString3");
+				test1.push_back("TestClassString4");
+				assert(testClassStrings == test1);
+
+				std::vector<std::string> test2;
+				test1.push_back("TestClassString5");
+				test1.push_back("TestClassString6");
+				stringPropertyAccessor.setValue(test2);
+				value = stringPropertyAccessor.getValue();
+				ok = value.tryCast(testClassStrings);
+				assert(ok);
+				assert(testClassStrings == test2);
+			}
+
 			// InnerClass
 			{
-				PropertyAccessor innerPropertyAccessor = definition->bindProperty("InnerClass", testClass);
+				PropertyAccessor innerPropertyAccessor = definition->bindProperty("InnerClass", testClassHandle);
 				assert(innerPropertyAccessor.isValid());
 
 				// InnerClass properties
 				// From testClass property accessor
 				{
 					PropertyAccessor innerNamePropertyAccessor =
-					definition->bindProperty("InnerClass.InnerName", testClass);
+					definition->bindProperty("InnerClass.InnerName", testClassHandle);
 
 					assert(innerNamePropertyAccessor.isValid());
 					std::string innerClassName;
@@ -151,22 +207,69 @@ public:
 				// From innerClass property accessor
 				{
 					auto value = innerPropertyAccessor.getValue();
-					auto pInnerClass = value.cast<TestClass::InnerClass*>();
+					ObjectHandle handle = value.cast<ObjectHandle>();
+					auto pInnerClass = handle.getBase<TestClass::InnerClass>();
 					assert(pInnerClass != nullptr);
 
 					const auto pStructDefinition = innerPropertyAccessor.getStructDefinition();
 					assert(pStructDefinition != nullptr);
-					ObjectHandle baseProvider(value, pStructDefinition);
-					const auto& structDefinition = (*pStructDefinition);
-					PropertyAccessor innerNamePropertyAccessor =
-					structDefinition.bindProperty("InnerName", baseProvider);
-					assert(innerNamePropertyAccessor.isValid());
+                    const auto& structDefinition = (*pStructDefinition);
+                    PropertyAccessor innerNamePropertyAccessor =
+                        structDefinition.bindProperty("InnerName", handle);
+                    assert(innerNamePropertyAccessor.isValid());
 
-					std::string innerClassName;
-					value = innerNamePropertyAccessor.getValue();
-					bool ok = value.tryCast(innerClassName);
-					assert(ok);
-					assert(strcmp(innerClassName.c_str(), "TestClassInnerName") == 0);
+                    std::string innerClassName;
+                    value = innerNamePropertyAccessor.getValue();
+                    bool ok = value.tryCast(innerClassName);
+                    assert(ok);
+                    assert(strcmp(innerClassName.c_str(), "TestClassInnerName") == 0);
+				}
+
+				// Serialization
+				{
+					const char* testFileName = "test_definition_serialization_plg.xml";
+					const char* genericDefinitionName = "GenericDefinitionTest";
+
+					{
+						auto definition = definitionManager.registerDefinition(
+						definitionManager.createGenericDefinition(genericDefinitionName));
+						auto modifier = definition->getDetails().getDefinitionModifier();
+
+						modifier->addProperty("GenericStringTest", "string", nullptr, false);
+						modifier->addProperty("GenericStringsTest", "vectorStrings", nullptr, true);
+
+						ResizingMemoryStream stream;
+						XMLSerializer serializer(stream, definitionManager);
+						definitionManager.serializeDefinitions(serializer);
+
+						auto fileSystem = contextManager.queryInterface<IFileSystem>();
+						fileSystem->writeFile(testFileName, stream.buffer().c_str(), stream.buffer().size(),
+						                      std::ios::out | std::ios::binary);
+
+						definitionManager.deregisterDefinition(definition);
+						auto klass = definitionManager.getDefinition(genericDefinitionName);
+						assert(!klass);
+					}
+
+					{
+						auto fileSystem = contextManager.queryInterface<IFileSystem>();
+						IFileSystem::IStreamPtr fileStream =
+						fileSystem->readFile(testFileName, std::ios::in | std::ios::binary);
+						XMLSerializer serializer(*fileStream, definitionManager);
+						definitionManager.deserializeDefinitions(serializer);
+
+						auto klass = definitionManager.getDefinition(genericDefinitionName);
+						IBasePropertyPtr property = klass->findProperty("GenericStringTest");
+						assert(property);
+						assert(!property->isCollection());
+
+						property = klass->findProperty("GenericStringsTest");
+						assert(property);
+						assert(property->isCollection());
+
+						property = klass->findProperty("NoSuchProperty");
+						assert(!property);
+					}
 				}
 			}
 		}

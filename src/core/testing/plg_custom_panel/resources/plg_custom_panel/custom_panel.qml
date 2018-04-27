@@ -4,9 +4,10 @@ import QtQuick.Layouts 1.0
 
 import WGControls 2.0
 import WGControls.Layouts 2.0
+import WGControls.Views 2.0
 
 WGPanel {
-
+    id: root
     title: qsTr("Prototype Custom Panel")
     layoutHints: { 'test': 0.1 }
 
@@ -42,13 +43,12 @@ WGPanel {
 
 
 
-    WGScrollPanel { // Entire panel
+    WGScrollView { // Entire panel
         id: baseLayout
-
-        clip: false
-
-        childObject_ :
+        anchors.fill: parent
         WGColumnLayout {
+            width: root.width - defaultSpacing.doubleMargin * 2
+            x: defaultSpacing.doubleMargin
 
             WGMainPanel {
                 id: mainPanel
@@ -254,7 +254,7 @@ WGPanel {
                                                 WGNumberBox
                                                 {
                                                     Layout.fillWidth: true
-                                                    number: 10
+                                                    value: 10
                                                     valueIsInfinite: false
                                                     showInfiniteButton: true
                                                 }
@@ -299,9 +299,9 @@ WGPanel {
                                                 id: colorBar
                                                 Layout.fillWidth: true
                                                 Component.onCompleted: {
-                                                    createColorHandle(.25,handleStyle,__handlePosList.length, "red")
-                                                    createColorHandle(.5,handleStyle,__handlePosList.length, "yellow")
-                                                    createColorHandle(.75,handleStyle,__handlePosList.length, "white")
+                                                    createColorHandle(.25,handleStyle,__handlePosList.length, Qt.vector4d(1,0,0,1))
+                                                    createColorHandle(.5,handleStyle,__handlePosList.length, Qt.vector4d(1,1,0,1))
+                                                    createColorHandle(.75,handleStyle,__handlePosList.length, Qt.vector4d(1,1,1,1))
                                                 }
                                             }
                                             WGPushButton {
@@ -899,9 +899,9 @@ WGPanel {
                                             WGGradientSlider {
                                                 Layout.fillWidth: true
                                                 Component.onCompleted: {
-                                                    createColorHandle(.25,handleStyle,__handlePosList.length, "red")
-                                                    createColorHandle(.5,handleStyle,__handlePosList.length, "yellow")
-                                                    createColorHandle(.75,handleStyle,__handlePosList.length, "white")
+                                                    createColorHandle(.25,handleStyle,__handlePosList.length, Qt.vector4d(1,0,0,1))
+                                                    createColorHandle(.5,handleStyle,__handlePosList.length, Qt.vector4d(1,1,0,1))
+                                                    createColorHandle(.75,handleStyle,__handlePosList.length, Qt.vector4d(1,1,1,1))
                                                 }
                                             }
                                         }
@@ -1352,6 +1352,4 @@ WGPanel {
             }
         }
     }
-
-
 }

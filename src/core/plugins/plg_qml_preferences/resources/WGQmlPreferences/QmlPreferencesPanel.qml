@@ -6,12 +6,13 @@ import QtQuick.Layouts 1.0
 import WGControls 2.0
 import WGControls.Private 2.0
 import WGControls.Layouts 2.0
-import WGColorPicker 1.0
+import WGControls.Views 2.0
+import WGControls.Global 2.0
 
 WGPanel {
     id: preferencesPanel
     WGComponent { type: "QmlPreferencesPanel" }
-    
+
     title: qsTr("QML Preferences Panel")
     layoutHints: { 'floatingPanel': 1.0 }
 
@@ -29,11 +30,13 @@ WGPanel {
     color: palette.mainWindowColor
 
     focus: true
-    WGScrollPanel {
 
-        childObject:
+    WGScrollView {
+        anchors.fill: parent
+        anchors.leftMargin: defaultSpacing.doubleMargin
+        anchors.rightMargin: defaultSpacing.doubleMargin
         WGDraggableColumn {
-
+            width: parent.width
             WGSubPanel {
                 text: "UI Theme"
 
@@ -147,38 +150,38 @@ WGPanel {
                         WGColorButton {
                             id: mwColor
                             label: "Custom Window Color "
-                            color: palette.customWindowColor
+                            color: Qt.vector4d(palette.customWindowColor.r,palette.customWindowColor.g,palette.customWindowColor.b,palette.customWindowColor.a)
                             defaultColorDialog: false
 
                             enabled: customTheme
 
                             onClicked: {
-                                colorDialog.editingColor = mwColor
-                                colorDialog.open(600,374,mwColor.color)
+                                openDialog()
                             }
 
-                            onColorChanged: {
-                                setValueHelper(palette, "customWindowColor", color)
-                                if(customTheme)themeDropDown.model.set(6, {"windowColor": color})
+                            onColorChosen: {
+                                var tempColor = Qt.rgba(mwColor.x,mwColor.y,mwColor.z,mwColor.w)
+                                setValueHelper(palette, "customWindowColor", tempColor)
+                                if(customTheme)themeDropDown.model.set(6, {"windowColor": tempColor})
                             }
                         }
 
                         WGColorButton {
                             id: hlColor
                             label: "Custom Highlight Color "
-                            color: palette.customHighlightColor
+                            color: Qt.vector4d(palette.customHighlightColor.r,palette.customHighlightColor.g,palette.customHighlightColor.b,palette.customHighlightColor.a)
                             defaultColorDialog: false
 
                             enabled: customTheme
 
                             onClicked: {
-                                colorDialog.editingColor = hlColor
-                                colorDialog.open(600,374,hlColor.color)
+                                openDialog()
                             }
 
-                            onColorChanged: {
-                                setValueHelper(palette, "customHighlightColor", color)
-                                if(customTheme)themeDropDown.model.set(6, {"highlightColor": color})
+                            onColorChosen: {
+                                var tempColor = Qt.rgba(hlColor.x,hlColor.y,hlColor.z,hlColor.w)
+                                setValueHelper(palette, "customHighlightColor", tempColor)
+                                if(customTheme)themeDropDown.model.set(6, {"windowColor": tempColor})
                             }
                         }
 
@@ -336,7 +339,7 @@ WGPanel {
             active: true
             actionId: "darkThemeAction"
             checkable: true
-            checked: true
+            checked: palette.theme == 0
             onTriggered: {
                 palette.theme = 0
             }
@@ -346,24 +349,27 @@ WGPanel {
             active: true
             actionId: "lightAction"
             checkable: true
+            checked: palette.theme == 1
             onTriggered: {
                 palette.theme = 1
             }
         }
-        
+
         WGAction {
             active: true
             actionId: "battleRedAction"
             checkable: true
+            checked: palette.theme == 2
             onTriggered: {
                 palette.theme = 2
             }
-        }        
-        
+        }
+
         WGAction {
             active: true
             actionId: "armyBrownAction"
             checkable: true
+            checked: palette.theme == 3
             onTriggered: {
                 palette.theme = 3
             }
@@ -373,6 +379,7 @@ WGPanel {
             active: true
             actionId: "airForceGreenAction"
             checkable: true
+            checked: palette.theme == 4
             onTriggered: {
                 palette.theme = 4
             }
@@ -382,6 +389,7 @@ WGPanel {
             active: true
             actionId: "navyBlueAction"
             checkable: true
+            checked: palette.theme == 5
             onTriggered: {
                 palette.theme = 5
             }

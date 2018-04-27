@@ -9,29 +9,20 @@ import WGControls.Styles 2.0
 WGItemViewStyle {
     WGComponent { type: "WGTableViewStyle20" }
     
-    columnBackground: Item {
-        Rectangle {
-            id: backgroundArea
-            anchors.fill: parent
-            color: palette.highlightShade
-            opacity: isSelected ? 1 : 0.5
-            visible: hoverArea.containsMouse || isSelected
-        }
-
-        MouseArea {
-            id: hoverArea
-            anchors.fill: backgroundArea
-            hoverEnabled: true
-        }
-
-        Rectangle {
-            id: keyboardFocusArea
-            anchors.fill: parent
-            color: "transparent"
-            border.width: defaultSpacing.standardBorderSize
-            border.color: palette.lightestShade
-            radius: defaultSpacing.halfRadius
-            visible: isCurrent
-        }
+    columnBackground: Rectangle {
+        color: {
+			if (isSelected) {
+				return palette.highlightShade;
+			}
+			else if (isHovered) {
+				return Qt.rgba(palette.highlightShade.r, palette.highlightShade.g, palette.highlightShade.b, palette.highlightShade.a * 0.5);
+			}
+			else {
+				return "transparent";
+			}
+		}
+		border.color: palette.lightestShade
+		border.width: isCurrent ? defaultSpacing.standardBorderSize : 0
+		visible: isHovered || isSelected || isCurrent
     }
 }

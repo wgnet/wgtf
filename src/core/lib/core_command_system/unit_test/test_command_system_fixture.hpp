@@ -14,6 +14,7 @@ class IDefinitionManager;
 class IObjectManager;
 class ReflectionController;
 class TestApplication;
+class TestFramework;
 class IEnvManager;
 
 class TestCommandSystemFixture : public ICommandEventListener
@@ -29,14 +30,13 @@ public:
 	void multiCommandStatusChanged(ICommandEventListener::MultiCommandStatus multiCommandStatus) const override;
 
 private:
+    std::unique_ptr<TestFramework> framework_;
 	std::unique_ptr<TestApplication> application_;
-	std::unique_ptr<ObjectManager> objectManager_;
-	std::unique_ptr<IDefinitionManager> definitionManager_;
+	std::unique_ptr<IEnvManager> envManager_;
 	std::unique_ptr<CommandManager> commandManager_;
 	std::unique_ptr<Command> setReflectedPropertyCmd_;
 	std::unique_ptr<Command> invokeReflectedMethodCmd_;
 	std::unique_ptr<ReflectionController> reflectionController_;
-	std::unique_ptr<IEnvManager> envManager_;
 	mutable ICommandEventListener::MultiCommandStatus multiCommandStatus_;
 };
 } // end namespace wgt

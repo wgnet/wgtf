@@ -8,7 +8,6 @@
 namespace wgt
 {
 BEGIN_EXPOSE(ActiveFiltersTestViewModel, MetaNone())
-EXPOSE("filtersModel", getSimpleActiveFiltersModel, MetaDisplayName(L"SimpleActiveFiltersModel"))
 EXPOSE("sampleDataToFilter", getSampleDataToFilter, MetaDisplayName(L"SampleDataToFilter"))
 END_EXPOSE()
 } // end namespace wgt

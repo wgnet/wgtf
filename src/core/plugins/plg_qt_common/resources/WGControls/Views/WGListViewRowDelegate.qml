@@ -217,9 +217,9 @@ Item {
                 // Adapt from number of columns in the model to the number of
                 // columns in the view.
                 // @see WGListView.columnSequence
-                model: WGSequenceList {
-                    model: columnModel
-                    sequence: rowDelegate.columnSequence
+                model: WGColumnLayoutProxy {
+                    sourceModel: columnModel
+                    columnSequence: rowDelegate.columnSequence.length === 0 ? [0] : rowDelegate.columnSequence;
                 }
 
                 x: indentation

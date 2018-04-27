@@ -5,7 +5,7 @@ ADD_DEFINITIONS( -DNOMINMAX )
 
 INCLUDE( WGToolsCoreProject )
 
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

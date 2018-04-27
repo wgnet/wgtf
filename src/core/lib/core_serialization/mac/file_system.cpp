@@ -26,10 +26,10 @@ namespace
 {
 IFileInfoPtr CreateFileInfo()
 {
-	return std::make_shared<FileInfo>(0, 0, 0, 0, std::string(), None);
+	return std::make_shared<FileInfo>(0, 0, 0, 0, "", "", None);
 }
 
-IFileInfoPtr CreateFileInfo(struct stat& fileStat, const char* path, std::string&& fullPath)
+IFileInfoPtr CreateFileInfo(struct stat& fileStat, const char* path)
 {
 	unsigned int attributes = FileAttributes::None;
 
@@ -39,19 +39,42 @@ IFileInfoPtr CreateFileInfo(struct stat& fileStat, const char* path, std::string
 	if (S_ISREG(fileStat.st_mode))
 		attributes |= FileAttribute::Normal;
 
-	if (access(fullPath.c_str(), W_OK) != 0)
+	char absolutePath[MAX_PATH];
+	realpath(path, absolutePath);
+
+	if (access(absolutePath, W_OK) != 0)
 		attributes |= FileAttribute::ReadOnly;
 
-	size_t separator = fullPath.rfind(FilePath::kDirectorySeparator);
-	if (separator != std::string::npos && fullPath[separator + 1] == '.')
+	size_t separator = std::string(absolutePath).rfind(FilePath::kDirectorySeparator);
+	if (separator != std::string::npos && absolutePath[separator + 1] == '.')
 		attributes |= FileAttribute::Hidden;
 
 	return std::make_shared<FileInfo>(fileStat.st_size, fileStat.st_mtimespec.tv_sec, fileStat.st_mtimespec.tv_sec,
-	                                  fileStat.st_atimespec.tv_sec, std::string(path),
+	                                  fileStat.st_atimespec.tv_sec, std::string(path), absolutePath,
 	                                  static_cast<FileAttribute>(attributes));
 }
 
 } // namespace
+
+struct FileSystem::Implementation
+{
+	Implementation(FileSystem& self)
+		: self_(self)
+	{
+	}
+
+	FileSystem& self_;
+};
+
+FileSystem::FileSystem()
+	: impl_(new Implementation(*this))
+{
+}
+
+FileSystem::~FileSystem()
+{
+	impl_.reset();
+}
 
 bool FileSystem::copy(const char* path, const char* new_path)
 {
@@ -85,7 +108,7 @@ void FileSystem::enumerate(const char* dir, EnumerateCallback callback) const
 		struct stat fileStat;
 		if (stat(filePath.c_str(), &fileStat) == 0)
 		{
-			if (callback(CreateFileInfo(fileStat, filePath.c_str(), std::move(filePath))) == false)
+			if (callback(CreateFileInfo(fileStat, filePath.c_str())) == false)
 				break;
 		}
 	}
@@ -111,10 +134,7 @@ IFileInfoPtr FileSystem::getFileInfo(const char* path) const
 	if (stat(path, &fileStat) < 0)
 		return CreateFileInfo();
 
-	char pathBuffer[MAX_PATH];
-	realpath(path, pathBuffer);
-
-	return CreateFileInfo(fileStat, path, std::string(pathBuffer));
+	return CreateFileInfo(fileStat, path);
 }
 
 bool FileSystem::move(const char* path, const char* new_path)
@@ -137,5 +157,54 @@ bool FileSystem::writeFile(const char* path, const void* data, size_t len, std::
 		return true;
 	}
 	return false;
+}
+
+bool FileSystem::createDirectory(const char* path)
+{
+	bool success = mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0 || errno == EEXIST;
+
+	if (!success)
+	{
+		return false;
+	}
+
+	pathChanged(path);
+	return true;
+}
+
+bool FileSystem::removeDirectory(const char* path)
+{
+	if (rmdir(path) != 0)
+	{
+		return false;
+	}
+
+	pathChanged(path);
+	return true;
+}
+
+bool FileSystem::makeWritable(const char* path)
+{
+	struct _stat buf;
+
+	if (_stat(path, &buf) != 0)
+	{
+		return false;
+	}
+
+	_chmod(path, buf.st_mode | _S_IWRITE);
+	pathChanged(path);
+	return true;
+}
+
+Connection FileSystem::listenForChanges(PathChangedCallback& callback)
+{
+	// Not implemented;
+	return Connection();
+}
+
+void FileSystem::pathChanged(const char* path) const
+{
+	// Not implemented;
 }
 } // end namespace wgt

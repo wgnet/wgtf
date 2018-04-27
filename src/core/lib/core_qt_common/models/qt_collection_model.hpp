@@ -5,6 +5,9 @@
 #include "qt_item_model.hpp"
 #include "core_data_model/collection_model.hpp"
 #include "core_qt_common/qt_new_handler.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_data_model_cmds/interfaces/i_item_model_controller.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 
 namespace wgt
 {
@@ -14,14 +17,14 @@ class IComponentContext;
 /** Provides QML interface to use a CollectionModel as a list model.
 Wraps a CollectionModel in a Qt compatible model.
 Can access items by key as well as by row index.*/
-class QtCollectionModel : public QtListModel
+class QtCollectionModel : public QtItemModel<QtListModel>, public Depends<IItemModelController, IQtHelpers>
 {
 	Q_OBJECT
 
 	DECLARE_QT_MEMORY_HANDLER
 
 public:
-	QtCollectionModel(IComponentContext& context, std::unique_ptr<CollectionModel>&& source);
+	QtCollectionModel(std::unique_ptr<CollectionModel>&& source);
 
 	QHash<int, QByteArray> roleNames() const override;
 
@@ -55,7 +58,12 @@ public:
 	@return The found item or nullptr.
 	@note Returns nullptr when the key cannot be found in the collection, and when
 	the key type does not match the source collection's key type. */
-	Q_INVOKABLE QObject* item(const QVariant& key) const;
+	Q_INVOKABLE QVariant value(const QVariant& key) const;
+
+	/** Returns the collection as a list of QVariants.
+	@ingroup qmlaccessible
+	@return The items stored in this collection as a list of QVariants.*/
+	Q_INVOKABLE QVariantList values() const;
 
 	/** Insert a new item into the list using a key.
 	@ingroup qmlaccessible
@@ -68,7 +76,7 @@ public:
 	@param key The identifier for the new item, relating to the key in the collection.
 	@param value with which to initialize the item.
 	@return True if successful. */
-	Q_INVOKABLE bool insertItemValue(const QVariant& key, const QVariant& value);
+	Q_INVOKABLE bool insertValue(const QVariant& key, const QVariant& value);
 
 	/** Removes all items from the list matching a key.
 	@ingroup qmlaccessible

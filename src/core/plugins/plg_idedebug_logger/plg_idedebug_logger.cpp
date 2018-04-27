@@ -67,12 +67,12 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	WindowsDebugLogger* windowsDebugLogger_;
 };
 

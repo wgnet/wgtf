@@ -1,6 +1,6 @@
 #include "qt_connection_holder.hpp"
 
-#include <assert.h>
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
@@ -11,6 +11,11 @@ QtConnectionHolder::QtConnectionHolder()
 QtConnectionHolder::QtConnectionHolder(QMetaObject::Connection& connection)
 {
 	*this += connection;
+}
+
+QtConnectionHolder::QtConnectionHolder(QtConnectionHolder&& qtConnectionHolder)
+    : connections_(std::move(qtConnectionHolder.connections_))
+{
 }
 
 QtConnectionHolder::~QtConnectionHolder()
@@ -29,7 +34,7 @@ void QtConnectionHolder::reset()
 
 QtConnectionHolder& QtConnectionHolder::operator+=(const QMetaObject::Connection& connection)
 {
-	assert(connection);
+	TF_ASSERT(connection);
 	connections_.push_back(connection);
 	return *this;
 }

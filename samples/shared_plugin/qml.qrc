@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>MainForm.ui.qml</file>
+        <file>ListModelView.qml</file>
+        <file>TableModelView.qml</file>
+        <file>TreeModelView.qml</file>
+        <file>PropertyModelTreeView.qml</file>
+        <file>WGControlsTest.qml</file>
+        <file>ScratchPad.qml</file>
+    </qresource>
+    <qresource prefix="/qt/etc">
+        <file>qt.conf</file>
+    </qresource>
+</RCC>

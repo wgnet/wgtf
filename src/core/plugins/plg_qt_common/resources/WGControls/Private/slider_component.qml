@@ -2,7 +2,7 @@ import QtQuick 2.5
 import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 
-import WGControls 1.0
+import WGControls 2.0
 
 //TODO: WGSlider needs to be modified so that it can use much larger range, negating the need for min/maximumValue calculations
 //TODO: How can we warn the user that no metaData has been set. A range of 2 billion is not a usable UI.
@@ -11,7 +11,7 @@ WGSliderControl {
     id: reflectedSlider
     objectName: typeof itemData.indexPath == "undefined" ? "slider_component" : itemData.indexPath
     anchors.fill: parent
-    enabled: itemData.enabled && !itemData.readOnly
+    enabled: itemData.enabled && !itemData.readOnly && (typeof readOnlyComponent == "undefined" || !readOnlyComponent)
 
     value: itemData.value
 
@@ -26,9 +26,13 @@ WGSliderControl {
     minimumValue: maxSliderRangeExceeded ? itemData.value - Math.floor(maxSliderRange/2) : itemData.minValue
     maximumValue: maxSliderRangeExceeded ? itemData.value + Math.floor(maxSliderRange/2) : itemData.maxValue
 
-    Binding {
-        target: itemData
-        property: "value"
-        value: reflectedSlider.value
+    onChangeValue: {
+        if(!itemData.multipleValues) {
+            itemData.value = val;
+        } else {
+            beginUndoFrame();
+            itemData.value = val;
+            endUndoFrame();
+        }
     }
 }

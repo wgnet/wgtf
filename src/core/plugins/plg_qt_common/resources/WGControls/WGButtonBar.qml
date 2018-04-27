@@ -101,14 +101,20 @@ WGButtonFrame {
             Rectangle {
                 id: boxContainer
                 width: {
-                    if(evenBoxes)
-                    {
-                        (mainFrame.width - defaultSpacing.doubleMargin) / __buttons
+                    if(!buttonList[index].visible) {
+                        0
                     }
-                    else
-                    {
-                        buttonList[index].width
+                    else {
+                        if(evenBoxes)
+                        {
+                            (mainFrame.width - defaultSpacing.doubleMargin) / __buttons
+                        }
+                        else
+                        {
+                            buttonList[index].width
+                        }
                     }
+
                 }
                 height: mainFrame.height
                 color: "transparent"
@@ -116,7 +122,9 @@ WGButtonFrame {
                 Component.onCompleted: {
                     if (typeof buttonList[index].text != "undefined" && typeof buttonList[index].iconSource != "undefined")
                     {
-                        __totalWidth += buttonList[index].width
+                        if(buttonList[index].visible) {
+                            __totalWidth += buttonList[index].width
+                        }
                         buttonList[index].parent = this
                         buttonList[index].anchors.fill = boxContainer
                         buttonList[index].radius = 0

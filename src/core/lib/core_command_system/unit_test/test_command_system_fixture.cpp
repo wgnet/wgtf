@@ -1,35 +1,33 @@
 #include "pch.hpp"
 #include "core_unit_test/test_application.hpp"
 #include "test_command_system_fixture.hpp"
-#include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
-#include "core_reflection/reflected_types.hpp"
+#include "core_unit_test/test_definition_manager.hpp"
+#include "core_unit_test/test_object_manager.hpp"
 #include "core_command_system/command_manager.hpp"
-#include "core_reflection_utils/reflected_types.hpp"
 #include "core_reflection_utils/commands/set_reflectedproperty_command.hpp"
 #include "core_reflection_utils/commands/invoke_reflected_method_command.hpp"
 #include "core_reflection_utils/reflection_controller.hpp"
-#include "core_command_system/command_system.hpp"
-#include "core_command_system/env_system.hpp"
+#include "core_environment_system/env_system.hpp"
+#include "core_unit_test/test_framework.hpp"
+
+#include "reflection_auto_reg.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 namespace wgt
 {
 //==============================================================================
 TestCommandSystemFixture::TestCommandSystemFixture()
-    : application_(new TestApplication), objectManager_(new ObjectManager()),
-      definitionManager_(new DefinitionManager(*objectManager_)),
-      commandManager_(new CommandManager(*definitionManager_)),
-      setReflectedPropertyCmd_(new SetReflectedPropertyCommand(*definitionManager_)),
-      invokeReflectedMethodCmd_(new InvokeReflectedMethodCommand(*definitionManager_)),
-      reflectionController_(new ReflectionController()), envManager_(new EnvManager),
-      multiCommandStatus_(MultiCommandStatus_Begin)
+    : application_(new TestApplication())
+	, framework_(new TestFramework())
+	, envManager_(new EnvManager())
+	, commandManager_(new CommandManager(*envManager_))
+	, setReflectedPropertyCmd_(new SetReflectedPropertyCommand(getDefinitionManager()))
+	, invokeReflectedMethodCmd_(new InvokeReflectedMethodCommand(getDefinitionManager()))
+	, reflectionController_(new ReflectionController())
+	, multiCommandStatus_(MultiCommandStatus_Begin)
 {
-	objectManager_->init(definitionManager_.get());
-	Reflection::initReflectedTypes(*definitionManager_);
-	Reflection_Utils::initReflectedTypes(*definitionManager_);
-	CommandSystem::initReflectedTypes(*definitionManager_);
-
-	commandManager_->init(*application_, *envManager_, nullptr, nullptr);
+	ReflectionAutoRegistration::initAutoRegistration(getDefinitionManager());
+	commandManager_->init(*application_, getDefinitionManager() );
 	commandManager_->registerCommand(setReflectedPropertyCmd_.get());
 	commandManager_->registerCommand(invokeReflectedMethodCmd_.get());
 
@@ -48,8 +46,6 @@ TestCommandSystemFixture::~TestCommandSystemFixture()
 
 	invokeReflectedMethodCmd_.reset();
 	setReflectedPropertyCmd_.reset();
-	objectManager_.reset();
-	definitionManager_.reset();
 	reflectionController_.reset();
 	commandManager_.reset();
 }
@@ -57,13 +53,13 @@ TestCommandSystemFixture::~TestCommandSystemFixture()
 //==============================================================================
 IObjectManager& TestCommandSystemFixture::getObjectManager() const
 {
-	return *objectManager_;
+	return framework_->getObjectManager();
 }
 
 //==============================================================================
 IDefinitionManager& TestCommandSystemFixture::getDefinitionManager() const
 {
-	return *definitionManager_;
+	return framework_->getDefinitionManager();
 }
 
 //==============================================================================

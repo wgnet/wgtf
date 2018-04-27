@@ -10,11 +10,12 @@ SET( ALL_SRCS
 	memory_plugin_context_creator.cpp
 	plugin_memory_allocator.hpp
 	plugin_memory_allocator.cpp
+	app_common.cpp
 )
 
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_LIBRARY( core_wgtf_app ${BLOB_SRCS} )

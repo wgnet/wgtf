@@ -2,25 +2,22 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
 
-import WGControls 1.0
-import WGCopyableFunctions 1.0
-import WGControls.Views 1.0
+import WGControls 2.0
+import WGControls.Views 2.0
 
-Rectangle {
+WGPanel {
     id: root
     color: palette.mainWindowColor
-    property var title: "Demo"
-    property var layoutHints: { 'test': 0.1 }
-    property var sourceModel: treeSource
+    title: "Demo"
+    layoutHints: { 'test': 0.1 }
+    property var sourceModel: getTreeModel
 
     WGTextBox {
         id: searchBox
         anchors.left: parent.left
         anchors.right: parent.right
-        placeholderText: "Search (Ctrl+p)"
-        Component.onCompleted: {
-            WGCopyableHelper.disableChildrenCopyable(searchBox);
-        }
+        placeholderText: "Search (Ctrl + P)"
+        onTextChanged: setFilter(text)
 
         WGToolButton {
             id: clearSearchBox
@@ -30,67 +27,57 @@ Rectangle {
             anchors.right: parent.right
             anchors.top: parent.top
 
-            onClicked: {
-                searchBox.text = ""
-            }
+            onClicked: clearFilter();
         }
     }
 
-    WGDataChangeNotifier {
-        id: objectSelection
-        source: CurrentIndexSource
-        onDataChanged: {
-            root.sourceModel = treeSource;
+    function clearFilter() {
+        searchBox.text = "";
+    }
+
+    function setFilter(text)
+    {
+        var filterText = "(" + text.replace(/ /g, "|") + ")";
+        filterObject.filter = new RegExp(filterText, "i");
+        treeScroller.treeView.view.proxyModel.invalidateFilter();
+    }
+
+    property var filterObject: QtObject {
+        property var filter: /.*/
+
+        function filterAcceptsItem(item) {
+            return item.column == 0 && filter.test(item.display);
         }
     }
 
-    WGFilteredTreeModel {
-        id: testModel
-        source: sourceModel
-
-        filter: WGTokenizedStringFilter {
-            id: stringFilter
-            filterText: searchBox.text
-            splitterChar: " "
+    Connections {
+        target: self
+        onSelectedSceneChanged: {
+            clearFilter();
         }
-
-        ValueExtension {}
-        ColumnExtension {}
-        ComponentExtension {}
-        TreeExtension {
-            id: treeModelExtension
-            selectionExtension: treeModelSelection
-        }
-        ThumbnailExtension {}
-        SelectionExtension {
-            id: treeModelSelection
-            multiSelect: true
+        onSelectedIndexChanged: {
+            clearFilter();
+            treeView.columnSpacing = 4
+            treeView.clamp = true;
         }
     }
 
-    WGTreeView {
-        id: testTreeView
+    WGScrollView {
+        id: treeScroller
         anchors.top: searchBox.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        model: testModel
-        rightMargin: 8 // leaves just enought space for conventional slider
-		columnSequence: [0, 0]
-        columnDelegates: [defaultColumnDelegate, propertyDelegate]
-        selectionExtension: treeModelSelection
-        treeExtension: treeModelExtension
-        childRowMargin: 2
-        columnSpacing: 4
-        lineSeparator: false
+        anchors.rightMargin: 8 // leaves just enought space for conventional slider
 
-        backgroundColourMode: incrementalGroupBackgroundColours
-        backgroundColourIncrements: 5
+        property alias treeView: treeView
 
-        property Component propertyDelegate: Loader {
-            clip: true
-            property bool autoSizeOnDoubleClick: true
-            sourceComponent: itemData != null ? itemData.component : null
+        WGPropertyTreeView {
+            id: treeView
+            model: typeof sourceModel != "undefined" ? sourceModel : null
+            columnSpacing: 0
+            filterObject: root.filterObject
+            clamp: false
         }
     }
 }

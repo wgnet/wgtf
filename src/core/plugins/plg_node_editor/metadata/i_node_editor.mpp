@@ -7,7 +7,7 @@
 namespace wgt
 {
 BEGIN_EXPOSE(INodeEditor, MetaNone())
-EXPOSE("graphModel", GetGraphModel, MetaNone())
+EXPOSE("graph", GetGraph, MetaNone())
 EXPOSE_METHOD("createNode", onCreateNode)
 EXPOSE_METHOD("deleteNode", onDeleteNode)
 EXPOSE_METHOD("createConnection", onCreateConnection)

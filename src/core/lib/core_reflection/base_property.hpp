@@ -12,15 +12,19 @@ class REFLECTION_DLL BaseProperty : public IBaseProperty
 public:
 	BaseProperty(const char* name, const TypeId& type);
 
+	std::shared_ptr< IPropertyPath> generatePropertyName(
+		const std::shared_ptr< const IPropertyPath > & parent) const override;
+
 	const TypeId& getType() const override;
 	const char* getName() const override;
 	uint64_t getNameHash() const override;
 
-	MetaHandle getMetaData() const override;
-	virtual bool readOnly() const override;
+	const MetaData & getMetaData() const override;
+	virtual bool readOnly(const ObjectHandle&) const override;
 
 	virtual bool isMethod() const override;
 	virtual bool isValue() const override;
+	virtual bool isCollection() const override;
 
 	virtual bool set(const ObjectHandle& handle, const Variant& value,
 	                 const IDefinitionManager& definitionManager) const override;

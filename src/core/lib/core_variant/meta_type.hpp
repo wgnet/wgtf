@@ -175,7 +175,9 @@ public:
 	virtual void copy(void* dest, const void* src) const = 0;
 	virtual void move(void* dest, void* src) const = 0;
 	virtual void destroy(void* value) const = 0;
+	virtual bool lessThan(const void* lhs, const void* rhs) const = 0;
 	virtual bool equal(const void* lhs, const void* rhs) const = 0;
+	virtual uint64_t hashCode( const void * value ) const = 0;
 
 	virtual void streamOut(TextStream& stream, const void* value) const = 0;
 	virtual void streamIn(TextStream& stream, void* value) const = 0;

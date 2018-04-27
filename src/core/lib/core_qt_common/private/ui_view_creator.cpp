@@ -2,14 +2,10 @@
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
+#include "core_logging/logging.hpp"
 
 namespace wgt
 {
-//------------------------------------------------------------------------------
-UIViewCreator::UIViewCreator(IComponentContext& context) : Depends(context)
-{
-}
-
 //------------------------------------------------------------------------------
 wg_future<std::unique_ptr<IView>> UIViewCreator::createView(const char* path, const Variant& context,
                                                             const char* uniqueName)

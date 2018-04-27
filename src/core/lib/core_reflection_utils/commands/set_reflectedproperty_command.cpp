@@ -1,5 +1,6 @@
 #include "set_reflectedproperty_command.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_variant/variant.hpp"
 #include "core_reflection/i_object_manager.hpp"
 #include "core_reflection/property_accessor.hpp"
@@ -9,32 +10,10 @@
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_command_system/i_command_manager.hpp"
 #include "core_reflection_utils/commands/reflectedproperty_undoredo_helper.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
-//==============================================================================
-const char* ReflectedPropertyCommandArgument::s_ContextId = "PropertyContextId";
-const char* ReflectedPropertyCommandArgument::s_PropertyPath = "PropertyPath";
-const char* ReflectedPropertyCommandArgument::s_PropertyValue = "PropertyValue";
-
-//==============================================================================
-const char* ReflectedPropertyCommandArgument::contextIdPropertyName()
-{
-	return s_ContextId;
-}
-
-//==============================================================================
-const char* ReflectedPropertyCommandArgument::pathPropertyName()
-{
-	return s_PropertyPath;
-}
-
-//==============================================================================
-const char* ReflectedPropertyCommandArgument::valuePropertyName()
-{
-	return s_PropertyValue;
-}
-
 //==============================================================================
 ReflectedPropertyCommandArgument::ReflectedPropertyCommandArgument() : contextId_(""), propertyPath_("")
 {
@@ -94,6 +73,12 @@ const char* SetReflectedPropertyCommand::getId() const
 	return s_Id;
 }
 
+const char* SetReflectedPropertyCommand::getName() const
+{
+	static const char* s_name = "SetReflectedProperty";
+	return s_name;
+}
+
 //==============================================================================
 bool SetReflectedPropertyCommand::validateArguments(const ObjectHandle& arguments) const
 {
@@ -115,13 +100,13 @@ bool SetReflectedPropertyCommand::validateArguments(const ObjectHandle& argument
 		return false;
 	}
 
-	const ObjectHandle& object = objManager->getObject(commandArgs->getContextId());
+	auto object = objManager->getObject(commandArgs->getContextId());
 	if (!object.isValid())
 	{
 		return false;
 	}
 
-	const IClassDefinition* defn = object.getDefinition(definitionManager_);
+	const IClassDefinition* defn = definitionManager_.getDefinition(object);
 	PropertyAccessor property = defn->bindProperty(commandArgs->getPropertyPath(), object);
 	if (property.isValid() == false)
 	{
@@ -140,18 +125,18 @@ bool SetReflectedPropertyCommand::validateArguments(const ObjectHandle& argument
 }
 
 //==============================================================================
-ObjectHandle SetReflectedPropertyCommand::execute(const ObjectHandle& arguments) const
+Variant SetReflectedPropertyCommand::execute(const ObjectHandle& arguments) const
 {
 	ReflectedPropertyCommandArgument* commandArgs = arguments.getBase<ReflectedPropertyCommandArgument>();
 	auto objManager = definitionManager_.getObjectManager();
-	assert(objManager != nullptr);
-	ObjectHandle object = objManager->getObject(commandArgs->getContextId());
+	TF_ASSERT(objManager != nullptr);
+	auto object = objManager->getObject(commandArgs->getContextId());
 	if (!object.isValid())
 	{
 		return CommandErrorCode::INVALID_ARGUMENTS;
 	}
 	PropertyAccessor property =
-	object.getDefinition(definitionManager_)->bindProperty(commandArgs->getPropertyPath(), object);
+	definitionManager_.getDefinition(object)->bindProperty(commandArgs->getPropertyPath(), object);
 	if (property.isValid() == false)
 	{
 		// Can't set
@@ -168,12 +153,17 @@ ObjectHandle SetReflectedPropertyCommand::execute(const ObjectHandle& arguments)
 	// CommandInstance will hold a reference to the return value
 	// and the CommandInstance is stored in the undo/redo history forever
 	// This is due to a circular reference in CommandManagerImpl::pushFrame
-	return nullptr;
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 //==============================================================================
 CommandThreadAffinity SetReflectedPropertyCommand::threadAffinity() const
 {
 	return CommandThreadAffinity::UI_THREAD;
+}
+
+ManagedObjectPtr SetReflectedPropertyCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<ReflectedPropertyCommandArgument>(arguments);
 }
 } // end namespace wgt

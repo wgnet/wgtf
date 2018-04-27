@@ -12,12 +12,13 @@ namespace wgt
 {
 BEGIN_EXPOSE(HistoryObject, MetaNoSerialization())
 EXPOSE("historyListModel", getHistory, MetaNone())
-EXPOSE("CurrentIndexSource", currentIndexSource, MetaNone())
 EXPOSE("CreateMacro", createMacro, MetaNone())
 EXPOSE("SelectionHandlerSource", selectionHandlerSource, MetaNone())
 EXPOSE("IsClearButtonVisible", isClearButtonVisible, setClearButtonVisible, MetaNone())
 EXPOSE("IsMakeMacroButtonVisible", isMakeMacroButtonVisible, setMakeMacroButtonVisible, MetaNone())
+EXPOSE("commandIndex", commandIndex_, MetaNone())
 EXPOSE_METHOD("extractItemDetail", extractItemDetail, MetaDirectInvoke())
 EXPOSE_METHOD("clearHistory", clearHistory, MetaDirectInvoke())
+EXPOSE_METHOD("setCommandIndex", setCommandIndex, MetaDirectInvoke())
 END_EXPOSE()
 } // end namespace wgt

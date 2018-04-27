@@ -1,0 +1,7 @@
+#include "metadata/i_node_editor.mpp"
+#include "metadata/i_graph.mpp"
+#include "metadata/i_group.mpp"
+#include "metadata/i_slot.mpp"
+#include "metadata/i_connection.mpp"
+#include "metadata/i_node.mpp"
+#include "metadata/node_editor.mpp"

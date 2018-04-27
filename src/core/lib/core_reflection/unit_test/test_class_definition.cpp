@@ -1,22 +1,22 @@
 #include "pch.hpp"
 
 #include "core_reflection/interfaces/i_class_definition.hpp"
-#include "core_reflection/reflected_property.hpp"
-#include "core_reflection/function_property.hpp"
-#include "core_reflection/reflected_object.hpp"
+
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/property_accessor.hpp"
-#include "core_reflection/property_iterator.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/utilities/reflection_function_utilities.hpp"
 #include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
+#include "core_object/managed_object.hpp"
+#include "core_unit_test/test_framework.hpp"
 
 #include "test_helpers.hpp"
 #include "test_objects.hpp"
 
 #include "core_variant/collection.hpp"
 #include <numeric>
+
+#include "test_class_definition.hpp"
 
 namespace wgt
 {
@@ -26,20 +26,34 @@ std::ostream& operator<<(std::ostream& output, const TypeId& propType)
 	return output;
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, create)
 {
-	auto subject = klass_->createManagedObject();
-
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
 	CHECK_EQUAL(getClassIdentifier<TestDefinitionObject>(), klass_->getName());
-	CHECK(klass_->getParent() == NULL);
-	CHECK(klass_->getMetaData() != NULL);
+	CHECK(klass_->getParentNames().empty());
+	CHECK(klass_->getMetaData() != nullptr);
 }
 
-// -----------------------------------------------------------------------------
+TEST_F(TestDefinitionFixture, objectScope)
+{
+	ObjectHandle handle;
+
+	{
+		TestDefinitionObject data;
+		ManagedObject<TestDefinitionObject> object(data);
+		handle = object.getHandle();
+		CHECK(handle.getBase<TestDefinitionObject>() != nullptr);
+	}
+
+	CHECK(handle.getBase<TestDefinitionObject>() == nullptr);
+}
+
 TEST_F(TestDefinitionFixture, properties)
 {
-	auto provider = klass_->createManagedObject();
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
+	ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
 
 	// counter
 	PropertyIterator pi = klass_->allProperties().begin();
@@ -47,7 +61,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("counter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// text
 	++pi;
@@ -55,7 +70,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("text"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// Function Counter
 	++pi;
@@ -63,7 +79,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional counter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
 
 	// Function Text
 	++pi;
@@ -71,7 +88,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional text"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
 
 	// Function Int
 	++pi;
@@ -79,7 +97,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional ints"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::vector<int32_t>>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
 
 	// Function Raw String
 	++pi;
@@ -87,7 +106,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional string"), property->getName());
 	CHECK_EQUAL(TypeId::getType<const char*>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
 
 	// Getter only Counter
 	++pi;
@@ -95,7 +115,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("counter getter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// Getter only Text
 	++pi;
@@ -103,7 +124,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("text getter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// link
 	++pi;
@@ -111,7 +133,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("link"), property->getName());
 	CHECK_EQUAL(TypeId::getType<ObjectHandleT<TestPolyStruct2>>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
 
 	// raw string
 	++pi;
@@ -119,7 +142,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("raw string"), property->getName());
 	CHECK_EQUAL(TypeId::getType<const char*>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// string
 	++pi;
@@ -127,14 +151,17 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("string"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// strings
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("strings"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK_EQUAL(TypeId::getType<std::vector<std::string>>(), property->getType());
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
 
 	// raw wstring
 	++pi;
@@ -142,7 +169,8 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("raw wstring"), property->getName());
 	CHECK_EQUAL(TypeId::getType<const wchar_t*>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// wstring
 	++pi;
@@ -150,30 +178,34 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("wstring"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::wstring>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// wstrings
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("wstrings"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed structure
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
-	const PropertyAccessor& paStruct = klass_->bindProperty(property->getName(), provider);
+	const PropertyAccessor& paStruct = klass_->bindProperty(property->getName(), handle);
 	CHECK(paStruct.isValid());
 	CHECK_EQUAL(std::string("exposed structure"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed structures
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("exposed structures"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed object
 	++pi;
@@ -181,14 +213,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("exposed object"), property->getName());
 	CHECK_EQUAL(TypeId::getType<ObjectHandleT<TestPolyStruct2>>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed objects
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("exposed objects"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// boolean
 	++pi;
@@ -196,14 +230,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("boolean"), property->getName());
 	CHECK_EQUAL(TypeId::getType<bool>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// booleans
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("booleans"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint32
 	++pi;
@@ -211,14 +247,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint32"), property->getName());
 	CHECK_EQUAL(TypeId::getType<uint32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint32s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint32s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// int32
 	++pi;
@@ -226,14 +264,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("int32"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// int32s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("int32s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint64
 	++pi;
@@ -241,14 +281,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint64"), property->getName());
 	CHECK_EQUAL(TypeId::getType<uint64_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint64s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint64s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// float
 	++pi;
@@ -256,14 +298,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("float"), property->getName());
 	CHECK_EQUAL(TypeId::getType<float>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// floats
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("floats"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector3
 	++pi;
@@ -271,14 +315,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector3"), property->getName());
 	CHECK_EQUAL(TypeId::getType<Vector3>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector3s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector3s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector4
 	++pi;
@@ -286,14 +332,16 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector4"), property->getName());
 	CHECK_EQUAL(TypeId::getType<Vector4>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector4s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector4s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// binary
 	++pi;
@@ -301,21 +349,40 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("binary"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::shared_ptr<BinaryBlock>>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// binaries
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("binaries"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
 
 	// multidimensional
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("multidimensional"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() == nullptr);
+
+	// string lambda
+	++pi;
+	property = *pi;
+	CHECK(property != NULL);
+	CHECK_EQUAL(std::string("string lambda"), property->getName());
+	CHECK(!property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
+
+	// strings lambda
+	++pi;
+	property = *pi;
+	CHECK(property != NULL);
+	CHECK_EQUAL(std::string("strings lambda"), property->getName());
+	CHECK(property->isCollection());
+	CHECK(property->getMetaData() != nullptr);
 
 	// Finished
 	++pi;
@@ -323,18 +390,17 @@ TEST_F(TestDefinitionFixture, properties)
 	CHECK(property == NULL);
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, derived_properties)
 {
 	const auto& derived_klass = *getDefinitionManager().getDefinition<TestDefinitionDerivedObject>();
-	auto subject = derived_klass.createManagedObject();
-	auto derived = reflectedCast<TestDefinitionDerivedObject>(subject, getDefinitionManager());
-	CHECK(derived != NULL);
-	auto base = reflectedCast<TestDefinitionObject>(subject, getDefinitionManager());
-	CHECK(base != NULL);
+	TestDefinitionDerivedObject data;
+	ManagedObject<TestDefinitionDerivedObject> object(data);
+	auto derived = reflectedCast<TestDefinitionDerivedObject>(object.getHandle(), getDefinitionManager());
+	CHECK(derived != nullptr);
+	auto base = reflectedCast<TestDefinitionObject>(object.getHandle(), getDefinitionManager());
+	CHECK(base != nullptr);
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, property_iterator_self_only)
 {
 	const auto& derived_klass = *getDefinitionManager().getDefinition<TestDefinitionDerivedObject>();
@@ -345,7 +411,7 @@ TEST_F(TestDefinitionFixture, property_iterator_self_only)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("some integer"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// some float
 	++pi;
@@ -353,7 +419,7 @@ TEST_F(TestDefinitionFixture, property_iterator_self_only)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("some float"), property->getName());
 	CHECK_EQUAL(TypeId::getType<float>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// Finished
 	++pi;
@@ -361,11 +427,11 @@ TEST_F(TestDefinitionFixture, property_iterator_self_only)
 	CHECK(property == NULL);
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, property_iterator_parents)
 {
+	ManagedObject<TestDefinitionDerivedObject> object(std::make_unique<TestDefinitionDerivedObject>());
+	auto handle = object.getHandle();
 	const auto& derived_klass = *getDefinitionManager().getDefinition<TestDefinitionDerivedObject>();
-	auto provider = derived_klass.createManagedObject();
 
 	PropertyIterator pi = derived_klass.allProperties().begin();
 	// some integer
@@ -373,7 +439,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("some integer"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// some float
 	++pi;
@@ -381,7 +447,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("some float"), property->getName());
 	CHECK_EQUAL(TypeId::getType<float>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// counter
 	++pi;
@@ -389,7 +455,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("counter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// text
 	++pi;
@@ -397,7 +463,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("text"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// Function Counter
 	++pi;
@@ -405,7 +471,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional counter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(property->getMetaData() != nullptr);
 
 	// Function Text
 	++pi;
@@ -413,7 +479,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional text"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(property->getMetaData() != nullptr);
 
 	// Function Int
 	++pi;
@@ -421,7 +487,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional ints"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::vector<int32_t>>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(property->getMetaData() != nullptr);
 
 	// Function Raw String
 	++pi;
@@ -429,7 +495,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("functional string"), property->getName());
 	CHECK_EQUAL(TypeId::getType<const char*>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(property->getMetaData() != nullptr);
 
 	// Getter only Counter
 	++pi;
@@ -437,7 +503,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("counter getter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// Getter only Text
 	++pi;
@@ -445,7 +511,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("text getter"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// link
 	++pi;
@@ -453,7 +519,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("link"), property->getName());
 	CHECK_EQUAL(TypeId::getType<ObjectHandleT<TestPolyStruct2>>(), property->getType());
-	CHECK(property->getMetaData() != NULL);
+	CHECK(property->getMetaData() != nullptr);
 
 	// raw string
 	++pi;
@@ -461,7 +527,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("raw string"), property->getName());
 	CHECK_EQUAL(TypeId::getType<const char*>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// string
 	++pi;
@@ -469,14 +535,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("string"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::string>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// strings
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("strings"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() != nullptr);
 
 	// raw wstring
 	++pi;
@@ -484,7 +550,7 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("raw wstring"), property->getName());
 	CHECK_EQUAL(TypeId::getType<const wchar_t*>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// wstring
 	++pi;
@@ -492,30 +558,30 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("wstring"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::wstring>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// wstrings
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("wstrings"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed structure
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
-	const PropertyAccessor& paStruct = derived_klass.bindProperty(property->getName(), provider);
+	const PropertyAccessor& paStruct = derived_klass.bindProperty(property->getName(), handle);
 	CHECK(paStruct.isValid());
 	CHECK_EQUAL(std::string("exposed structure"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed structures
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("exposed structures"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed object
 	++pi;
@@ -523,14 +589,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("exposed object"), property->getName());
 	CHECK_EQUAL(TypeId::getType<ObjectHandleT<TestPolyStruct2>>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// exposed objects
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("exposed objects"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// boolean
 	++pi;
@@ -538,14 +604,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("boolean"), property->getName());
 	CHECK_EQUAL(TypeId::getType<bool>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// booleans
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("booleans"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint32
 	++pi;
@@ -553,14 +619,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint32"), property->getName());
 	CHECK_EQUAL(TypeId::getType<uint32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint32s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint32s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// int32
 	++pi;
@@ -568,14 +634,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("int32"), property->getName());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// int32s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("int32s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint64
 	++pi;
@@ -583,14 +649,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint64"), property->getName());
 	CHECK_EQUAL(TypeId::getType<uint64_t>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// uint64s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("uint64s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// float
 	++pi;
@@ -598,14 +664,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("float"), property->getName());
 	CHECK_EQUAL(TypeId::getType<float>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// floats
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("floats"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector3
 	++pi;
@@ -613,14 +679,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector3"), property->getName());
 	CHECK_EQUAL(TypeId::getType<Vector3>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector3s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector3s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector4
 	++pi;
@@ -628,14 +694,14 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector4"), property->getName());
 	CHECK_EQUAL(TypeId::getType<Vector4>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// vector4s
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("vector4s"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// binary
 	++pi;
@@ -643,21 +709,35 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("binary"), property->getName());
 	CHECK_EQUAL(TypeId::getType<std::shared_ptr<BinaryBlock>>(), property->getType());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// binaries
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("binaries"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
 
 	// multidimensional
 	++pi;
 	property = *pi;
 	CHECK(property != NULL);
 	CHECK_EQUAL(std::string("multidimensional"), property->getName());
-	CHECK(property->getMetaData() == NULL);
+	CHECK(property->getMetaData() == nullptr);
+
+	// string lambda
+	++pi;
+	property = *pi;
+	CHECK(property != NULL);
+	CHECK_EQUAL(std::string("string lambda"), property->getName());
+	CHECK(property->getMetaData() != nullptr);
+
+	// strings lambda
+	++pi;
+	property = *pi;
+	CHECK(property != NULL);
+	CHECK_EQUAL(std::string("strings lambda"), property->getName());
+	CHECK(property->getMetaData() != nullptr);
 
 	// Finished
 	++pi;
@@ -665,16 +745,17 @@ TEST_F(TestDefinitionFixture, property_iterator_parents)
 	CHECK(property == NULL);
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, property_accessor_int)
 {
-	auto provider = klass_->createManagedObject();
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
+	ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
 
-	PropertyAccessor counter = klass_->bindProperty("counter", provider);
+	PropertyAccessor counter = klass_->bindProperty("counter", handle);
 	CHECK(counter.isValid());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), counter.getType());
 	CHECK_EQUAL(std::string("counter"), counter.getName());
-	CHECK(counter.getMetaData() == NULL);
+	CHECK(counter.getMetaData() == nullptr);
 
 	const int TEST_VALUE = 57;
 	{
@@ -690,16 +771,17 @@ TEST_F(TestDefinitionFixture, property_accessor_int)
 	}
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, property_accessor_vector3)
 {
-	auto provider = klass_->createManagedObject();
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
+	ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
 
-	PropertyAccessor position = klass_->bindProperty("vector3", provider);
+	PropertyAccessor position = klass_->bindProperty("vector3", handle);
 	CHECK(position.isValid());
 	CHECK_EQUAL(TypeId::getType<Vector3>(), position.getType());
 	CHECK_EQUAL(std::string("vector3"), position.getName());
-	CHECK(position.getMetaData() == NULL);
+	CHECK(position.getMetaData() == nullptr);
 
 	const Vector3 TEST_VALUE = Vector3(1.0f, -1.0f, 0.0f);
 	{
@@ -715,19 +797,20 @@ TEST_F(TestDefinitionFixture, property_accessor_vector3)
 	}
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, property_accessor_float_collection)
 {
-	auto provider = klass_->createManagedObject();
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
+	ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
 
-	PropertyAccessor container = klass_->bindProperty("floats", provider);
+	PropertyAccessor container = klass_->bindProperty("floats", handle);
 	CHECK(container.isValid());
 
 	Collection collection;
 	bool isCollection = container.getValue().tryCast(collection);
 	CHECK(isCollection);
 	CHECK_EQUAL(std::string("floats"), container.getName());
-	CHECK(container.getMetaData() == NULL);
+	CHECK(container.getMetaData() == nullptr);
 
 	fillValuesWithNumbers(collection);
 	CHECK_EQUAL(5, collection.size());
@@ -750,17 +833,58 @@ TEST_F(TestDefinitionFixture, property_accessor_float_collection)
 	}
 }
 
-// -----------------------------------------------------------------------------
+TEST_F(TestDefinitionFixture, property_accessor_collection_metadata)
+{
+	{
+		TestDefinitionObject data;
+		ManagedObject<TestDefinitionObject> object(data);
+		ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
+
+		PropertyAccessor container = klass_->bindProperty("strings", handle);
+		CHECK(container.isValid());
+
+		Collection collection;
+		bool isCollection = container.getValue().tryCast(collection);
+		CHECK(isCollection);
+		CHECK_EQUAL(std::string("strings"), container.getName());
+		CHECK(container.getMetaData() != nullptr);
+		CHECK(findFirstMetaData<MetaInPlaceObj>(container, getDefinitionManager()) != nullptr);
+		CHECK(findFirstMetaData<MetaUrlObj>(container, getDefinitionManager()) == nullptr);
+	}
+
+	{
+		TestDefinitionObject data;
+		ManagedObject<TestDefinitionObject> object(data);
+		ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
+
+		PropertyAccessor container = klass_->bindProperty("strings[0]", handle);
+		CHECK(container.isValid());
+
+		Collection collection;
+		bool isCollection = container.getValue().tryCast(collection);
+		CHECK(!isCollection);
+		CHECK_EQUAL(std::string("[0]"), container.getName());
+		CHECK(container.getMetaData() != nullptr);
+		CHECK(findFirstMetaData<MetaInPlaceObj>(container, getDefinitionManager()) == nullptr);
+		CHECK(findFirstMetaData<MetaUrlObj>(container, getDefinitionManager()) != nullptr);
+	}
+}
+
 TEST_F(TestDefinitionFixture, property_accessor_int_collection)
 {
-	auto provider = klass_->createManagedObject();
-	auto property = klass_->bindProperty("functional ints", provider);
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
+	ObjectHandle handle = object.getHandle();
+
+	auto property = klass_->bindProperty("functional ints", handle);
+	auto obj = handle.getBase<TestDefinitionObject>();
 	CHECK(property.isValid());
 
 	const size_t size = 5;
 	std::vector<int32_t> input(size);
 	std::iota(input.begin(), input.end(), 0); // Fill with values [0, 4]
 	CHECK(property.setValue(input));
+	CHECK(!obj->int32sSelf_);
 
 	std::vector<int32_t> output;
 	CHECK(property.getValue().tryCast(output));
@@ -772,13 +896,18 @@ TEST_F(TestDefinitionFixture, property_accessor_int_collection)
 	{
 		CHECK_EQUAL(input[i], output[i]);
 	}
+
+	CHECK(property.setValue(obj->getInts()));
+	CHECK(obj->int32sSelf_);
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, property_accessor_string)
 {
-	auto provider = klass_->createManagedObject();
-	auto property = klass_->bindProperty("functional string", provider);
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
+	ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
+
+	auto property = klass_->bindProperty("functional string", handle);
 	CHECK(property.isValid());
 
 	// Setting const char* is currently not supported
@@ -790,106 +919,57 @@ TEST_F(TestDefinitionFixture, property_accessor_string)
 	CHECK_EQUAL(output, "test_string");
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDefinitionFixture, property_accessor_polystruct)
 {
-	auto provider = klass_->createManagedObject();
+    auto provider = ManagedObject<TestDefinitionObject>::make();
 
-	PropertyAccessor position = klass_->bindProperty("link", provider);
+	PropertyAccessor position = klass_->bindProperty("link", provider.getHandleT());
 	CHECK(position.isValid());
 	CHECK_EQUAL(TypeId::getType<ObjectHandleT<TestPolyStruct2>>(), position.getType());
 	CHECK_EQUAL(std::string("link"), position.getName());
-	CHECK(position.getMetaData() != NULL);
+	CHECK(position.getMetaData() != nullptr);
 
-	const TestPolyStruct2 TEST_VALUE = TestPolyStruct2();
-	{
-		ObjectHandleT<TestPolyStruct2> value = &TEST_VALUE;
-		CHECK(position.setValue(value));
-	}
-
-	{
-		ObjectHandleT<TestPolyStruct2> value;
-		Variant variant = position.getValue();
-		ObjectHandle handle;
-		CHECK(variant.tryCast(handle));
-		value = reflectedCast<TestPolyStruct2>(handle, getDefinitionManager());
-		CHECK(value == &TEST_VALUE);
-	}
+	const TestPolyStruct2 TEST_VALUE;
+    ManagedObject<TestPolyStruct2> link(&TEST_VALUE);
+    CHECK(position.setValue(link.getHandleT()));
+	
+	Variant variant = position.getValue();
+	ObjectHandle handle;
+	CHECK(variant.tryCast(handle));
+    CHECK(handle.isValid());
+    ObjectHandleT<TestPolyStruct2> value = reflectedCast<TestPolyStruct2>(handle, getDefinitionManager());
+	CHECK(value == link.getHandleT());
 }
 
-// =============================================================================
-
-class TestBaseObject
+TEST_F(TestDefinitionFixture, successive_bind)
 {
-	DECLARE_REFLECTED
+	TestDefinitionObject data;
+	ManagedObject<TestDefinitionObject> object(data);
+	ObjectHandleT<TestDefinitionObject> handle = object.getHandleT();
+	ObjectHandle take1;
+	ObjectHandle take2;
 
-public:
-	int value_;
+	auto TEST_VALUE = ManagedObject<TestPolyStruct2>::make();
 
-	TestBaseObject() : value_(0)
 	{
-	}
-};
-
-BEGIN_EXPOSE(TestBaseObject, MetaNone())
-EXPOSE("value", value_, MetaNone())
-END_EXPOSE()
-
-class TestDerivedObject : public TestBaseObject
-{
-	DECLARE_REFLECTED
-
-public:
-	float number_;
-
-	TestDerivedObject() : TestBaseObject(), number_(1.0f)
-	{
-	}
-};
-
-BEGIN_EXPOSE(TestDerivedObject, TestBaseObject, MetaNone())
-EXPOSE("number", number_, MetaNone())
-END_EXPOSE()
-
-class TestDeepObject : public TestDerivedObject
-{
-	DECLARE_REFLECTED
-
-public:
-	bool deep_;
-
-	TestDeepObject() : deep_(false)
-	{
-	}
-};
-
-BEGIN_EXPOSE(TestDeepObject, TestDerivedObject, MetaNone())
-EXPOSE("deep", deep_, MetaNone())
-END_EXPOSE()
-
-class TestRandomObject : public TestBaseObject
-{
-	DECLARE_REFLECTED
-
-public:
-	const int random_;
-
-	TestRandomObject() : TestBaseObject(), random_(rand())
-	{
+		PropertyAccessor position = klass_->bindProperty("link", handle);
+		CHECK(position.setValue(TEST_VALUE.getHandleT()));
+		Variant value = position.getValue();
+		CHECK(value.tryCast(take1));
 	}
 
-	const int& random() const
 	{
-		return random_;
+		PropertyAccessor position = klass_->bindProperty("link", handle);
+		Variant value = position.getValue();
+		CHECK(value.tryCast(take2));
 	}
-};
 
-BEGIN_EXPOSE(TestRandomObject, TestBaseObject, MetaNone())
-// EXPOSE_MEMBER(random_, "random", MetaNone()) // Cannot expose constant variables
-EXPOSE("random()", random, MetaNone())
-END_EXPOSE()
+	CHECK(take1 == take2);
+}
 
-class TestDerivationFixture
+
+
+class TestDerivationFixture: public TestReflectionFixture
 {
 public:
 	IClassDefinition* base_klass;
@@ -898,38 +978,21 @@ public:
 	IClassDefinition* random_klass;
 
 	TestDerivationFixture()
-	    : objectManager_(new ObjectManager()), definitionManager_(new DefinitionManager(*objectManager_))
 	{
-		objectManager_->init(definitionManager_.get());
-		IDefinitionManager& definitionManager = *definitionManager_;
-		Reflection::initReflectedTypes(definitionManager);
-		REGISTER_DEFINITION(TestBaseObject);
-		REGISTER_DEFINITION(TestDerivedObject);
-		REGISTER_DEFINITION(TestDeepObject);
-		REGISTER_DEFINITION(TestRandomObject);
+		IDefinitionManager& definitionManager = getDefinitionManager();
 
 		base_klass = definitionManager.getDefinition<TestBaseObject>();
 		derived_klass = definitionManager.getDefinition<TestDerivedObject>();
 		deep_klass = definitionManager.getDefinition<TestDeepObject>();
 		random_klass = definitionManager.getDefinition<TestRandomObject>();
 	}
-
-	IDefinitionManager& getDefinitionManager() const
-	{
-		return *definitionManager_;
-	}
-
-private:
-	std::unique_ptr<ObjectManager> objectManager_;
-	std::unique_ptr<DefinitionManager> definitionManager_;
 };
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDerivationFixture, hierarchy)
 {
-	CHECK_EQUAL(base_klass, derived_klass->getParent());
-	CHECK_EQUAL(derived_klass, deep_klass->getParent());
-	CHECK_EQUAL(base_klass, random_klass->getParent());
+	CHECK_EQUAL(base_klass->getName(), derived_klass->getParentNames()[ 0 ]);
+	CHECK_EQUAL(derived_klass->getName(), deep_klass->getParentNames()[ 0 ]);
+	CHECK_EQUAL(base_klass->getName(), random_klass->getParentNames()[ 0 ] );
 
 	CHECK(base_klass->canBeCastTo(*base_klass));
 	CHECK(!base_klass->canBeCastTo(*derived_klass));
@@ -952,50 +1015,54 @@ TEST_F(TestDerivationFixture, hierarchy)
 	CHECK(random_klass->canBeCastTo(*random_klass));
 }
 
-// -----------------------------------------------------------------------------
 TEST_F(TestDerivationFixture, hierarchy_variables)
 {
-	auto provider = deep_klass->createManagedObject();
-	CHECK(reflectedCast<TestBaseObject>(provider, getDefinitionManager()) != NULL);
+	ManagedObject<TestDeepObject> object(std::make_unique<TestDeepObject>());
+	ObjectHandle handle = object.getHandle();
+	CHECK(reflectedCast<TestBaseObject>(handle, getDefinitionManager()) != nullptr);
 
 	// Access property on object
-	PropertyAccessor deep = deep_klass->bindProperty("deep", provider);
+	PropertyAccessor deep = deep_klass->bindProperty("deep", handle);
 	CHECK(deep.isValid());
 	CHECK_EQUAL(TypeId::getType<bool>(), deep.getType());
 
-	PropertyAccessor number = deep_klass->bindProperty("number", provider);
+	PropertyAccessor number = deep_klass->bindProperty("number", handle);
 	CHECK(number.isValid());
 	CHECK_EQUAL(TypeId::getType<float>(), number.getType());
 
-	PropertyAccessor value = deep_klass->bindProperty("value", provider);
+	PropertyAccessor value = deep_klass->bindProperty("value", handle);
 	CHECK(value.isValid());
 	CHECK_EQUAL(TypeId::getType<int32_t>(), value.getType());
 
 	{
-		PropertyAccessor random = deep_klass->bindProperty("random()", provider);
+		PropertyAccessor random = deep_klass->bindProperty("random()", handle);
 		CHECK(!random.isValid());
 	}
 }
 
 TEST_F(TestDefinitionFixture, multidimensional)
 {
-	auto provider = klass_->createManagedObject();
+	ManagedObject<TestDefinitionObject> object(std::make_unique<TestDefinitionObject>());
+	ObjectHandle handle = object.getHandle();
 
-	auto obj = provider.getBase<TestDefinitionObject>();
+	auto obj = handle.getBase<TestDefinitionObject>();
 	CHECK(obj);
 
+    auto one = ManagedObject<TestStructure2>::make();
+    auto two = ManagedObject<TestStructure2>::make();
+
 	auto& mdElement = obj->multidimensional_["hello"];
-	mdElement.push_back(getDefinitionManager().create<TestStructure2>());
+	mdElement.push_back(one.getHandleT());
 	mdElement[0]->name_ = "one";
-	mdElement.push_back(getDefinitionManager().create<TestStructure2>());
+	mdElement.push_back(two.getHandleT());
 	mdElement[1]->name_ = "two";
 
-	auto v0 = klass_->bindProperty("multidimensional[ \"hello\" ][0].name", provider).getValue();
+	auto v0 = klass_->bindProperty("multidimensional[ \"hello\" ][0].name", handle).getValue();
 	std::string s0;
 	CHECK(v0.tryCast(s0));
 	CHECK_EQUAL("one", s0);
 
-	auto v1 = klass_->bindProperty("multidimensional[\"hello\"][1].name", provider).getValue();
+	auto v1 = klass_->bindProperty("multidimensional[\"hello\"][1].name", handle).getValue();
 	std::string s1;
 	CHECK(v1.tryCast(s1));
 	CHECK_EQUAL("two", s1);

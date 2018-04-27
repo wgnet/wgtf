@@ -14,8 +14,8 @@
 
 namespace wgt
 {
-PythonPanel::PythonPanel(IComponentContext& context, ObjectHandle& contextObject)
-    : Depends(context), context_(context), contextObject_(contextObject)
+PythonPanel::PythonPanel(ManagedObjectPtr contextObject)
+    : contextObject_(std::move(contextObject))
 {
 	this->addPanel();
 }
@@ -33,7 +33,7 @@ bool PythonPanel::addPanel()
 		NGT_ERROR_MSG("Failed to find IViewCreator\n");
 		return false;
 	}
-	pythonView_ = viewCreator->createView("Python27UITest/PythonObjectTestPanel.qml", contextObject_);
+	pythonView_ = viewCreator->createView("Python27UITest/PythonObjectTestPanel.qml", contextObject_->getHandle());
 	return true;
 }
 
@@ -53,5 +53,7 @@ void PythonPanel::removePanel()
 		uiApplication->removeView(*view);
 		view = nullptr;
 	}
+
+    contextObject_ = nullptr;
 }
 } // end namespace wgt

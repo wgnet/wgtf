@@ -30,11 +30,38 @@ Image {
         }
     }
 
+    QtObject {
+        id: internal
+        property var internalImageSource: ""
+        property bool external: false
+
+        onInternalImageSourceChanged: {
+            if(typeof internalImageSource == "undefined")
+            {
+                return;
+            }
+            var imageUrl = getIconUrlFromImageProvider(internalImageSource);
+            if(imageUrl != "")
+            {
+                //if image can be found in image provider
+                image.realImageSource = imageUrl;
+            }
+            else
+            {
+                //if image cannot be found in image provider
+                image.realImageSource = internalImageSource;
+            }
+        }
+    }
+
+    property alias realImageSource: image.source
+    property alias source: internal.internalImageSource
+
     Image {
         anchors.centerIn: parent
 
-        height: lastImageHeight != 0 ? lastImageHeight : Math.min(sourceSize.height, image.parent.height)
-        width: lastImageWidth != 0 ? lastImageWidth : Math.min(sourceSize.width, image.parent.width)
+        height: lastImageHeight != 0 ? Math.min(image.height, lastImageHeight) : image.parent != null ? (Math.min(sourceSize.height, image.parent.height)) : Math.min(image.height, sourceSize.height)
+        width: lastImageWidth != 0 ? Math.min(image.width, lastImageWidth) : image.parent != null ? (Math.min(sourceSize.width, image.parent.width)) : Math.min(image.width, sourceSize.width)
 
         source: "icons/defaultImage.png"
         visible: image.status == Image.Error

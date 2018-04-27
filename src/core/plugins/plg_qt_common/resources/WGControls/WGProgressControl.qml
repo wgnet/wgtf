@@ -66,7 +66,13 @@ Rectangle {
     */
     property alias value: progBar.value
 
+    /*!
+        The color of the animated bar
+    */
+    property color barColor: palette.highlightShade
+
     property alias maximumValue: progBar.maximumValue
+    property alias canCancel: cancelBtn.visible
 
     /*! \internal */
     property int __percentage: 0
@@ -141,6 +147,7 @@ Rectangle {
             }
 
             WGPushButton {
+                id: cancelBtn
                 text: "Cancel"
                 anchors.right: parent.right
                 height: defaultSpacing.minimumRowHeight
@@ -172,7 +179,7 @@ Rectangle {
                 background: WGTextBoxFrame {}
 
                 progress: Rectangle {
-                    color: palette.highlightColor
+                    color: barColor
                     radius: defaultSpacing.halfRadius
                     Item {
                             anchors.fill: parent

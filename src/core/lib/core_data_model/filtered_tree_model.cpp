@@ -98,6 +98,7 @@ This is to tell the view to update its data.
 
 #include "filtered_tree_model.hpp"
 #include "core_variant/variant.hpp"
+#include "core_common/assert.hpp"
 
 #include <unordered_map>
 #include <vector>
@@ -106,7 +107,6 @@ This is to tell the view to update its data.
 #include <thread>
 #include <functional>
 #include <atomic>
-#include <cassert>
 
 namespace wgt
 {
@@ -615,7 +615,7 @@ size_t FilteredTreeModel::Implementation::getSourceIndex(const IItem* parent, si
 		return INVALID_INDEX;
 	}
 
-	assert(index < itr->second.size());
+	TF_ASSERT(index < itr->second.size());
 	return itr->second[index];
 }
 
@@ -623,7 +623,7 @@ size_t FilteredTreeModel::Implementation::getMappedIndex(const IItem* parent, si
 {
 	const std::vector<size_t>& mappedIndices = getMappedIndices(parent);
 	auto itr = std::lower_bound(mappedIndices.begin(), mappedIndices.end(), index);
-	assert(itr != mappedIndices.end());
+	TF_ASSERT(itr != mappedIndices.end());
 	return itr - mappedIndices.begin();
 }
 
@@ -672,7 +672,7 @@ const std::vector<size_t>* FilteredTreeModel::Implementation::findMappedIndices(
 const std::vector<size_t>& FilteredTreeModel::Implementation::getMappedIndices(const IItem* parent) const
 {
 	auto itr = indexMap_.find(parent);
-	assert(itr != indexMap_.end());
+	TF_ASSERT(itr != indexMap_.end());
 	return itr->second;
 }
 
@@ -870,7 +870,7 @@ void FilteredTreeModel::Implementation::postItemsInserted(const IItem* parent, s
 
 	if (newIndices.size() > 0)
 	{
-		assert(mappedIndicesPointer != nullptr);
+		TF_ASSERT(mappedIndicesPointer != nullptr);
 		self_.signalPreItemsInserted(item, mappedIndex, newIndices.size());
 		insertItems(mappedIndex, sourceCount, item, *mappedIndicesPointer, newIndices, inFilter, false);
 		self_.signalPostItemsInserted(item, mappedIndex, newIndices.size());
@@ -1030,7 +1030,7 @@ IItem* FilteredTreeModel::item(size_t index, const IItem* parent) const
 ITreeModel::ItemIndex FilteredTreeModel::index(const IItem* item) const
 {
 	std::lock_guard<std::recursive_mutex> guard(impl_->indexMapMutex_);
-	assert(impl_->model_ != nullptr);
+	TF_ASSERT(impl_->model_ != nullptr);
 	ItemIndex itemIndex = impl_->model_->index(item);
 	itemIndex.first = impl_->getMappedIndex(itemIndex.second, itemIndex.first);
 	return itemIndex;
@@ -1061,7 +1061,7 @@ size_t FilteredTreeModel::size(const IItem* item) const
 		if (!impl_->mapIndices(item, parentInFilter))
 		{
 			bool needsToBeInTheFilter = false;
-			assert(needsToBeInTheFilter);
+			TF_ASSERT(needsToBeInTheFilter);
 		}
 
 		childIndices = impl_->findMappedIndices(item);

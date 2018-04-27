@@ -1,12 +1,16 @@
 #include "type_id.hpp"
-#include "core_reflection/object_handle.hpp"
-#include "wg_types/hash_utilities.hpp"
 
-#include <assert.h>
+#include "wg_types/hash_utilities.hpp"
+#include "core_common/assert.hpp"
+
 #include <string.h>
 
 namespace wgt
 {
+
+template< typename T >
+class ObjectHandleT;
+
 //==============================================================================
 TypeId::TypeId(const std::string& name) : name_(nullptr), hashCode_(0), owns_(false)
 {
@@ -77,14 +81,14 @@ std::string extractContentsIfTargetMatchingPattern(const char* target, const cha
 {
 	size_t patternLength = strlen(pattern);
 	size_t sectionLength = strlen(section);
-	assert(patternLength > sectionLength);
+	TF_ASSERT(patternLength > sectionLength);
 
 	const char* patternFromSection = strstr(pattern, section);
-	assert(patternFromSection != nullptr);
+	TF_ASSERT(patternFromSection != nullptr);
 
 	auto patternPrefixLength = patternFromSection - pattern;
 	auto patternSuffixLength = patternLength - patternPrefixLength - sectionLength;
-	assert(patternPrefixLength > 0 || patternSuffixLength > 0);
+	TF_ASSERT(patternPrefixLength > 0 || patternSuffixLength > 0);
 
 	size_t targetLength = strlen(target);
 

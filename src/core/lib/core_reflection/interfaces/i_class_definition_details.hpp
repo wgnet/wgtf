@@ -1,26 +1,28 @@
 #ifndef I_CLASS_DEFINITION_DETAILS_HPP
 #define I_CLASS_DEFINITION_DETAILS_HPP
 
-#include "core_reflection/interfaces/i_base_property.hpp"
-
+#include "core_reflection/property_iterator.hpp"
+#include "core_reflection/ref_object_id.hpp"
+#include "core_reflection/interfaces/i_property_path.hpp"
+#include "core_object/i_managed_object.hpp"
+#include "core_common/deprecated.hpp"
+#include "core_variant/variant.hpp"
 #include <unordered_map>
 #include <memory>
 
 namespace wgt
 {
+template <typename T> class ObjectHandleT;
+class TypeId;
 class ObjectHandle;
 
 class IClassDefinition;
 class IClassDefinitionModifier;
-class PropertyIteratorImplBase;
-typedef std::shared_ptr<PropertyIteratorImplBase> PropertyIteratorImplPtr;
+class MetaData;
 
-class TypeId;
+typedef std::shared_ptr<class IObjectHandleStorage> ObjectHandleStoragePtr;
+typedef std::unique_ptr<PropertyIteratorImplBase> PropertyIteratorImplPtr;
 
-template <typename T>
-class ObjectHandleT;
-class MetaBase;
-typedef ObjectHandleT<MetaBase> MetaHandle;
 
 /**
  *	Interface for providing inheritance info about a type.
@@ -33,6 +35,7 @@ public:
 	virtual ~IClassDefinitionDetails()
 	{
 	}
+
 
 	/**
 	 *	Check if this type is an interface or a concrete type.
@@ -60,15 +63,10 @@ public:
 	 */
 	virtual const char* getName() const = 0;
 
-	/**
-	 *	Get the name of the parent/base class.
-	 *	@note does not support multiple inheritance.
-	 *	@return the name of the parent/base class or null if there isn't one.
-	 */
-	virtual const char* getParentName() const = 0;
-	virtual MetaHandle getMetaData() const = 0;
-	virtual ObjectHandle create(const IClassDefinition& classDefinition) const = 0;
-	virtual void* upCast(void* object) const = 0;
+	virtual const MetaData & getMetaData() const = 0;
+	virtual ObjectHandleStoragePtr createObjectStorage(const IClassDefinition& classDefinition) const = 0;
+	virtual ManagedObjectPtr createManaged(const IClassDefinition& classDefinition, RefObjectId id = RefObjectId::zero()) const = 0;
+
 
 	/**
 	 *	Check if this implementation can lookup a property by name, if possible.
@@ -95,9 +93,24 @@ public:
 		return nullptr;
 	}
 
+	//--------------------------------------------------------------------------
+	virtual IBasePropertyPtr directLookupProperty( IPropertyPath::ConstPtr & path ) const
+	{
+		return directLookupProperty( path->getPath().c_str() );
+	}
+
 	virtual PropertyIteratorImplPtr getPropertyIterator() const = 0;
 
 	virtual IClassDefinitionModifier* getDefinitionModifier() const = 0;
+
+    //-----------------------------------------------------------------------------
+
+    template<typename T = void>
+    DEPRECATED ObjectHandle create(const IClassDefinition& classDefinition) const
+    {
+        static_assert(!std::is_same<T, T>::value,
+            "This method is now deprecated. Please use ManagedObject");
+    }
 };
 
 typedef std::unique_ptr<IClassDefinitionDetails> IClassDefintionDetailsPtr;

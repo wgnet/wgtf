@@ -157,7 +157,7 @@ RowLayout {
             WGNumberBox {
                 id: boxH
                 objectName: "numberBox_H"
-                number: hours
+                value: hours
                 minimumValue: 0
                 maximumValue: timeBox.maximumValue
                 multipleValues: timeBox.multipleValues
@@ -168,15 +168,14 @@ RowLayout {
 
                 width: visible ? sizeText.contentWidth + defaultSpacing.doubleMargin : 0
 
-                onNumberChanged: {
-                    setTime(number, minutes, seconds, frames)
-                    if(activeFocus) selectValue()
+                onEditingFinished: {
+                    setTime(value, minutes, seconds, frames)
                 }
             },
             WGNumberBox {
                 id: boxM
                 objectName: "numberBox_M"
-                number: minutes
+                value: minutes
                 minimumValue: 0
                 maximumValue: timeBox.maximumValue
                 multipleValues: timeBox.multipleValues
@@ -187,15 +186,14 @@ RowLayout {
 
                 width: visible ? sizeText.contentWidth + defaultSpacing.doubleMargin : 0
 
-                onNumberChanged: {
-                    setTime(hours, number, seconds, frames)
-                    if(activeFocus) selectValue()
+                onEditingFinished: {
+                    setTime(hours, value, seconds, frames)
                 }
             },
             WGNumberBox {
                 id: boxS
                 objectName: "numberBox_S"
-                number: seconds
+                value: seconds
                 minimumValue: 0
                 maximumValue: timeBox.maximumValue
                 multipleValues: timeBox.multipleValues
@@ -206,15 +204,14 @@ RowLayout {
 
                 width: visible ? sizeText.contentWidth + defaultSpacing.doubleMargin : 0
 
-                onNumberChanged: {
-                    setTime(hours, minutes, number, frames)
-                    if(activeFocus) selectValue()
+                onEditingFinished: {
+                    setTime(hours, minutes, value, frames)
                 }
             },
             WGNumberBox {
                 id: boxF
                 objectName: "numberBox_F"
-                number: frames
+                value: frames
                 minimumValue: 0
                 maximumValue: timeBox.maximumValue
                 multipleValues: timeBox.multipleValues
@@ -225,9 +222,8 @@ RowLayout {
 
                 width: visible ? sizeText.contentWidth + defaultSpacing.doubleMargin : 0
 
-                onNumberChanged: {
-                    setTime(hours, minutes, seconds, number)
-                    if(activeFocus) selectValue()
+                onEditingFinished: {
+                    setTime(hours, minutes, seconds, value)
                 }
             }
         ]

@@ -1,5 +1,7 @@
 #include "list_extension.hpp"
 
+#include "core_common/assert.hpp"
+
 namespace wgt
 {
 ListExtension::ListExtension()
@@ -48,7 +50,7 @@ QModelIndex ListExtension::getNextIndex(const QModelIndex& index, QAbstractItemM
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	if (index.row() >= (pModel->rowCount(index.parent()) - 1))
 	{
@@ -69,7 +71,7 @@ QModelIndex ListExtension::getPreviousIndex(const QModelIndex& index, QAbstractI
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	if (index.row() <= 0)
 	{

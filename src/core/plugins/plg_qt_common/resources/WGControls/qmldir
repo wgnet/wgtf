@@ -1,26 +1,40 @@
 module WGControls
-typeinfo WGControls.qmltypes
 
 # 2.0 New Controls
 WGAssetBrowser 2.0 WGAssetBrowser20.qml
+WGAssetIcon 2.0 WGAssetIcon20.qml
 WGBreadcrumbsBase 2.0 WGBreadcrumbsBase20.qml
+WGColorPicker 2.0 WGColorPicker20.qml
+WGColorPickerDialog 2.0 WGColorPickerDialog20.qml
+WGDataConversion 2.0 WGDataConversion20.qml
+WGDefaultColorPickerDialog 2.0 WGDefaultColorPickerDialog20.qml
 WGDial 2.0 WGDial20.qml
+WGEditableLabel 2.0 WGEditableLabel20.qml
+WGEnum 2.0 WGEnum20.qml
 WGGradientSlider 2.0 WGGradientSlider20.qml
 WGImage 2.0 WGImage20.qml
 WGImageDropDown 2.0 WGImageDropDown20.qml
+WGPopup 2.0 WGPopup20.qml
+WGReflectedEnum 2.0 WGReflectedEnum20.qml
 WGResizeableFrame 2.0 WGResizeableFrame20.qml
-WGToolTip 2.0 WGToolTip20.qml
 WGTimeBox 2.0 WGTimeBox20.qml
+WGToolTip 2.0 WGToolTip20.qml
+WGToolTipBase 2.0 WGToolTipBase20.qml
+WGIconOverlay 2.0 WGIconOverlay20.qml
+WGFileUrl 2.0 WGFileUrl20.qml
+WGFolderBrowserDialog 2.0 WGFolderBrowserDialog.qml
 
 # 2.0 Updated Controls
 WGActiveFilters 2.0 WGActiveFilters20.qml
 WGDropDownBox 2.0 WGDropDownBox20.qml
 WGColorSlider 2.0 WGColorSlider20.qml
+WGLabel 2.0 WGLabel.qml
 WGLoader 2.0 WGLoader.qml
 WGNumberBox 2.0 WGNumberBox20.qml
 WGRangeSlider 2.0 WGRangeSlider20.qml
 WGSliderControl 2.0 WGSliderControl20.qml
 WGBreadcrumbs 2.0 WGBreadcrumbs20.qml
+WGFileSelectBox 2.0 WGFileSelectBox20.qml
 
 # 2.0 Unchanged Controls
 WGAlertFrame 2.0 WGAlertFrame.qml
@@ -32,14 +46,11 @@ WGCheckBox 2.0 WGCheckBox.qml
 WGColorButton 2.0 WGColorButton.qml
 WGColumnScrollPanel 2.0 WGColumnScrollPanel.qml
 WGContextArea 2.0 WGContextArea.qml
-WGCopyable 2.0 WGCopyable.qml
 WGFileDialog 2.0 WGFileDialog.qml
-WGFileSelectBox 2.0 WGFileSelectBox.qml
 WGFrame 2.0 WGFrame.qml
 WGGroupBox 2.0 WGGroupBox.qml
 WGHighlightFrame 2.0 WGHighlightFrame.qml
 WGInternalPanel 2.0 WGInternalPanel.qml
-WGLabel 2.0 WGLabel.qml
 WGLodSlider 2.0 WGLodSlider.qml
 WGLoggingPanel 2.0 WGLoggingPanel.qml
 WGMenu 2.0 WGMenu.qml
@@ -83,7 +94,6 @@ WGColorButton 1.0 WGColorButton.qml
 WGColorSlider 1.0 WGColorSlider.qml
 WGColumnScrollPanel 1.0 WGColumnScrollPanel.qml
 WGContextArea 1.0 WGContextArea.qml
-WGCopyable 1.0 WGCopyable.qml
 WGDropDownBox 1.0 WGDropDownBox.qml
 WGFileDialog 1.0 WGFileDialog.qml
 WGFileSelectBox 1.0 WGFileSelectBox.qml

@@ -1,61 +1,45 @@
 #pragma once
 
-#include "i_qt_view.hpp"
+#include "qt_view_common.hpp"
 #include "qt_connection_holder.hpp"
 #include "core_qt_common/qt_new_handler.hpp"
-#include "core_ui_framework/layout_hint.hpp"
+#include "core_ui_framework/i_cursor.hpp"
+
 #include <memory>
 #include <vector>
 #include <QObject>
 #include <QWidget>
 
-class QUrl;
-class QQmlContext;
-class QQmlEngine;
-class QQuickWidget;
-class QString;
-class QVariant;
 class QIODevice;
 
 namespace wgt
 {
-class IQtFramework;
+class IMenu;
 
-class QtView : public QObject, public IQtView
+class QtView : public QObject, public QtViewCommon
 {
 	Q_OBJECT
+
 public:
-	QtView(const char* id, IQtFramework& qtFramework, QIODevice& source);
+	QtView(const char* id, QIODevice& source);
 	virtual ~QtView();
 
-	const char* id() const override;
-	const char* title() const override;
-	const char* windowId() const override;
-	const LayoutHint& hint() const override;
-	void update() override;
+	virtual void update() override;
+	virtual void reload() override;
+	virtual std::vector<IMenu*> menus() const override;
+	virtual void setFocus(bool focus) override;
 
-	QWidget* releaseView() override;
-	void retainView() override;
-	QWidget* view() const override;
+	virtual CursorId getCursor() const override;
+	virtual void setCursor(CursorId cursorId) override;
+	virtual void unsetCursor() override;
 
-	virtual void focusInEvent() override;
-	virtual void focusOutEvent() override;
-
-	virtual void registerListener(IViewEventListener* listener) override;
-	virtual void deregisterListener(IViewEventListener* listener) override;
-
-protected:
-	void init();
+	void setLayoutHint(const QStringList& value);
+	void setWindowId(const char* windowId);
 
 private:
-	IQtFramework& qtFramework_;
-	QWidget* widgetView_;
-	std::string id_;
-	std::string title_;
-	std::string windowId_;
-	LayoutHint hint_;
-	bool released_;
-	typedef std::vector<IViewEventListener*> Listeners;
-	Listeners listeners_;
+	void initialise();
+
+	struct Implementation;
+	std::unique_ptr<Implementation> impl_;
 };
 }

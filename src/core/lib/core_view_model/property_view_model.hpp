@@ -39,6 +39,11 @@ public:
 		model_.reset(new T(componentContext));
 	}
 
+	PropertyViewModelT()
+	{
+		model_.reset(new T());
+	}
+
 	virtual ~PropertyViewModelT()
 	{
 	}
@@ -61,6 +66,12 @@ template <class T>
 std::shared_ptr<PropertyViewModel> CreatePropertyViewModel(IComponentContext& componentContext)
 {
 	return std::make_shared<PropertyViewModelT<T>>(componentContext);
+}
+
+template <class T>
+std::shared_ptr<PropertyViewModel> CreatePropertyViewModel()
+{
+	return std::make_shared<PropertyViewModelT<T>>();
 }
 
 } // end namespace wgt

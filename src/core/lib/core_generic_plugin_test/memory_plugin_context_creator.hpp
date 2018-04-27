@@ -9,7 +9,7 @@ namespace wgt
 class MemoryPluginContextCreator : public Implements<IComponentContextCreator>
 {
 public:
-	IInterface* createContext(const wchar_t* contextId);
+	InterfacePtr createContext(const wchar_t* contextId);
 	const char* getType() const;
 };
 } // end namespace wgt

@@ -40,7 +40,7 @@ class SerializationPlugin : public PluginMain
 {
 private:
 	std::unique_ptr<SerializationSystemHolder> serializationSystemHolder_;
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 
 public:
 	//==========================================================================
@@ -55,7 +55,7 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 };

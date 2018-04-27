@@ -16,8 +16,6 @@ namespace wgt
 class QmlPreferencesPanel : Depends<IUIFramework, IUIApplication, IViewCreator>
 {
 public:
-	QmlPreferencesPanel(IComponentContext& context);
-
 	bool addPanel();
 	void removePanel();
 

@@ -2,8 +2,6 @@
 #define __I_CONNECTION_H__
 
 #include "core_reflection/reflected_object.hpp"
-#include "core_data_model/i_list_model.hpp"
-
 #include "i_slot.hpp"
 
 namespace wgt
@@ -35,12 +33,12 @@ public:
 	/*! Returns the connections input slot
 	@return input slot
 	*/
-	virtual ISlot* Input() const = 0;
+	virtual ObjectHandleT<ISlot> Input() const = 0;
 
 	/*! Returns the connection's output slot
 	@return output slot
 	*/
-	virtual ISlot* Output() const = 0;
+	virtual ObjectHandleT<ISlot> Output() const = 0;
 
 	/*! Binds two slots
 	@param outputSlot The slot which will be connected as output

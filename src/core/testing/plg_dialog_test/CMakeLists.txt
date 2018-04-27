@@ -5,7 +5,7 @@ ADD_DEFINITIONS( -DNOMINMAX )
 
 INCLUDE( WGToolsCoreProject )
 
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 REMOVE_DEFINITIONS( /WX )
 ADD_DEFINITIONS(
@@ -16,14 +16,12 @@ ADD_DEFINITIONS(
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 SET( ALL_SRCS
-	dialog_test_model.hpp
-	dialog_test_model.cpp
+	dialog_test_panel.hpp
+	dialog_test_panel.cpp
+	custom_dialog_model.hpp
     dialog_reflected_data.hpp
     dialog_reflected_data.cpp
-    dialog_reflected_tree_model.hpp
-    dialog_reflected_tree_model.cpp
     metadata/dialog_reflected_data.mpp
-    metadata/dialog_reflected_tree_model.mpp
 	${PROJECT_NAME}.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )

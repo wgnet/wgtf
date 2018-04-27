@@ -1,9 +1,9 @@
 #include "core_generic_plugin/generic_plugin.hpp"
 #include "core_dependency_system/i_interface.hpp"
-#include "plugins/plg_curve_editor/interfaces/i_curve_editor.hpp"
-#include "plugins/plg_curve_editor/models/bezier_point_data.hpp"
-#include "plugins/plg_curve_editor/interfaces/curve_types.hpp"
-#include "plugins/plg_curve_editor/interfaces/i_curve.hpp"
+#include "curve_editor/i_curve_editor.hpp"
+#include "curve_editor/bezier_point_data.hpp"
+#include "curve_editor/curve_types.hpp"
+#include "curve_editor/i_curve.hpp"
 #include "core_dependency_system/depends.hpp"
 
 namespace wgt
@@ -20,11 +20,6 @@ namespace wgt
 class CurveEditorTestPlugin : public PluginMain, public Depends<ICurveEditor>
 {
 public:
-	//==========================================================================
-	CurveEditorTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
-	{
-	}
-
 	void Initialise(IComponentContext& contextManager) override
 	{
 		auto curveEditor = get<ICurveEditor>();
@@ -32,7 +27,7 @@ public:
 		{
 			return;
 		}
-		curves_.emplace_back(curveEditor->createCurve(CurveTypes::Linear, true));
+		curves_.emplace_back(curveEditor->addCurve(CurveTypes::Linear));
 		{
 			auto curve = curves_.back();
 			BezierPointData pointData1 = { { 0.0f, 0.0f } };
@@ -45,7 +40,7 @@ public:
 			curve->add(pointData4);
 		}
 
-		curves_.emplace_back(curveEditor->createCurve(CurveTypes::CubicBezier, true));
+		curves_.emplace_back(curveEditor->addCurve(CurveTypes::CubicBezier));
 		auto curve = curves_.back();
 		{
 			BezierPointData pointData1 = { { 0.0f, 0.0f }, { -0.1f, -0.1f }, { 0.1f, 0.1f } };
@@ -59,7 +54,7 @@ public:
 		}
 		curve->setShowControlPoints(true);
 
-		curves_.emplace_back(curveEditor->createCurve(CurveTypes::Linear, true));
+		curves_.emplace_back(curveEditor->addCurve(CurveTypes::Linear));
 		{
 			curve = curves_.back();
 			BezierPointData pointData1 = { { 0.0f, 0.0f } };
@@ -72,7 +67,7 @@ public:
 			curve->add(pointData4);
 		}
 
-		curves_.emplace_back(curveEditor->createCurve(CurveTypes::CubicBezier, true));
+		curves_.emplace_back(curveEditor->addCurve(CurveTypes::CubicBezier));
 		{
 			curve = curves_.back();
 			BezierPointData pointData1 = { { 0.0f, 0.75f }, { 0.00f, 0.00f }, { 0.1f, 0.1f } };
@@ -103,7 +98,7 @@ public:
 		return true;
 	}
 
-	std::vector<ICurvePtr> curves_;
+	std::vector<ICurveHandle> curves_;
 };
 
 PLG_CALLBACK_FUNC(CurveEditorTestPlugin)

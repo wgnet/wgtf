@@ -1,0 +1,5 @@
+#include "core_data_model/asset_browser/metadata/i_asset_browser_model20.mpp"
+#include "core_data_model/asset_browser/metadata/i_asset_preview.mpp"
+#include "core_data_model/metadata/i_active_filters_model.mpp"
+#include "core_data_model/dialog/metadata/dialog_model.mpp"
+#include "core_data_model/dialog/metadata/reflected_dialog_model.mpp"

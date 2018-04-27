@@ -1,5 +1,8 @@
 #include "reflection_controller.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_common/assert.hpp"
 #include "core_command_system/i_command_manager.hpp"
+#include "commands/custom_command.hpp"
 #include "commands/set_reflectedproperty_command.hpp"
 #include "commands/invoke_reflected_method_command.hpp"
 #include "commands/reflected_collection_insert_command.hpp"
@@ -10,16 +13,18 @@
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_reflection/base_property_with_metadata.hpp"
+#include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/reflected_method.hpp"
+#include "core/interfaces/editor/i_editor.hpp"
 
 #include <map>
-#include "core_reflection/reflected_method.hpp"
 
 namespace wgt
 {
 class ReflectionController::Impl : public ICommandEventListener
 {
 public:
-	Impl(ICommandManager& commandManager) : commandManager_(commandManager)
+	Impl(ICommandManager& commandManager) : commandManager_(commandManager), editor_(nullptr)
 	{
 		commandManager_.registerCommandStatusListener(this);
 	}
@@ -62,6 +67,23 @@ public:
 
 	void setValue(const PropertyAccessor& pa, const Variant& data)
 	{
+		if (editor_)
+		{
+			editor_->updateEditState(pa.getObject());
+		}
+
+		if (findFirstMetaData<MetaDirectInvokeObj>(pa, *pa.getDefinitionManager()) != nullptr)
+		{
+			pa.setValue(data);
+			return;
+		}
+
+		// Check if custom set function processes this case.
+		if (setFunc_ && setFunc_(pa, data))
+		{
+			return;
+		}
+
 		Key key;
 		if (!createKey(pa, key))
 		{
@@ -70,16 +92,18 @@ public:
 		}
 
 		// Access is only on the main thread
-		assert(std::this_thread::get_id() == commandManager_.ownerThreadId());
+		TF_ASSERT(std::this_thread::get_id() == commandManager_.ownerThreadId());
 
-		const auto commandId = getClassIdentifier<SetReflectedPropertyCommand>();
+        auto commandArgs = ManagedObject<ReflectedPropertyCommandArgument>::make_iunique_fn(
+            [&key, &data](ReflectedPropertyCommandArgument& commandArgs)
+        {
+            commandArgs.setContextId(key.first);
+            commandArgs.setPath(key.second.c_str());
+            commandArgs.setValue(data);
+        });
 
-		const auto commandArgs = pa.getDefinitionManager()->create<ReflectedPropertyCommandArgument>();
-		commandArgs->setContextId(key.first);
-		commandArgs->setPath(key.second.c_str());
-		commandArgs->setValue(data);
-
-		auto command = commandManager_.queueCommand(commandId, commandArgs);
+        const auto commandId = getClassIdentifier<SetReflectedPropertyCommand>();
+        auto command = commandManager_.queueCommand(commandId, std::move(commandArgs));
 
 		// Queuing may cause it to execute straight away
 		// Based on the thread affinity of SetReflectedPropertyCommand
@@ -91,7 +115,7 @@ public:
 
 	Variant invoke(const PropertyAccessor& pa, const ReflectedMethodParameters& parameters)
 	{
-		if (findFirstMetaData<MetaDirectInvokeObj>(pa, *pa.getDefinitionManager()))
+		if (findFirstMetaData<MetaDirectInvokeObj>(pa, *pa.getDefinitionManager()) != nullptr)
 		{
 			return pa.invoke(parameters);
 		}
@@ -102,27 +126,33 @@ public:
 			return pa.invoke(parameters);
 		}
 
-		std::unique_ptr<ReflectedMethodCommandParameters> commandParameters(new ReflectedMethodCommandParameters());
-		commandParameters->setId(key.first);
-		commandParameters->setPath(key.second.c_str());
-		commandParameters->setParameters(parameters);
-
+		auto classId = getClassIdentifier<InvokeReflectedMethodCommand>();
+		auto args = ManagedObject<ReflectedMethodCommandParameters>::make_unique();
+		(*args)->setId(key.first);
+		(*args)->setPath(key.second.c_str());
+		(*args)->setParameters(parameters);
 		const auto itr = commands_.emplace(std::pair<Key, CommandInstancePtr>(
-		key, commandManager_.queueCommand(
-		     getClassIdentifier<InvokeReflectedMethodCommand>(),
-		     ObjectHandle(std::move(commandParameters),
-		                  pa.getDefinitionManager()->getDefinition<ReflectedMethodCommandParameters>()))));
+			key, commandManager_.queueCommand(classId, ManagedObjectPtr(std::move(args)))));
 
 		commandManager_.waitForInstance(itr->second);
-		ObjectHandle returnValueObject = itr->second.get()->getReturnValue();
+		Variant returnValueObject = itr->second.get()->getReturnValue();
 		commands_.erase(itr);
-		Variant* returnValuePointer = returnValueObject.getBase<Variant>();
-		assert(returnValuePointer != nullptr);
-		return *returnValuePointer;
+		return returnValueObject;
 	}
 
 	void insert(const PropertyAccessor& pa, const Variant& insertKey, const Variant& value)
 	{
+		if (editor_)
+		{
+			editor_->updateEditState(pa.getObject());
+		}
+
+		// Check if custom insert function processes this case.
+		if (insertFunc_ && insertFunc_(pa, insertKey, value))
+		{
+			return;
+		}
+
 		Key key;
 		if (!createKey(pa, key))
 		{
@@ -130,16 +160,14 @@ public:
 			return;
 		}
 
-		std::unique_ptr<ReflectedCollectionInsertCommandParameters> commandParameters(
-		new ReflectedCollectionInsertCommandParameters());
-		commandParameters->id_ = key.first;
-		commandParameters->path_ = key.second;
-		commandParameters->key_ = insertKey;
-		commandParameters->value_ = value;
-
+		auto classId = getClassIdentifier<ReflectedCollectionInsertCommand>();
+		auto args = ManagedObject<ReflectedCollectionInsertCommandParameters>::make_unique();
+		(*args)->id_ = key.first;
+		(*args)->path_ = key.second;
+		(*args)->key_ = insertKey;
+		(*args)->value_ = value;
 		const auto itr = commands_.emplace(std::pair<Key, CommandInstancePtr>(
-		key, commandManager_.queueCommand(getClassIdentifier<ReflectedCollectionInsertCommand>(),
-		                                  ObjectHandle(std::move(commandParameters)))));
+			key, commandManager_.queueCommand(classId, ManagedObjectPtr(std::move(args)))));
 
 		commandManager_.waitForInstance(itr->second);
 		commands_.erase(itr);
@@ -147,6 +175,17 @@ public:
 
 	void erase(const PropertyAccessor& pa, const Variant& eraseKey)
 	{
+		if (editor_)
+		{
+			editor_->updateEditState(pa.getObject());
+		}
+
+		// Check if custom erase function processes this case.
+		if (eraseFunc_ && eraseFunc_(pa, eraseKey))
+		{
+			return;
+		}
+
 		Key key;
 		if (!createKey(pa, key))
 		{
@@ -154,19 +193,32 @@ public:
 			return;
 		}
 
-		std::unique_ptr<ReflectedCollectionEraseCommandParameters> commandParameters(
-		new ReflectedCollectionEraseCommandParameters());
-		commandParameters->id_ = key.first;
-		commandParameters->path_ = key.second;
-		commandParameters->key_ = eraseKey;
-
+		auto classId = getClassIdentifier<ReflectedCollectionEraseCommand>();
+		auto args = ManagedObject<ReflectedCollectionEraseCommandParameters>::make_unique();
+		(*args)->id_ = key.first;
+		(*args)->path_ = key.second;
+		(*args)->key_ = eraseKey;
 		const auto itr = commands_.emplace(std::pair<Key, CommandInstancePtr>(
-		key, commandManager_.queueCommand(getClassIdentifier<ReflectedCollectionEraseCommand>(),
-		                                  ObjectHandle(std::move(commandParameters)))));
+			key, commandManager_.queueCommand(classId, ManagedObjectPtr(std::move(args)))));
 
 		commandManager_.waitForInstance(itr->second);
 		commands_.erase(itr);
 	}
+
+	void customCommand(ExecuteFunc executeFunc, UndoFunc undoFunc, const std::string& description)
+	{
+		auto classId = getClassIdentifier<CustomCommand>();
+		auto args = ManagedObject<CustomCommandParameters>::make_unique();
+		(*args)->description_ = description;
+		(*args)->execute_ = executeFunc;
+		(*args)->undo_ = undoFunc;
+		const auto itr = commands_.emplace(std::pair<Key, CommandInstancePtr>(
+			std::make_pair(RefObjectId::generate(), description), commandManager_.queueCommand(classId, ManagedObjectPtr(std::move(args)))));
+
+		commandManager_.waitForInstance(itr->second);
+		commands_.erase(itr);
+	}
+
 
 	virtual void statusChanged(const CommandInstance& commandInstance) const override
 	{
@@ -194,22 +246,14 @@ private:
 	typedef std::pair<RefObjectId, std::string> Key;
 	bool createKey(const PropertyAccessor& pa, Key& o_Key)
 	{
-		const auto& obj = pa.getRootObject();
+		const auto obj = pa.getRootObject();
 		if (obj == nullptr)
 		{
 			return false;
 		}
 
-		if (!obj.getId(o_Key.first))
-		{
-			auto om = pa.getDefinitionManager()->getObjectManager();
-			assert(!om->getObject(obj.data()).isValid());
-			if (!om->getUnmanagedObjectId(obj.data(), o_Key.first))
-			{
-				o_Key.first = om->registerUnmanagedObject(obj);
-			}
-		}
-
+		TF_ASSERT(obj.id() != RefObjectId::zero());
+        o_Key.first = obj.id();
 		o_Key.second = pa.getFullPath();
 		return true;
 	}
@@ -219,6 +263,12 @@ private:
 	// commands_ must be mutable to satisfy ICommandEventListener
 	// Use a multimap in case multiple commands for the same key get queued
 	mutable std::multimap<Key, CommandInstancePtr> commands_;
+	IEditor* editor_;
+	CustomSetValueFunc setFunc_;
+	CustomEraseFunc eraseFunc_;
+	CustomInsertFunc insertFunc_;
+
+	friend ReflectionController;
 };
 
 ReflectionController::ReflectionController()
@@ -241,31 +291,58 @@ void ReflectionController::fini()
 
 Variant ReflectionController::getValue(const PropertyAccessor& pa)
 {
-	assert(impl_ != nullptr);
+	TF_ASSERT(impl_ != nullptr);
 	return impl_->getValue(pa);
 }
 
 void ReflectionController::setValue(const PropertyAccessor& pa, const Variant& data)
 {
-	assert(impl_ != nullptr);
+	TF_ASSERT(impl_ != nullptr);
 	impl_->setValue(pa, data);
 }
 
 Variant ReflectionController::invoke(const PropertyAccessor& pa, const ReflectedMethodParameters& parameters)
 {
-	assert(impl_ != nullptr);
+	TF_ASSERT(impl_ != nullptr);
 	return impl_->invoke(pa, parameters);
 }
 
 void ReflectionController::insert(const PropertyAccessor& pa, const Variant& key, const Variant& value)
 {
-	assert(impl_ != nullptr);
+	TF_ASSERT(impl_ != nullptr);
 	impl_->insert(pa, key, value);
 }
 
 void ReflectionController::erase(const PropertyAccessor& pa, const Variant& key)
 {
-	assert(impl_ != nullptr);
+	TF_ASSERT(impl_ != nullptr);
 	impl_->erase(pa, key);
 }
+
+void ReflectionController::customCommand(ExecuteFunc executeFunc, UndoFunc undoFunc, const std::string& description)
+{
+	TF_ASSERT(impl_ != nullptr);
+	impl_->customCommand(executeFunc, undoFunc, description);
+}
+
+void ReflectionController::setEditor(IEditor* editor)
+{
+	impl_->editor_ = editor;
+}
+
+void ReflectionController::setCustomSetValue(CustomSetValueFunc setFunc)
+{
+	impl_->setFunc_ = setFunc;
+}
+
+void ReflectionController::setCustomErase(CustomEraseFunc eraseFunc)
+{
+	impl_->eraseFunc_ = eraseFunc;
+}
+
+void ReflectionController::setCustomInsert(CustomInsertFunc insertFunc)
+{
+	impl_->insertFunc_ = insertFunc;
+}
+
 } // end namespace wgt

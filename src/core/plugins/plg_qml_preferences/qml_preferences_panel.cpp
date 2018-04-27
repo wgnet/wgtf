@@ -4,10 +4,6 @@
 
 namespace wgt
 {
-QmlPreferencesPanel::QmlPreferencesPanel(IComponentContext& context) : Depends(context)
-{
-}
-
 bool QmlPreferencesPanel::addPanel()
 {
 	auto uiFramework = this->get<IUIFramework>();

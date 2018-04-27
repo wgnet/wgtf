@@ -1,0 +1,14 @@
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+#include "../static_settings_data.hpp"
+
+namespace wgt
+{
+	BEGIN_EXPOSE(StaticSettingsData, MetaDisplayName(L"Static Settings"))
+		EXPOSE("First Value", getFirst, setFirst, MetaNone())
+		EXPOSE("Second Value", getSecond, setSecond, MetaNone())
+		EXPOSE("Read Only Value", getResult, MetaReadOnly())
+	END_EXPOSE()
+} // end namespace wgt

@@ -2,12 +2,15 @@
 #define ABSTRACT_ITEM_MODEL_HPP
 
 #include "abstract_item.hpp"
+#include "wg_types/hash_utilities.hpp"
 #include <map>
+#include <functional>
+
 namespace wgt
 {
 typedef std::map<std::string, std::vector<char>> MimeData;
 
-enum DropAction
+enum class DropAction
 {
 	MoveAction,
 	CopyAction,
@@ -65,6 +68,10 @@ public:
 	@note newValue is always the new value, for both pre- and post- callbacks. */
 	typedef void DataSignature(const ItemIndex& index, ItemRole::Id role, const Variant& newValue);
 	typedef std::function<DataSignature> DataCallback;
+
+	/** Layout changed at *row*. */
+	typedef void LayoutChangedSignature(const ItemIndex& index);
+	typedef std::function<LayoutChangedSignature> LayoutCallback;
 
 	/** Insert/remove into *parentIndex* from *startPos* to *startPos + count*.
 	@param parentIndex item inside which to do the insertion/removal.
@@ -216,14 +223,19 @@ public:
 		return MimeData();
 	}
 
+	/** Iterates a list of supported types for drag and drop.
+	*	@note mime data is described here: https://www.iana.org/assignments/media-types/media-types.xhtml
+	*	@note The default implementation does nothing.
+	*	This is the preferred way to get the roles as it avoids cross-boundary
+	*	memory allocations
+	*/
+	virtual void iterateMimeTypes(const std::function<void(const char*)>&) const;
+
 	/** Returns a list of supported types for drag and drop.
 	@note mime data is described here: https://www.iana.org/assignments/media-types/media-types.xhtml
 	@note The default implementation does nothing.
 	@return The list of supported types. */
-	virtual std::vector<std::string> mimeTypes() const
-	{
-		return std::vector<std::string>();
-	}
+	virtual std::vector<std::string> mimeTypes() const;
 
 	virtual bool canDropMimeData(const MimeData& mimeData, DropAction action, const ItemIndex& index) const
 	{
@@ -235,22 +247,28 @@ public:
 		return false;
 	}
 
+	virtual void revert()
+	{
+
+	}
+
+	virtual bool submit()
+	{
+		return true;
+	}
+
+	/**
+	 *  Iterates the list of roles used by this model.
+	 *	Roles are a way of providing properties without changing this interface.
+	 *	This is the preferred way to get the roles as it avoids cross-boundary
+	 *  memory allocations
+	**/
+	virtual void iterateRoles(const std::function<void(const char*)>&) const = 0;
+
 	/** Returns a list of roles used by this model.
 	Roles are a way of providing properties without changing this interface.
 	@return A vector of string role names. */
-	virtual std::vector<std::string> roles() const
-	{
-		return std::vector<std::string>();
-	}
-
-	virtual Connection connectPreModelReset(VoidCallback callback)
-	{
-		return Connection();
-	}
-	virtual Connection connectPostModelReset(VoidCallback callback)
-	{
-		return Connection();
-	}
+	virtual std::vector<std::string> roles() const;
 
 	/** Adds a callback to call before an item's data changed.
 	@param callback The callback to call.
@@ -264,6 +282,46 @@ public:
 	@param callback The callback to call.
 	@return A Connection between the Signal and the callback. */
 	virtual Connection connectPostItemDataChanged(DataCallback callback)
+	{
+		return Connection();
+	}
+
+	/** Adds a callback to call before an item's model changes.
+	@param callback The callback to call.
+	@return A Connection between the Signal and the callback. */
+	virtual Connection connectPreLayoutChanged(LayoutCallback callback)
+	{
+		return Connection();
+	}
+
+	/** Adds a callback to call after an item's model changed.
+	@param callback The callback to call.
+	@return A Connection between the Signal and the callback. */
+	virtual Connection connectPostLayoutChanged(LayoutCallback callback)
+	{
+		return Connection();
+	}
+
+	/** Adds a callback to call before an item's model is changed.
+	@param callback The callback to call.
+	@return A Connection between the Signal and the callback. */
+	virtual Connection connectModelChanged(VoidCallback callback)
+	{
+		return Connection();
+	}
+
+	/** Adds a callback to call before an item's model is reset.
+	@param callback The callback to call.
+	@return A Connection between the Signal and the callback. */
+	virtual Connection connectPreModelReset(VoidCallback callback)
+	{
+		return Connection();
+	}
+
+	/** Adds a callback to call after an item's model was reset.
+	@param callback The callback to call.
+	@return A Connection between the Signal and the callback. */
+	virtual Connection connectPostModelReset(VoidCallback callback)
 	{
 		return Connection();
 	}
@@ -711,6 +769,10 @@ public:
 	typedef void DataSignature(const ItemIndex& index, int column, ItemRole::Id role, const Variant& value);
 	typedef std::function<DataSignature> DataCallback;
 
+	/** Layout changed at *index*. */
+	typedef void LayoutChangedSignature(const ItemIndex& index);
+	typedef std::function<LayoutChangedSignature> LayoutCallback;
+
 	/** Insert/remove into the item at *parentIndex* from *startRow* to *startRow + count*.
 	@param parentIndex item inside which to do the insertion/removal.
 	@param startRow first row of insertion/removal under the parent.
@@ -784,6 +846,24 @@ public:
 	virtual bool moveRows(int sourceRow, int count, int destinationRow)
 	{
 		return false;
+	}
+
+	/** Adds a callback to call before an item's layout changes.
+	@note This is a specialization of the inherited method, using a simplified callback.
+	@param callback The callback to call.
+	@return A Connection between the Signal and the callback. */
+	virtual Connection connectPreLayoutChanged(LayoutCallback callback)
+	{
+		return Connection();
+	}
+
+	/** Adds a callback to call after an item's layout changed.
+	@note This is a specialization of the inherited method, using a simplified callback.
+	@param callback The callback to call.
+	@return A Connection between the Signal and the callback. */
+	virtual Connection connectPostLayoutChanged(LayoutCallback callback)
+	{
+		return Connection();
 	}
 
 	/** Adds a callback to call before an item's data changed.
@@ -894,6 +974,20 @@ private:
 	bool removeColumns(int column, int count, const AbstractItem* parent) override
 	{
 		return removeColumns(column, count);
+	}
+
+	Connection connectPreLayoutChanged(AbstractItemModel::LayoutCallback callback) override
+	{
+		return connectPreLayoutChanged((LayoutCallback)[=](const ItemIndex& index) {
+			callback(AbstractItemModel::ItemIndex(index.row_, 0, index.parent_));
+		});
+	}
+
+	Connection connectPostLayoutChanged(AbstractItemModel::LayoutCallback callback) override
+	{
+		return connectPostLayoutChanged((LayoutCallback)[=](const ItemIndex& index) {
+			callback(AbstractItemModel::ItemIndex(index.row_, 0, index.parent_));
+		});
 	}
 
 	Connection connectPreItemDataChanged(AbstractItemModel::DataCallback callback) override
@@ -1398,4 +1492,31 @@ private:
 	}
 };
 } // end namespace wgt
+
+namespace std
+{
+template <>
+struct hash<wgt::AbstractItemModel::ItemIndex>
+	: public unary_function<wgt::AbstractItemModel::ItemIndex, size_t>
+{
+	result_type operator()(argument_type const& i) const
+	{
+		result_type temp = result_type(i.parent_) + result_type(i.row_) + result_type(i.column_);
+		return static_cast<result_type>(wgt::HashUtilities::compute(static_cast<uint64_t>(temp)));
+	}
+};
+
+template <>
+struct hash<wgt::AbstractTreeModel::ItemIndex>
+	: public unary_function<wgt::AbstractTreeModel::ItemIndex, size_t>
+{
+	result_type operator()(argument_type const& i) const
+	{
+		auto hash = wgt::HashUtilities::compute(reinterpret_cast<uintptr_t>(i.parent_));
+		wgt::HashUtilities::combine(hash, i.row_);
+		return static_cast<result_type>(hash);
+	}
+};
+} // end namespace std
+
 #endif // ABSTRACT_ITEM_MODEL_HPP

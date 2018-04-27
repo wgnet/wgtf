@@ -13,8 +13,7 @@
 
 // Helper to decrement versions
 #define DECREMENT_VERSION(ClassName, x) \
-	MERGE_(DECREMENT_, x)               \
-	(ClassName)                         \
+	MERGE_(DECREMENT_, x)(ClassName)    \
 	{                                   \
 	public:
 

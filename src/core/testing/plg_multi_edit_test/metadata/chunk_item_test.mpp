@@ -1,0 +1,59 @@
+#include "chunk_item_test.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+#define TransformationGroup() MetaGroup( L"transformation" )
+
+namespace wgt
+{
+
+BEGIN_EXPOSE( MultiEditTest::ChunkItemTestContext )
+	EXPOSE_METHOD( "chunkModelData", getChunkModel )
+	EXPOSE_METHOD( "chunkTreeData", getChunkTree )
+END_EXPOSE()
+
+BEGIN_EXPOSE( MultiEditTest::ChunkItem, MetaNone() )
+	EXPOSE( "chunk", chunk_, MetaGroup(L"system") + MetaReadOnly() )
+	EXPOSE( "selection info", selectionInfo_, MetaGroup(L"system") + MetaReadOnly() )
+END_EXPOSE()
+
+BEGIN_EXPOSE( MultiEditTest::ChunkItemPosition )
+	EXPOSE( "pivot position", pivotPosition_, TransformationGroup() )
+	EXPOSE( "position", position_, TransformationGroup() )
+END_EXPOSE()
+
+BEGIN_EXPOSE( MultiEditTest::ChunkItemRotation )
+	EXPOSE( "rotation", rotation_, TransformationGroup() )
+END_EXPOSE()
+
+BEGIN_EXPOSE( MultiEditTest::ChunkItemScale )
+	EXPOSE( "scale", scale_, TransformationGroup() )
+END_EXPOSE()
+
+BEGIN_EXPOSE( MultiEditTest::ChunkModel,
+	MetaDirectBases( MultiEditTest::ChunkItem,
+		MultiEditTest::ChunkItemPosition,
+		MultiEditTest::ChunkItemRotation,
+		MultiEditTest::ChunkItemScale ) )
+	EXPOSE( "model name", modelName_, MetaGroup(L"system") + MetaReadOnly() )
+	EXPOSE( "animation speed", animationSpeed_,
+		MetaGroup(L"animation") + MetaStepSize(0.1) + MetaDecimals(3) )
+	EXPOSE( "dye", dye_, MetaGroup(L"model") )
+
+END_EXPOSE()
+
+BEGIN_EXPOSE( MultiEditTest::Dye )
+	EXPOSE( "name", name_, MetaHidden() )
+END_EXPOSE()
+
+BEGIN_EXPOSE( MultiEditTest::ChunkForestTree,
+	MetaDirectBases( MultiEditTest::ChunkItem,
+		MultiEditTest::ChunkItemPosition,
+		MultiEditTest::ChunkItemRotation,
+		MultiEditTest::ChunkItemScale ) )
+	EXPOSE( "filename", fileName_, MetaGroup( L"system" ) )
+END_EXPOSE()
+
+} // end namespace wgt

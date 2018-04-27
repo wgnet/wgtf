@@ -16,7 +16,7 @@ WGCheckBoxStyle {
 
     /*! \internal */
     // helper property for text color so states can all be in the indicator object
-    property color __textColor: palette.neutralTextColor
+    property color __textColor: control.readonly ? palette.readonlyTextColor : palette.neutralTextColor
 
     label: Text {
         text: control.text

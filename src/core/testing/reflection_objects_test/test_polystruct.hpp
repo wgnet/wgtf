@@ -2,6 +2,7 @@
 #define TEST_POLYSTRUCTURE_HPP
 
 #include "core_reflection/reflected_object.hpp"
+#include "core_dependency_system/depends.hpp"
 #include "test_structure.hpp"
 #include "test_macros.hpp"
 #include <vector>
@@ -10,12 +11,12 @@ namespace wgt
 {
 class IDefinitionManager;
 
-class TestPolyStruct
+class TestPolyStruct : protected Depends<IDefinitionManager>
 {
 	DECLARE_REFLECTED
+
 public:
-	TestPolyStruct();
-	void init(const IDefinitionManager& definitionManager);
+    TestPolyStruct();
 
 private:
 	DEFINE_TEST_DATA_TYPES()
@@ -28,7 +29,6 @@ class TestInheritedPolyStruct : public TestPolyStruct
 
 public:
 	TestInheritedPolyStruct();
-	void init(const IDefinitionManager& definitionManager);
 
 private:
 	DEFINE_INHERITS_TEST_DATA_TYPES()

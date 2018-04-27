@@ -9,6 +9,7 @@ import WGControls 2.0
 import WGControls.Styles 2.0
 import WGControls.Layouts 2.0
 import WGControls.Views 2.0
+import WGControls.Global 2.0
 
 /*!
  \ingroup wgcontrols
@@ -37,6 +38,9 @@ ColumnLayout {
     WGComponent { type: "WGActiveFilters20" }
 
     property var splitterChar: ","
+    property var dynamic : false;
+    property var dynSearchMinLength: 3
+    property var dynamicSearchInProgress : filterStringDynamic.length > 0;
 
     ListModel {
         id: filterList
@@ -50,25 +54,40 @@ ColumnLayout {
         }
     }
     property var filterString: ""
+    property var filterStringDynamic: ""
     property var filterCount: filterList.count
 
     ListModel {
-        id: savedFiltersList
+        id: recentFiltersList
     }
-    property var currentFilter: ""
+
+    ListModel {
+        id: defaultFiltersList
+    }
 
     property bool editableTags: true
     property var currentFilterText: ""
 
-	property var autoCompleteData: []
-	property var autoCompleteModel: null
+    property var autoCompleteData: []
+    property var autoCompleteModel: null
+    property var autoCompleteRole: "display"
+
+    property var nameFilters: ["Filter file (*.filter)", "All files (*)"]
+    property var defaultNameFilter: nameFilters[0]
+    property var defaultFiltersFolder: WGPath.getApplicationFolder("filters")
+
+    //------------------------------------------
+    // Signals
+    //------------------------------------------
+
+    signal beforeAddFilter(var filter)
 
     //------------------------------------------
     // Functions
     //------------------------------------------
 
+    // Check active filter for the filter token value
     function filterExists(filterText) {
-        filterText = filterText.trim();
         for (var i = 0; i < filterList.count; ++i) {
             var filter = filterList.get(i);
             if (filter.value == filterText) {
@@ -78,16 +97,24 @@ ColumnLayout {
         return false;
     }
 
-    function addFilter(filterText) {
-        if (filterExists(filterText)) {
-            return;
-        }
+    function clearFilters() {
+        filterList.clear();
+    }
 
+    // Add a single filter token to the active filter
+    function addFilter(filterText, labelText, isActive) {
         filterText = filterText.trim();
-        if (filterText == "") {
-            return;
-        }
-        filterList.append({"display": filterText, "value": filterText, "active": true});
+
+        if (filterText == "")         return;
+        if (filterExists(filterText)) return;
+
+        var filter = {"display": typeof labelText !== 'undefined' ? labelText : filterText,
+                      "value":   filterText,
+                      "active":  typeof isActive  !== 'undefined' ? isActive : true};
+
+        beforeAddFilter(filter);
+        filterList.append(filter);
+        filterStringDynamic = "";
     }
 
     function updateFilterString() {
@@ -102,38 +129,47 @@ ColumnLayout {
             }
             tmp += filter.value;
         }
-        filterString = tmp;
+        if(dynamic)
+        {
+            var newFilterString = tmp;
+            newFilterString.trim();
+            if(newFilterString != "")
+            {
+                newFilterString += splitterChar;
+            }
+            newFilterString += filterStringDynamic;
+            filterString = newFilterString;
+        }
+        else
+        {
+            filterString = tmp;
+        }
     }
 
-    function saveFilter() {
-        if (currentFilter == "") {
-            currentFilter = "Filter" + (savedFiltersList.count + 1);
-            saveCurrentFilter();
-            return;
+    // Check if the supplied filter exists in our saved/recent lists yet.
+    function getFilterIndexInRecentsList(filterPath) {
+        for (var i = 0; i < recentFiltersList.count; i += 1) {
+            var savedFilterPath = recentFiltersList.get(i).path;
+            if (savedFilterPath == filterPath) return i;
         }
 
-        // Prompt the user!
-        overwritePromptDialog.open()
+        return -1;
     }
 
-    function saveCurrentFilter() {
-        var currentFilterValue = ""
+    function serialiseCurrentFilter() {
+        // Serialise to format (display name is same as token value if not specified)
+        // <FilterTokenDisplayName>;<FilterTokenValue>;<FilterIsEnabled>
+        // Rock;Rock;True;Tree;Tree;False
+
+        var result = ""
         for (var i = 0; i < filterList.count; ++i) {
             var filter = filterList.get(i);
-            currentFilterValue += filter.display + ";";
-            currentFilterValue += filter.value + ";";
-            currentFilterValue += filter.active + ";";
-        }
+            result += filter.display + ";";
+            result += filter.value + ";";
+            result += filter.active + ";";
 
-        for (var i = 0; i < savedFiltersList.count; ++i) {
-            var savedFilter = savedFiltersList.get(i)
-            if (savedFilter.display == currentFilter) {
-                savedFilter.value = currentFilterValue;
-                return;
-            }
         }
-
-        savedFiltersList.append({"display": currentFilter, "value": currentFilterValue});
+        return result;
     }
 
     // If the filterText.width is less than half the remaining textFrame.width it will be put on a new line
@@ -168,6 +204,19 @@ ColumnLayout {
         {
             filterEditFrame.width = textFrame.width
         }
+    }
+
+    function deserialiseFilterString(serialisedFilter) {
+        var tokens = serialisedFilter.split(";");
+
+        var newFiltersLoaded = [];
+        for (var i = 0; i < tokens.length - 1; i += 3) {
+            newFiltersLoaded.push({"display": tokens[i],
+                                   "value":   tokens[i + 1],
+                                   "active":  tokens[i + 2] != 'false'});
+        }
+
+        return newFiltersLoaded;
     }
 
     //------------------------------------------
@@ -205,45 +254,95 @@ ColumnLayout {
                 title: "Filters"
 
                 MenuItem {
-                    text: "Save New Filter"
+                    text: "Open Filter"
                     onTriggered: {
-                        // TODO - Refine saving to allow for naming of the filter
-                        // JIRA - NGT-1484
-                        saveFilter();
+                        openOrSaveFilterDialog.selectExisting     = true;
+                        openOrSaveFilterDialog.title              = "Open Filter"
+                        openOrSaveFilterDialog.appendToFilterList = false;
+                        openOrSaveFilterDialog.open();
                     }
                 }
 
                 MenuItem {
-                    text: "Clear Saved Filters"
+                    text: "Append Filter"
                     onTriggered: {
-                        savedFiltersList.clear();
-                        currentFilter = "";
+                        openOrSaveFilterDialog.selectExisting     = true;
+                        openOrSaveFilterDialog.title              = "Append Filter"
+                        openOrSaveFilterDialog.appendToFilterList = true;
+                        openOrSaveFilterDialog.open();
+                    }
+                }
+
+                MenuItem {
+                    text: "Save New Filter As"
+                    enabled: filterList.count != 0
+                    onTriggered: {
+                        openOrSaveFilterDialog.selectExisting = false;
+                        openOrSaveFilterDialog.title = "Save New Filter As"
+                        openOrSaveFilterDialog.open();
                     }
                 }
 
                 MenuSeparator { }
 
                 WGMenu {
-                    id: savedFiltersMenu
-                    title: "Saved Filters"
+                    id: defaultFiltersMenu
+                    title: "Default Filters"
+
+                    Component.onCompleted: {
+                        updateDefaultFiltersListing();
+                    }
 
                     Instantiator {
-                        model: savedFiltersList
-
+                        model: defaultFiltersList
                         delegate: MenuItem {
-                            text: display
+                            text: WGPath.getFileNameWithoutExtension(path)
                             onTriggered: {
-                                filterList.clear();
-                                var tokens = value.split(";");
-                                for (var i = 0; i < tokens.length - 1; i += 3) {
-                                    filterList.append({"display": tokens[i], "value": tokens[i + 1], "active": tokens[i + 2] != 'false'});
+                                if(!WGPath.fileExists(path)) {
+                                    WGLogger.logError("Filter " + path + " does not exist");
+                                    updateDefaultFiltersListing();
                                 }
-                                currentFilter = display;
+                                else {
+                                    loadFilterFromPath(path, true /*replaceFilterList*/);
+                                }
                             }
                         }
 
-                        onObjectAdded: savedFiltersMenu.insertItem(index, object)
-                        onObjectRemoved: savedFiltersMenu.removeItem(object)
+                        onObjectAdded:   defaultFiltersMenu.insertItem(index, object)
+                        onObjectRemoved: defaultFiltersMenu.removeItem(object)
+                    }
+                }
+
+                WGMenu {
+                    id: recentFiltersMenu
+                    title: "Recent Filters"
+
+                    Instantiator {
+                        model: recentFiltersList
+
+                        delegate: MenuItem {
+                            text: path
+                            onTriggered: {
+                                if(!WGPath.fileExists(text)) {
+                                    WGLogger.logError("Filter " + path + " does not exist");
+                                }
+                                else {
+                                    loadFilterFromPath(text, true /*replaceFilterList*/);
+                                }
+                                updateRecentFiltersListing(filterPath);
+                            }
+                        }
+
+                        onObjectAdded:   recentFiltersMenu.insertItem(index, object)
+                        onObjectRemoved: recentFiltersMenu.removeItem(object)
+                    }
+                }
+
+                MenuItem {
+                    text: "Clear Recent Filters List"
+                    enabled: recentFiltersList.count != 0
+                    onTriggered: {
+                        clearFiltersPromptDialog.open()
                     }
                 }
             }
@@ -255,7 +354,6 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignLeft | Qt.AlignTop
             Layout.preferredHeight: childrenRect.height
-
             onWidthChanged: { updateLayout() }
 
             Flow {
@@ -371,13 +469,15 @@ ColumnLayout {
                                 objectName: "tagEdit_" + text
                                 visible: inputRow.termEditing == index
                                 text: display
-								autoCompleteData: rootFrame.autoCompleteData
-								autoCompleteModel: rootFrame.autoCompleteModel
+                                autoCompleteData: rootFrame.autoCompleteData
+                                autoCompleteModel: rootFrame.autoCompleteModel
+                                autoCompleteRole: rootFrame.autoCompleteRole
 
                                 width: Math.max(tagWidth.width + defaultSpacing.doubleMargin, tagEditTextWidth.width + defaultSpacing.doubleMargin)
                                 height: defaultSpacing.minimumRowHeight - defaultSpacing.doubleBorderSize
 
                                 anchors.verticalCenter: parent.verticalCenter
+                                passActiveFocus: true
 
                                 onTextChanged: {
                                     if(visible)
@@ -450,15 +550,25 @@ ColumnLayout {
                     WGTextBoxAutoComplete {
                         id: filterText
                         objectName: "filterText"
+                        showSuggestions : !rootFrame.dynamic
                         height: defaultSpacing.minimumRowHeight
                         anchors.fill: parent
                         anchors.rightMargin: clearCurrentFilterButton.width
-						autoCompleteData: rootFrame.autoCompleteData
-						autoCompleteModel: rootFrame.autoCompleteModel
+                        autoCompleteData: rootFrame.autoCompleteData
+                        autoCompleteModel: rootFrame.autoCompleteModel
+                        autoCompleteRole: rootFrame.autoCompleteRole
+                        passActiveFocus: true
 
                         style: WGInvisTextBoxStyle{}
 
                         placeholderText: "Filter"
+
+                        onSuggestionSelected: {
+                            addFilter( text );
+                            text = "";
+                            inputRow.termEditing = -1;
+                            currentFilterText = "";
+                        }
 
                         onActiveFocusChanged: {
                             if(activeFocus)
@@ -472,10 +582,37 @@ ColumnLayout {
                             if (text != "")
                             {
                                 inputRow.termEditing = filterCount
+                                var oldStringDynamic = filterStringDynamic;
+                                if(dynamic)
+                                {
+                                    if( text.length < dynSearchMinLength )
+                                    {
+                                        filterStringDynamic = "";
+                                    }
+                                    else
+                                    {
+                                        filterStringDynamic = text;
+                                    }
+                                    if( oldStringDynamic == filterStringDynamic )
+                                    {
+                                        return;
+                                    }
+                                    updateFilterString();
+                                }
                             }
                             else
                             {
                                 inputRow.termEditing = -1
+                                if(dynamic)
+                                {
+                                    filterStringDynamic = "";
+                                    var oldStringDynamic = filterStringDynamic;
+                                    if( oldStringDynamic == filterStringDynamic )
+                                    {
+                                        return;
+                                    }
+                                    updateFilterString();
+                                }
                             }
                         }
 
@@ -525,13 +662,14 @@ ColumnLayout {
                         iconSource: "icons/close_sml_16x16.png"
                         anchors.right: parent.right
                         anchors.top: parent.top
+                        visible: filterText.text != "" || filterRepeater.model.count != 0
 
                         tooltip: "Clear All Filters"
 
                         onClicked: {
-                            filterList.clear();
-                            currentFilter = "";
+                            clearFilters();
                             updateFilterString();
+                            filterText.text = ""
                         }
                     }
                 }
@@ -539,24 +677,87 @@ ColumnLayout {
         } // textFrame
     } // inputRow
 
+    function loadFilterFromPath(path, appendToFilterList) {
+        var filterSerialised = readStringFromFile(path);
+        var filterVal        = deserialiseFilterString(filterSerialised);
+
+        // Add loaded filter tokens for display and filtering
+        if (!appendToFilterList) {
+            clearFilters();
+            filterList.append(filterVal);
+        } else {
+            for (var i = 0; i < filterVal.length; i += 1) {
+                var filter = filterVal[i];
+                if (!filterExists(filter.value)) filterList.append(filter);
+            }
+        }
+    }
+
+    function updateDefaultFiltersListing() {
+        defaultFiltersList.clear();
+        var folder = WGPath.toDisplayPath(rootFrame.defaultFiltersFolder);
+        var files = WGPath.getFilesInFolder(folder, rootFrame.defaultNameFilter);
+        for (var i = 0; i < files.length; ++i) {
+            defaultFiltersList.append({"path": folder + "/" + files[i]});
+        }
+    }
+
+    function updateRecentFiltersListing(newFilterPath) {
+        var index      = getFilterIndexInRecentsList(newFilterPath);
+        if (index == 0) {
+            // Already most recent entry, don't modify list
+        } else {
+            if (index != -1) recentFiltersList.remove(index, 1)
+
+            var entry = {"path": newFilterPath};
+            recentFiltersList.append(entry);
+
+            var maxFilters = 5;
+            if (recentFiltersList.count > maxFilters) {
+                recentFiltersList.remove(maxFilters, recentFiltersList.count - maxFilters);
+            }
+        }
+    }
+
+    FileDialog {
+        id: openOrSaveFilterDialog
+        folder: WGPath.pathToUrl(rootFrame.defaultFiltersFolder)
+        nameFilters: rootFrame.nameFilters
+        selectedNameFilter: rootFrame.defaultNameFilter
+
+        property bool appendToFilterList: false
+
+        onAccepted: {
+            var absPath = WGPath.urlToPath(fileUrls);
+            if (selectExisting) {
+                loadFilterFromPath(absPath, appendToFilterList);
+            } else {
+                var filterSerialised = serialiseCurrentFilter();
+                writeStringToFile(filterSerialised, absPath);
+                updateDefaultFiltersListing();
+            }
+
+            updateRecentFiltersListing(absPath);
+            folder = WGPath.pathToUrl(WGPath.getParentPath(absPath))
+        }
+    }
+
     MessageDialog {
-        id: overwritePromptDialog
-        objectName: "overwrite_dialog"
-        title: "Overwrite?"
+        id: clearFiltersPromptDialog
+        objectName: "clearFilters_dialog"
+        title: "Clear Recent Filters?"
         icon: StandardIcon.Question
-        text: "This filter already exists. Would you like to overwrite it with the new terms?"
-        standardButtons: StandardButton.Yes | StandardButton.No | StandardButton.Abort
-        modality: Qt.WindowModal
+        text: "Are you sure you want to clear all recent filters?"
+        standardButtons: StandardButton.Yes | StandardButton.No
+        modality: Qt.ApplicationModal
         visible: false
 
+        property int overwriteIndex: -1
+
         onYes: {
-            saveCurrentFilter();
+            recentFiltersList.clear();
         }
-
-        onNo: {
-            currentFilter = "Filter" + (savedFiltersList.count + 1);
-            saveCurrentFilter();
-        }
-
     }
+
+    property alias placeHolderText: filterText.placeholderText
 } // rootFrame

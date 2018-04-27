@@ -11,19 +11,13 @@
 
 #pragma once
 
-#include "interfaces/i_curve_editor.hpp"
-#include "interfaces/curve_types.hpp"
-
+#include "curve_editor/i_curve_editor.hpp"
+#include "curve_editor/curve_types.hpp"
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/type_class_definition.hpp"
-
-#include <core_common/signal.hpp>
-
-// TODO: remove this pragma
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#include "core_data_model/generic_list.hpp"
-#pragma warning(pop)
+#include "core_data_model/collection_model.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_common/signal.hpp"
 
 namespace wgt
 {
@@ -34,57 +28,38 @@ class CurveEditor : public Implements<ICurveEditor>
 	typedef Signal<void(ScaleChangeData)> ScaleChangeSignal;
 
 public:
-	CurveEditor() : xScale_(1.0f), yScale_(1.0f), timeScaleEditEnabled_(true)
-	{
-	}
-	virtual ~CurveEditor(){};
+	CurveEditor();
+	virtual ~CurveEditor();
 
-	virtual ICurvePtr createCurve(CurveTypes::CurveType curveType = CurveTypes::Linear, bool add = false) override;
-	virtual bool addCurve(ICurvePtr curve) override;
-	virtual bool removeCurve(ICurvePtr curve) override;
+	void init(const ObjectHandle& context);
+	void fini();
+
+	virtual ICurvePtr createCurve(CurveTypes::CurveType curveType = CurveTypes::Linear) override;
+    virtual ICurveHandle addCurve(CurveTypes::CurveType curveType = CurveTypes::Linear) override;
+	virtual ICurveHandle addCurve(ICurvePtr curve) override;
+    virtual bool addCurve(ICurveHandle curve) override;
+	virtual bool removeCurve(ICurveHandle curve) override;
 	virtual void clear() override;
-	virtual const std::string& getSubTitle() const override
-	{
-		return subTitle_;
-	}
-	virtual const float& getXScale() const override
-	{
-		return xScale_;
-	}
-	virtual const float& getYScale() const override
-	{
-		return yScale_;
-	}
-	virtual const bool& getTimeScaleEditEnabled() const override
-	{
-		return timeScaleEditEnabled_;
-	}
-
-	virtual void connectOnScaleChange(ScaleChangeCallback cb) override
-	{
-		scaleChangeSignal_.connect(std::move(cb));
-	}
+	virtual bool getAllowEmptyCurves() const override;
+	virtual const std::string& getSubTitle() const override;
+	virtual const float& getXScale() const override;
+	virtual const float& getYScale() const override;
+	virtual const bool& getTimeScaleEditEnabled() const override;
+	virtual void connectOnScaleChange(ScaleChangeCallback cb) override;
+	virtual void setUIVisible(bool visible) override;
 
 protected:
+	virtual void putAllowEmptyCurves(const bool& allowEmptyCurves) override;
 	virtual void putSubTitle(const std::string& subTitle) override;
 	virtual void putXScale(const float& xScale) override;
 	virtual void putYScale(const float& yScale) override;
 	virtual void putTimeScaleEditEnabled(const bool& timeScaleEditEnabled) override;
+	virtual const AbstractListModel* getCurves() const override;
 
-	const IListModel* getCurves() const override
-	{
-		return &curves_;
-	}
 
 private:
-	std::string subTitle_;
-	float xScale_;
-	float yScale_;
-	bool timeScaleEditEnabled_;
-	GenericListT<ObjectHandleT<ICurve>> curves_;
-	std::vector<std::shared_ptr<ICurve>> storage_;
-
-	ScaleChangeSignal scaleChangeSignal_;
+	struct Impl;
+	std::unique_ptr<struct Impl> impl_;
 };
 } // end namespace wgt
 #endif // CURVES_MODEL_H_

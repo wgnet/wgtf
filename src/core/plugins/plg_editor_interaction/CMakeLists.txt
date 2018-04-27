@@ -12,6 +12,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
 SET( ALL_SRCS
+	private/background_worker.hpp
+	private/background_worker.cpp
 	plg_editor_interaction.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
@@ -22,9 +24,11 @@ BW_ADD_TOOL_PLUGIN( plg_editor_interaction SHARED
 
 BW_TARGET_LINK_LIBRARIES( plg_editor_interaction PRIVATE
 	core_data_model_cmds
+	core_object
 	core_generic_plugin
 	core_reflection
 	core_reflection_utils
-	core_command_system )
+	core_command_system
+	core_serialization_xml )
 
 BW_PROJECT_CATEGORY( plg_editor_interaction "Plugins" )

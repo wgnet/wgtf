@@ -1,15 +1,24 @@
 #include "base_property_with_metadata.hpp"
 
+#include "core_common/assert.hpp"
+#include "core_object/managed_object.hpp"
+
 namespace wgt
 {
-BasePropertyWithMetaData::BasePropertyWithMetaData(const IBasePropertyPtr& property, MetaHandle metaData)
-    : property_(property), metaData_(metaData)
+BasePropertyWithMetaData::BasePropertyWithMetaData(const IBasePropertyPtr& property, MetaData metaData)
+    : property_(property), metaData_(std::move(metaData))
 {
-	assert(property_ != nullptr);
+	TF_ASSERT(property_ != nullptr);
 }
 
 BasePropertyWithMetaData::~BasePropertyWithMetaData()
 {
+}
+
+std::shared_ptr< IPropertyPath> BasePropertyWithMetaData::generatePropertyName(
+	const std::shared_ptr< const IPropertyPath > & parent) const
+{
+	return property_->generatePropertyName( parent );
 }
 
 const TypeId& BasePropertyWithMetaData::getType() const
@@ -27,16 +36,16 @@ uint64_t BasePropertyWithMetaData::getNameHash() const
 	return property_->getNameHash();
 }
 
-MetaHandle BasePropertyWithMetaData::getMetaData() const
+const MetaData & BasePropertyWithMetaData::getMetaData() const
 {
 	// TODO NGT-1582
 	// return property_->getMetaData() + metaData_;
 	return metaData_;
 }
 
-bool BasePropertyWithMetaData::readOnly() const
+bool BasePropertyWithMetaData::readOnly(const ObjectHandle& handle) const
 {
-	return property_->readOnly();
+	return property_->readOnly(handle);
 }
 
 bool BasePropertyWithMetaData::isMethod() const
@@ -47,6 +56,16 @@ bool BasePropertyWithMetaData::isMethod() const
 bool BasePropertyWithMetaData::isValue() const
 {
 	return property_->isValue();
+}
+
+bool BasePropertyWithMetaData::isCollection() const
+{
+	return property_->isCollection();
+}
+
+bool BasePropertyWithMetaData::isByReference() const
+{
+	return property_->isByReference();
 }
 
 bool BasePropertyWithMetaData::set(const ObjectHandle& handle, const Variant& value,

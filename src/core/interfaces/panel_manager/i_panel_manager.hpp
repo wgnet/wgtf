@@ -24,7 +24,8 @@ public:
 	}
 
 	virtual wg_future<std::unique_ptr<IView>> createAssetBrowser(
-	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel) = 0;
+		const std::string& title,
+		ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel) = 0;
 };
 } // end namespace wgt
 #endif // I_ASSET_BROWSER_MANAGER_HPP

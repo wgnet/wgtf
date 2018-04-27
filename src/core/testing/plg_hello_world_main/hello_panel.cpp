@@ -1,13 +1,13 @@
 #include "hello_panel.hpp"
-#include "metadata/hello_panel.mpp"
+#include "core_ui_framework/i_ui_framework.hpp"
+#include "core_ui_framework/i_ui_application.hpp"
+#include "core_ui_framework/interfaces/i_view_creator.hpp"
+#include "core_reflection/i_definition_manager.hpp"
+#include "hello_panel_exposed.hpp"
 #include "core_logging/logging.hpp"
 
 namespace wgt
 {
-HelloPanel::HelloPanel(IComponentContext& context) : Depends(context)
-{
-}
-
 bool HelloPanel::addPanel()
 {
 	if (this->get<IDefinitionManager>() == nullptr)
@@ -15,10 +15,7 @@ bool HelloPanel::addPanel()
 		return false;
 	}
 
-	IDefinitionManager& definitionManager = *this->get<IDefinitionManager>();
-	REGISTER_DEFINITION(HelloPanelExposed);
-	REGISTER_DEFINITION(HelloPanelExposedSource);
-	auto helloPanelExposed = definitionManager.create<HelloPanelExposedSource>();
+	helloPanelExposed_ = ManagedObject<HelloPanelExposedSource>::make();
 
 	auto viewCreator = this->get<IViewCreator>();
 	if (viewCreator == nullptr)
@@ -26,8 +23,7 @@ bool HelloPanel::addPanel()
 		return false;
 	}
 
-	helloView_ = viewCreator->createView("WGHello/HelloPanel.qml", helloPanelExposed);
-
+	helloView_ = viewCreator->createView("WGHello/HelloPanel.qml", helloPanelExposed_.getHandleT());
 	return helloView_.valid();
 }
 
@@ -45,6 +41,8 @@ void HelloPanel::removePanel()
 		uiApplication->removeView(*view);
 		view = nullptr;
 	}
+
+    helloPanelExposed_ = nullptr;
 }
 
 } // end namespace wgt

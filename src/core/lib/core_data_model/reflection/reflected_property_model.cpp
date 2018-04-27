@@ -222,8 +222,7 @@ bool RefPropertyItem::hasObjects() const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-ReflectedPropertyModel::ReflectedPropertyModel(IComponentContext& context)
-    : interfacesHolder(context), childCreator(context)
+ReflectedPropertyModel::ReflectedPropertyModel()
 {
 	rootItem.reset(new RefPropertyItem(*this));
 
@@ -235,7 +234,7 @@ ReflectedPropertyModel::ReflectedPropertyModel(IComponentContext& context)
 	childCreator.nodeCreated.connect(std::bind(&ReflectedPropertyModel::childAdded, this, _1, _2, _3));
 	childCreator.nodeRemoved.connect(std::bind(&ReflectedPropertyModel::childRemoved, this, _1));
 
-	registerExtension(std::make_shared<DefaultSetterGetterExtension>(context));
+	registerExtension(std::make_shared<DefaultSetterGetterExtension>());
 	registerExtension(std::make_shared<UrlGetterExtension>());
 	registerExtension(std::make_shared<DefaultChildCreatorExtension>());
 	registerExtension(std::make_shared<DefaultMergeValueExtension>());
@@ -258,7 +257,7 @@ void ReflectedPropertyModel::update()
 
 void ReflectedPropertyModel::update(RefPropertyItem* item)
 {
-	INTERFACE_REQUEST(IDefinitionManager, defManager, interfacesHolder, void());
+	INTERFACE_REQUEST(IDefinitionManager, defManager, this, void());
 
 	for (const std::shared_ptr<const PropertyNode>& node : item->nodes)
 	{
@@ -334,7 +333,7 @@ int ReflectedPropertyModel::columnCount(const AbstractItem* item) const
 void ReflectedPropertyModel::childAdded(const std::shared_ptr<const PropertyNode>& parent,
                                         const std::shared_ptr<const PropertyNode>& node, size_t childPosition)
 {
-	INTERFACE_REQUEST(IDefinitionManager, defManager, interfacesHolder, void());
+	INTERFACE_REQUEST(IDefinitionManager, defManager, this, void());
 
 	auto iter = nodeToItem.find(parent);
 	assert(iter != nodeToItem.end());
@@ -416,14 +415,14 @@ AbstractListModel::ItemIndex ReflectedPropertyModel::getModelParent(const RefPro
 
 Variant ReflectedPropertyModel::getDataImpl(const RefPropertyItem* item, int column, ItemRole::Id roleId) const
 {
-	INTERFACE_REQUEST(IDefinitionManager, defManager, interfacesHolder, Variant());
+	INTERFACE_REQUEST(IDefinitionManager, defManager, this, Variant());
 	return getExtensionChain<SetterGetterExtension>()->getValue(item, column, roleId, defManager);
 }
 
 bool ReflectedPropertyModel::setDataImpl(RefPropertyItem* item, int column, ItemRole::Id roleId, const Variant& data)
 {
-	INTERFACE_REQUEST(IDefinitionManager, defManager, interfacesHolder, false);
-	INTERFACE_REQUEST(ICommandManager, commandManager, interfacesHolder, false);
+	INTERFACE_REQUEST(IDefinitionManager, defManager, this, false);
+	INTERFACE_REQUEST(ICommandManager, commandManager, this, false);
 	return getExtensionChain<SetterGetterExtension>()->setValue(item, column, roleId, data, defManager, commandManager);
 }
 

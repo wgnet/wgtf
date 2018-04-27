@@ -27,7 +27,7 @@ bool CommandLineParser::getFlag(const char* arg) const
 	auto argLen = ::strlen(arg);
 	for (int i = 0; i < argc_; ++i)
 	{
-		if (::strlen(argv_[i]) == argLen && ::strncmp(argv_[i], arg, argLen) == 0)
+		if (argv_[i] && ::strlen(argv_[i]) == argLen && ::strncmp(argv_[i], arg, argLen) == 0)
 		{
 			return true;
 		}
@@ -41,7 +41,7 @@ const char* CommandLineParser::getParam(const char* arg) const
 	auto argLen = ::strlen(arg);
 	for (int i = 0; i < argc_ - 1; ++i)
 	{
-		if (::strlen(argv_[i]) == argLen && ::strncmp(argv_[i], arg, argLen) == 0)
+		if (argv_[i] && ::strlen(argv_[i]) == argLen && ::strncmp(argv_[i], arg, argLen) == 0)
 		{
 			return argv_[i + 1];
 		}

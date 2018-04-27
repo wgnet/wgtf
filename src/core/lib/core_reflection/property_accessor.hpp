@@ -3,45 +3,50 @@
 
 #include <string>
 #include <memory>
-#include "i_definition_manager.hpp"
 #include "core_variant/collection.hpp"
 #include "reflection_dll.hpp"
+#include "core_reflection/metadata/meta_base.hpp"
 
 namespace wgt
 {
 class TypeId;
-class ObjectHandle;
-class IBaseProperty;
 class IClassDefinition;
-class MetaBase;
-class Variant;
+class IDefinitionManager;
 class ReflectedMethodParameters;
+class ObjectReference;
+class ObjectHandle;
+typedef std::shared_ptr<class IBaseProperty> IBasePropertyPtr;
+
+namespace PropertyAccessorPrivate
+{
+	struct Data;
+}
 
 class REFLECTION_DLL PropertyAccessor
 {
 public:
 	PropertyAccessor();
+	~PropertyAccessor();
 	PropertyAccessor(const PropertyAccessor& other);
 	PropertyAccessor(PropertyAccessor&& other);
-
 	PropertyAccessor& operator=(const PropertyAccessor& other);
 	PropertyAccessor& operator=(PropertyAccessor&& other);
 
 	bool isValid() const;
-
 	const TypeId& getType() const;
-	PropertyAccessor getParent() const;
-
-	MetaHandle getMetaData() const;
-
+	const MetaData & getMetaData() const;
 	const char* getName() const;
 	const IClassDefinition* getStructDefinition() const;
+	const ObjectHandle & getRootObject() const;
+	const char* getFullPath() const;
+	const IDefinitionManager* getDefinitionManager() const;
 
 	// TODO: hide these accessors
 	bool canGetValue() const;
 	Variant getValue() const;
 
 	bool canSetValue() const;
+	void notify() const;
 	bool setValue(const Variant& value) const;
 	bool setValueWithoutNotification(const Variant& value) const;
 
@@ -55,35 +60,22 @@ public:
 	bool canErase() const;
 	bool erase(const Variant& key) const;
 
-	IBasePropertyPtr getProperty() const
-	{
-		return property_;
-	}
-	const ObjectHandle& getObject() const
-	{
-		return object_;
-	}
-
-	const ObjectHandle& getRootObject() const;
-	const char* getFullPath() const;
-
-	const IDefinitionManager* getDefinitionManager() const;
+	IBasePropertyPtr getProperty() const;
+	const ObjectHandle& getObject() const;
+	const char * getPath() const;
 
 private:
-	std::shared_ptr<PropertyAccessor> parentAccessor_;
-	ObjectHandle object_;
-	IBasePropertyPtr property_;
-
-	ObjectHandle rootObject_;
-	std::string path_;
-	const IDefinitionManager* definitionManager_;
-
 	friend class ClassDefinition;
 
-	PropertyAccessor(const IDefinitionManager* definitionManager, const ObjectHandle& rootObject, const char* path);
-	void setObject(const ObjectHandle& object);
+	std::shared_ptr< PropertyAccessorPrivate::Data > data_;
+
+	PropertyAccessor(const char* path, const std::shared_ptr<ObjectReference>& reference);
+	PropertyAccessor( std::shared_ptr< PropertyAccessorPrivate::Data > &);
+	std::shared_ptr< PropertyAccessorPrivate::Data > & getData ();
+	void setObjectReference(const std::shared_ptr<ObjectReference>& reference);
+	void setPath(const std::string& path);
 	void setBaseProperty(const IBasePropertyPtr& property);
-	void setParent(const PropertyAccessor& parent);
+	void propagateSetToAncestors() const;
 };
 } // end namespace wgt
 #endif // PROPERTY_ACCESSOR_HPP

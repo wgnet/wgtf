@@ -1,170 +1,33 @@
 #include "pch.hpp"
-#include "test_helpers.hpp"
-#include "core_reflection/function_property.hpp"
-#include "core_reflection/reflected_object.hpp"
-#include "core_reflection/utilities/reflection_function_utilities.hpp"
-#include "core_reflection/reflected_types.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
-#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/function_property.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
-#include "wg_types/binary_block.hpp"
+#include "core_reflection/reflected_object.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
 #include "core_unit_test/unit_test.hpp"
+#include "core_object/managed_object.hpp"
+#include "test_helpers.hpp"
 #include "test_reflection_fixture.hpp"
+#include "wg_types/binary_block.hpp"
+#include "test_function_property.hpp"
 
 #include <memory>
 
 namespace wgt
 {
-// =============================================================================
-class TestPropertyFixtureBase : public TestReflectionFixture
-{
-private:
-	static TestPropertyFixtureBase* s_instance;
-
-public:
-	TestPropertyFixtureBase();
-
-	~TestPropertyFixtureBase()
-	{
-		assert(s_instance != nullptr);
-		s_instance = nullptr;
-	}
-
-	static TestPropertyFixtureBase& getFixture()
-	{
-		assert(s_instance != nullptr);
-		return *s_instance;
-	}
-
-	typedef std::unique_ptr<BaseProperty> BasePropertyPtr;
-
-	BasePropertyPtr booleanProperty_;
-	BasePropertyPtr integerProperty_;
-	BasePropertyPtr uintegerProperty_;
-	BasePropertyPtr floatProperty_;
-	BasePropertyPtr stringProperty_;
-	BasePropertyPtr wstringProperty_;
-	// BasePropertyPtr rawStringProperty_;
-	// BasePropertyPtr rawWStringProperty_;
-	BasePropertyPtr binaryDataProperty_;
-	BasePropertyPtr exposedStructProperty_;
-	BasePropertyPtr exposedObjectProperty_;
-
-	class TestPropertyObject
-	{
-	public:
-		bool boolean_;
-		int integer_;
-		unsigned int uinteger_;
-		float floating_;
-		std::string string_;
-		std::wstring wstring_;
-		const char* raw_string_;
-		const wchar_t* raw_wstring_;
-		std::shared_ptr<BinaryBlock> binary_data_;
-		struct ExposedStruct
-		{
-			ExposedStruct() : boolean_(false)
-			{
-			}
-			bool boolean_;
-
-			bool operator==(const ExposedStruct& other) const
-			{
-				return other.boolean_ == boolean_;
-			}
-			bool operator!=(const ExposedStruct& other) const
-			{
-				return !operator==(other);
-			}
-		};
-		ExposedStruct exposedStruct_;
-		struct ExposedObject
-		{
-			DECLARE_REFLECTED
-		public:
-			ExposedObject() : string_("ExposedObject")
-			{
-			}
-			std::string string_;
-		};
-		ObjectHandleT<ExposedObject> exposedObject_;
-
-		TestPropertyObject()
-		    : boolean_(false), integer_(0), uinteger_(0U), floating_(0.0f), string_(), wstring_(), raw_string_(NULL),
-		      raw_wstring_(NULL), binary_data_(), exposedStruct_(),
-		      exposedObject_(TestPropertyFixtureBase::getFixture().getDefinitionManager().create<ExposedObject>())
-		{
-		}
-
-#define IMPLEMENT_XETERS(Name, Type, Variable) \
-	void set##Name(const Type& value)          \
-	{                                          \
-		Variable = value;                      \
-	}                                          \
-	Type get##Name##Value() const              \
-	{                                          \
-		return Variable;                       \
-	}                                          \
-	const Type& get##Name##Ref() const         \
-	{                                          \
-		return Variable;                       \
-	}                                          \
-	void get##Name##Arg(Type* value) const     \
-	{                                          \
-		*value = Variable;                     \
-	}
-
-		IMPLEMENT_XETERS(Boolean, bool, boolean_)
-		IMPLEMENT_XETERS(Integer, int, integer_)
-		IMPLEMENT_XETERS(UInteger, unsigned int, uinteger_)
-		IMPLEMENT_XETERS(Float, float, floating_)
-		IMPLEMENT_XETERS(String, std::string, string_)
-		IMPLEMENT_XETERS(WString, std::wstring, wstring_)
-		IMPLEMENT_XETERS(BinaryData, std::shared_ptr<BinaryBlock>, binary_data_)
-		IMPLEMENT_XETERS(ExposedStruct, ExposedStruct, exposedStruct_)
-		IMPLEMENT_XETERS(ExposedObject, ObjectHandleT<ExposedObject>, exposedObject_)
-
-#undef IMPLEMENT_XETERS
-
-		// Raw string stuff is sketchy at the moment, highlighting some deficiencies in
-		// the design of the reflection system.
-
-		// void setRawString( const char * & value ) { raw_string_ = value; }
-		// void getRawStringValue( const char * * value ) const { *value = raw_string_; }
-		// const char * & getRawStringRef() const { return raw_string_; }
-
-		// void setRawWString( const wchar_t * & value ) { raw_wstring_ = value; }
-		// void getRawWStringValue( const wchar_t * * value ) const { *value = raw_wstring_; }
-		// const wchar_t * & getRawWStringRef() const { return raw_wstring_; }
-	};
-
-	template <typename TargetType>
-	bool setProperty(BaseProperty* property, ObjectHandle& pBase, const TargetType& value)
-	{
-		return property->set(pBase, ReflectionUtilities::reference(value), getDefinitionManager());
-	}
-};
 
 typedef TestPropertyFixtureBase::TestPropertyObject::ExposedStruct TestExposedStruct;
 typedef TestPropertyFixtureBase::TestPropertyObject::ExposedObject TestExposedObject;
 
-BEGIN_EXPOSE(TestExposedStruct, MetaOnStack())
-END_EXPOSE()
-
-BEGIN_EXPOSE(TestExposedObject, MetaNone())
-END_EXPOSE()
 
 TestPropertyFixtureBase* TestPropertyFixtureBase::s_instance = nullptr;
 
 TestPropertyFixtureBase::TestPropertyFixtureBase()
 {
-	assert(s_instance == nullptr);
-
-	IDefinitionManager& definitionManager = getDefinitionManager();
-	REGISTER_DEFINITION(TestExposedStruct);
-	REGISTER_DEFINITION(TestExposedObject);
+	TF_ASSERT(s_instance == nullptr);
 	s_instance = this;
 }
 
@@ -194,8 +57,8 @@ template <typename FIXTURE>
 void test_boolean_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
 	{
 		subject_.boolean_ = false;
@@ -220,8 +83,8 @@ template <typename FIXTURE>
 void test_integer_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
 	{
 		subject_.integer_ = -3567345;
@@ -245,8 +108,8 @@ template <typename FIXTURE>
 void test_unsigned_integer_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
 	{
 		subject_.uinteger_ = 1321491649u;
@@ -271,8 +134,8 @@ template <typename FIXTURE>
 void test_float_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
 	{
 		subject_.floating_ = 367.345f;
@@ -296,8 +159,8 @@ template <typename FIXTURE>
 void test_string_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
 	{
 		subject_.string_ = std::string("Hello World!");
@@ -321,8 +184,8 @@ template <typename FIXTURE>
 void test_wstring_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
 	{
 		subject_.wstring_ = std::wstring(L"Chunky Bacon!");
@@ -351,8 +214,8 @@ template <typename FIXTURE>
 void test_binary_data_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
 	{
 		const char* randomData = "Something evil this way comes.";
@@ -377,21 +240,18 @@ template <typename FIXTURE>
 void test_exposed_struct_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
 	typename FIXTURE::TestPropertyObject subject_;
+	ManagedObject<typename FIXTURE::TestPropertyObject> object(&subject_);
+	auto provider = object.getHandleT();
 
-	typedef TestExposedStruct TestStruct;
+	Variant vStruct = fixture->exposedStructProperty_->get(provider, fixture->getDefinitionManager());
 
-	ObjectHandle baseProvider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
-
-	Variant vStruct = fixture->exposedStructProperty_->get(baseProvider, fixture->getDefinitionManager());
-
-	auto testStruct = vStruct.value<const TestStruct*>();
+	auto testStruct = vStruct.value<const TestExposedStruct*>();
 	RETURN_ON_FAIL_CHECK(testStruct != nullptr);
 	CHECK_EQUAL(subject_.exposedStruct_.boolean_, testStruct->boolean_);
 
-	TestStruct value;
+	TestExposedStruct value;
 	value.boolean_ = !testStruct->boolean_;
-	CHECK(fixture->template setProperty<TestStruct>(fixture->exposedStructProperty_.get(), baseProvider, value));
+	CHECK(fixture->template setProperty<TestExposedStruct>(fixture->exposedStructProperty_.get(), provider, value));
 	CHECK_EQUAL(value.boolean_, subject_.exposedStruct_.boolean_);
 }
 
@@ -399,20 +259,16 @@ void test_exposed_struct_property(FIXTURE* fixture, const char* m_name, TestResu
 template <typename FIXTURE>
 void test_exposed_object_property(FIXTURE* fixture, const char* m_name, TestResult& result_)
 {
-	typename FIXTURE::TestPropertyObject subject_;
-
 	typedef TestExposedObject TestObject;
-
-	ObjectHandle provider(
-	&subject_, fixture->getDefinitionManager().template getDefinition<typename FIXTURE::TestPropertyObject>());
+    auto testObject1 = ManagedObject<FIXTURE::TestPropertyObject>::make();
 
 	{
-		subject_.exposedObject_->string_ = std::string("Hello World!");
+        testObject1->exposedObject_->string_ = std::string("Hello World!");
 
-		Variant vObject = fixture->exposedObjectProperty_->get(provider, fixture->getDefinitionManager());
+		Variant vObject = fixture->exposedObjectProperty_->get(testObject1.getHandleT(), fixture->getDefinitionManager());
 
 		ObjectHandle objectProvider;
-		vObject.tryCast(objectProvider);
+        CHECK(vObject.tryCast(objectProvider));
 
 		auto testObject = reflectedCast<TestObject>(objectProvider, fixture->getDefinitionManager());
 		CHECK(testObject != nullptr);
@@ -420,17 +276,17 @@ void test_exposed_object_property(FIXTURE* fixture, const char* m_name, TestResu
 		{
 			return;
 		}
-		CHECK_EQUAL(subject_.exposedObject_->string_, testObject->string_);
+		CHECK_EQUAL(testObject1->exposedObject_->string_, testObject->string_);
 	}
 
 	{
-		auto& defManager = TestPropertyFixtureBase::getFixture().getDefinitionManager();
-		auto testObject2 = defManager.create<TestObject>();
+		auto testObject2 = ManagedObject<TestObject>::make();
 		testObject2->string_ = "Delicious Cupcakes";
 
-		CHECK(fixture->template setProperty<ObjectHandleT<TestObject>>(fixture->exposedObjectProperty_.get(), provider,
-		                                                               testObject2));
-		CHECK_EQUAL(testObject2->string_, subject_.exposedObject_->string_);
+		CHECK(fixture->template setProperty<ObjectHandleT<TestObject>>(fixture->exposedObjectProperty_.get(), 
+                                                                       testObject1.getHandleT(),
+		                                                               testObject2.getHandleT()));
+		CHECK_EQUAL(testObject2->string_, testObject1->exposedObject_->string_);
 	}
 }
 

@@ -1,5 +1,6 @@
 #include "buttons_model.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 
 namespace wgt
@@ -86,7 +87,7 @@ void ButtonsModel::setIconUri(size_t index, const std::string& iconUri)
 
 IItem* ButtonsModel::item(size_t index) const
 {
-	assert(index < buttons.size());
+	TF_ASSERT(index < buttons.size());
 	return &buttons[index];
 }
 
@@ -95,7 +96,7 @@ size_t ButtonsModel::index(const IItem* item) const
 	auto iter =
 	std::find_if(buttons.begin(), buttons.end(), [item](const ButtonItem& buttonItem) { return item == &buttonItem; });
 
-	assert(iter != buttons.end());
+	TF_ASSERT(iter != buttons.end());
 	return std::distance(buttons.begin(), iter);
 }
 

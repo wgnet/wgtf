@@ -3,10 +3,10 @@
 #include "core_reflection/generic/generic_object.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/utilities/definition_helpers.hpp"
-#include "core_reflection/metadata/meta_impl.hpp"
-#include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_reflection/base_property_with_metadata.hpp"
+#include "core_reflection/interfaces/i_class_definition.hpp"
+#include "core_object/i_object_manager.hpp"
 #include "generic_property.hpp"
 
 namespace wgt
@@ -23,11 +23,20 @@ GenericDefinition::GenericDefinition(const char* name)
 }
 
 //------------------------------------------------------------------------------
-ObjectHandle GenericDefinition::create(const IClassDefinition& definition) const
+ObjectHandleStoragePtr GenericDefinition::createObjectStorage(const IClassDefinition& definition) const
 {
-	auto pInst = std::unique_ptr<GenericObject>(new GenericObject());
-	pInst->setDefinition(const_cast<IClassDefinition*>(&definition));
-	return ObjectHandle(std::move(pInst), &definition);
+    auto objectManager = definition.getDefinitionManager()->getObjectManager();
+    std::unique_ptr<GenericObject> object(new GenericObject());
+    object->setDefinition(const_cast<IClassDefinition*>(&definition));
+    return objectManager->createObjectStorage(std::move(object));
+}
+
+//------------------------------------------------------------------------------
+ManagedObjectPtr GenericDefinition::createManaged(const IClassDefinition& definition, RefObjectId id) const
+{
+	auto objectManager = definition.getDefinitionManager()->getObjectManager();
+	auto storage = createObjectStorage(definition);
+	return objectManager->createGenericObject(storage, id);
 }
 
 //------------------------------------------------------------------------------
@@ -37,14 +46,25 @@ PropertyIteratorImplPtr GenericDefinition::getPropertyIterator() const
 }
 
 //------------------------------------------------------------------------------
-IBasePropertyPtr GenericDefinition::addProperty(const char* name, const TypeId& typeId, MetaHandle metaData)
+IBasePropertyPtr GenericDefinition::addProperty(const char* name, const TypeId& typeId, MetaData metaData,
+                                                bool isCollection)
 {
-	IBasePropertyPtr property = std::make_shared<GenericProperty>(name, typeId);
+	IBasePropertyPtr property = std::make_shared<GenericProperty>(name, typeId, isCollection);
 	if (metaData != nullptr)
 	{
-		property = std::make_shared<BasePropertyWithMetaData>(property, metaData);
+        property = std::make_shared<BasePropertyWithMetaData>(property, std::move(metaData));
 	}
+	prePropertyAdded(name);
 	properties_.addProperty(property);
+	postPropertyAdded(name);
 	return property;
+}
+
+//------------------------------------------------------------------------------
+void GenericDefinition::removeProperty(const char* name)
+{
+	prePropertyRemoved(name);
+	properties_.removeProperty(name);
+	postPropertyRemoved(name);
 }
 } // end namespace wgt

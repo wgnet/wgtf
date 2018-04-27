@@ -101,9 +101,9 @@ Variant SequenceIterator<T>::value() const /* override */
 
 	Variant result;
 	std::string childPath;
-	childPath += IClassDefinition::INDEX_OPEN;
+	childPath += Collection::getIndexOpen();
 	childPath += std::to_string(index_);
-	childPath += IClassDefinition::INDEX_CLOSE;
+	childPath += Collection::getIndexClose();
 	const bool success = typeConverters_.toVariant(item, result, containerHandle_, childPath);
 	return result;
 }
@@ -128,9 +128,9 @@ bool SequenceIterator<T>::setValue(const Variant& value) const /* override */
 }
 
 template <typename T>
-void SequenceIterator<T>::inc() /* override */
+void SequenceIterator<T>::inc(size_t advAmount) /* override */
 {
-	++index_;
+	index_ += advAmount;
 }
 
 template <typename T>

@@ -8,121 +8,211 @@ import WGControls.Views 2.0
 WGPanel {
     id: shortcutPanel
     WGComponent { type: "shortcut_dialog" }
-    
-	property var sourceModel: WGColumnLayoutProxy {
-		sourceModel: shortcutModel
-		columnSequence: [0,0]
-	}
-    property var id: "ShortcutConfig"
+    property var userModel: shortcutModel
+    property var proxyModel: WGColumnLayoutProxy {
+        sourceModel: userModel
+        columnSequence: [0,0]
+    }
     title: "Actions Shortcut Configuration"
     layoutHints: { 'default': 0.1 }
     color: palette.mainWindowColor
     property int margin: 8
-    width: mainLayout.implicitWidth + 2 * margin
-    height: mainLayout.implicitHeight + 2 * margin
-    Component.onCompleted: {
-        View.minimumWidth = mainLayout.Layout.minimumWidth + 2 * margin;
-        View.minimumHeight = mainLayout.Layout.minimumHeight + 2 * margin
-        if(typeof qmlView.windowClosed !== "undefined") {
-            qmlView.windowClosed.connect(onWindowClosed);
+    width: 400
+    height: 600
+
+    property bool hideEmpty: false
+    readonly property bool filterValue: hideEmpty
+
+    function setFilter(text)
+    {
+        listView.currentIndex = null
+        listView.positionViewAtBeginning()
+        var filterText = "(" + text.replace(/ /g, "|") + ")";
+        filterObject.filter = new RegExp(filterText, "i");
+        listView.view.proxyModel.invalidateFilter();
+
+        if (text == "")
+        {
+            listView.view.proxyModel.sort(0, Qt.AscendingOrder);
         }
     }
 
-    function onWindowClosed()
-    {
-        // TODO: remove this workaround
-        // explicitly call this because CollectionModel doesn't emit a signal when underly source changed
-        sourceModel = Qt.binding( function() { return shortcutModel } );
+    property var filterObject: QtObject {
+        property var filter: /.*/
+
+        function filterAcceptsItem(item) {
+            if (filterValue)
+            {
+                return filter.test(item.value);
+            }
+            else
+            {
+                return filter.test(item.key);
+            }
+        }
     }
+
+    Component.onCompleted: {
+        viewWidget.minimumWidth = 400
+        viewWidget.minimumHeight = 300
+    }
+
     ColumnLayout {
         id: mainLayout
         anchors.fill: parent
-        WGScrollView {
-            id: scrollView
-            anchors.leftMargin: margin
-            anchors.rightMargin: margin
-            anchors.topMargin: margin
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: buttons.top
-            anchors.bottomMargin: margin
-            WGListView {
-                id: listView
-                columnSpacing: 2
-                columnDelegates: [keyDelegate, valueDelegate]
-                model: sourceModel
-                currentIndex: 0
-                clamp: false
+        anchors.margins: margin
+        RowLayout {
+            id: searchWidget
+            Layout.fillWidth: true
+            Layout.preferredHeight: defaultSpacing.minimumRowHeight + defaultSpacing.standardMargin
+            height: 26
 
-                Component {
-                    id: keyDelegate
-                    Text {
-                        text: itemData.key
-                        color: palette.TextColor
-                        width: parent.width
+            WGLabel {
+                id: searchBoxLabel
+                text: "Search:"
+                enabled: !hideEmpty
+                Layout.leftMargin: defaultSpacing.standardMargin
+            }
+
+            WGTextBox {
+                id: searchBox
+                onTextChanged: setFilter(text)
+                Layout.fillWidth: true
+                Layout.rightMargin: defaultSpacing.standardMargin
+                enabled: !hideEmpty
+
+                WGToolButton {
+                    id: clearCurrentFilterButton
+                    objectName: "clearFilterButton"
+                    iconSource: "../WGControls/icons/close_sml_16x16.png"
+                    anchors.right: parent.right
+                    visible: searchBox.text != ""
+
+                    tooltip: "Clear"
+
+                    onClicked: {
+                        searchBox.text = ""
                     }
                 }
+            }
+            WGPushButton {
+                text: "Hide Empty"
+                checkable: true
+                checked: hideEmpty
+                onClicked: {
+                    hideEmpty = !hideEmpty
+                    if(hideEmpty)
+                    {
+                        setFilter("^(?!\s*$).+")
+                    }
+                    else
+                    {
+                        setFilter("")
+                    }
+                }
+            }
+        }
+        Item {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            WGScrollView {
+                id: scrollView
+                height: parent.height
+                width: parent.width
 
-                Component {
-                    id: valueDelegate
-                    WGTextBox {
-                        text: itemData.value
-                        width: parent.width
-                        onEditAccepted: {
-                            itemData.value = text;
+                WGListView {
+                    id: listView
+                    columnSpacing: 2
+                    columnDelegates: [keyDelegate, valueDelegate]
+                    headerDelegates: [headerDelegate, headerDelegate]
+                    model: proxyModel
+                    currentIndex: 0
+                    clamp: true
+
+                    columnRoles: ["key", "value"]
+                    filterObject: shortcutPanel.filterObject
+
+                    Component {
+                        id: keyDelegate
+                        Text {
+                            text: itemData != null ? itemData.key : ""
+                            color: palette.TextColor
+                            width: parent != null ? parent.width : columnWidth
+                            height: defaultSpacing.minimumRowHeight
                         }
+                    }
+
+                    Component {
+                        id: valueDelegate
+                        WGTextBox {
+                            text: itemData != null ? itemData.value : ""
+                            width: parent != null ? parent.width : columnWidth
+                            height: defaultSpacing.minimumRowHeight
+                            onEditAccepted: {
+                                itemData.value = text;
+                            }
+                        }
+                    }
+
+                    Component {
+                        id: headerDelegate
+                            Item {
+                            implicitWidth: shortcutPanel.width / 2
+                            height: defaultSpacing.minimumRowHeight
+                            WGLabel {
+                                text: valid ? headerData.headerText : (headerData != null && headerData.index != null ? (headerData.index == 0 ? "Action" : "Shortcut") : "")
+                                width: parent !== null ? parent.width : 0
+                                anchors.left: parent.left
+                                anchors.leftMargin: defaultSpacing.rowSpacing
+                                anchors.verticalCenter: parent.verticalCenter
+                                font.bold: true
+
+                                property bool valid: headerData !== null &&
+                                    typeof headerData !== "undefined" &&
+                                    typeof headerData.headerText !== "undefined"
+                            }
+                        }
+                    }
+
+                    Component.onCompleted: {
+                        listView.view.proxyModel.sort(0, Qt.AscendingOrder);
                     }
                 }
             }
         }
         RowLayout {
             id: buttons
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: margin
-            anchors.rightMargin: margin
-            anchors.bottomMargin: margin
+            Layout.fillWidth: true
+            Layout.preferredHeight: defaultSpacing.minimumRowHeight
             WGPushButton {
                 id: reset
-                anchors.left: parent.left
                 text: "Reset to Default"
                 onClicked: {
+                    hideEmpty = false
                     resetToDefault();
-                    // TODO: remove this workaround
-                    // explicitly call this because CollectionModel doesn't emit a signal when underly source changed
-                    sourceModel = Qt.binding( function() { return shortcutModel } );
                 }
             }
-            Rectangle {
-                id: space1
+
+            Item {
                 Layout.fillWidth: true
-                height: reset.height
-                color: "transparent"
+                Layout.preferredHeight: defaultSpacing.minimumRowHeight
             }
+
             WGPushButton {
                 id: ok
-                anchors.right: space2.left
                 text: "Ok"
+                Layout.preferredWidth: cancel.width
                 onClicked: {
                     applyChanges();
-                    View.close();
+                    viewWidget.close();
                 }
             }
-            Rectangle {
-                id: space2
-                anchors.right: cancel.left
-                width: 2
-                height: reset.height
-                color: "transparent"
-            }
+
             WGPushButton {
                 id: cancel
-                anchors.right: parent.right
                 text: "Cancel"
                 onClicked: {
-                    View.close();
+                    viewWidget.close();
                 }
             }
         }

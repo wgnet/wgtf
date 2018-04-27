@@ -1,4 +1,6 @@
 #include "core_generic_plugin/generic_plugin.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_generic_plugin_manager/generic_plugin_manager.hpp"
 #include "core_logging_system/alerts/alert_manager.hpp"
 #include "core_logging_system/interfaces/i_logging_system.hpp"
@@ -37,7 +39,7 @@ public:
 	bool PostLoad(IComponentContext& contextManager) override
 	{
 		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
-		assert(definitionManager != nullptr);
+		TF_ASSERT(definitionManager != nullptr);
 
 		definitionManager->registerDefinition<TypeClassDefinition<AlertPageModel>>();
 		definitionManager->registerDefinition<TypeClassDefinition<AlertObjectModel>>();
@@ -84,12 +86,12 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 
 	PopupAlertPresenter* popupAlertPresenter_;
 };

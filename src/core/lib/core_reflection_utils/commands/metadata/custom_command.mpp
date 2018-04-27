@@ -1,0 +1,15 @@
+#include "../custom_command.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+#include "core_reflection/reflected_method_parameters.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(CustomCommandParameters, MetaNoSerialization())
+EXPOSE("description", description_, MetaNone())
+EXPOSE("execute", execute_, MetaNone())
+EXPOSE("undo", undo_, MetaNone())
+END_EXPOSE()
+} // end namespace wgt

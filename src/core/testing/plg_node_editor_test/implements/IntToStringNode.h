@@ -1,10 +1,10 @@
 #ifndef __INT_TO_STRING_NODE_H__
 #define __INT_TO_STRING_NODE_H__
 
-#include "core_data_model/i_list_model.hpp"
 #include "core_dependency_system/i_interface.hpp"
-#include "core_data_model/generic_list.hpp"
+#include "core_data_model/collection_model.hpp"
 #include "core_reflection/object_handle.hpp"
+#include "core_object/i_object_manager.hpp"
 
 #include "plugins/plg_node_editor/interfaces/i_node.hpp"
 
@@ -14,12 +14,14 @@
 
 namespace wgt
 {
-class IntToStringNode : public Implements<INode>
+class IntToStringNode : public Implements<INode>, public Depends<IObjectManager, IDefinitionManager>
 {
     DECLARE_REFLECTED
 public:
     IntToStringNode(const std::string &nodeClass);
     ~IntToStringNode();
+
+	void Init() override;
 
     size_t Id() const override         { return m_id; }
     std::string Class() const override      { return m_class; }
@@ -33,7 +35,7 @@ public:
     float Y() const override                { return m_y; }
     void SetPos(float x, float y) override;
 
-    ObjectHandleT<ISlot> GetSlotById(size_t slotId) const override;
+	ObjectHandleT<ISlot> GetSlotById(size_t slotId) const override;
 
     bool Enabled() const override;
     void SetEnabled(bool enabled) override;
@@ -47,12 +49,27 @@ public:
     void OnConnect(ObjectHandleT<ISlot> mySlot, ObjectHandleT<ISlot> otherSlot) override;
     void OnDisconnect(ObjectHandleT<ISlot> mySlot, ObjectHandleT<ISlot> otherSlot) override;
 
-    const GenericListT<ObjectHandleT<ISlot>>* GetInputSlots() const override { return &m_inputSlotsModel; }
-    const GenericListT<ObjectHandleT<ISlot>>* GetOutputSlots() const override { return &m_outputSlotsModel; }
+    const CollectionModel* GetInputSlots() const override { return &inputSlotsModel_; }
+    const CollectionModel* GetOutputSlots() const override { return &outputSlotsModel_; }
 
 private:
-    const IListModel* GetInputSlotsModel() const override { return &m_inputSlotsModel; }
-    const IListModel* GetOutputSlotsModel() const override { return &m_outputSlotsModel; }
+    const AbstractListModel* GetInputSlotsModel() const override { return &inputSlotsModel_; }
+    const AbstractListModel* GetOutputSlotsModel() const override { return &outputSlotsModel_; }
+
+	mutable ObjectHandleT<INode> thisNode_;
+	ObjectHandleT<INode> getThis() const
+	{
+		if (thisNode_ != nullptr)
+		{
+			return thisNode_;
+		}
+
+		auto thisObject = get<IObjectManager>()->getObject(this);
+		assert(thisObject != nullptr);
+		thisNode_ = reflectedCast<INode>(thisObject, *get<IDefinitionManager>());
+		assert(thisNode_ != nullptr);
+		return thisNode_;
+	}
 
 private:
     float m_x;
@@ -69,8 +86,11 @@ private:
     bool m_enabled;
     bool m_minimized;
     
-    GenericListT<ObjectHandleT<ISlot>> m_inputSlotsModel;
-    GenericListT<ObjectHandleT<ISlot>> m_outputSlotsModel;
+	std::vector<ManagedObject<ISlot>> ownedSlots_;
+	std::vector<ObjectHandleT<ISlot>> inputSlots_;
+    std::vector<ObjectHandleT<ISlot>> outputSlots_;
+	CollectionModel inputSlotsModel_;
+	CollectionModel outputSlotsModel_;
 };
 } // end namespace wgt
 #endif // __INT_TO_STRING_NODE_H__

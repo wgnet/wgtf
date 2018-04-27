@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "wg_types/shared_string.hpp"
+
 namespace wgt
 {
 namespace FileAttributes
@@ -68,9 +70,10 @@ public:
 	virtual uint64_t modified() const = 0;
 	virtual uint64_t accessed() const = 0;
 
-	virtual const char* extension() const = 0;
-	virtual const char* name() const = 0;
-	virtual const char* fullPath() const = 0;
+	virtual const char * extension() const = 0;
+	virtual const SharedString & name() const = 0;
+	virtual const SharedString & fullPath() const = 0;
+	virtual const SharedString & absolutePath() const = 0;
 
 	virtual const FileAttributes::FileAttribute attributes() const = 0;
 };

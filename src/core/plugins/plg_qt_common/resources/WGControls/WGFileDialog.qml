@@ -23,7 +23,7 @@ Item {
 
       The default value is determined by the control that opens it.
     */
-    property var modality
+    property var modality: Qt.ApplicationModal
 
     /*! This array contains a list of filename Filters in the format:
       \code{.js}
@@ -47,15 +47,16 @@ Item {
     */
     property string title
 
-    /*! Opens (displays) the dialog box.
-
+    /*! The viewId of the panel that opens the dialog
     */
-    signal open(int dWidth, int dHeight, var curValue)
+    property var viewId: null
 
-    /*! Closes (hides) the dialog box.
-
+    /*! The preferences of the panel that opens the dialog
     */
-    signal close()
+    property var viewPreference: null
+
+    signal opened()
+    signal closed()
 
     /*! fires when a file has been selected and returns the selected file.
 
@@ -66,4 +67,9 @@ Item {
 
     */
     signal rejected()
+
+    onClosed: {
+        viewId = null
+        viewPreference = null
+    }
 }

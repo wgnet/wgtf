@@ -1,0 +1,11 @@
+<Actions>
+	<showThemeDialog          text="Edit UI Theme..." order="0" path="MainMenu.Edit.Theme" icon=":/WGControls/icons/dialogue_on_16x16.png"/>
+	<ThemeSeparator           separator="true"        order="1" path="MainMenu.Edit.Theme"/>
+	<darkThemeAction          text="Dark"             order="2" path="MainMenu.Edit.Theme"/>
+    <lightThemeAction         text="Light"            order="3" path="MainMenu.Edit.Theme"/>
+    <battleRedThemeAction     text="Battle Red"       order="4" path="MainMenu.Edit.Theme"/>
+    <armyBrownThemeAction     text="Army Brown"       order="5" path="MainMenu.Edit.Theme"/>
+    <airForceGreenThemeAction text="Air Force Green"  order="6" path="MainMenu.Edit.Theme"/>
+    <navyBlueThemeAction      text="Navy Blue"        order="7" path="MainMenu.Edit.Theme"/>
+    <customThemeAction        text="Custom"           order="8" path="MainMenu.Edit.Theme"/>
+</Actions>

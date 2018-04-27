@@ -1,0 +1,24 @@
+<Icons>
+    <!--16x16-->
+    <file16 icon=":/WGControls/Private/icons/file_icons/file_16.png"/>
+    <folder16 icon=":/WGControls/Private/icons/file_icons/folder_16.png"/>
+    <folder_open16 icon=":/WGControls/icons/folder_open_16x16.png"/>
+    <txt16 icon=":/WGControls/Private/icons/file_icons/txt_16.png"/>
+    <xml16 icon=":/WGControls/Private/icons/file_icons/xml_16.png"/>
+    <dll16 icon=":/WGControls/Private/icons/file_icons/dll_16.png"/>
+    <!--48x48-->
+    <file48 icon=":/WGControls/Private/icons/file_icons/file_48.png"/>
+    <folder48 icon=":/WGControls/Private/icons/file_icons/folder_48.png"/>
+    <folder_open48 icon=":/WGControls/icons/folder_open_16x16.png"/>
+    <txt48 icon=":/WGControls/Private/icons/file_icons/txt_48.png"/>
+    <xml48 icon=":/WGControls/Private/icons/file_icons/xml_48.png"/>
+    <dll48 icon=":/WGControls/Private/icons/file_icons/dll_48.png"/>
+    <!--128x128-->
+    <file icon=":/WGControls/Private/icons/file_icons/file_128.png"/>
+    <folder icon=":/WGControls/Private/icons/file_icons/folder_128.png"/>
+    <folder_open icon=":/WGControls/icons/folder_open_16x16.png"/>
+    <txt icon=":/WGControls/Private/icons/file_icons/txt_128.png"/>
+    <xml icon=":/WGControls/Private/icons/file_icons/xml_128.png"/>
+    <dll icon=":/WGControls/Private/icons/file_icons/dll_128.png"/>
+    <!--TODO: register icons for other common file types-->
+</Icons>

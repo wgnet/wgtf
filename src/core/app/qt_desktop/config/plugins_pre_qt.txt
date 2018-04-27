@@ -2,6 +2,7 @@ plugins/plg_reflection
 plugins/plg_logging_system
 plugins/plg_object
 plugins/plg_serialization
+plugins/plg_environment_system
 plugins/plg_command_system
 plugins/plg_python27
 plugins/plg_file_system

@@ -13,7 +13,6 @@
 #include "asset_browser_breadcrumbs_model.hpp"
 
 #include "core_data_model/variant_list.hpp"
-#include "core_data_model/value_change_notifier.hpp"
 #include "core_data_model/i_tree_model.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/selection_handler.hpp"

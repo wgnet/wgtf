@@ -1,5 +1,6 @@
 #include "reflected_enum_model_new.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/abstract_item.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
@@ -13,8 +14,18 @@
 
 namespace wgt
 {
+ITEMROLE(display);
+ITEMROLE(value);
+ITEMROLE(valueType);
+
 namespace
 {
+static const std::string s_RolesArr[] = {
+	ItemRole::valueName, ItemRole::valueTypeName,
+};
+static const std::vector<std::string> s_RolesVec(&s_RolesArr[0],
+                                                 &s_RolesArr[0] + std::extent<decltype(s_RolesArr)>::value);
+
 class ReflectedEnumItem : public AbstractListItem
 {
 public:
@@ -24,11 +35,15 @@ public:
 
 	Variant getData(int column, ItemRole::Id roleId) const override
 	{
-		if (roleId == ValueRole::roleId_)
+		if (roleId == ItemRole::displayId)
 		{
-			return Variant(index_);
+			return text_;
 		}
-		else if (roleId == ValueTypeRole::roleId_)
+		else if (roleId == ItemRole::valueId)
+		{
+			return index_;
+		}
+		else if (roleId == ItemRole::valueTypeId)
 		{
 			return TypeId::getType<int>().getName();
 		}
@@ -46,9 +61,8 @@ private:
 };
 } // namespace
 
-ReflectedEnumModelNew::ReflectedEnumModelNew(const PropertyAccessor& pA, const MetaEnumObj* enumObj)
+ReflectedEnumModelNew::ReflectedEnumModelNew(const PropertyAccessor& pA, ObjectHandleT<MetaEnumObj> enumObj)
 {
-	std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
 	const wchar_t* enumString = enumObj->getEnumString();
 	if (enumString != nullptr)
 	{
@@ -72,17 +86,14 @@ ReflectedEnumModelNew::ReflectedEnumModelNew(const PropertyAccessor& pA, const M
 			}
 			std::wstring text(start, end);
 
-			items_.push_back(new ReflectedEnumItem(index, conversion.to_bytes(text)));
+			items_.push_back(new ReflectedEnumItem(index, StringUtils::to_string(text)));
 			start = trueEnd + 1;
 			++index;
 		}
 		return;
 	}
 
-	auto value = pA.getParent().getValue();
-	ObjectHandle baseProvider;
-	value.tryCast(baseProvider);
-	Collection collection = enumObj->generateEnum(baseProvider, *pA.getDefinitionManager());
+	Collection collection = enumObj->generateEnum(pA.getObject());
 	auto it = collection.begin();
 	auto itEnd = collection.end();
 	for (; it != itEnd; ++it)
@@ -104,18 +115,34 @@ ReflectedEnumModelNew::~ReflectedEnumModelNew()
 	}
 }
 
+//------------------------------------------------------------------------------
+void ReflectedEnumModelNew::iterateRoles(const std::function<void(const char*)>& iterFunc) const
+{
+	for (auto&& role : s_RolesVec)
+	{
+		iterFunc(role.c_str());
+	}
+}
+
+//------------------------------------------------------------------------------
+std::vector<std::string> ReflectedEnumModelNew::roles() const
+{
+	return s_RolesVec;
+}
+
+//------------------------------------------------------------------------------
 AbstractItem* ReflectedEnumModelNew::item(int row) const /* override */
 {
-	assert(row >= 0);
+	TF_ASSERT(row >= 0);
 	const auto index = static_cast<std::vector<AbstractItem*>::size_type>(row);
-	assert(index < items_.size());
+	TF_ASSERT(index < items_.size());
 	return items_[index];
 }
 
 int ReflectedEnumModelNew::index(const AbstractItem* item) const /* override */
 {
 	auto it = std::find(items_.begin(), items_.end(), item);
-	assert(it != items_.end());
+	TF_ASSERT(it != items_.end());
 	return static_cast<int>(std::distance(items_.begin(), it));
 }
 

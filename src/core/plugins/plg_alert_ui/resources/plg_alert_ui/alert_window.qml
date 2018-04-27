@@ -22,13 +22,6 @@ Rectangle {
         removeAlert;
     }
 
-	WGListModel {
-		id : alertModel
-		source : alerts
-
-		ValueExtension {}
-	}
-
     // Could have something like a WGFrame here but as this will probably be
 	// some kind of invisible 'floating' window we don't really need it.
 
@@ -36,7 +29,7 @@ Rectangle {
 		// ListView needs to fill the parent Rectangle with some margins around the entire view
                         anchors.fill: parent
        anchors.margins: defaultSpacing.standardMargin
-		model: alertModel
+        model: alerts
 		interactive: true
 
 		// Replacing the default delegate of the WGListView with our custom Alert Frame

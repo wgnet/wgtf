@@ -6,51 +6,75 @@
 #include "PrintNode.h"
 
 #include "core_logging/logging.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
-CustomGraph::CustomGraph() : m_nodeGroupModel(m_groupsStorage)
+CustomGraph::CustomGraph() : groupModel_(groups_)
 {
-	m_nodeClassesModel.push_back("IntToString");
-	m_nodeClasses.insert(
-	NodeClassesMap::value_type("IntToString", []() -> INode* { return new IntToStringNode("IntToString"); }));
+	nodeClasses_.push_back("IntToString");
+	m_nodeClasses.insert(NodeClassesMap::value_type("IntToString", [&]() -> ObjectHandleT<INode> { 
+		ownedNodes_.emplace_back(std::unique_ptr<INode>( new IntToStringNode("IntToString")));
+		ownedNodes_.back()->Init();
+		return ownedNodes_.back().getHandleT();
+	}));
 
-	m_nodeClassesModel.push_back("AddInteger");
-	m_nodeClasses.insert(
-	NodeClassesMap::value_type("AddInteger", []() -> INode* { return new AddIntegerNode("AddInteger"); }));
+	nodeClasses_.push_back("AddInteger");
+	m_nodeClasses.insert(NodeClassesMap::value_type("AddInteger", [&]() -> ObjectHandleT<INode> {
+		ownedNodes_.emplace_back(std::unique_ptr<INode>(new AddIntegerNode("AddInteger")));
+		ownedNodes_.back()->Init();
+		return ownedNodes_.back().getHandleT();
+	}));
 
-	m_nodeClassesModel.push_back("Print");
-	m_nodeClasses.insert(NodeClassesMap::value_type("Print", []() -> INode* { return new PrintNode("Print"); }));
+	nodeClasses_.push_back("Print");
+	m_nodeClasses.insert(NodeClassesMap::value_type("Print", [&]() -> ObjectHandleT<INode> {
+		ownedNodes_.emplace_back(std::unique_ptr<INode>(new PrintNode("Print")));
+		ownedNodes_.back()->Init();
+		return ownedNodes_.back().getHandleT();
+	}));
+
+	nodeClassesModel_.setSource(Collection(nodeClasses_));
+	nodesModel_.setSource(Collection(nodes_));
+	connectionsModel_.setSource(Collection(connections_));
 }
 
-std::shared_ptr<INode> CustomGraph::CreateNode(std::string nodeClass, float x, float y)
+ObjectHandleT<INode> CustomGraph::CreateNode(std::string nodeClass, float x, float y)
 {
 	auto nodeCreator = m_nodeClasses.at(nodeClass);
-	std::shared_ptr<INode> node(nodeCreator());
-
+	auto node(nodeCreator());
 	node->SetPos(x, y);
-	m_nodesModel.push_back(node);
+
+	Collection& nodes = nodesModel_.getSource();
+	nodes.insertValue(nodes.size(), node);
 
 	return node;
 }
 
 void CustomGraph::DeleteNode(size_t nodeId)
 {
-	auto nodeIter = std::find_if(m_nodesModel.begin(), m_nodesModel.end(),
-	                             [nodeId](const ObjectHandleT<INode>& node) { return nodeId == node->Id(); });
+	Collection& nodes = nodesModel_.getSource();
+	auto callback = [nodeId](const Variant& nodeVariant) {
+		auto node = nodeVariant.value<ObjectHandleT<INode>>();
+		return nodeId == node->Id();
+	};
 
-	if (nodeIter == m_nodesModel.end())
+	auto nodeIter = std::find_if(nodes.begin(), nodes.end(), callback);
+
+	if (nodeIter == nodes.end())
 	{
 		NGT_ERROR_MSG("Failed to get node with id: %d\n", nodeId);
 		return;
 	}
 
-	ObjectHandleT<INode> node = *nodeIter;
-	auto inputSlots = node->GetInputSlots();
-	auto outputSlots = node->GetOutputSlots();
+	Variant nodeVariant = *nodeIter;
+	auto node = nodeVariant.value<ObjectHandleT<INode>>();
+	auto inputSlots = node->GetInputSlots()->getSource();
+	auto outputSlots = node->GetOutputSlots()->getSource();
 
-	for (const auto& slot : *inputSlots)
+	for (const auto& slotVariant : inputSlots)
 	{
+		auto slot = slotVariant.value<ObjectHandleT<ISlot>>();
+
 		if (!slot->IsConnected())
 			continue;
 
@@ -61,8 +85,10 @@ void CustomGraph::DeleteNode(size_t nodeId)
 		}
 	}
 
-	for (const auto& slot : *outputSlots)
+	for (const auto& slotVariant : outputSlots)
 	{
+		auto slot = slotVariant.value<ObjectHandleT<ISlot>>();
+
 		if (!slot->IsConnected())
 			continue;
 
@@ -72,7 +98,13 @@ void CustomGraph::DeleteNode(size_t nodeId)
 			DeleteConnection(connectionId);
 		}
 	}
-	m_nodesModel.erase(nodeIter);
+
+	auto index = std::distance(nodes.begin(), nodeIter);
+	auto ownedNodesIter = ownedNodes_.begin();
+	std::advance(ownedNodesIter, index);
+
+	nodes.erase(nodeIter);
+	ownedNodes_.erase(ownedNodesIter);
 }
 
 ObjectHandleT<IConnection> CustomGraph::CreateConnection(size_t nodeIdFrom, size_t slotIdFrom, size_t nodeIdTo,
@@ -86,10 +118,13 @@ ObjectHandleT<IConnection> CustomGraph::CreateConnection(size_t nodeIdFrom, size
 	bool result = false;
 	while (true)
 	{
-		auto nodeIterFrom =
-		std::find_if(m_nodesModel.begin(), m_nodesModel.end(),
-		             [nodeIdFrom](const ObjectHandleT<INode>& node) { return nodeIdFrom == node->Id(); });
-		if (nodeIterFrom == m_nodesModel.end())
+		auto callbackFrom = [nodeIdFrom](const Variant& nodeVariant) {
+			auto node = nodeVariant.value<ObjectHandleT<INode>>();
+			return nodeIdFrom == node->Id();
+		};
+
+		auto nodeIterFrom = std::find_if(nodes_.begin(), nodes_.end(), callbackFrom);
+		if (nodeIterFrom == nodes_.end())
 		{
 			NGT_ERROR_MSG("Failed to get node with id: %d\n", nodeIdFrom);
 			break;
@@ -103,9 +138,13 @@ ObjectHandleT<IConnection> CustomGraph::CreateConnection(size_t nodeIdFrom, size
 			break;
 		}
 
-		auto nodeIterTo = std::find_if(m_nodesModel.begin(), m_nodesModel.end(),
-		                               [nodeIdTo](const ObjectHandleT<INode>& node) { return nodeIdTo == node->Id(); });
-		if (nodeIterTo == m_nodesModel.end())
+		auto callbackTo = [nodeIdTo](const Variant& nodeVariant) {
+			auto node = nodeVariant.value<ObjectHandleT<INode>>();
+			return nodeIdTo == node->Id();
+		};
+
+		auto nodeIterTo = std::find_if(nodes_.begin(), nodes_.end(), callbackTo);
+		if (nodeIterTo == nodes_.end())
 		{
 			NGT_ERROR_MSG("Failed to get node with id: %d\n", nodeIdTo);
 			break;
@@ -128,12 +167,14 @@ ObjectHandleT<IConnection> CustomGraph::CreateConnection(size_t nodeIdFrom, size
 		return nullptr;
 	}
 
-	ObjectHandleT<IConnection> connection(new CustomConnection());
+	ownedConnections_.emplace_back(std::unique_ptr<IConnection>( new CustomConnection()));
+	auto connection = ownedConnections_.back().getHandleT();
 	result = connection->Bind(slotFrom, slotTo);
 
 	if (result)
 	{
-		m_connectionsModel.push_back(connection);
+		Collection& connections = connectionsModel_.getSource();
+		connections.insertValue(connections.size(), connection);
 		return connection;
 	}
 
@@ -142,22 +183,33 @@ ObjectHandleT<IConnection> CustomGraph::CreateConnection(size_t nodeIdFrom, size
 
 void CustomGraph::DeleteConnection(size_t connectionId)
 {
-	auto connectionPos =
-	std::find_if(m_connectionsModel.begin(), m_connectionsModel.end(),
-	             [connectionId](ObjectHandleT<IConnection> connection) { return connectionId == connection->Id(); });
+	Collection& connections = connectionsModel_.getSource();
+	auto callback = [connectionId](const Variant& connectionVariant) {
+		auto connection = connectionVariant.value<ObjectHandleT<IConnection>>();
+		return connectionId == connection->Id();
+	};
 
-	if (connectionPos == m_connectionsModel.end())
+	auto connectionPos = std::find_if(connections.begin(), connections.end(), callback);
+
+	if (connectionPos == connections.end())
 	{
 		NGT_ERROR_MSG("Failed to get connection with ID: %d\n", connectionId);
 		return;
 	}
 
-	ObjectHandleT<IConnection> connection = *connectionPos;
+	Variant connectionVariant = *connectionPos;
+	auto connection = connectionVariant.value<ObjectHandleT<IConnection>>();
 	if (!connection->UnBind())
 	{
 		NGT_ERROR_MSG("Failed to unbind slots\n");
 	}
-	m_connectionsModel.erase(connectionPos);
+
+	auto index = std::distance(connections.begin(), connectionPos);
+	auto ownedConnnectionsIter = ownedConnections_.begin();
+	std::advance(ownedConnnectionsIter, index);
+
+	connections.erase(connectionPos);
+	ownedConnections_.erase(ownedConnnectionsIter);
 }
 
 bool CustomGraph::Validate(std::string& errorMessage)
@@ -178,7 +230,7 @@ void CustomGraph::Load(std::string fileName)
 
 const Collection& CustomGraph::GetNodeGroupModel() const /* override */
 {
-	return m_nodeGroupModel;
+	return groupModel_;
 }
 
 } // end namespace wgt

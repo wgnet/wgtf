@@ -1,27 +1,30 @@
 #include "reflected_tree_item_new.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_reflection/interfaces/i_class_definition.hpp"
-#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/interfaces/i_base_property.hpp"
+#include "core_reflection/property_accessor.hpp"
+#include "core_reflection/metadata/meta_base.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
+#include "core_reflection/property_accessor.hpp"
+#include "core_reflection/utilities/object_handle_reflection_utils.hpp"
 
 namespace wgt
 {
-ReflectedTreeItemNew::ReflectedTreeItemNew(IComponentContext& contextManager, const ReflectedTreeModelNew& model)
-    : parent_(nullptr), id_(0), path_(""), index_(std::numeric_limits<size_t>::max()), controller_(contextManager),
-      definitionManager_(contextManager), model_(&model)
+ReflectedTreeItemNew::ReflectedTreeItemNew(const ReflectedTreeModelNew& model)
+    : parent_(nullptr), id_(0), path_(""), index_(std::numeric_limits<size_t>::max()), model_(&model)
 {
 }
 
-ReflectedTreeItemNew::ReflectedTreeItemNew(IComponentContext& contextManager, ReflectedTreeItemNew* parent,
-                                           size_t index, const char* path)
-    : parent_(parent), index_(index), id_(HashUtilities::compute(path)), path_(path), controller_(contextManager),
-      definitionManager_(contextManager), model_(parent != nullptr ? parent->getModel() : nullptr)
+ReflectedTreeItemNew::ReflectedTreeItemNew(ReflectedTreeItemNew* parent, size_t index, const char* path)
+    : parent_(parent), index_(index), id_(HashUtilities::compute(path)), path_(path),
+      model_(parent != nullptr ? parent->getModel() : nullptr)
 {
 }
 
-ReflectedTreeItemNew::ReflectedTreeItemNew(IComponentContext& contextManager, ReflectedTreeItemNew* parent,
-                                           size_t index, const std::string& path)
-    : parent_(parent), index_(index), id_(HashUtilities::compute(path)), path_(path), controller_(contextManager),
-      definitionManager_(contextManager), model_(parent != nullptr ? parent->getModel() : nullptr)
+ReflectedTreeItemNew::ReflectedTreeItemNew(ReflectedTreeItemNew* parent, size_t index, const std::string& path)
+    : parent_(parent), index_(index), id_(HashUtilities::compute(path)), path_(path),
+      model_(parent != nullptr ? parent->getModel() : nullptr)
 {
 }
 
@@ -59,35 +62,9 @@ const std::string& ReflectedTreeItemNew::getPath() const
 	return path_;
 }
 
-IReflectionController* ReflectedTreeItemNew::getController() const
-{
-	if (controller_ != nullptr)
-	{
-		return controller_.get();
-	}
-	if (parent_ != nullptr)
-	{
-		return parent_->getController();
-	}
-	return nullptr;
-}
-
-IDefinitionManager* ReflectedTreeItemNew::getDefinitionManager() const
-{
-	if (definitionManager_ != nullptr)
-	{
-		return definitionManager_.get();
-	}
-	if (parent_ != nullptr)
-	{
-		return parent_->getDefinitionManager();
-	}
-	return nullptr;
-}
-
 const ReflectedTreeModelNew* ReflectedTreeItemNew::getModel() const
 {
-	assert((model_ != nullptr) && "Tree item is not attached to model");
+	TF_ASSERT((model_ != nullptr) && "Tree item is not attached to model");
 	return model_;
 }
 
@@ -119,7 +96,7 @@ bool ReflectedTreeItemNew::enumerateVisibleProperties(const PropertyCallback& ca
 		return true;
 	}
 
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return true;
@@ -131,7 +108,7 @@ bool ReflectedTreeItemNew::enumerateVisibleProperties(const PropertyCallback& ca
 bool ReflectedTreeItemNew::enumerateVisibleProperties(ObjectHandle object, const IDefinitionManager& definitionManager,
                                                       const std::string& inPlacePath, const PropertyCallback& callback)
 {
-	auto definition = object.getDefinition(definitionManager);
+	auto definition = definitionManager.getDefinition(object);
 	if (definition == nullptr)
 	{
 		return true;
@@ -139,7 +116,7 @@ bool ReflectedTreeItemNew::enumerateVisibleProperties(ObjectHandle object, const
 
 	for (const auto& property : definition->allProperties())
 	{
-		assert(property != nullptr);
+		TF_ASSERT(property != nullptr);
 
 		// Method-only properties should be hidden from the UI
 		if (property->isMethod() && !property->isValue())
@@ -147,11 +124,11 @@ bool ReflectedTreeItemNew::enumerateVisibleProperties(ObjectHandle object, const
 			continue;
 		}
 
+		auto propertyAccessor = definition->bindProperty(property->getName(), object);
+
 		auto inPlace = findFirstMetaData<MetaInPlaceObj>(*property, definitionManager);
 		if (inPlace != nullptr)
 		{
-			auto propertyAccessor = definition->bindProperty(property->getName(), object);
-
 			if (!propertyAccessor.canGetValue())
 			{
 				continue;
@@ -185,11 +162,19 @@ bool ReflectedTreeItemNew::enumerateVisibleProperties(ObjectHandle object, const
 			}
 			continue;
 		}
-		const bool isHidden = findFirstMetaData<MetaHiddenObj>(*property, definitionManager) != nullptr;
-		if (isHidden)
+
+		auto hidden = false;
+		auto hiddenCallback = [&](const ObjectHandleT<MetaHiddenObj>& hiddenObj)
+		{
+			hidden |= hiddenObj->isHidden(propertyAccessor.getObject());
+		};
+		forEachMetaData<MetaHiddenObj>(propertyAccessor, definitionManager, hiddenCallback);
+
+		if(hidden)
 		{
 			continue;
 		}
+
 		if (!callback(property, inPlacePath))
 		{
 			return false;

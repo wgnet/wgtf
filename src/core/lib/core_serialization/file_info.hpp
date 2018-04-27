@@ -16,8 +16,15 @@ namespace wgt
 {
 namespace FileInfoDetails
 {
-std::string localPath(const std::string& fullPath)
+std::string normalizePath(std::string path)
 {
+	std::replace(path.begin(), path.end(),
+		FilePath::kAltDirectorySeparator, FilePath::kDirectorySeparator);
+	return path;
+}
+std::string localPath(std::string fullPath)
+{
+	fullPath = normalizePath(fullPath);
 	auto end = fullPath.find_last_not_of("/\\");
 	auto begin = fullPath.find_last_of("/\\", end);
 	return fullPath.substr(begin + 1, end - begin);
@@ -28,14 +35,21 @@ class FileInfo : public IFileInfo
 {
 public:
 	FileInfo()
-	    : size_(0), created_(0), modified_(0), accessed_(0), fullPath_(""), name_(""), attributes_(FileAttributes::None)
+	    : size_(0), created_(0), modified_(0), accessed_(0), fullPath_(""), absolutePath_(""), name_(""),
+	      attributes_(FileAttributes::None)
 	{
 	}
 
 	FileInfo(uint64_t size, uint64_t created, uint64_t modified, uint64_t accessed, const std::string& fullPath,
-	         FileAttributes::FileAttribute attributes)
-	    : size_(size), created_(created), modified_(modified), accessed_(accessed), fullPath_(fullPath),
-	      name_(FileInfoDetails::localPath(fullPath)), attributes_(attributes)
+	         const std::string& absolutePath, FileAttributes::FileAttribute attributes)
+	    : size_(size)
+		, created_(created)
+		, modified_(modified)
+		, accessed_(accessed)
+		, fullPath_( std::move( FileInfoDetails::normalizePath(fullPath) ) )
+	    , absolutePath_( std::move( FileInfoDetails::normalizePath(absolutePath) ) )
+		, name_( std::move( FileInfoDetails::localPath(fullPath) ))
+		, attributes_(attributes)
 	{
 	}
 
@@ -56,23 +70,28 @@ public:
 
 	bool isDots() const override
 	{
-		return isDirectory() && fullPath_.length() > 0 && fullPath_.back() == '.';
+		return isDirectory() && fullPath_->length() > 0 && fullPath_->back() == '.';
 	}
 
-	const char* name() const override
+	const SharedString & name() const override
 	{
-		return name_.c_str();
+		return name_;
 	}
 
 	const char* extension() const override
 	{
-		auto index = fullPath_.rfind(FilePath::kExtensionSeparator);
-		return index != std::string::npos ? &fullPath_.c_str()[index + 1] : "";
+		auto index = fullPath_->rfind(FilePath::kExtensionSeparator);
+		return index != std::string::npos ? &fullPath_->c_str()[index + 1] : "";
 	}
 
-	const char* fullPath() const override
+	const SharedString & fullPath() const override
 	{
-		return fullPath_.c_str();
+		return fullPath_;
+	}
+
+	const SharedString & absolutePath() const override
+	{
+		return absolutePath_;
 	}
 
 	uint64_t size() const override
@@ -102,8 +121,9 @@ private:
 	const uint64_t created_;
 	const uint64_t modified_;
 	const uint64_t accessed_;
-	const std::string fullPath_;
-	const std::string name_;
+	const SharedString fullPath_;
+	const SharedString absolutePath_;
+	const SharedString name_;
 
 	const FileAttributes::FileAttribute attributes_;
 };

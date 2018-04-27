@@ -14,7 +14,7 @@ const char* TestCommand1::getId() const
 }
 
 //==============================================================================
-ObjectHandle TestCommand1::execute(const ObjectHandle& arguments) const
+Variant TestCommand1::execute(const ObjectHandle& arguments) const
 {
 	// This function will log the progress once a second for three seconds
 
@@ -31,7 +31,7 @@ ObjectHandle TestCommand1::execute(const ObjectHandle& arguments) const
 
 	NGT_TRACE_MSG("TestCommand1::execute - end \n");
 
-	return nullptr;
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 
 //==============================================================================
@@ -42,7 +42,7 @@ const char* TestCommand2::getId() const
 }
 
 //==============================================================================
-ObjectHandle TestCommand2::execute(const ObjectHandle& arguments) const
+Variant TestCommand2::execute(const ObjectHandle& arguments) const
 {
 	// This function will log the progress once a second for five seconds
 
@@ -58,6 +58,6 @@ ObjectHandle TestCommand2::execute(const ObjectHandle& arguments) const
 	}
 
 	NGT_TRACE_MSG("TestCommand2::execute - end \n");
-	return nullptr;
+	return CommandErrorCode::COMMAND_NO_ERROR;
 }
 } // end namespace wgt

@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "core_reflection/object_handle.hpp"
-#include "core_data_model/i_list_model.hpp"
+#include "core_data_model/abstract_item_model.hpp"
 #include "core_reflection/reflected_object.hpp"
 
 #include "core_dependency_system/i_interface.hpp"
@@ -47,7 +47,7 @@ public:
 	@param y coordinate of position on Y axis
 	@return new node object if node is succesfully created, null otherwise
 	*/
-	virtual std::shared_ptr<INode> CreateNode(std::string nodeClass, float x, float y) = 0;
+	virtual ObjectHandleT<INode> CreateNode(std::string nodeClass, float x, float y) = 0;
 
 	/*! Deletes the node with current id in graph
 	@param id The node id of node which should be deleted
@@ -58,7 +58,7 @@ public:
 	@param id The node id which should be returned
 	@return node object if node with this id exists, null otherwise
 	*/
-	virtual INode* GetNode(size_t id) = 0;
+	virtual ObjectHandleT<INode> GetNode(size_t id) = 0;
 
 	/*! Connects slot of node with other slot of node
 	@param nodeIdFrom The node id which containes a first slot in connection
@@ -97,7 +97,7 @@ protected:
 
 	/*! Gets current graph model
 	*/
-	virtual const IListModel* GetGraphModel() const = 0;
+	virtual ObjectHandleT<IGraph> GetGraph() const = 0;
 
 	virtual void CreateGroup(Collection& collection, const Vector4& rectangle, const std::string& name,
 	                         const Vector4& color) = 0;

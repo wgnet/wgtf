@@ -3,12 +3,16 @@
 
 #include "core_generic_plugin/interfaces/i_application.hpp"
 #include "core_generic_plugin/generic_plugin.hpp"
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/type_class_definition.hpp"
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
 #include "grid_editor_test_data.hpp"
+#include "spreadsheet_extension.hpp"
+#include "spreadsheet_extension.mpp"
+
 #include <vector>
 
 WGT_INIT_QRC_RESOURCE
@@ -26,16 +30,11 @@ namespace wgt
 class GridModelTestPlugin : public PluginMain, public Depends<IViewCreator>
 {
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	wg_future<std::unique_ptr<IView>> gridView_;
-	GridEditorTestModel model_;
+	ManagedObject<GridEditorTestModel> model_;
 
 public:
-	//==========================================================================
-	GridModelTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
-	{
-	}
-
 	//==========================================================================
 	bool PostLoad(IComponentContext& contextManager)
 	{
@@ -50,6 +49,7 @@ public:
 		definitionManager->registerDefinition<TypeClassDefinition<GridEditorTestObject2>>();
 		definitionManager->registerDefinition<TypeClassDefinition<GridEditorTestObject3>>();
 		definitionManager->registerDefinition<TypeClassDefinition<GridEditorTestModel>>();
+		definitionManager->registerDefinition<TypeClassDefinition<SpreadsheetExtension>>();
 
 		return true;
 	}
@@ -61,12 +61,15 @@ public:
 		auto uiFramework = contextManager.queryInterface<IUIFramework>();
 		assert((uiFramework != nullptr) && (uiApplication != nullptr));
 
-		model_.init(contextManager);
+		uiFramework->registerModelExtension<SpreadsheetExtension>("SpreadsheetExtension", "2.0");
+
+        model_ = ManagedObject<GridEditorTestModel>::make();
+		model_->init();
 
 		auto viewCreator = get<IViewCreator>();
 		if (viewCreator)
 		{
-			gridView_ = viewCreator->createView("plg_grid_editor_test/test_grid_editor_panel.qml", &model_);
+			gridView_ = viewCreator->createView("plg_grid_editor_test/test_grid_editor_panel.qml", model_.getHandleT());
 		}
 	}
 
@@ -82,7 +85,8 @@ public:
 			view = nullptr;
 		}
 
-		model_.fini();
+		model_->fini();
+        model_ = nullptr;
 
 		return true;
 	}
@@ -91,7 +95,7 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 };

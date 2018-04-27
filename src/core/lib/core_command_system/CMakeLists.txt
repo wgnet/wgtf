@@ -5,9 +5,6 @@ INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
 SET( ALL_SRCS
-	metadata/compound_command.mpp
-	metadata/command_instance.mpp
-	metadata/macro_object.mpp
 	i_command_event_listener.hpp
 	compound_command.hpp 
 	compound_command.cpp
@@ -15,20 +12,15 @@ SET( ALL_SRCS
 	command_instance.cpp
 	command_manager.hpp 
 	command_manager.cpp 
-	command_system.hpp 
-	command_system.cpp 
 	i_command_manager.hpp 
 	command.hpp 
 	command.cpp
 	batch_command.hpp
 	batch_command.cpp
+	batch_command.mpp
 	undo_redo_command.hpp
 	undo_redo_command.cpp
-	macro_object.hpp
-	macro_object.cpp
-	i_env_system.hpp
-	env_system.hpp
-	env_system.cpp
+	undo_redo_command.mpp
 	undo_redo_data.hpp
 	custom_undo_redo_data.hpp
 	custom_undo_redo_data.cpp
@@ -39,13 +31,14 @@ SET( ALL_SRCS
 WG_AUTO_SOURCE_GROUPS(${ALL_SRCS} )
 
 
-BW_BLOB_SOURCES( BLOB_SRCS 
+WG_BLOB_SOURCES( BLOB_SRCS 
 	${ALL_SRCS} 
 )
 BW_ADD_LIBRARY( core_command_system ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_command_system INTERFACE
 	core_common
+	core_object
 	core_reflection
 	core_reflection_utils
 	core_data_model

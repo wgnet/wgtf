@@ -15,36 +15,48 @@ Details: Search for NGT Reflection System on the Wargaming Confluence
 #include "core_dependency_system/depends.hpp"
 #include "core_generic_plugin/interfaces/i_component_context.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
+#include "core_reflection/property_accessor.hpp"
 #include "core_reflection/i_definition_manager.hpp"
+#include "core_common/signal.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include <QObject>
 
 namespace wgt
 {
-class IComponentContext;
 class MetaBase;
 class Variant;
 class IBaseProperty;
-class QtScriptingEngine;
+class QtScriptingEngineBase;
 
-struct QtScriptObjectData : public Depends<IDefinitionManager, IReflectionController>
+struct QtScriptObjectData : public Depends<IDefinitionManager, IReflectionController, IQtHelpers>
 {
-	QtScriptObjectData(IComponentContext& context, QtScriptingEngine& engine, const QMetaObject& metaObject,
-	                   const ObjectHandle& object)
-	    : Depends(context), scriptEngine_(engine), metaObject_(metaObject), object_(object)
+	QtScriptObjectData(QtScriptingEngineBase& engine, QMetaObject* metaObject, IClassDefinition* definition, ObjectHandle& object, uint64_t hash)
+		: scriptEngine_(engine), metaObject_(metaObject), definition_(definition), hash_(hash)
 	{
+		auto accessor = definition_->bindProperty(nullptr, object);
+		rootObject_ = accessor.getRootObject();
+		path_ = accessor.getFullPath();
 	}
 
-	QtScriptingEngine& scriptEngine_;
-	const QMetaObject& metaObject_;
-	ObjectHandle object_;
+	virtual ~QtScriptObjectData()
+	{
+		connectPostPropertyAdded_.disconnect();
+		connectPostPropertyRemoved_.disconnect();
+	}
+	QtScriptingEngineBase& scriptEngine_;
+	QMetaObject* metaObject_;
+	IClassDefinition* definition_;
+	ObjectHandle rootObject_;
+	std::string path_;
+	uint64_t hash_;
+	Connection connectPostPropertyAdded_;
+	Connection connectPostPropertyRemoved_;
 };
 
 class QtScriptObject : public QObject
 {
 public:
-	QtScriptObject(std::shared_ptr<QtScriptObjectData>& data, QObject* parent = nullptr) : QObject(parent), data_(data)
-	{
-	}
+	QtScriptObject(std::shared_ptr<QtScriptObjectData>& data, QObject* parent = nullptr);
 
 	virtual ~QtScriptObject();
 
@@ -53,7 +65,7 @@ public:
 		return data_;
 	}
 
-	const ObjectHandle& object() const;
+	ObjectHandle object() const;
 	const QMetaObject* metaObject() const override;
 	int qt_metacall(QMetaObject::Call c, int id, void** argv) override;
 
@@ -67,11 +79,12 @@ private:
 	QtScriptObject(const QtScriptObject&);
 
 	void callMethod(int id, void** argv);
-	MetaHandle getMetaObject(const IClassDefinition* definition, const QString& property) const;
-	MetaHandle getMetaObject(const IClassDefinition* definition, const QString& property,
+	const MetaData & getMetaObject(const IClassDefinition* definition, const QString& property) const;
+	ObjectHandle getMetaObject(const IClassDefinition* definition, const QString& property,
 	                         const QString& metaType) const;
 
 	std::shared_ptr<QtScriptObjectData> data_;
+	ConnectionHolder signalConnections_;
 };
 } // end namespace wgt
 #endif // QT_SCRIPT_OBJECT_HPP

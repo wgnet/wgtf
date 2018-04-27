@@ -9,6 +9,7 @@
 #include "cubic_bezier_interpolator.hpp"
 #include "models/bezier_point.hpp"
 #include "models/point.hpp"
+#include <math.h>
 
 namespace wgt
 {
@@ -28,10 +29,10 @@ TVal computeValueAtT(float t, TVal p1, TVal c1, TVal c2, TVal p2)
 
 BezierPointData CubicBezierInterpolator::interpolate(float time, const BezierPoint& p1, const BezierPoint& p2)
 {
-	auto pos1 = *p1.pos.get();
-	auto c1 = pos1 + *p1.cp2.get();
-	auto pos2 = *p2.pos.get();
-	auto c2 = pos2 + *p2.cp1.get();
+	auto pos1 = *p1.pos();
+	auto c1 = pos1 + *p1.cp2();
+	auto pos2 = *p2.pos();
+	auto c2 = pos2 + *p2.cp1();
 	auto newPos = computeValueAtT(time, pos1, c1, c2, pos2);
 	// Using DeCastlejau's to compute new control points
 	auto cpos1 = (c1 - pos1) * time + pos1;
@@ -47,10 +48,10 @@ BezierPointData CubicBezierInterpolator::interpolate(float time, const BezierPoi
 
 float CubicBezierInterpolator::timeAtX(float x, const BezierPoint& p1, const BezierPoint& p2)
 {
-	const auto& prevPos = *p1.pos.get();
-	const auto& prevCp2 = *p1.cp2.get();
-	const auto& nextPos = *p2.pos.get();
-	const auto& nextCp1 = *p2.cp1.get();
+	const auto& prevPos = *p1.pos();
+	const auto& prevCp2 = *p1.cp2();
+	const auto& nextPos = *p2.pos();
+	const auto& nextCp1 = *p2.cp1();
 	auto t = (x - prevPos.getX()) / (nextPos.getX() - prevPos.getX());
 	const float desiredTime = x;
 	x = computeValueAtT(t, prevPos.getX(), prevPos.getX() + prevCp2.getX(), nextPos.getX() + nextCp1.getX(),
@@ -91,39 +92,39 @@ void CubicBezierInterpolator::updateControlPoints(BezierPoint& point, BezierPoin
 	{
 		if (nextPoint)
 		{
-			auto t = timeAtX(point.pos->getX(), *prevPoint, *nextPoint);
-			*prevPoint->cp2.get() *= t;
-			*nextPoint->cp1.get() *= (1.f - t);
+			auto t = timeAtX(point.pos()->getX(), *prevPoint, *nextPoint);
+			*prevPoint->cp2() *= t;
+			*nextPoint->cp1() *= (1.f - t);
 		}
 		else
 		{
-			auto x = prevPoint->cp2->getX();
-			auto maxx = (point.pos->getX() - prevPoint->pos->getX());
+			auto x = prevPoint->cp2()->getX();
+			auto maxx = (point.pos()->getX() - prevPoint->pos()->getX());
 			// Don't allow the previous point's control point go beyond the new point
 			if (x > 0 && x > maxx)
 			{
-				*prevPoint->cp2.get() *= (maxx / x);
+				*prevPoint->cp2() *= (maxx / x);
 			}
 			else if (x < 0)
 			{
-				prevPoint->cp2->setX(maxx * 0.5f);
-				prevPoint->cp2->setY(0.0f);
+				prevPoint->cp2()->setX(maxx * 0.5f);
+				prevPoint->cp2()->setY(0.0f);
 			}
 		}
 	}
 	else if (nextPoint)
 	{
-		auto x = nextPoint->cp1->getX();
-		auto minx = (point.pos->getX() - nextPoint->pos->getX());
+		auto x = nextPoint->cp1()->getX();
+		auto minx = (point.pos()->getX() - nextPoint->pos()->getX());
 		// Don't allow the next point's control point to precede the new point
 		if (x < 0 && x < minx)
 		{
-			*nextPoint->cp1.get() *= (minx / x);
+			*nextPoint->cp1() *= (minx / x);
 		}
 		else if (x > 0)
 		{
-			prevPoint->cp2->setX(minx * 0.5f);
-			prevPoint->cp2->setY(0.0f);
+			prevPoint->cp2()->setX(minx * 0.5f);
+			prevPoint->cp2()->setY(0.0f);
 		}
 	}
 }

@@ -8,29 +8,82 @@ import WGControls.Views 2.0
 WGPanel {
     id: testListPanel
 
-    ListModel {
+    WGListModel {
         id: qmlModel
-        ListElement {
-            display: "This"
+
+        header: WGModelRow {
+            WGModelData {
+                roles: {"headerText": "h1", "footerText": "f1"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h2", "footerText": "f2"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h3", "footerText": "f3"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h4", "footerText": "f4"}
+            }
+
+            WGModelData {
+                roles: {"headerText": "h5", "footerText": "f5"}
+            }
         }
-        ListElement {
-            display: "Is"
+
+        WGModelRow {
+            WGModelData {
+                roles: {"display": "This"}
+            }
+
+            WGModelData {
+                roles: {"display": "is"}
+            }
+
+            WGModelData {
+                roles: {"display": "a"}
+            }
+
+            WGModelData {
+                roles: {"display": "QML"}
+            }
+
+            WGModelData {
+                roles: {"display": "model"}
+            }
         }
-        ListElement {
-            display: "A"
-        }
-        ListElement {
-            display: "QML"
-        }
-        ListElement {
-            display: "Model"
+
+        WGModelRow {
+            WGModelData {
+                roles: {"display": "This"}
+            }
+
+            WGModelData {
+                roles: {"display": "is"}
+            }
+
+            WGModelData {
+                roles: {"display": "a"}
+            }
+
+            WGModelData {
+                roles: {"display": "QML"}
+            }
+
+            WGModelData {
+                roles: {"display": "model"}
+            }
         }
     }
 
-    property var sourceModel: WGColumnLayoutProxy {
-		sourceModel: useCppModel ? source : qmlModel
-		columnSequence: [0,1,0]
-	}
+    property var columnProxyModel: WGColumnLayoutProxy {
+        sourceModel: source
+        columnSequence: [0,1,0]
+    }
+
+    property var sourceModel: useCppModel ? columnProxyModel : qmlModel
     property bool useCppModel: true
     property bool sortAsc: true
     property int topControlsHeight: defaultSpacing.minimumRowHeight
@@ -39,11 +92,7 @@ WGPanel {
     layoutHints: { 'test': 0.1 }
     color: palette.mainWindowColor
 
-    // TODO NGT-2493 ScrollView steals keyboard focus
-    Keys.forwardTo: [switchModelButton, listView1, listView2]
-    focus: true
-
-    WGFrame {
+    Item {
         id: mainFrame
         anchors.fill: parent
         anchors.leftMargin: defaultSpacing.leftMargin
@@ -88,7 +137,8 @@ WGPanel {
                         //bottomMargin: 50
                         columnWidths: [70, 150]
                         columnSpacing: 1
-                        columnDelegates: [columnDelegate, colorDelegate, editDelegate]
+                        columnDelegates: useCppModel ?
+                            [columnDelegate, colorDelegate, editDelegate] : [editDelegate]
                         headerDelegate: myHeaderDelegate
                         footerDelegate: myFooterDelegate
                         model: sourceModel
@@ -113,7 +163,8 @@ WGPanel {
                         //bottomMargin: 50
                         columnWidths: [70, 150]
                         columnSpacing: 1
-                        columnDelegates: [columnDelegate, colorDelegate, editDelegate]
+                        columnDelegates: useCppModel ?
+                            [columnDelegate, colorDelegate, editDelegate] : [editDelegate]
                         headerDelegate: myHeaderDelegate
                         footerDelegate: myFooterDelegate
                         model: sourceModel
@@ -131,8 +182,7 @@ WGPanel {
                     id: textBoxHeader
                     textColor: palette.textColor
                     text: valid ? headerData.headerText : ""
-                    anchors.left: parent.left
-                    anchors.right: parent.right
+                    width: parent !== null ? parent.width : 0
                     height: 24
 
                     property bool valid: headerData !== null &&
@@ -154,7 +204,7 @@ WGPanel {
                     id: textBoxFooter
                     textColor: palette.textColor
                     text: valid ? headerData.footerText : ""
-                    width: parent.width
+                    width: parent !== null ? parent.width : 0
                     height: 24
 
                     property bool valid: headerData !== null &&
@@ -217,7 +267,7 @@ WGPanel {
                 id: editDelegate
                 WGTextBox {
                     objectName: "editDelegate_" + text
-                    width: parent.width
+                    width: parent !== null ? parent.width : 0
                     text: itemValue !== undefined ? itemValue : ""
                     textColor: palette.textColor
                     onEditAccepted: {

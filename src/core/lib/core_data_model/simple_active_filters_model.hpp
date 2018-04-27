@@ -5,9 +5,6 @@
 
 namespace wgt
 {
-class IDefinitionManager;
-class IUIFramework;
-
 //------------------------------------------------------------------------------
 // SimpleActiveFiltersModel
 //
@@ -22,7 +19,7 @@ public:
 	// IActiveFiltersModel Implementation
 	//
 
-	SimpleActiveFiltersModel(const char* id, IDefinitionManager& definitionManager, IUIFramework& uiFramework);
+	SimpleActiveFiltersModel(const char* id);
 
 	virtual ~SimpleActiveFiltersModel() override;
 

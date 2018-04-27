@@ -2,18 +2,11 @@
 #include "core_command_system/i_command_manager.hpp"
 #include "core_reflection/interfaces/i_reflection_property_setter.hpp"
 
-#include "core_data_model/reflection/reflected_tree_model.hpp"
-
 #include "core_ui_framework/i_action.hpp"
 #include "core_ui_framework/i_window.hpp"
 
 namespace wgt
 {
-//==============================================================================
-MainWindow::MainWindow(IComponentContext& context) : Depends(context)
-{
-}
-
 //==============================================================================
 MainWindow::~MainWindow()
 {
@@ -23,26 +16,25 @@ MainWindow::~MainWindow()
 void MainWindow::init()
 {
 	auto uiFramework = get<IUIFramework>();
-	if (uiFramework)
-	{
-		uiFramework->loadActionData(":/plg_window_test/actions.xml", IUIFramework::ResourceType::File);
-		createActions(*uiFramework);
-	}
-
 	auto viewCreator = get<IViewCreator>();
 	auto uiApplication = get<IUIApplication>();
 	assert(uiApplication != nullptr);
+	assert(uiFramework != nullptr);
+
 	if (viewCreator)
 	{
 		ObjectHandle handle;
 		viewCreator->createWindow(
 		":/plg_window_test/main_window.ui", handle,
-		[this, uiApplication](std::unique_ptr<IWindow>& window) {
+		[this, uiApplication, uiFramework](std::unique_ptr<IWindow>& window) {
 			mainWindow_ = std::move(window);
 			connections_ += mainWindow_->signalClose.connect(std::bind(&MainWindow::onClose, this));
 			connections_ +=
 			mainWindow_->signalTryClose.connect(std::bind(&MainWindow::onTryClose, this, std::placeholders::_1));
 			connections_ += uiApplication->signalStartUp.connect(std::bind(&MainWindow::onStartUp, this));
+
+			uiFramework->loadActionData(":/plg_window_test/actions.xml", IUIFramework::ResourceType::File);
+			createActions(*uiFramework);
 			addMenuBar(*uiApplication);
 		},
 		IUIFramework::ResourceType::File);

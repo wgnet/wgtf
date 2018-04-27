@@ -41,34 +41,6 @@ Button {
 
     property alias source: icon.source
 
-    // support copy&paste
-    WGCopyable {
-        id: copyableControl
-
-        WGCopyController {
-            id: copyableObject
-
-            onDataCopied : {
-                setValue( thumbnailButton.iconSource )
-            }
-
-            onDataPasted : {
-                thumbnailButton.iconSource = data
-            }
-        }
-
-        onSelectedChanged : {
-            if(selected)
-            {
-                selectControl( copyableObject )
-            }
-            else
-            {
-                deselectControl( copyableObject )
-            }
-        }
-    }
-
     implicitWidth: {
         defaultSpacing.minimumRowHeight * 4
     }

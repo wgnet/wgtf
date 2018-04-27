@@ -1,16 +1,34 @@
 #include "generic_plugin.hpp"
-#include "env_context.hpp"
-#include "interfaces/i_memory_allocator.hpp"
-#include "core_common/shared_library.hpp"
+
+#include "core_common/assert.hpp"
 #include "core_common/platform_env.hpp"
 #include "core_common/platform_std.hpp"
+#include "core_common/shared_library.hpp"
+#include "env_context.hpp"
+#include "interfaces/i_memory_allocator.hpp"
+#include "common_include/i_static_initializer.hpp"
 
 #include <cstdint>
+#include <memory>
+
+#include "core_wgtf_app/app_common.cpp"
 
 namespace wgt
 {
+namespace AppCommonPrivate
+{
+void staticInitPlugin()
+{
+	auto delegate = getPluginInitDelegate();
+	TF_ASSERT(delegate != nullptr);
+	(*delegate)([](IComponentContext& context) { s_Context = &context; });
+	s_StaticInitPluginFunc = nullptr;
+    }
+}
+
 namespace
 {
+//==============================================================================
 class DefaultMemoryAllocator : public IMemoryAllocator
 {
 	virtual void* mem_new(size_t size) override
@@ -65,7 +83,7 @@ IMemoryAllocator* getMemoryAllocator()
 	static IMemoryAllocator* s_allocator = nullptr;
 	if (s_allocator == nullptr)
 	{
-		IComponentContext* context = PluginMain::getContext();
+		IComponentContext* context = s_GetContextFunc();
 		if (context != nullptr)
 		{
 			s_allocator = context->queryInterface<IMemoryAllocator>();
@@ -79,20 +97,10 @@ IMemoryAllocator* getMemoryAllocator()
 	return s_allocator;
 }
 
-class ContextInitializer
-{
-public:
-	ContextInitializer()
-	{
-		PluginMain::setContext(getEnvContext());
-	}
-};
-
-static ContextInitializer s_ContextInitializer;
 }
 
 //==============================================================================
-PluginMain::PluginMain() : name_(NULL)
+PluginMain::PluginMain() : name_(nullptr)
 {
 }
 
@@ -102,32 +110,10 @@ void PluginMain::init(const char* name)
 	name_ = name;
 }
 
-//==============================================================================
-namespace Context
-{
-bool deregisterInterface(IInterface* pImpl)
-{
-	IComponentContext* context = PluginMain::getContext();
-	assert(context != nullptr);
-	return context->deregisterInterface(pImpl);
-}
+} // end namespace wgt
 
-void* queryInterface(const TypeId& name)
+namespace wgt
 {
-	IComponentContext* context = PluginMain::getContext();
-	assert(context != nullptr);
-	return context->queryInterface(name);
-}
-
-void queryInterface(const TypeId& name, std::vector<void*>& o_Impls)
-{
-	IComponentContext* context = PluginMain::getContext();
-	assert(context != nullptr);
-	return context->queryInterface(name, o_Impls);
-}
-
-} /* Namespace context*/
-
 #ifdef NGT_ALLOCATOR
 } // end namespace wgt
 //==============================================================================
@@ -221,42 +207,24 @@ void operator delete[](void* ptr, const std::nothrow_t& throwable) NOEXCEPT
 	}
 	memAlloc->mem_delete_array(ptr, throwable);
 }
+
 namespace wgt
 {
 #endif // NGT_ALLOCATOR
 
 PluginMain* createPlugin(IComponentContext& contextManager);
 
-IComponentContext* PluginMain::s_Context_ = nullptr;
-bool PluginMain::s_ContextInitialized_ = false;
-
-void PluginMain::setContext(IComponentContext* context)
-{
-	// Context may be set more than once
-	// By ContextInitializer and PluginMain::getContext()
-	// Assert that it is always set to the same context
-	assert((s_Context_ == nullptr) || (s_Context_ == context));
-	s_Context_ = context;
-	s_ContextInitialized_ = true;
-}
-
-IComponentContext* PluginMain::getContext()
-{
-	if (!s_ContextInitialized_)
-	{
-		// This can happen if a static variable is initialized before
-		// s_ContextInitializer and it tries to access the context.
-		PluginMain::setContext(getEnvContext());
-	}
-	return s_Context_;
-}
-
 //==============================================================================
 EXPORT bool __cdecl PLG_CALLBACK(GenericPluginLoadState loadState)
 {
 	static PluginMain* s_pluginMain = nullptr;
-	auto contextManager = PluginMain::getContext();
-	assert(contextManager);
+	auto contextManager = s_GetContextFunc();
+	TF_ASSERT(contextManager);
+	auto staticInitializer = contextManager->queryInterface<IStaticInitalizer>();
+	if (staticInitializer)
+	{
+		staticInitializer->initStatics(*contextManager);
+	}
 	switch (loadState)
 	{
 	case GenericPluginLoadState::Create:
@@ -278,6 +246,10 @@ EXPORT bool __cdecl PLG_CALLBACK(GenericPluginLoadState loadState)
 		return true;
 
 	case GenericPluginLoadState::Destroy:
+		if (staticInitializer)
+		{
+			staticInitializer->destroy();
+		}
 		delete s_pluginMain;
 		s_pluginMain = nullptr;
 		return true;

@@ -38,20 +38,28 @@ public:
 	virtual IResultPtr move(const char* srcFile, const char* dstFile,
 	                        ChangeListId changeListId = kDefaultChangelist) = 0;
 	virtual IResultPtr revert(const PathList& filePaths) = 0;
+	virtual IResultPtr revertUnchanged(const PathList& filePaths) = 0;
 	virtual IResultPtr get(const PathList& filePaths, Revision revision = kHeadRevion) = 0;
+	virtual IResultPtr getRevisionBetween(const PathList& filePaths, int fromChangelist, int toChangelist) = 0;
 	virtual IResultPtr getLatest(const PathList& filePaths) = 0;
 	virtual IResultPtr status(const PathList& filePaths) = 0;
 	virtual IResultPtr submit(const PathList& filePaths, const char* description = "",
-	                          bool bKeepCheckedOut = false) = 0;
+							  bool bKeepCheckedOut = false) = 0;
 	virtual IResultPtr submit(int changelistId, bool bKeepCheckedOut = false) = 0;
 	virtual IResultPtr reopen(const PathList& filePaths, ChangeListId changeListId = kDefaultChangelist) = 0;
 	virtual IResultPtr createChangeList(const char* description, ChangeListId& rChangeListId) = 0;
 	virtual IResultPtr deleteEmptyChangeList(ChangeListId changeListId) = 0;
+	virtual IResultPtr querySubDirs(const char* parentDir = "") = 0;
+	virtual IResultPtr getTicket() = 0;
 
 	virtual const char* getClient() const = 0;
 	virtual const char* getDepot() const = 0;
 	virtual const char* getPassword() const = 0;
 	virtual const char* getUser() const = 0;
+	virtual std::string getClientRoot() = 0;
+	virtual std::string getDepotRoot() = 0;
+
+	virtual std::vector<std::string> getClientNames() = 0;
 };
 
 typedef std::unique_ptr<IDepotView> IDepotViewPtr;

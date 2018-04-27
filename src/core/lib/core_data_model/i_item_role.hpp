@@ -3,25 +3,108 @@
 
 #include "wg_types/hash_utilities.hpp"
 
-#define ITEMROLE(ROLE)                                       \
-	\
-namespace ItemRole                                           \
-	{                                                        \
-		namespace                                            \
-		{                                                    \
-		const char* ROLE##Name = #ROLE;                      \
-		const Id ROLE##Id = ::wgt::ItemRole::compute(#ROLE); \
-		}                                                    \
-	\
-}
+#define ITEMROLE(ROLE)                                   \
+	namespace ItemRole                                   \
+	{                                                    \
+	namespace                                            \
+	{                                                    \
+	const char* ROLE##Name = #ROLE;                      \
+	const Id ROLE##Id = ::wgt::ItemRole::compute(#ROLE); \
+	}                                                    \
+	}
 
 namespace wgt
 {
 namespace ItemRole
 {
-typedef uint64_t Id;
+// Wrap the ItemRole's hash into a type that allows use of a visualizer for debugging purposes
+struct Id
+{
+	Id() : hash_(0)
+	{
+	}
 
-inline Id compute(const char* roleName)
+	Id(uint64_t hash) : hash_(hash)
+	{
+	}
+
+	uint64_t hash_;
+
+	operator uint64_t()
+	{
+		return hash_;
+	}
+
+	bool operator==(const ItemRole::Id& rhs) const
+	{
+		return hash_ == rhs.hash_;
+	}
+
+	bool operator!=(const ItemRole::Id& rhs) const
+	{
+		return hash_ != rhs.hash_;
+	}
+
+	bool operator<(const ItemRole::Id& rhs) const
+	{
+		return hash_ < rhs.hash_;
+	}
+
+	bool operator>(const ItemRole::Id& rhs) const
+	{
+		return hash_ > rhs.hash_;
+	}
+
+	template <typename T>
+	inline bool operator==(T rhs) const
+	{
+		return hash_ == rhs;
+	}
+
+	template <typename T>
+	inline bool operator!=(T rhs) const
+	{
+		return hash_ != rhs;
+	}
+
+	template <typename T>
+	inline bool operator<(T rhs) const
+	{
+		return hash_ < rhs;
+	}
+
+	template <typename T>
+	inline bool operator>(T rhs) const
+	{
+		return hash_ > rhs;
+	}
+};
+
+template <typename T>
+inline bool operator==(T rhs, const ItemRole::Id& lhs)
+{
+	return rhs == lhs.hash_;
+}
+
+template <typename T>
+inline bool operator!=(T rhs, const ItemRole::Id& lhs)
+{
+	return rhs != lhs.hash_;
+}
+
+template <typename T>
+inline bool operator<(T rhs, const ItemRole::Id& lhs)
+{
+	return rhs < lhs.hash_;
+}
+
+template <typename T>
+inline bool operator>(T rhs, const ItemRole::Id& lhs)
+{
+	return rhs > lhs.hash_;
+}
+
+inline ItemRole::Id compute(const char* roleName)
 {
 	return HashUtilities::compute(roleName);
 }
@@ -97,4 +180,18 @@ inline Id compute(const char* roleName)
 ITEM_ROLES
 #undef X
 } // end namespace wgt
+
+namespace std
+{
+template <>
+struct hash<wgt::ItemRole::Id>
+{
+	typedef wgt::ItemRole::Id argument_type;
+	typedef std::size_t result_type;
+	result_type operator()(argument_type const& s) const
+	{
+		return static_cast<size_t>(s.hash_);
+	}
+};
+}
 #endif // I_ITEM_ROLE_HPP

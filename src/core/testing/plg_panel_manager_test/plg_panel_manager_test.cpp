@@ -2,15 +2,20 @@
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_view.hpp"
 #include "core_reflection/i_definition_manager.hpp"
+#include "core_reflection/object/object_handle.hpp"
 
 #include "core_serialization/i_file_system.hpp"
 #include "core_data_model/asset_browser/asset_browser_model20.hpp"
 #include "test_asset_browser_folder_context_menu.hpp"
 #include "core_data_model/file_system/file_system_model.hpp"
+#include "testing/data_model_test/test_tree_model.hpp"
 
 // TODO: merge asset and panel manager
 #include "interfaces/asset_manager/i_asset_manager.hpp"
 #include "interfaces/panel_manager/i_panel_manager.hpp"
+#include "core_object/managed_object.hpp"
+
+WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
@@ -84,15 +89,26 @@ public:
 			nameFilters.push_back("All Files (*)");
 			nameFilters.push_back("DLL Files (*.dll)");
 			nameFilters.push_back("PDB Files (*.pdb)");
-
+			nameFilters.push_back("QML Files (*.qml *.js)");
+		
 			auto browserModel = new AssetBrowser20::AssetBrowserModel();
 			browserModel->setAssetModel(assetManager_->assetModel());
 			browserModel->setNameFilters(nameFilters);
-			dataModel_ = ObjectHandleT<AssetBrowser20::IAssetBrowserModel>(
-			std::unique_ptr<AssetBrowser20::IAssetBrowserModel>(browserModel));
-			assetBrowserView_ = panelManager->createAssetBrowser(dataModel_);
-			assetBrowserFolderContextMenuHandler_ =
-			CreateMenuHandler<TestAssetBrowserFolderContextMenu20>(contextManager);
+			assetDataModel_ = ManagedObject<AssetBrowser20::IAssetBrowserModel>(
+				std::unique_ptr<AssetBrowser20::IAssetBrowserModel>(browserModel));
+		
+			assetBrowserView_ = panelManager->createAssetBrowser("Asset Browser", assetDataModel_.getHandleT());
+			assetBrowserFolderContextMenuHandler_ = CreateMenuHandler<TestAssetBrowserFolderContextMenu20>();
+		}
+		{
+			treeModel_ = std::make_unique<TestTreeModel>(5, 2);
+			auto browserModel = new AssetBrowser20::AssetBrowserModel();
+			browserModel->setAssetModel(treeModel_.get());
+			browserModel->setIconSize(16);
+			treeDataModel_ = ManagedObject<AssetBrowser20::IAssetBrowserModel>(
+				std::unique_ptr<AssetBrowser20::IAssetBrowserModel>(browserModel));
+
+			treeBrowserView_ = panelManager->createAssetBrowser("Tree Browser", treeDataModel_.getHandleT());
 		}
 	}
 
@@ -109,21 +125,29 @@ public:
 				uiApplication->removeView(*view);
 				view = nullptr;
 			}
+			if (treeBrowserView_.valid())
+			{
+				auto view = treeBrowserView_.get();
+				uiApplication->removeView(*view);
+				view = nullptr;
+			}
 		}
 
-		if (dataModel_ != nullptr)
-		{
-			dataModel_ = nullptr;
-		}
+		assetDataModel_ = nullptr;
+		treeDataModel_ = nullptr;
+		treeModel_ = nullptr;
 
 		return true;
 	}
 
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	AssetManager* assetManager_;
-	ObjectHandleT<AssetBrowser20::IAssetBrowserModel> dataModel_;
+	std::unique_ptr<TestTreeModel> treeModel_;
+	ManagedObject<AssetBrowser20::IAssetBrowserModel> assetDataModel_;
+	ManagedObject<AssetBrowser20::IAssetBrowserModel> treeDataModel_;
 	wg_future<std::unique_ptr<IView>> assetBrowserView_;
+	wg_future<std::unique_ptr<IView>> treeBrowserView_;
 	MenuHandlerPtr assetBrowserFolderContextMenuHandler_;
 };
 

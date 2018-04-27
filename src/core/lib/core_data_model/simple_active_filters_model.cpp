@@ -8,6 +8,7 @@
 #include "i_item_role.hpp"
 #include <sstream>
 #include "core_string_utils/string_utils.hpp"
+#include "core_dependency_system/depends.hpp"
 
 namespace wgt
 {
@@ -16,14 +17,11 @@ static const char* sTempSavedFilterPrefix = "Filter";
 
 //------------------------------------------------------------------------------
 
-struct SimpleActiveFiltersModel::Impl
+struct SimpleActiveFiltersModel::Impl : Depends<IDefinitionManager, IUIFramework>
 {
-	Impl(SimpleActiveFiltersModel& self, IDefinitionManager& definitionManager, IUIFramework& uiFramework,
-	     const char* id);
+	Impl(SimpleActiveFiltersModel& self, const char* id);
 
 	SimpleActiveFiltersModel& self_;
-	IDefinitionManager& definitionManager_;
-	IUIFramework& uiFramework_;
 	VariantList filterTerms_;
 	GenericListT<ObjectHandleT<SavedActiveFilter>> savedFilters_;
 	std::string stringValue_;
@@ -40,10 +38,9 @@ struct SimpleActiveFiltersModel::Impl
 	SavedActiveFilter* getSavedFilterById(const char* filterId);
 };
 
-SimpleActiveFiltersModel::Impl::Impl(SimpleActiveFiltersModel& self, IDefinitionManager& definitionManager,
-                                     IUIFramework& uiFramework, const char* id)
-    : self_(self), definitionManager_(definitionManager), uiFramework_(uiFramework), stringValue_(""),
-      loadedFilterId_(""), id_(id != nullptr ? id : sDefaultActiveFiltersPropertyKey), removedIndex_(-1)
+SimpleActiveFiltersModel::Impl::Impl(SimpleActiveFiltersModel& self, const char* id)
+    : self_(self), stringValue_(""), loadedFilterId_(""), id_(id != nullptr ? id : sDefaultActiveFiltersPropertyKey),
+      removedIndex_(-1)
 {
 }
 
@@ -54,7 +51,7 @@ void SimpleActiveFiltersModel::Impl::addFilter(const char* display, const char* 
 	});
 	if (found == filterTerms_.end())
 	{
-		auto filterTerm = definitionManager_.create<ActiveFilterTerm>();
+		auto filterTerm = get<IDefinitionManager>()->create<ActiveFilterTerm>();
 		filterTerm->setDisplay(display);
 		filterTerm->setValue(value);
 		filterTerm->setActive(active);
@@ -66,7 +63,7 @@ void SimpleActiveFiltersModel::Impl::addSavedFilter(const char* filterId)
 {
 	generateStringValue();
 
-	auto savedFilter = definitionManager_.create<SavedActiveFilter>();
+	auto savedFilter = get<IDefinitionManager>()->create<SavedActiveFilter>();
 
 	savedFilter->setFilterId(filterId);
 	savedFilter->setTerms(stringValue_);
@@ -127,14 +124,15 @@ void SimpleActiveFiltersModel::Impl::generateStringValue()
 
 void SimpleActiveFiltersModel::Impl::saveSavedFilterPreferences()
 {
-	if (uiFramework_.getPreferences() == nullptr)
+	auto preferences = get<IUIFramework>()->getPreferences();
+	if (preferences == nullptr)
 	{
 		// evgenys: generic_app crashes on plugins unload here, UIFramework is already uninitialized
 		// TODO - investigate why this object instance is not destroyed yet
 		return;
 	}
 	// TODO: fixing this by directly saving collection type data
-	GenericObjectPtr& preference = uiFramework_.getPreferences()->getPreference(id_.c_str());
+	GenericObjectPtr& preference = preferences->getPreference(id_.c_str());
 	size_t count = savedFilters_.size();
 	preference->set("savedFilterCount", count);
 
@@ -152,7 +150,9 @@ void SimpleActiveFiltersModel::Impl::saveSavedFilterPreferences()
 
 void SimpleActiveFiltersModel::Impl::loadSavedFilterPreferences()
 {
-	GenericObjectPtr& preference = uiFramework_.getPreferences()->getPreference(id_.c_str());
+	auto preferences = get<IUIFramework>()->getPreferences();
+
+	GenericObjectPtr& preference = preferences->getPreference(id_.c_str());
 	auto accessor = preference->findProperty("savedFilterCount");
 	if (!accessor.isValid())
 	{
@@ -163,6 +163,7 @@ void SimpleActiveFiltersModel::Impl::loadSavedFilterPreferences()
 	bool isOk = preference->get("savedFilterCount", count);
 	assert(isOk);
 
+	auto defManager = get<IDefinitionManager>();
 	for (size_t i = 1; i <= count; ++i)
 	{
 		// TODO - allow the user to input the name for the saved filter
@@ -173,7 +174,7 @@ void SimpleActiveFiltersModel::Impl::loadSavedFilterPreferences()
 		preference->get(name.c_str(), value);
 		assert(!value.empty());
 
-		auto savedFilter = definitionManager_.create<SavedActiveFilter>();
+		auto savedFilter = defManager->create<SavedActiveFilter>();
 
 		savedFilter->setFilterId(name);
 		savedFilter->setTerms(value);
@@ -199,9 +200,7 @@ SavedActiveFilter* SimpleActiveFiltersModel::Impl::getSavedFilterById(const char
 
 //------------------------------------------------------------------------------
 
-SimpleActiveFiltersModel::SimpleActiveFiltersModel(const char* id, IDefinitionManager& definitionManager,
-                                                   IUIFramework& uiFramework)
-    : IActiveFiltersModel(), impl_(new Impl(*this, definitionManager, uiFramework, id))
+SimpleActiveFiltersModel::SimpleActiveFiltersModel(const char* id) : impl_(new Impl(*this, id))
 {
 	impl_->loadSavedFilterPreferences();
 }

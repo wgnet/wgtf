@@ -16,8 +16,6 @@ namespace wgt
 class CustomPanel : Depends<IUIApplication, IViewCreator>
 {
 public:
-	CustomPanel(IComponentContext& context);
-
 	bool addPanel();
 	void removePanel();
 

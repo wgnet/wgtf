@@ -16,7 +16,7 @@ BasicAlertLogger::~BasicAlertLogger()
 {
 }
 
-void BasicAlertLogger::out(LogMessage* message)
+void BasicAlertLogger::out(ILogMessage* message)
 {
 	if (message->getLevel() == LOG_ALERT)
 	{

@@ -1,5 +1,5 @@
-#include "dialog_test_model.hpp"
-#include "dialog_reflected_tree_model.hpp"
+#include "dialog_test_panel.hpp"
+#include "metadata/dialog_reflected_data.mpp"
 #include "core_dependency_system/i_interface.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/type_class_definition.hpp"
@@ -28,39 +28,25 @@ namespace wgt
 class DialogTestPlugin : public PluginMain, public Depends<IViewCreator>
 {
 public:
-	DialogTestPlugin(IComponentContext& context) : Depends(context)
-	{
-	}
-
 	bool PostLoad(IComponentContext& context)
 	{
 		auto definitionManager = context.queryInterface<IDefinitionManager>();
 		assert(definitionManager != nullptr);
 
-		definitionManager->registerDefinition<TypeClassDefinition<DialogTestModel>>();
+		definitionManager->registerDefinition<TypeClassDefinition<DialogTestPanel>>();
 		definitionManager->registerDefinition<TypeClassDefinition<DialogReflectedData>>();
-		definitionManager->registerDefinition<TypeClassDefinition<DialogReflectedTreeModel>>();
 
 		return true;
 	}
 
 	void Initialise(IComponentContext& context)
 	{
-		auto uiApplication = context.queryInterface<IUIApplication>();
-		auto uiFramework = context.queryInterface<IUIFramework>();
 		auto definitionManager = context.queryInterface<IDefinitionManager>();
-
-		assert(uiApplication != nullptr);
-		assert(uiFramework != nullptr);
 		assert(definitionManager != nullptr);
 
-		dialogModel_ = definitionManager->create<DialogTestModel>();
-		assert(dialogModel_.get() != nullptr);
-		auto classDefinition = dialogModel_.getDefinition(*definitionManager);
-		dialogModel_->initialise(context, classDefinition);
-
-		auto viewCreator = get<IViewCreator>();
-		dialogPanel_ = viewCreator->createView("plg_dialog_test/dialog_test_panel.qml", dialogModel_);
+		dialogPanel_ = ManagedObject<DialogTestPanel>::make();
+		dialogPanel_->initialise();
+		dialogView_ = get<IViewCreator>()->createView("plg_dialog_test/dialog_test_panel.qml", dialogPanel_.getHandleT());
 	}
 
 	bool Finalise(IComponentContext& context)
@@ -68,14 +54,14 @@ public:
 		auto uiApplication = context.queryInterface<IUIApplication>();
 		assert(uiApplication != nullptr);
 
-		if (dialogPanel_.valid())
+		if (dialogView_.valid())
 		{
-			auto view = dialogPanel_.get();
+			auto view = dialogView_.get();
 			uiApplication->removeView(*view);
-			dialogModel_->finalise();
 			view = nullptr;
 		}
 
+		dialogPanel_ = nullptr;
 		return true;
 	}
 
@@ -84,8 +70,8 @@ public:
 	}
 
 private:
-	ObjectHandleT<DialogTestModel> dialogModel_;
-	wg_future<std::unique_ptr<IView>> dialogPanel_;
+	ManagedObject<DialogTestPanel> dialogPanel_ = nullptr;
+	wg_future<std::unique_ptr<IView>> dialogView_;
 };
 
 PLG_CALLBACK_FUNC(DialogTestPlugin)

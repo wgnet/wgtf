@@ -28,7 +28,7 @@ WGSliderControl {
 
 */
 
-Item {
+FocusScope {
     id: sliderFrame
     objectName: "WGSliderControl"
     WGComponent { type: "WGSliderControl20" }
@@ -36,12 +36,12 @@ Item {
     /*! This property holds the maximum value of the slider.
         The default value is \c{1.0}.
     */
-    property alias maximumValue: slider.maximumValue
+    property real maximumValue: 1.0
 
     /*! This property holds the minimum value of the slider.
         The default value is \c{0.0}.
     */
-    property alias minimumValue: slider.minimumValue
+    property real minimumValue: 0.0
 
     /*!
         This property indicates the slider step size.
@@ -53,7 +53,7 @@ Item {
 
         The default value is \c{0.0}.
     */
-    property alias stepSize: slider.stepSize
+    property real stepSize: 0.01
 
     /*!
         This property holds the layout orientation of the slider.
@@ -61,13 +61,13 @@ Item {
     */
     /* TODO: It is likely that this does not work. It should be tested and disabled
        A separate vertical slider should probably be made */
-    property alias orientation: slider.orientation
+    property int orientation: Qt.Horizontal
 
     /*! This property defines what SliderStyle component will be used for the slider */
-    property alias style: slider.style
+    property Component style: Qt.createComponent("Styles/Base/WGSliderStyle20.qml", sliderFrame)
 
     /*! This property defines what Slider Handle component will be used for the slider handle */
-    property alias handleType: slider.handleType
+    property Component handleType: showTickmarkLabels ? tickmarkValueHandle : defaultSliderHandle
 
     /*! This property defines what frame component will be used for the numberbox text box */
     property alias textBoxStyle: sliderValue.textBoxStyle
@@ -84,10 +84,28 @@ Item {
     property real value
 
     /*! This property defines the colour of the slider */
-    property alias barColor: slider.barColor
+    property color barColor: palette.highlightColor
 
     /*! This property defines whether the tickmarks are displayed or not */
-    property alias tickmarksEnabled: slider.tickmarksEnabled
+    property bool tickmarksEnabled: false
+
+    /*! The interval (in value) between equal tickmarks, best set to a whole fraction of the max value.*/
+    property real tickmarkInterval: stepSize
+
+    /*! This property indicates whether the slider should display values underneath the tickmarks. */
+    property bool showTickmarkLabels: false
+
+    /*! An array of values used for the labels for the customTickmarks */
+    property var customTickmarkLabels: customTickmarks
+
+    /*! An array of values that can be used to show tickmarks at custom intervals. */
+    property var customTickmarks: []
+
+    /*! An array of values that the slider handle will 'stick' to when dragged. */
+    property var stickyValues: []
+
+    /*! The amount of space in pixels on either side of the values where the mouse will be 'sticky' */
+    property int stickyMargin: defaultSpacing.standardMargin + defaultSpacing.standardBorderSize
 
     /*! This property determines the prefix string displayed within the slider textbox.
         Typically used to display unit type.
@@ -139,66 +157,47 @@ Item {
 
         The default value is \ctrue
     */
-    property alias handleClamp: slider.handleClamp
+    property var handleClamp: true
 
     /*! This property is used to define the slider's label when used in a WGFormLayout
         The default value is an empty string
     */
     property string label: ""
 
-    /*! \internal */
-    property alias __slider: slider
+    property alias numberBox: sliderValue
+
+    //property alias slider: sliderComponent
 
     /*! \internal */
     property bool __horizontal: orientation === Qt.Horizontal
 
-    implicitHeight: __horizontal ? slider.implicitHeight : slider.implicitWidth + (sliderValue.implicitHeight * (fakeLowerValue ? 2 : 1)) + vertLayout.spacing
-    implicitWidth: __horizontal ? slider.implicitWidth + (sliderValue.implicitWidth * (fakeLowerValue ? 2 : 1)) + horizLayout.spacing : sliderValue.implicitWidth
+    /*! This QtObject the slider will look to for data.
 
-    onValueChanged: {
-        setValueHelper(slider, "value", sliderFrame.value);
-        setValueHelper(sliderValue, "value", sliderFrame.value);
-        setValueHelper(slider.__handlePosList[0], "value", sliderFrame.value);
+        By default this is the sliderFrame itself but it can be replaced with a WGDataConversion to alter the units the user sees.
+    */
+    property QtObject sliderData: sliderFrame
+
+    /*! This QtObject the numberBox will look to for data.
+
+        By default this is the sliderFrame itself but it can be replaced with a WGDataConversion to alter the units the user sees.
+    */
+    property QtObject numberBoxData: sliderFrame
+
+    implicitHeight: __horizontal ? horizSlider.implicitHeight : vertSlider.implicitHeight + (sliderValue.implicitHeight * (fakeLowerValue ? 2 : 1)) + vertLayout.spacing
+    implicitWidth: __horizontal ? horizSlider.implicitWidth + (sliderValue.implicitWidth * (fakeLowerValue ? 2 : 1)) + horizLayout.spacing : sliderValue.implicitWidth
+
+    /* rounds a number to a fixed set of decimalPlaces*/
+    function round(num) {
+        return Number(Math.round(num+'e'+sliderFrame.decimals)+'e-'+sliderFrame.decimals);
     }
 
-    // support copy&paste
-    WGCopyable {
-        objectName: "copyableControl"
-        id: copyableControl
+    signal changeValue (var val)
 
-        WGCopyController {
-            id: copyableObject
+    /*!
+        This signal is fired when a handle (index) on the slider has finished dragging
+    */
+    signal endDrag (int index)
 
-            onDataCopied : {
-                setValue( slider.value )
-            }
-
-            onDataPasted : {
-                setValueHelper(sliderFrame, "value", data)
-                if(sliderFrame.value != data)
-                {
-                    bPasted = false;
-                }
-            }
-        }
-
-        onSelectedChanged : {
-            if(selected)
-            {
-                selectControl( copyableObject )
-            }
-            else
-            {
-                deselectControl( copyableObject )
-            }
-        }
-    }
-
-    Component.onCompleted: {
-        copyableControl.disableChildrenCopyable( sliderFrame );
-        setValueHelper(slider, "value", sliderFrame.value);
-        setValueHelper(sliderValue, "value", sliderFrame.value);
-    }
     RowLayout {
         id: horizLayout
         anchors.fill: parent
@@ -210,10 +209,14 @@ Item {
             Layout.fillHeight: true
             Layout.preferredWidth: valueBoxWidth
         }
-        Item {
+        Loader {
             id: horizSlider
             Layout.fillHeight: true
             Layout.fillWidth: true
+
+            Layout.preferredHeight: __horizontal ? Math.round(sliderFrame.height) : -1
+
+            sourceComponent: __horizontal ? slider : null
         }
         Item {
             id: horizUpper
@@ -236,10 +239,14 @@ Item {
             Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
         }
 
-        Item {
+        Loader {
             id: vertSlider
             Layout.fillHeight: true
             Layout.fillWidth: true
+
+            Layout.preferredHeight: __horizontal ? Math.round(sliderFrame.height) : -1
+
+            sourceComponent: __horizontal ? null : slider
         }
 
         Item {
@@ -262,39 +269,52 @@ Item {
         visible: fakeLowerValue ? true : false
     }
 
-    WGSlider {
+    property Component slider: WGSlider {
         id: slider
         opacity: 1.0
 
         property bool showValue: true
 
-        stepSize: 1.0
-
-        parent: __horizontal ? horizSlider : vertSlider
-
-        anchors.fill: parent
+        stepSize: typeof sliderData.stepSize != "undefined" ? sliderData.stepSize : sliderFrame.stepSize
 
         activeFocusOnPress: true
 
-        Layout.preferredHeight: __horizontal ? Math.round(sliderFrame.height) : -1
-
-        value: sliderFrame.value;
+        value: typeof sliderData.value != "undefined" ? sliderData.value : sliderFrame.value
 
         multipleValues: sliderFrame.multipleValues
 
+        minimumValue: typeof sliderData.minimumValue != "undefined" ? sliderData.minimumValue : sliderFrame.minimumValue
+        maximumValue: typeof sliderData.maximumValue != "undefined" ? sliderData.maximumValue : sliderFrame.maximumValue
+
+        orientation: sliderFrame.orientation
+
+        handleType: sliderFrame.handleType
+
+        barColor: sliderFrame.barColor
+
+        tickmarksEnabled: sliderFrame.tickmarksEnabled
+        tickmarkInterval: sliderFrame.tickmarkInterval
+        showTickmarkLabels: sliderFrame.showTickmarkLabels
+        customTickmarkLabels: sliderFrame.customTickmarkLabels
+        customTickmarks: sliderFrame.customTickmarks
+        stickyValues: sliderFrame.stickyValues
+        stickyMargin: sliderFrame.stickyMargin
+
+        onEndDrag: {
+            sliderFrame.endDrag(index)
+        }
+
         onValueChanged: {
-            if ( __handleMoving ) {
-                setValueHelper(sliderFrame, "value", value);
+            if (typeof sliderData.stepSize != "undefined")
+            {
+                if (round(sliderData.value) != round(slider.value))
+                {
+                    sliderData.changeValue(slider.value)
+                }
             }
         }
 
-        onChangeValue: {
-            setValueHelper(sliderFrame, "value", value);
-        }
-
-        style : WGSliderStyle{
-
-        }
+        style : sliderFrame.style
 
         states: [
             State {
@@ -337,27 +357,41 @@ Item {
 
         Layout.preferredHeight: defaultSpacing.minimumRowHeight
         visible: showValue
-        decimals: sliderFrame.decimals
+        decimals: typeof numberBoxData.decimals != "undefined" ? numberBoxData.decimals : sliderFrame.decimals
 
-        prefix: sliderFrame.prefix
-        suffix: sliderFrame.suffix
+        prefix: typeof numberBoxData.prefix != "undefined" ? numberBoxData.prefix : sliderFrame.prefix
+        suffix: typeof numberBoxData.suffix != "undefined" ? numberBoxData.suffix : sliderFrame.suffix
 
-        value: sliderFrame.value
+        value: typeof numberBoxData.value != "undefined" ? numberBoxData.value : sliderFrame.value
         multipleValues: sliderFrame.multipleValues
 
-        minimumValue: sliderFrame.minimumValue
-        maximumValue: sliderFrame.maximumValue
+        minimumValue: typeof numberBoxData.minimumValue != "undefined" ? numberBoxData.minimumValue : sliderFrame.minimumValue
+        maximumValue: typeof numberBoxData.maximumValue != "undefined" ? numberBoxData.maximumValue : sliderFrame.maximumValue
 
-        stepSize: slider.stepSize
+        stepSize: typeof numberBoxData.stepSize != "undefined" ? numberBoxData.stepSize : sliderFrame.stepSize
+
+        focus: true
 
         //Keyboard enter key input
         onEditingFinished: {
-            setValueHelper(sliderFrame, "value", value);
+            if (typeof numberBoxData.value != "undefined")
+            {
+                if (round(numberBoxData.value) != round(sliderValue.value))
+                {
+                    numberBoxData.changeValue(sliderValue.value)
+                }
+            }
         }
+    }
 
-        onValueChanged: {
-            setValueHelper(sliderFrame, "value", value);
-        }
+    Component {
+        id: defaultSliderHandle
+        WGSliderHandle {}
+    }
+
+    Component {
+        id: tickmarkValueHandle
+        WGTickmarkSliderHandle {}
     }
 
     /*! Deprecated */

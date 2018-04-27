@@ -6,7 +6,7 @@
 
 namespace wgt
 {
-QtWindowAdapter::QtWindowAdapter(IComponentContext& context, QIODevice& source) : QtWindow(context, source)
+QtWindowAdapter::QtWindowAdapter(QIODevice& source) : QtWindow(source)
 {
 }
 

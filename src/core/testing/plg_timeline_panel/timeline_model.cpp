@@ -18,6 +18,13 @@ ITEMROLE(eventAction)
 ITEMROLE(keyFrames)
 ITEMROLE(rowSpan)
 
+namespace KeyframesModelDetails
+{
+static const std::string s_RolesArr[] = { ItemRole::timeName, ItemRole::eventValueName, ItemRole::typeName };
+static const std::vector<std::string> s_RolesVec(&s_RolesArr[0],
+                                                 &s_RolesArr[0] + std::extent<decltype(s_RolesArr)>::value);
+} // end namespace KeyframesModelDetails
+
 class KeyFrameItem : public AbstractListItem
 {
 public:
@@ -160,13 +167,19 @@ public:
 		return true;
 	}
 
+	//--------------------------------------------------------------------------
+	void iterateRoles(const std::function<void(const char*)>& iterFunc) const
+	{
+		for (auto&& role : KeyframesModelDetails::s_RolesVec)
+		{
+			iterFunc(role.c_str());
+		}
+	}
+
+	//--------------------------------------------------------------------------
 	std::vector<std::string> roles() const override
 	{
-		std::vector<std::string> roles;
-		roles.emplace_back(ItemRole::timeName);
-		roles.emplace_back(ItemRole::eventValueName);
-		roles.emplace_back(ItemRole::typeName);
-		return roles;
+		return KeyframesModelDetails::s_RolesVec;
 	}
 
 	Connection connectPreItemDataChanged(DataCallback callback) override
@@ -403,11 +416,22 @@ public:
 	std::string eventValue_;
 
 	// Frame slider item
-	ObjectHandleT<AbstractItemModel> keyFrames_;
+	std::shared_ptr<AbstractItemModel> keyFrames_;
 
 	Signal<TimelineItem::DataSignature> preDataChanged_;
 	Signal<TimelineItem::DataSignature> postDataChanged_;
 };
+
+namespace TimelineModelDetails
+{
+static const std::string s_RolesArr[] = {
+	ItemRole::nameName,          ItemRole::textName,        ItemRole::typeName,       ItemRole::startTimeName,
+	ItemRole::endTimeName,       ItemRole::barColorName,    ItemRole::eventValueName, ItemRole::eventNameName,
+	ItemRole::eventPropertyName, ItemRole::eventActionName, ItemRole::keyFramesName,  ItemRole::rowSpanName
+};
+static const std::vector<std::string> s_RolesVec(&s_RolesArr[0],
+                                                 &s_RolesArr[0] + std::extent<decltype(s_RolesArr)>::value);
+} // end namespace TimelineModelDetails
 
 TimelineModel::TimelineModel()
 {
@@ -628,22 +652,19 @@ bool TimelineModel::removeRows(int row, int count)
 	return true;
 }
 
+//------------------------------------------------------------------------------
+void TimelineModel::iterateRoles(const std::function<void(const char*)>& iterFunc) const
+{
+	for (auto&& role : TimelineModelDetails::s_RolesVec)
+	{
+		iterFunc(role.c_str());
+	}
+}
+
+//------------------------------------------------------------------------------
 std::vector<std::string> TimelineModel::roles() const
 {
-	std::vector<std::string> roles;
-	roles.emplace_back(ItemRole::nameName);
-	roles.emplace_back(ItemRole::textName);
-	roles.emplace_back(ItemRole::typeName);
-	roles.emplace_back(ItemRole::startTimeName);
-	roles.emplace_back(ItemRole::endTimeName);
-	roles.emplace_back(ItemRole::barColorName);
-	roles.emplace_back(ItemRole::eventValueName);
-	roles.emplace_back(ItemRole::eventNameName);
-	roles.emplace_back(ItemRole::eventPropertyName);
-	roles.emplace_back(ItemRole::eventActionName);
-	roles.emplace_back(ItemRole::keyFramesName);
-	roles.emplace_back(ItemRole::rowSpanName);
-	return roles;
+	return TimelineModelDetails::s_RolesVec;
 }
 
 Connection TimelineModel::connectPreItemDataChanged(DataCallback callback) /* override */

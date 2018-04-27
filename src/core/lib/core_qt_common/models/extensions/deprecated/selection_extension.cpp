@@ -1,5 +1,6 @@
 #include "selection_extension.hpp"
-#include <cassert>
+
+#include "core_common/assert.hpp"
 #include <set>
 
 #include "qt_qlist_memory_fix.hpp"
@@ -201,7 +202,7 @@ void SelectionExtension::Implementation::select(const QModelIndex& index)
 
 void SelectionExtension::Implementation::selectRange(const QModelIndex& index)
 {
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 
 	// Always use column 0
 	QModelIndex toIndex = firstColumnIndex(index);
@@ -252,7 +253,7 @@ void SelectionExtension::Implementation::selectRange(const QModelIndex& index)
 
 void SelectionExtension::Implementation::deselect(const QModelIndex& index)
 {
-	assert(index.isValid());
+	TF_ASSERT(index.isValid());
 
 	// Always use column 0
 	const auto adjustedIndex = firstColumnIndex(index);
@@ -289,15 +290,15 @@ bool SelectionExtension::Implementation::selected(const QModelIndex& index)
 void SelectionExtension::Implementation::fireDataChangedEvent(const QModelIndex& index)
 {
 	auto model = index.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	const auto columnCount = model->columnCount(index);
-	assert(columnCount > 0);
+	TF_ASSERT(columnCount > 0);
 	const auto lastColumn = columnCount - 1;
 
 	const auto topLeft = index;
 	const auto bottomRight = model->sibling(index.row(), lastColumn, index);
-	assert(bottomRight.isValid());
+	TF_ASSERT(bottomRight.isValid());
 
 	emit const_cast<QAbstractItemModel*>(model)->dataChanged(topLeft, bottomRight, selectionRoles());
 }
@@ -310,7 +311,7 @@ QModelIndex SelectionExtension::Implementation::firstColumnIndex(const QModelInd
 	}
 
 	auto model = index.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	return index.row() == 0 ? index : model->sibling(index.row(), 0, index);
 }
@@ -393,11 +394,11 @@ void SelectionExtension::Implementation::onRowsAboutToBeRemoved(const QModelInde
 	for (int i = first; i < count; i++)
 	{
 		QModelIndex index = firstColumnIndex(model->index(i, 0, parent));
-		assert(index.isValid());
+		TF_ASSERT(index.isValid());
 		if (selected(index))
 		{
 			auto inserted = pendingRemovingSelection_.insert(index).second;
-			assert(inserted);
+			TF_ASSERT(inserted);
 		}
 	}
 }
@@ -442,7 +443,7 @@ void SelectionExtension::Implementation::onLayoutAboutToBeChanged(const QList<QP
 				if (childItem == item)
 				{
 					bInserted = pendingRemovingSelection_.insert(selItem).second;
-					assert(bInserted);
+					TF_ASSERT(bInserted);
 				}
 			}
 		}
@@ -658,7 +659,7 @@ bool SelectionExtension::moveUp()
 bool SelectionExtension::moveDown()
 {
 	auto model = impl_->currentIndex_.model();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 
 	QModelIndex parent = impl_->currentIndex_.parent();
 

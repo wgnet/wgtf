@@ -11,7 +11,6 @@
 #include "core_ui_framework/i_preferences.hpp"
 #include "core_reflection/property_accessor.hpp"
 #include "core_logging/logging.hpp"
-#include <cassert>
 #include <thread>
 #include <chrono>
 #include <QQmlComponent>
@@ -30,6 +29,7 @@
 #include "wg_types/vector2.hpp"
 #include "core_dependency_system/depends.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_qt_common/helpers/qml_component_loader_helper.hpp"
 #include "core_qt_common/qt_script_object.hpp"
 
@@ -74,17 +74,18 @@ struct QmlWindow::Impl : Depends<IQtFramework>
 	QmlWindow& window_;
 	QUrl url_;
 	QtConnectionHolder qtConnections_;
+	IView* focusedView_;
 
-	Impl(IComponentContext& context, QQmlEngine& qmlEngine, QmlWindow& window)
-	    : Depends(context), qmlEngine_(qmlEngine), qmlContext_(new QQmlContext(qmlEngine.rootContext())),
+	Impl(QQmlEngine& qmlEngine, QmlWindow& window)
+	    : qmlEngine_(qmlEngine), qmlContext_(new QQmlContext(qmlEngine.rootContext())),
 	      mainWindow_(new QQuickWidget(&qmlEngine, nullptr)), released_(false), isMaximizedInPreference_(false),
-	      firstTimeShow_(true), window_(window)
+	      firstTimeShow_(true), window_(window), focusedView_(nullptr)
 	{
 		mainWindow_->setMinimumSize(QSize(100, 100));
 		QQmlEngine::setContextForObject(mainWindow_, qmlContext_.get());
 
-		auto qtFramework = context.queryInterface<IQtFramework>();
-		assert(qtFramework != nullptr);
+		auto qtFramework = get<IQtFramework>();
+		TF_ASSERT(qtFramework != nullptr);
 		auto globalSettings = qtFramework->qtGlobalSettings();
 
 		qtConnections_ += QObject::connect(globalSettings, &QtGlobalSettings::prePreferencesChanged, &window_,
@@ -95,12 +96,19 @@ struct QmlWindow::Impl : Depends<IQtFramework>
 		                                   &QmlWindow::onPrePreferencesSaved);
 	}
 
+	void destroy()
+	{
+		statusBar_.reset();
+		regions_.clear();
+		delete mainWindow_;
+	}
+
 	void handleLoaded(QQmlComponent* qmlComponent)
 	{
 		auto content = std::unique_ptr<QObject>(qmlComponent->create(qmlContext_.get()));
 
 		auto qtFrameWork = get<IQtFramework>();
-		assert(qtFrameWork != nullptr);
+		TF_ASSERT(qtFrameWork != nullptr);
 
 		QVariant windowProperty = content->property("id");
 		if (windowProperty.isValid())
@@ -147,7 +155,7 @@ struct QmlWindow::Impl : Depends<IQtFramework>
 		{
 			if (tabWidget->property("layoutTags").isValid())
 			{
-				regions_.emplace_back(new QtTabRegion(*this, *tabWidget));
+				regions_.emplace_back(new QtTabRegion(&window_, *tabWidget));
 			}
 		}
 		auto statusBar = getChildren<QStatusBar>(*mainWindow_);
@@ -267,9 +275,23 @@ struct QmlWindow::Impl : Depends<IQtFramework>
 
 		return true;
 	}
+
+	bool reloadPreferences()
+	{
+		bool success = this->loadPreference();
+		for(auto& region : regions_)
+		{
+			QtDockRegion* iRegion = dynamic_cast<QtDockRegion*>(region.get());
+			if(iRegion != nullptr)
+			{
+				iRegion->restoreDockWidgets();
+			}
+		}
+		return success;
+	}
 };
 
-QmlWindow::QmlWindow(IComponentContext& context, QQmlEngine& qmlEngine) : impl_(new Impl(context, qmlEngine, *this))
+QmlWindow::QmlWindow(QQmlEngine& qmlEngine) : impl_(new Impl(qmlEngine, *this))
 {
 	QObject::connect(impl_->mainWindow_, SIGNAL(sceneGraphError(QQuickWindow::SceneGraphError, const QString&)), this,
 	                 SLOT(error(QQuickWindow::SceneGraphError, const QString&)));
@@ -281,7 +303,7 @@ QmlWindow::~QmlWindow()
 	{
 		this->savePreference();
 		impl_->mainWindow_->removeEventFilter(this);
-		delete impl_->mainWindow_;
+		impl_->destroy();
 	}
 	impl_->qmlEngine_.collectGarbage();
 	// call sendPostedEvents to give chance to QScriptObject's DeferredDeleted event get handled in time
@@ -476,12 +498,13 @@ bool QmlWindow::load(QUrl& qUrl, bool async, std::function<void()> loadedHandler
 {
 	impl_->url_ = qUrl;
 	auto qtFrameWork = impl_->get<IQtFramework>();
-	assert(qtFrameWork != nullptr);
+	TF_ASSERT(qtFrameWork != nullptr);
 	auto preferences = qtFrameWork->getPreferences();
 	auto preference = preferences->getPreference(impl_->id_.c_str());
 	auto value = qtFrameWork->toQVariant(preference, impl_->qmlContext_.get());
-	this->setContextProperty(QString("Preference"), value);
-	this->setContextProperty(QString("View"), QVariant::fromValue(impl_->mainWindow_));
+	this->setContextProperty(QString("viewPreference"), value);
+	this->setContextProperty(QString("viewId"), impl_->id_.c_str());
+	this->setContextProperty(QString("viewWidget"), QVariant::fromValue(impl_->mainWindow_));
 	impl_->qmlContext_->setContextProperty(QString("qmlView"), this);
 
 	auto qmlEngine = impl_->qmlContext_->engine();
@@ -511,9 +534,6 @@ bool QmlWindow::eventFilter(QObject* object, QEvent* event)
 			if (shouldClose)
 			{
 				this->signalClose();
-				// TODO: remove this workaround
-				// explicitly call this because CollectionModel doesn't emit a signal when underly source changed
-				emit windowClosed();
 			}
 			else
 			{
@@ -526,18 +546,62 @@ bool QmlWindow::eventFilter(QObject* object, QEvent* event)
 	return QObject::eventFilter(object, event);
 }
 
-void QmlWindow::savePreference()
+IView* QmlWindow::getFocusedView() const
 {
-	auto qtFramework = impl_->get<IQtFramework>();
-	assert(qtFramework != nullptr);
-	if (qtFramework == nullptr)
+	return impl_->focusedView_;
+}
+
+void QmlWindow::setFocusedView(IView* view)
+{
+	if (impl_->focusedView_ == view)
 	{
 		return;
+	}
+
+	auto oldView = impl_->focusedView_;
+	impl_->focusedView_ = view;
+
+	if (oldView && oldView->focused())
+	{
+		oldView->setFocus(false);
+	}
+
+	if (view && !view->focused())
+	{
+		view->setFocus(true);
+	}
+}
+
+bool QmlWindow::resetLayout()
+{
+	return impl_->reloadPreferences();
+}
+
+uintptr_t QmlWindow::getNativeWindowHandle()
+{
+	if(impl_.get() == nullptr)
+	{
+		return 0;
+	}
+	if(impl_->mainWindow_ == nullptr)
+	{
+		return 0;
+	}
+	return impl_->mainWindow_->winId();
+}
+
+bool QmlWindow::savePreference()
+{
+	auto qtFramework = impl_->get<IQtFramework>();
+	TF_ASSERT(qtFramework != nullptr);
+	if (qtFramework == nullptr)
+	{
+		return false;
 	}
 	auto preferences = qtFramework->getPreferences();
 	if (preferences == nullptr)
 	{
-		return;
+		return false;
 	}
 	std::string key = impl_->id_ + g_internalPreferenceId;
 	auto& preference = preferences->getPreference(key.c_str());
@@ -554,6 +618,12 @@ void QmlWindow::savePreference()
 		preference->set("pos", Vector2(pos.x(), pos.y()));
 		preference->set("size", Vector2(size.width(), size.height()));
 	}
+	return true;
+}
+
+bool QmlWindow::loadPreference()
+{
+	return false;
 }
 
 void QmlWindow::onPrePreferencesChanged()

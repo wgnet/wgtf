@@ -14,17 +14,17 @@ class QtActionManager : public ActionManager
 	typedef ActionManager base;
 
 public:
-	explicit QtActionManager(IComponentContext& contextManager);
 	~QtActionManager();
 
 private:
 	friend class QtAction;
 	void onQtActionDestroy(IAction* action);
-	virtual std::unique_ptr<IAction> createAction(const char* text, const char* icon, const char* windowId,
+	virtual std::unique_ptr<IAction> createAction(const char* id, const char* text, const char* icon, const char* windowId,
 	                                              const char* path, const char* shortcut, int order,
 	                                              std::function<void(IAction*)> func,
 	                                              std::function<bool(const IAction*)> enableFunc,
-	                                              std::function<bool(const IAction*)> checkedFunc, const char* group,
+	                                              std::function<bool(const IAction*)> checkedFunc,
+												  std::function<bool(const IAction*)> visibleFunc, const char* group,
 	                                              bool isSeparator = false) override;
 };
 } // end namespace wgt

@@ -5,9 +5,10 @@
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_view.hpp"
 #include "core_ui_framework/interfaces/i_view_creator.hpp"
-
+#include "core_object/managed_object.hpp"
 #include "core_dependency_system/depends.hpp"
 
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
@@ -32,7 +33,7 @@ class TestActiveFiltersPlugin : public PluginMain, public Depends<IViewCreator>
 {
 public:
 	//==========================================================================
-	TestActiveFiltersPlugin(IComponentContext& contextManager) : Depends(contextManager)
+	TestActiveFiltersPlugin(IComponentContext& contextManager)
 	{
 	}
 
@@ -53,8 +54,7 @@ public:
 
 		defManager->registerDefinition<TypeClassDefinition<ActiveFiltersTestViewModel>>();
 
-		auto testViewModel = defManager->create<ActiveFiltersTestViewModel>();
-		testViewModel->init(*defManager, *uiFramework);
+		testViewModel_ = ManagedObject<ActiveFiltersTestViewModel>::make();
 
 		auto viewCreator = get<IViewCreator>();
 		if (viewCreator == nullptr)
@@ -62,7 +62,7 @@ public:
 			return;
 		}
 
-		testView_ = viewCreator->createView("TestActiveFilters/ActiveFiltersTestPanel20.qml", testViewModel);
+		testView_ = viewCreator->createView("TestActiveFilters/ActiveFiltersTestPanel20.qml", testViewModel_.getHandleT());
 	}
 
 	bool Finalise(IComponentContext& contextManager) override
@@ -80,11 +80,13 @@ public:
 			view = nullptr;
 		}
 
+        testViewModel_ = nullptr;
 		return true;
 	}
 
 private:
 	wg_future<std::unique_ptr<IView>> testView_;
+    ManagedObject<ActiveFiltersTestViewModel> testViewModel_;
 };
 
 PLG_CALLBACK_FUNC(TestActiveFiltersPlugin)

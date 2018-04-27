@@ -15,8 +15,6 @@ class QAbstractItemModel;
 
 namespace wgt
 {
-class IQtFramework;
-
 class IModelExtensionOld : public QObject, public RoleProvider
 {
 	Q_OBJECT
@@ -45,11 +43,6 @@ public:
 	virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role)
 	{
 		return false;
-	}
-
-	void init(IQtFramework* qtFramework)
-	{
-		qtFramework_ = qtFramework;
 	}
 
 	virtual void saveStates(const char* modelUniqueName)
@@ -85,9 +78,6 @@ public slots:
 	virtual void onRowsRemoved(const QModelIndex& parent, int first, int last)
 	{
 	}
-
-protected:
-	IQtFramework* qtFramework_;
 };
 } // end namespace wgt
 #endif // I_MODEL_EXTENSION_OLD_HPP

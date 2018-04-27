@@ -1,6 +1,6 @@
 #include "image_extension.hpp"
 #include "core_data_model/common_data_roles.hpp"
-#include "core_qt_common/i_qt_framework.hpp"
+#include "core_qt_common/qt_framework_common.hpp"
 #include "core_qt_common/qt_image_provider.hpp"
 
 #include <QIcon>
@@ -26,14 +26,8 @@ QVariant ImageExtension::data(const QModelIndex& index, ItemRole::Id roleId) con
 		return QVariant(QVariant::Invalid);
 	}
 
-	auto qtFramework = Context::queryInterface<IQtFramework>();
-	if (qtFramework == nullptr)
-	{
-		return QVariant(QVariant::Invalid);
-	}
-
 	const auto id = QtImageProvider::providerId();
-	auto imageProvider = dynamic_cast<QtImageProvider*>(qtFramework->qmlEngine()->imageProvider(id));
+	auto imageProvider = dynamic_cast<QtImageProvider*>(frameworkCommon().qmlEngine()->imageProvider(id));
 	if (imageProvider == nullptr)
 	{
 		return QVariant(QVariant::Invalid);

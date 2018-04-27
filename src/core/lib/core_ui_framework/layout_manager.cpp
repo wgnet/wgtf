@@ -4,11 +4,13 @@
 #include "i_action.hpp"
 #include "i_menu.hpp"
 #include "i_region.hpp"
+#include "i_status_bar.hpp"
 #include "i_view.hpp"
 #include "i_window.hpp"
 
+#include "core_common/assert.hpp"
+
 #include <algorithm>
-#include <cassert>
 
 namespace wgt
 {
@@ -105,6 +107,22 @@ IRegion* LayoutManager::findBestRegion(IWindow& window, const LayoutHint& hint)
 	return bestRegion;
 }
 
+void LayoutManager::addMenuPath(const char* path, const char* windowId)
+{
+	auto window = getWindow(windowId);
+	if (window == nullptr)
+	{
+		return;
+	}
+
+	auto menus = findAllMenus(*window, path);
+
+	for (auto& menu : menus)
+	{
+		menu->addPath(path);
+	}
+}
+
 void LayoutManager::addAction(ManagedAction& action, IWindow& window)
 {
 	for (auto& path : action.action_->paths())
@@ -130,6 +148,12 @@ void LayoutManager::addView(IView& view, IWindow& window)
 		return;
 	}
 
+	const auto menus = view.menus();
+	for (auto& menu : menus)
+	{
+		addMenu(*menu);
+	}
+
 	// add the view to the best region
 	bestRegion->addView(view);
 	views_[&view] = bestRegion;
@@ -147,7 +171,7 @@ void LayoutManager::refreshActions(IWindow& window)
 			continue;
 		}
 
-		assert(actionIt->menus_.empty());
+		TF_ASSERT(actionIt->menus_.empty());
 		addAction(*actionIt, window);
 	}
 }
@@ -164,7 +188,7 @@ void LayoutManager::refreshViews(IWindow& window)
 			continue;
 		}
 
-		assert(views_[view] == nullptr);
+		TF_ASSERT(views_[view] == nullptr);
 		addView(*view, window);
 	}
 }
@@ -195,6 +219,12 @@ void LayoutManager::removeViews(IWindow& window)
 		if (getWindow(view->windowId()) != &window)
 		{
 			continue;
+		}
+
+		const auto menus = view->menus();
+		for (auto& menu : menus)
+		{
+			removeMenu(*menu);
 		}
 
 		viewIt->second->removeView(*view);
@@ -366,6 +396,12 @@ void LayoutManager::removeView(IView& view)
 		return;
 	}
 
+	const auto menus = view.menus();
+	for (auto& menu : menus)
+	{
+		removeMenu(*menu);
+	}
+
 	region->removeView(view);
 	views_.erase(viewIt);
 }
@@ -400,6 +436,40 @@ void LayoutManager::setWindowIcon(const char* path, const char* windowId)
 	}
 
 	windowIt->second->setIcon(path);
+}
+
+void LayoutManager::setStatusMessage(const char* message, int timeout)
+{
+	IStatusBar* statusBar = nullptr;
+	for (const auto& windowPair : windows())
+	{
+		statusBar = windowPair.second->statusBar();
+		if ( statusBar != nullptr )
+		{
+			break;
+		}
+	}
+
+	if ( statusBar )
+	{
+		statusBar->showMessage(message, timeout);
+	}
+}
+
+void LayoutManager::saveWindowPreferences()
+{
+	for(auto windowIt = windows_.begin(); windowIt != windows_.end(); ++windowIt)
+	{
+		windowIt->second->savePreference();
+	}
+}
+
+void LayoutManager::loadWindowPreferences()
+{
+	for(auto windowIt = windows_.begin(); windowIt != windows_.end(); ++windowIt)
+	{
+		windowIt->second->loadPreference();
+	}
 }
 
 const Windows& LayoutManager::windows() const

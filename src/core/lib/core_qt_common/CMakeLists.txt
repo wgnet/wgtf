@@ -6,19 +6,27 @@ ADD_DEFINITIONS( -DNOMINMAX )
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
 
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 include_directories(.)
 
 SET( ALL_SRCS
-	models/data_change_notifier.cpp
-	models/data_change_notifier.hpp
 	models/qt_collection_model.cpp
 	models/qt_collection_model.hpp
 	models/qt_item_data.cpp
 	models/qt_item_data.hpp
-	models/qt_item_model.cpp
 	models/qt_item_model.hpp
+	models/qml_model_data.cpp
+	models/qml_model_data.hpp
+	models/qml_model_row.cpp
+	models/qml_model_row.hpp
+	models/qml_item_model_helper.inl
+	models/qml_list_model.cpp
+	models/qml_list_model.hpp
+	models/qml_table_model.cpp
+	models/qml_table_model.hpp
+	models/qml_tree_model.cpp
+	models/qml_tree_model.hpp
 	models/qt_model_helpers.cpp
 	models/qt_model_helpers.hpp
 	models/qt_model_macros.hpp
@@ -34,16 +42,28 @@ SET( ALL_SRCS
 	models/buttons_model.cpp
 	models/qt_abstract_item_model.hpp
 	models/qt_abstract_item_model.cpp
+	models/wg_asset_filter_proxy.cpp
+	models/wg_asset_filter_proxy.hpp
 	models/wg_column_layout_proxy.cpp
 	models/wg_column_layout_proxy.hpp
+	models/wg_fast_filter_proxy.cpp
+	models/wg_fast_filter_proxy.hpp
+	models/wg_flatten_proxy.cpp
+	models/wg_flatten_proxy.hpp
 	models/wg_merge_proxy.cpp
 	models/wg_merge_proxy.hpp
+	models/wg_multi_edit_proxy.cpp
+	models/wg_multi_edit_proxy.hpp
+	models/wg_range_proxy.cpp
+	models/wg_range_proxy.hpp
 	models/wg_sub_proxy.cpp
 	models/wg_sub_proxy.hpp
 	models/wg_sort_filter_proxy.cpp
 	models/wg_sort_filter_proxy.hpp
 	models/wg_transpose_proxy.cpp
 	models/wg_transpose_proxy.hpp
+	models/wgt_item_model_base.hpp
+	models/wgt_item_model_base.cpp
 	models/adapters/i_list_adapter.cpp
 	models/adapters/i_list_adapter.hpp
 	models/adapters/child_list_adapter.cpp
@@ -51,26 +71,26 @@ SET( ALL_SRCS
 	models/adapters/column_list_adapter.cpp
 	models/adapters/column_list_adapter.hpp
 	models/adapters/indexed_adapter.hpp
-	models/adapters/sequence_list_adapter.cpp
-	models/adapters/sequence_list_adapter.hpp
-	models/extensions/i_model_extension.cpp
-	models/extensions/i_model_extension.hpp
+	models/extensions/model_extension_manager.cpp
+	models/extensions/model_extension_manager.hpp
+	models/extensions/qt_model_extension.cpp
+	models/extensions/qt_model_extension.hpp
+	models/extensions/custom_model_extension.cpp
+	models/extensions/custom_model_extension.hpp
 	models/extensions/column_extension.cpp
 	models/extensions/column_extension.hpp
 	models/extensions/component_extension.cpp
 	models/extensions/component_extension.hpp
+	models/extensions/grid_extension.cpp
+	models/extensions/grid_extension.hpp
 	models/extensions/image_extension.cpp
 	models/extensions/image_extension.hpp
 	models/extensions/list_extension.cpp
 	models/extensions/list_extension.hpp
-	models/extensions/spreadsheet_extension.cpp
-	models/extensions/spreadsheet_extension.hpp
 	models/extensions/table_extension.cpp
 	models/extensions/table_extension.hpp
 	models/extensions/tree_extension.cpp
 	models/extensions/tree_extension.hpp
-	models/extensions/deprecated/asset_item_extension.cpp
-	models/extensions/deprecated/asset_item_extension.hpp
 	models/extensions/deprecated/column_extension_old.cpp
 	models/extensions/deprecated/column_extension_old.hpp
 	models/extensions/deprecated/component_extension_old.cpp
@@ -90,6 +110,12 @@ SET( ALL_SRCS
 	models/extensions/deprecated/buttons_definition_extension.cpp
 	models/extensions/deprecated/header_footer_text_extension.cpp
 	models/extensions/deprecated/header_footer_text_extension.hpp
+	filters/folder_filter_object.hpp
+	filters/folder_filter_object.cpp
+	filters/invert_filter_object.hpp
+	filters/invert_filter_object.cpp
+	filters/search_filter_object.hpp
+	filters/search_filter_object.cpp	
 	helpers/qt_helpers.hpp
 	helpers/qt_helpers.cpp
 	helpers/wg_filtered_list_model.hpp
@@ -101,60 +127,85 @@ SET( ALL_SRCS
 	helpers/wg_string_filter.cpp
 	helpers/wg_tokenized_string_filter.hpp
 	helpers/wg_tokenized_string_filter.cpp
-    helpers/selection_helper.cpp
-    helpers/selection_helper.hpp
+	helpers/selection_helper.cpp
+	helpers/selection_helper.hpp
 	helpers/qml_component_loader_helper.hpp
 	helpers/qml_component_loader_helper.cpp
-	controls/wg_copy_controller.hpp
-	controls/wg_copy_controller.cpp
-	controls/wg_filedialog_qi.hpp
-	controls/wg_filedialog_qi.cpp
+	helpers/i_wgt_interface_provider.cpp
+	helpers/wgt_interface_provider.hpp
+	helpers/wgt_interface_provider.cpp
 	controls/wg_action.hpp
 	controls/wg_action.cpp
 	controls/wg_context_menu.hpp
 	controls/wg_context_menu.cpp
 	controls/wg_item_view.hpp
 	controls/wg_item_view.cpp
+	controls/connection_curve.cpp
+	controls/connection_curve.hpp
 	interfaces/i_check_filter.hpp
+	interfaces/i_file_icon_provider.hpp
+	interfaces/i_qt_helpers.hpp
+	interfaces/i_wgt_item_model.hpp
+	filter_expression.hpp
+	filter_expression.cpp
 	shared_controls.hpp
 	shared_controls.cpp
+	qml_control_list.inl
 	i_qt_framework.hpp
 	i_qt_type_converter.hpp
 	i_qt_view.hpp
 	image_qt_type_converter.hpp
 	image_qt_type_converter.cpp
+	int64_type_converter.hpp
 	model_qt_type_converter.hpp
 	model_qt_type_converter.cpp
 	string_qt_type_converter.hpp
 	vector_qt_type_converter.hpp
 	qml_component.cpp
 	qml_component.hpp
+	qml_component_manager.cpp
+	qml_component_manager.hpp
 	qml_view.cpp
 	qml_view.hpp
 	qml_dialog.cpp
 	qml_dialog.hpp
+	qt_cursor.cpp
+	qt_cursor.hpp
+	qml_window.cpp
+	qml_window.hpp
+	qt_filter_object.hpp	
+	qt_thumbnail_provider.cpp
+	qt_thumbnail_provider.hpp
 	qt_image_provider.cpp
 	qt_image_provider.hpp
 	qt_image_provider_old.cpp
 	qt_image_provider_old.hpp
+	qt_int64.cpp
+	qt_int64.hpp
 	qt_connection_holder.hpp
 	qt_connection_holder.cpp
 	qt_new_handler.hpp
 	qt_new_handler.cpp
 	qt_palette.hpp
 	qt_palette.cpp
-    qt_component_finder.hpp
-    qt_component_finder.cpp
+	qt_component_finder.hpp
+	qt_component_finder.cpp
 	qt_default_spacing.hpp
 	qt_global_settings.hpp
+	qt_global_logger.hpp
+    qt_global_logger.cpp
+	qt_file_path_helper.hpp
+	qt_file_path_helper.cpp
 	qt_view.cpp
 	qt_view.hpp
+	qt_view_common.cpp
+	qt_view_common.hpp
 	qt_window.cpp
 	qt_window.hpp
-	qml_window.cpp
-	qml_window.hpp
 	qt_dock_region.cpp
 	qt_dock_region.hpp
+	qt_exe_icon_provider.cpp
+	qt_exe_icon_provider.hpp
 	qt_status_bar.cpp
 	qt_status_bar.hpp
 	qt_tab_region.cpp
@@ -170,25 +221,28 @@ SET( ALL_SRCS
 	qt_qlist_memory_fix.hpp
 	qt_progress_dialog.cpp
 	qt_progress_dialog.hpp
-
 	qt_private/qsortfilterproxymodel.cpp
 	qt_private/qsortfilterproxymodel.h
-	
-	
 	qobject_qt_type_converter.hpp
 	wg_list_iterator.cpp
 	wg_list_iterator.hpp
+	qt_scripting_engine_base.hpp
+	qt_scripting_engine_base.cpp
 	qt_scripting_engine.cpp
 	qt_scripting_engine.hpp
 	qt_script_object.cpp
 	qt_script_object.hpp
+	qt_spinbox_validator.cpp
+	qt_spinbox_validator.hpp
 	script_qt_type_converter.cpp
 	script_qt_type_converter.hpp
 	collection_qt_type_converter.cpp
 	collection_qt_type_converter.hpp
-	
+	refobjectid_qt_type_converter.hpp
 	qt_copy_paste_manager.cpp
 	qt_copy_paste_manager.hpp
+	qt_framework_common.cpp
+	qt_framework_common.hpp
 	qt_framework.cpp
 	qt_framework.hpp
 	qt_preferences.cpp
@@ -199,37 +253,50 @@ SET( ALL_SRCS
 	private/ui_view_creator.cpp
 	private/qt_ui_worker.hpp
 	private/qt_ui_worker.cpp
+	private/component_version.hpp
+	private/component_version.cpp
 	qt_application.cpp
 	qt_application.hpp
 	qt_resource_system.cpp
-    qt_resource_system.hpp
+	qt_resource_system.hpp
+	qt_system_tray_icon.cpp
+	qt_system_tray_icon.hpp
 )
 
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_LIBRARY( core_qt_common ${BLOB_SRCS}
 )
 
 BW_TARGET_LINK_LIBRARIES( core_qt_common INTERFACE
+	core_object
 	core_reflection
 	core_data_model
+    core_view_model
 	core_logging
 	core_string_utils
 	core_ui_framework
+	core_dependency_system
+	wgtf_types
 )
 BW_TARGET_LINK_LIBRARIES( core_qt_common PRIVATE
 	Qt5::Core
 	Qt5::Gui
+	Qt5::Qml
 	Qt5::QuickWidgets
 	Qt5::Quick
 	Qt5::UiTools
 	Qt5::Xml
 )
+IF( BW_PLATFORM_WINDOWS )
+	BW_TARGET_LINK_LIBRARIES( core_qt_common PRIVATE
+		Qt5::WinExtras
+	)
+ENDIF( BW_PLATFORM_WINDOWS )
 
 INCLUDE_DIRECTORIES(${Qt5Core_PRIVATE_INCLUDE_DIRS})
 
 BW_PROJECT_CATEGORY( core_qt_common "WGT Libs" )
-

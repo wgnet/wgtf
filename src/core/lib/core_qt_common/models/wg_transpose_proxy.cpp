@@ -1,5 +1,6 @@
 #include "wg_transpose_proxy.hpp"
-#include <assert.h>
+
+#include "core_common/assert.hpp"
 
 namespace wgt
 {
@@ -23,28 +24,28 @@ void WGTransposeProxy::setSourceModel(QAbstractItemModel* sourceModel)
 		});
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeInserted,
 		                                 [this](const QModelIndex& parent, int first, int last) {
-			                                 assert(!parent.isValid());
+			                                 TF_ASSERT(!parent.isValid());
 			                                 beginInsertColumns(QModelIndex(), first, last);
 			                             });
 		connections_ +=
 		QObject::connect(sourceModel, &QAbstractItemModel::rowsInserted, [this]() { endInsertColumns(); });
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::rowsAboutToBeRemoved,
 		                                 [this](const QModelIndex& parent, int first, int last) {
-			                                 assert(!parent.isValid());
+			                                 TF_ASSERT(!parent.isValid());
 			                                 beginRemoveColumns(QModelIndex(), first, last);
 			                             });
 		connections_ +=
 		QObject::connect(sourceModel, &QAbstractItemModel::rowsRemoved, [this]() { endRemoveColumns(); });
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeInserted,
 		                                 [this](const QModelIndex& parent, int first, int last) {
-			                                 assert(!parent.isValid());
+			                                 TF_ASSERT(!parent.isValid());
 			                                 beginInsertRows(QModelIndex(), first, last);
 			                             });
 		connections_ +=
 		QObject::connect(sourceModel, &QAbstractItemModel::columnsInserted, [this]() { endInsertRows(); });
 		connections_ += QObject::connect(sourceModel, &QAbstractItemModel::columnsAboutToBeRemoved,
 		                                 [this](const QModelIndex& parent, int first, int last) {
-			                                 assert(!parent.isValid());
+			                                 TF_ASSERT(!parent.isValid());
 			                                 beginRemoveRows(QModelIndex(), first, last);
 			                             });
 		connections_ +=

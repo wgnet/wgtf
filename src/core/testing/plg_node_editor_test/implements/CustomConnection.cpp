@@ -13,12 +13,12 @@ CustomConnection::~CustomConnection()
 	UnBind();
 }
 
-ISlot* CustomConnection::Input() const
+ObjectHandleT<ISlot> CustomConnection::Input() const
 {
 	return m_inputSlot;
 }
 
-ISlot* CustomConnection::Output() const
+ObjectHandleT<ISlot> CustomConnection::Output() const
 {
 	return m_outputSlot;
 }
@@ -52,8 +52,8 @@ bool CustomConnection::Bind(ObjectHandleT<ISlot> outputSlot, ObjectHandleT<ISlot
 
 		if (outputSlot->Connect(m_id, inputSlot) && inputSlot->Connect(m_id, outputSlot))
 		{
-			m_inputSlot = inputSlot.get();
-			m_outputSlot = outputSlot.get();
+			m_inputSlot = inputSlot;
+			m_outputSlot = outputSlot;
 			isConnected = true;
 		}
 		else

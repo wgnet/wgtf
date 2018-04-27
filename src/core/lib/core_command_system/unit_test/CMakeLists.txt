@@ -13,20 +13,21 @@ SET( ALL_SRCS
 	test_command_system.cpp
 	test_objects.hpp
 	test_objects.cpp
+	reflection_auto_reg.mpp
 )
 
-BW_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
+WG_BLOB_SOURCES( BLOB_SRCS ${ALL_SRCS} )
 BW_ADD_EXECUTABLE( core_command_system_unit_test ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_command_system_unit_test PRIVATE
-	core_reflection
-	core_reflection_utils
 	core_command_system
 	core_unit_test
+    core_environment_system
+	core_serialization_xml
 )
 
 BW_ADD_TOOL_TEST( core_command_system_unit_test )
 
-BW_PRECOMPILED_HEADER( core_command_system_unit_test pch.hpp )
+WG_PRECOMPILED_HEADER( core_command_system_unit_test pch.hpp )
 BW_PROJECT_CATEGORY( core_command_system_unit_test "Unit Tests" )
 

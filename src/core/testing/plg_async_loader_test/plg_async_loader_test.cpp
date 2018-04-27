@@ -32,7 +32,7 @@ class AsyncLoaderTestPlugin : public PluginMain,
                               public Depends<IViewCreator, IDefinitionManager, IUIApplication, IUIFramework>
 {
 private:
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 	std::vector<wg_future<std::unique_ptr<IView>>> views_;
 	std::unique_ptr<IAction> openViews_;
 	std::unique_ptr<IAction> closeViews_;
@@ -41,11 +41,6 @@ private:
 	ListDataModel listViewModel3_;
 
 public:
-	//==========================================================================
-	AsyncLoaderTestPlugin(IComponentContext& contextManager) : Depends(contextManager)
-	{
-	}
-
 	//==========================================================================
 	virtual bool PostLoad(IComponentContext& contextManager) override
 	{
@@ -56,7 +51,6 @@ public:
 	virtual void Initialise(IComponentContext& contextManager) override
 	{
 		auto defManager = get<IDefinitionManager>();
-		auto& definitionManager = *defManager;
 
 		listViewModel1_.init(15);
 		listViewModel2_.init(30);
@@ -147,7 +141,7 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
 	}
 

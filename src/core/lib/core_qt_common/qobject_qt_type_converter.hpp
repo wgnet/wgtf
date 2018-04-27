@@ -2,7 +2,7 @@
 #define QOBJECT_QT_TYPE_CONVERTER_HPP
 
 #include "core_qt_common/i_qt_type_converter.hpp"
-
+#include "core_reflection/object_handle.hpp"
 #include <QObject>
 
 namespace wgt
@@ -17,21 +17,15 @@ public:
 			return false;
 		}
 
-		o_variant = ObjectHandle(qvariant_cast<QObject*>(qVariant));
+		o_variant = qvariant_cast<QObject*>(qVariant);
 		return true;
 	}
 
 	bool toQVariant(const Variant& variant, QVariant& o_qVariant, QObject* parent = nullptr) const override
 	{
-		if (variant.typeIs<ObjectHandle>())
+		if (variant.typeIs<QObject>())
 		{
-			ObjectHandle provider;
-			if (!variant.tryCast(provider))
-			{
-				return false;
-			}
-
-			auto qObject = provider.getBase<QObject>();
+			auto qObject = variant.cast<QObject*>();
 			if (qObject != nullptr)
 			{
 				o_qVariant = QVariant::fromValue(qObject);

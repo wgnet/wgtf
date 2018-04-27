@@ -2,9 +2,14 @@
 
 #include "ui_test_panel_context.hpp"
 #include "python_panel.hpp"
-
+#include "core_reflection/i_definition_manager.hpp"
 #include "core_python_script/i_scripting_engine.hpp"
 #include "core_reflection/reflection_macros.hpp"
+#include "core_object/managed_object.hpp"
+#include "core_logging/logging.hpp"
+
+#include "metadata/ui_test_panel_context.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 #include <memory>
 
@@ -12,25 +17,23 @@ WGT_INIT_QRC_RESOURCE
 
 namespace wgt
 {
-ObjectHandle createContextObject(IComponentContext& componentContext, const char* panelName, ObjectHandle& pythonObject)
+ManagedObjectPtr createContextObject(IComponentContext& componentContext, const char* panelName, ObjectHandle& pythonObject)
 {
 	auto pDefinitionManager = componentContext.queryInterface<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		NGT_ERROR_MSG("Failed to find IDefinitionManager\n");
-		return false;
-	}
-	auto& definitionManager = (*pDefinitionManager);
-
-	const bool managed = true;
-	auto contextObject = pDefinitionManager->create<PanelContext>(managed);
-	if (!contextObject->initialize(componentContext, panelName, pythonObject))
-	{
-		NGT_ERROR_MSG("Failed to initialise context object\n");
-		return false;
+		return nullptr;
 	}
 
-	return contextObject;
+    return ManagedObject<PanelContext>::make_iunique_fn(
+        [panelName, &pythonObject](PanelContext& contextObject)
+    {
+        if (!contextObject.initialize(panelName, pythonObject))
+        {
+            NGT_ERROR_MSG("Failed to initialise context object\n");
+        }
+    });
 }
 
 /**
@@ -46,6 +49,10 @@ struct Python27TestUIPlugin : public PluginMain
 {
 	Python27TestUIPlugin(IComponentContext& componentContext)
 	{
+		registerCallback([](IDefinitionManager & defManager)
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+		});
 	}
 
 	bool PostLoad(IComponentContext& componentContext) override
@@ -55,15 +62,6 @@ struct Python27TestUIPlugin : public PluginMain
 
 	void Initialise(IComponentContext& componentContext) override
 	{
-		auto pDefinitionManager = componentContext.queryInterface<IDefinitionManager>();
-		if (pDefinitionManager == nullptr)
-		{
-			NGT_ERROR_MSG("Failed to find IDefinitionManager\n");
-			return;
-		}
-		auto& definitionManager = (*pDefinitionManager);
-		REGISTER_DEFINITION(PanelContext);
-
 		auto pScriptingEngine = componentContext.queryInterface<IPythonScriptingEngine>();
 		if (pScriptingEngine == nullptr)
 		{
@@ -87,11 +85,9 @@ struct Python27TestUIPlugin : public PluginMain
 		}
 
 		const char* panelName1 = "Python Test 1";
-		auto contextObject1 = createContextObject(componentContext, panelName1, module);
-		pythonPanel1_.reset(new PythonPanel(componentContext, contextObject1));
+		pythonPanel1_.reset(new PythonPanel(createContextObject(componentContext, panelName1, module)));
 		const char* panelName2 = "Python Test 2";
-		auto contextObject2 = createContextObject(componentContext, panelName2, module);
-		pythonPanel2_.reset(new PythonPanel(componentContext, contextObject2));
+		pythonPanel2_.reset(new PythonPanel(createContextObject(componentContext, panelName2, module)));
 	}
 
 	bool Finalise(IComponentContext& componentContext) override

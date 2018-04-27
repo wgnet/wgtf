@@ -5,7 +5,7 @@
 #include <set>
 
 #include "core_reflection/reflected_object.hpp"
-#include "core_data_model/i_list_model.hpp"
+#include "core_data_model/collection_model.hpp"
 
 #include "i_node.hpp"
 
@@ -74,7 +74,7 @@ public:
 	/*! Returns a node owner of the slot
 	@return the node object which is owner of the slot
 	*/
-	virtual INode* Node() const = 0;
+	virtual ObjectHandleT<INode> Node() const = 0;
 
 	/*! Returns whether the slot is connected
 	@return true if the slot is connected, false otherwise
@@ -89,7 +89,7 @@ public:
 	/*! Returns all slots which is connected to the current slot
 	@return slots
 	*/
-	virtual const GenericListT<ISlot*>* GetConnectedSlots() const = 0;
+	virtual const CollectionModel* GetConnectedSlots() const = 0;
 
 	/*! Returns whether the slot can connect
 	@param slot The other slot

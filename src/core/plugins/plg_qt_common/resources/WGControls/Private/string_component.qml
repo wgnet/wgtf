@@ -5,16 +5,22 @@ import WGControls 2.0
 
 WGTextBox {
     id: textField
-    objectName: typeof itemData.indexPath == "undefined" ? "string_component" : itemData.indexPath
-    anchors.left: parent.left
-    anchors.right: parent.right
-    text: itemData.value
-    readOnly: itemData.readOnly
-    enabled: itemData.enabled
-    multipleValues: itemData.multipleValues
+    objectName: itemData == null || typeof itemData.indexPath == "undefined" ? "string_component" : itemData.indexPath
+    text: itemData == null ? "" : (typeof itemData.value == "undefined") && multipleValues ? "Multiple Values" : itemData.value
+    readOnly: itemData != null && itemData.readOnly || (typeof readOnlyComponent != "undefined" && readOnlyComponent)
+    enabled: itemData != null && itemData.enabled
+    multipleValues: itemData != null && itemData.multipleValues
 
     onEditAccepted: {
-        itemData.value = text;
+        if(itemData == null)
+            return;
+		if(!multipleValues) {
+			itemData.value = text;
+		} else {
+			beginUndoFrame();
+			itemData.value = text;
+			endUndoFrame();
+		}
     }
 }
 

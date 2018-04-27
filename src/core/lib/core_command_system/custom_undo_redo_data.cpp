@@ -8,21 +8,21 @@ CustomUndoRedoData::CustomUndoRedoData(CommandInstance& commandInstance) : comma
 {
 }
 
-void CustomUndoRedoData::undo()
+bool CustomUndoRedoData::undo()
 {
 	auto command = commandInstance_.getCommand();
 	auto commandArgs = commandInstance_.getArguments();
-	command->undo(commandArgs);
+	return command->undo(commandArgs);
 }
 
-void CustomUndoRedoData::redo()
+bool CustomUndoRedoData::redo()
 {
 	auto command = commandInstance_.getCommand();
 	auto commandArgs = commandInstance_.getArguments();
-	command->redo(commandArgs);
+	return command->redo(commandArgs);
 }
 
-ObjectHandle CustomUndoRedoData::getCommandDescription() const /* override */
+CommandDescription CustomUndoRedoData::getCommandDescription() const /* override */
 {
 	const auto pCommand = commandInstance_.getCommand();
 	const auto commandArgs = commandInstance_.getArguments();

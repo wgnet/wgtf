@@ -15,9 +15,12 @@
 #include "core_reflection/metadata/meta_impl.hpp"
 
 #include "core_common/objects_pool.hpp"
+#include <unordered_set>
 
 namespace wgt
 {
+ITEMROLE(HDRColor)
+
 namespace DPMEDetails
 {
 struct MaxMinRangePair
@@ -95,15 +98,16 @@ Variant getMinValue(const TypeId& typeId)
 }
 
 class BatchHolder
+    : Depends< ICommandManager >
 {
 public:
-	BatchHolder(ICommandManager& commandManager_, size_t objectsCount)
-	    : commandManager(commandManager_), batchStarted(false), batchSuccessed(false)
+	BatchHolder( size_t objectsCount)
+	    : batchStarted(false), batchSuccessed(false)
 	{
 		if (objectsCount > 1)
 		{
 			batchStarted = true;
-			commandManager.beginBatchCommand();
+			get< ICommandManager >()->beginBatchCommand();
 		}
 	}
 
@@ -113,11 +117,11 @@ public:
 		{
 			if (batchSuccessed)
 			{
-				commandManager.endBatchCommand();
+				get< ICommandManager >()->endBatchCommand();
 			}
 			else
 			{
-				commandManager.abortBatchCommand();
+				get< ICommandManager >()->abortBatchCommand();
 			}
 		}
 	}
@@ -130,14 +134,8 @@ public:
 private:
 	bool batchStarted;
 	bool batchSuccessed;
-	ICommandManager& commandManager;
 };
 } // namespace DPMEDetails
-
-DefaultSetterGetterExtension::DefaultSetterGetterExtension(IComponentContext& context)
-    : reflectionControllerHolder(context)
-{
-}
 
 Variant DefaultSetterGetterExtension::getValue(const RefPropertyItem* item, int column, ItemRole::Id roleId,
                                                IDefinitionManager& defMng) const
@@ -181,6 +179,10 @@ Variant DefaultSetterGetterExtension::getValue(const RefPropertyItem* item, int 
 	else if (roleId == IsColorRole::roleId_)
 	{
 		return findFirstMetaData<MetaColorObj>(*item->getProperty(), defMng) != nullptr;
+	}
+	else if (roleId == ItemRole::HDRColorId)
+	{
+		return findFirstMetaData<MetaHDRColorObj>(*item->getProperty(), defMng) != nullptr;
 	}
 	else if (roleId == IsActionRole::roleId_)
 	{
@@ -276,8 +278,8 @@ Variant DefaultSetterGetterExtension::getValue(const RefPropertyItem* item, int 
 
 		provider = reflectedRoot(provider, defMng);
 		IClassDefinition* definition =
-		const_cast<IClassDefinition*>(provider.isValid() ? provider.getDefinition(defMng) : nullptr);
-		return ObjectHandle(definition);
+		const_cast<IClassDefinition*>(provider.isValid() ? defMng.getDefinition(provider) : nullptr);
+		return ObjectHandleT<IClassDefinition>(definition);
 	}
 	else if (roleId == DefinitionModelRole::roleId_)
 	{
@@ -289,7 +291,7 @@ Variant DefaultSetterGetterExtension::getValue(const RefPropertyItem* item, int 
 			if (definition != nullptr)
 			{
 				auto definitionModel = std::unique_ptr<IListModel>(new ClassDefinitionModel(definition, defMng));
-				return ObjectHandle(std::move(definitionModel));
+				return ObjectHandleT<IListModel>(std::move(definitionModel));
 			}
 		}
 	}
@@ -301,11 +303,7 @@ bool DefaultSetterGetterExtension::setValue(RefPropertyItem* item, int column, I
                                             IDefinitionManager& definitionManager,
                                             ICommandManager& commandManager) const
 {
-	IReflectionController* controllerPtr = reflectionControllerHolder.get<IReflectionController>();
-	if (controllerPtr == nullptr)
-	{
-		return false;
-	}
+	IReflectionController* controllerPtr = get<IReflectionController>();
 
 	if (roleId != ValueRole::roleId_ && roleId != DefinitionRole::roleId_)
 	{
@@ -313,21 +311,28 @@ bool DefaultSetterGetterExtension::setValue(RefPropertyItem* item, int column, I
 	}
 
 	const std::vector<std::shared_ptr<const PropertyNode>>& objects = item->getObjects();
-	DPMEDetails::BatchHolder batchHolder(commandManager, objects.size());
+	DPMEDetails::BatchHolder batchHolder(objects.size());
 
 	for (const std::shared_ptr<const PropertyNode>& object : objects)
 	{
 		ObjectHandle obj = object->object;
-		if (obj.getDefinition(definitionManager) == nullptr)
+		if (definitionManager.getDefinition(obj) == nullptr)
 		{
 			continue;
 		}
 		auto propertyAccessor =
-		obj.getDefinition(definitionManager)->bindProperty(object->propertyInstance->getName(), obj);
+		definitionManager.getDefinition(obj)->bindProperty(object->propertyInstance->getName(), obj);
 
 		if (roleId == ValueRole::roleId_)
 		{
-			controllerPtr->setValue(propertyAccessor, data);
+			if (controllerPtr)
+			{
+				controllerPtr->setValue(propertyAccessor, data);
+			}
+			else
+			{
+				propertyAccessor.setValue(data);
+			}
 		}
 		else if (roleId == DefinitionRole::roleId_)
 		{
@@ -357,7 +362,14 @@ bool DefaultSetterGetterExtension::setValue(RefPropertyItem* item, int column, I
 
 			ObjectHandle value;
 			value = valueDefinition->create();
-			controllerPtr->setValue(propertyAccessor, value);
+			if (controllerPtr)
+			{
+				controllerPtr->setValue(propertyAccessor, value);
+			}
+			else
+			{
+				propertyAccessor.setValue(value);
+			}
 		}
 	}
 
@@ -439,7 +451,7 @@ void DefaultChildCreatorExtension::exposeChildren(const std::shared_ptr<const Pr
 		ObjectHandle handle;
 		if (propertyValue.tryCast(handle))
 		{
-			const IClassDefinition* definition = handle.getDefinition(defMng);
+			const IClassDefinition* definition = defMng.getDefinition(handle);
 			if (definition != nullptr)
 			{
 				PropertyIteratorRange range = definition->allProperties();
@@ -460,8 +472,7 @@ void DefaultChildCreatorExtension::exposeChildren(const std::shared_ptr<const Pr
 				ReflectedIteratorValue iteratorValue;
 				iteratorValue.iterator = iter;
 				iteratorValue.value = iter.value();
-				children.push_back(allocator->createPropertyNode(propertyInstance, ObjectHandle(iteratorValue),
-				                                                 PropertyNode::CollectionItem));
+				children.push_back(allocator->createPropertyNode(propertyInstance, ObjectHandleT<ReflectedIteratorValue>(iteratorValue), PropertyNode::CollectionItem));
 			}
 		}
 	}
@@ -535,7 +546,7 @@ std::shared_ptr<const PropertyNode> DefaultAllocator::createPropertyNode(IBasePr
 IBasePropertyPtr DefaultAllocator::getCollectionItemProperty(std::string&& name, const TypeId& type,
                                                              IDefinitionManager& defMng)
 {
-	ReflectedIteratorProperty etalonItem(std::move(name), type, defMng);
+	ReflectedIteratorProperty etalonItem(std::move(name), type);
 	std::shared_ptr<ReflectedIteratorProperty> etalonPointer(&etalonItem, EmptyDeleter());
 
 	auto iter = propertiesPool.find(etalonPointer);
@@ -543,7 +554,7 @@ IBasePropertyPtr DefaultAllocator::getCollectionItemProperty(std::string&& name,
 		return *iter;
 
 	auto emplacePair =
-	propertiesPool.emplace(new ReflectedIteratorProperty(std::string(etalonItem.getName()), type, defMng));
+	propertiesPool.emplace(new ReflectedIteratorProperty(std::string(etalonItem.getName()), type));
 	assert(emplacePair.second == true);
 	return *emplacePair.first;
 }

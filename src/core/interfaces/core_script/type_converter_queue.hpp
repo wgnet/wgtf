@@ -2,6 +2,8 @@
 #ifndef TYPE_CONVERTER_QUEUE_HPP
 #define TYPE_CONVERTER_QUEUE_HPP
 
+#include "core_common/assert.hpp"
+
 #include <string>
 #include <vector>
 
@@ -103,7 +105,7 @@ void TypeConverterQueue<ITypeConverter, ScriptType>::registerTypeConverter(IType
 {
 	auto foundItr = std::find(typeConverters_.cbegin(), typeConverters_.cend(), &converter);
 	const bool found = (foundItr != typeConverters_.cend());
-	assert(!found);
+	TF_ASSERT(!found);
 	if (found)
 	{
 		return;
@@ -116,7 +118,7 @@ void TypeConverterQueue<ITypeConverter, ScriptType>::deregisterTypeConverter(ITy
 {
 	auto foundItr = std::find(typeConverters_.cbegin(), typeConverters_.cend(), &converter);
 	const bool found = (foundItr != typeConverters_.cend());
-	assert(found);
+	TF_ASSERT(found);
 	if (!found)
 	{
 		return;
@@ -132,7 +134,7 @@ bool TypeConverterQueue<ITypeConverter, ScriptType>::toScriptType(const Variant&
 	for (auto itr = typeConverters_.crbegin(); itr != typeConverters_.crend(); ++itr)
 	{
 		const auto& pTypeConverter = (*itr);
-		assert(pTypeConverter != nullptr);
+		TF_ASSERT(pTypeConverter != nullptr);
 		if (pTypeConverter->toScriptType(inVariant, outObject, userData))
 		{
 			return true;
@@ -148,7 +150,7 @@ bool TypeConverterQueue<ITypeConverter, ScriptType>::toVariant(const ScriptType&
 	for (auto itr = typeConverters_.crbegin(); itr != typeConverters_.crend(); ++itr)
 	{
 		const auto& pTypeConverter = (*itr);
-		assert(pTypeConverter != nullptr);
+		TF_ASSERT(pTypeConverter != nullptr);
 		if (pTypeConverter->toVariant(inObject, outVariant))
 		{
 			return true;
@@ -167,7 +169,7 @@ bool TypeConverterQueue<ITypeConverter, ScriptType>::toVariantWithParent(const S
 	for (auto itr = typeConverters_.crbegin(); itr != typeConverters_.crend(); ++itr)
 	{
 		const auto& pTypeConverter = (*itr);
-		assert(pTypeConverter != nullptr);
+		TF_ASSERT(pTypeConverter != nullptr);
 		if (pTypeConverter->toVariant(inObject, outVariant, parentHandle, childPath))
 		{
 			return true;

@@ -3,6 +3,8 @@ import QtQuick.Controls.Private 1.0
 import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 
+import WGControls 2.0
+
 /*!
  \ingroup wgcontrols
  \brief A tooltip
@@ -26,25 +28,20 @@ MouseArea
     /*!
         The value of the tooltip text
     */
-    property string text: ""
+    property alias text: tooltipBase.text
 
     /*!
         The time interval in ms for tooltip
     */
-    property alias timer: timer.interval
+    property alias timer: tooltipBase.timer
 
     anchors.fill: parent
     hoverEnabled: true
     acceptedButtons: Qt.NoButton
     propagateComposedEvents: true
-    onExited: Tooltip.hideText()
-    onCanceled: Tooltip.hideText()
 
-    Timer
-    {
-        id: timer
-        interval: 300
-        running: tooltip.containsMouse && !tooltip.pressed && tooltip.text.length
-        onTriggered: Tooltip.showText(tooltip, Qt.point(tooltip.mouseX, tooltip.mouseY), tooltip.text);
+    WGToolTipBase {
+        id: tooltipBase
+        tooltipArea: tooltip
     }
 }

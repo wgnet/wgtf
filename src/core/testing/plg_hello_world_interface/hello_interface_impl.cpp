@@ -3,10 +3,6 @@
 
 namespace wgt
 {
-HelloInterfaceImpl::HelloInterfaceImpl(IComponentContext& context) : Depends(context)
-{
-}
-
 void HelloInterfaceImpl::display()
 {
 	auto viewCreator = this->get<IViewCreator>();

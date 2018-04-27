@@ -1,20 +1,20 @@
 #include "wg_sub_proxy.hpp"
-#include <assert.h>
+
+#include "core_common/assert.hpp"
+#include "core_qt_common/models/wgt_item_model_base.hpp"
+#include "core_variant/variant.hpp"
+#include <functional>
+
 
 namespace wgt
 {
 struct WGSubProxy::Impl
+	: public WgtItemModelBase
 {
-	struct Mapping
+	Impl( WGSubProxy & subProxy )
+		: subProxy_( subProxy )
 	{
-		QHash<QModelIndex, Mapping*>::iterator mapIter_;
-	};
-
-	~Impl()
-	{
-		clearMapping();
 	}
-
 	QModelIndex proxy_to_source(const QModelIndex& proxyIndex, QAbstractItemModel& sourceModel) const
 	{
 		if (!proxyIndex.isValid())
@@ -22,8 +22,11 @@ struct WGSubProxy::Impl
 			return sourceParent_;
 		}
 
-		auto it = index_to_iterator(proxyIndex);
-		return sourceModel.index(proxyIndex.row(), proxyIndex.column(), it.key());
+		// See ExtendedModel::sourceIndex for an explanation of the following code
+		QModelIndex(QAbstractItemModel::*createIndexFunc)(int, int, void*) const = &WGSubProxy::createIndex;
+		using namespace std::placeholders;
+		auto createIndex = std::bind(createIndexFunc, &sourceModel, _1, _2, _3);
+		return createIndex(proxyIndex.row(), proxyIndex.column(), proxyIndex.internalPointer());
 	}
 
 	QModelIndex source_to_proxy(const QModelIndex& sourceIndex, const WGSubProxy& proxyModel)
@@ -33,64 +36,47 @@ struct WGSubProxy::Impl
 			return QModelIndex();
 		}
 
-		auto source_parent = sourceIndex.parent();
-		auto it = createMapping(source_parent);
-		return proxyModel.createIndex(sourceIndex.row(), sourceIndex.column(), *it);
-	}
-
-	QHash<QModelIndex, Mapping*>::const_iterator index_to_iterator(const QModelIndex& proxy_index) const
-	{
-		auto* p = proxy_index.internalPointer();
-		assert(p);
-		auto it = static_cast<const Mapping*>(p)->mapIter_;
-		assert(it != sourceIndexMapping_.end());
-		assert(it.value());
-		return it;
+		TF_ASSERT(sourceIndex.isValid());
+		return proxyModel.createIndex(sourceIndex.row(), sourceIndex.column(), sourceIndex.internalPointer());
 	}
 
 	bool isMapped(const QModelIndex& source_parent)
 	{
-		if (!source_parent.isValid())
-		{
-			return false;
-		}
-
 		if (source_parent == sourceParent_)
 		{
 			return true;
 		}
 
-		auto it = sourceIndexMapping_.find(source_parent);
-		return it != sourceIndexMapping_.constEnd();
-	}
-
-	QHash<QModelIndex, Mapping*>::iterator createMapping(const QModelIndex& source_parent)
-	{
-		auto it = sourceIndexMapping_.find(source_parent);
-		if (it != sourceIndexMapping_.constEnd()) // was mapped already
+		if (!source_parent.isValid())
 		{
-			return it;
+			return false;
 		}
-
-		auto m = new Mapping;
-		it = sourceIndexMapping_.insert(source_parent, m);
-		m->mapIter_ = it;
-		return it;
+		
+		return isMapped(source_parent.parent());
 	}
 
-	void clearMapping()
+
+	QAbstractItemModel * getSourceModel() const override
 	{
-		qDeleteAll(sourceIndexMapping_);
-		sourceIndexMapping_.clear();
+		return subProxy_.sourceModel();
+	}
+
+	
+	QModelIndex getSourceIndex(const QModelIndex & index) const override
+	{
+		return proxy_to_source(index, *getSourceModel());
 	}
 
 	QtConnectionHolder connections_;
 	QPersistentModelIndex sourceParent_;
-	QHash<QModelIndex, Mapping*> sourceIndexMapping_;
+	WGSubProxy & subProxy_;
 };
 
-WGSubProxy::WGSubProxy() : impl_(new Impl())
+WGSubProxy::WGSubProxy()
+	: WGTInterfaceProvider( this )
+	, impl_(new Impl( *this ))
 {
+	registerInterface(*impl_);
 }
 
 WGSubProxy::~WGSubProxy()
@@ -133,8 +119,8 @@ QModelIndex WGSubProxy::index(int row, int column, const QModelIndex& parent) co
 	}
 
 	auto source_parent = mapToSource(parent);
-	auto it = impl_->createMapping(source_parent);
-	return createIndex(row, column, *it);
+	auto source_index = source->index(row, column, source_parent);
+	return mapFromSource(source_index);
 }
 
 QModelIndex WGSubProxy::parent(const QModelIndex& child) const
@@ -229,10 +215,7 @@ void WGSubProxy::setSourceParent(const QModelIndex& sourceParent)
 
 	beginResetModel();
 
-	impl_->clearMapping();
-
 	impl_->connections_.reset();
-
 	impl_->sourceParent_ = sourceParent;
 	sourceParentChanged();
 
@@ -242,16 +225,19 @@ void WGSubProxy::setSourceParent(const QModelIndex& sourceParent)
 	if (sourceModel != nullptr)
 	{
 		impl_->connections_ += QObject::connect(sourceModel, &QAbstractItemModel::modelAboutToBeReset, [this]() {
-			beginResetModel();
-			impl_->clearMapping();
+			setSourceParent(QModelIndex());
 		});
-		impl_->connections_ +=
-		QObject::connect(sourceModel, &QAbstractItemModel::modelReset, [this]() { endResetModel(); });
 
 		impl_->connections_ +=
 		QObject::connect(sourceModel, &QAbstractItemModel::dataChanged,
 		                 [this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
-			                 if (!impl_->isMapped(topLeft) || !impl_->isMapped(bottomRight))
+							 auto parent = topLeft.parent();
+							 if (parent != bottomRight.parent())
+							 {
+								 return;
+							 }
+							 
+							 if (!impl_->isMapped(parent))
 			                 {
 				                 return;
 			                 }

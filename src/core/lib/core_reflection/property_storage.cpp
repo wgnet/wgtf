@@ -2,6 +2,7 @@
 #include "property_iterator.hpp"
 
 #include "interfaces/i_base_property.hpp"
+#include "wg_types/hash_utilities.hpp"
 
 namespace wgt
 {
@@ -28,14 +29,58 @@ PropertyStorage::~PropertyStorage()
 {
 }
 
+
+//------------------------------------------------------------------------------
 void PropertyStorage::addProperty(const IBasePropertyPtr& property)
 {
 	properties_.emplace_back(property);
+	propertyLookupMap_.insert(
+		std::make_pair(property->getNameHash(), property));
 }
 
+
+//------------------------------------------------------------------------------
+void PropertyStorage::removeProperty(const char* name)
+{
+	auto nameHash = HashUtilities::compute(name);
+	auto found = std::find_if(properties_.begin(), properties_.end(), [nameHash](const IBasePropertyPtr& property) {
+		return property->getNameHash() == nameHash;
+	});
+	if (found != properties_.end())
+	{
+		properties_.erase(found);
+		propertyLookupMap_.erase(nameHash);
+	}
+}
+
+//------------------------------------------------------------------------------
+IBasePropertyPtr PropertyStorage::findProperty(const char * name) const
+{
+	auto nameHash = HashUtilities::compute(name);
+	auto findIt = propertyLookupMap_.find(nameHash);
+	if (findIt != propertyLookupMap_.end())
+	{
+		return findIt->second.lock();
+	}
+	return IBasePropertyPtr();
+}
+
+
+//------------------------------------------------------------------------------
+IBasePropertyPtr PropertyStorage::findProperty( IPropertyPath::ConstPtr & path ) const
+{
+	auto findIt = propertyLookupMap_.find(path->getHash());
+	if (findIt != propertyLookupMap_.end())
+	{
+		return findIt->second.lock();
+	}
+	return IBasePropertyPtr();
+}
+
+//------------------------------------------------------------------------------
 PropertyIteratorImplPtr PropertyStorage::getIterator() const
 {
-	return std::make_shared<PropertyStorageIterator>(*this);
+	return PropertyIteratorImplPtr(new PropertyStorageIterator(*this));
 }
 
 PropertyStorageIterator::PropertyStorageIterator(const PropertyStorage& storage)

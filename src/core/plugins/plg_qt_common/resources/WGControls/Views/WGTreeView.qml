@@ -480,7 +480,7 @@ Item {
         WGToolTip
         {
             id: tooltip
-            text: itemData.description !== undefined ? itemData.description : ""
+            text: itemData.tooltip !== undefined ? itemData.tooltip : ""
         }
     }
 

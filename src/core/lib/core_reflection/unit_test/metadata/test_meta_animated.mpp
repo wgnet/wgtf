@@ -1,0 +1,25 @@
+#include "../test_meta_animated.hpp"
+#include "../test_meta_animated_object.hpp"
+#include "../test_meta_animated_float_object.hpp"
+#include "../test_meta_animated_vector_object.hpp"
+
+namespace wgt
+{
+
+BEGIN_EXPOSE(TestMetaAnimatedObj, MetaDirectBases( IMetaAnimatedObj ))
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestMetaAnimatedLerpFloatObj, MetaDirectBases(TestMetaAnimatedObj))
+END_EXPOSE()
+
+BEGIN_EXPOSE(TestMetaAnimatedLerpVector4Obj, MetaDirectBases( IMetaAnimatedObj))
+END_EXPOSE()
+
+BEGIN_EXPOSE(MetaAnimatedTest::TestMetaDataObject )
+	EXPOSE("test_float", floating_, TestMetaAnimatedLerpFloat())
+	EXPOSE("test_float_2", floating_2_, TestMetaAnimatedLerpFloat())
+	EXPOSE("test_vector4", vector4_, TestMetaAnimatedLerpVector4())
+	EXPOSE("test_vector4_2", vector4_2_, TestMetaAnimatedLerpVector4())
+END_EXPOSE()
+
+}

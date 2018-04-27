@@ -27,11 +27,6 @@ private:
 
 public:
 	//==========================================================================
-	TestWindowPlugin(IComponentContext& contextManager) : mainWindow_(contextManager)
-	{
-	}
-
-	//==========================================================================
 	bool PostLoad(IComponentContext& contextManager)
 	{
 		return true;

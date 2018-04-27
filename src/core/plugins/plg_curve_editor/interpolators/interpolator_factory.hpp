@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "interfaces/curve_types.hpp"
-#include "interfaces/i_curve_interpolator.hpp"
+#include "curve_editor/curve_types.hpp"
+#include "curve_editor/i_curve_interpolator.hpp"
 
 namespace wgt
 {

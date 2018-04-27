@@ -16,14 +16,14 @@ SET( ALL_SRCS
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 BW_ADD_LIBRARY( core_generic_plugin_test ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( core_generic_plugin_test INTERFACE
 	core_generic_plugin_manager
-	wg_memory
+	wgtf_memory
 )
 
-BW_PROJECT_CATEGORY( core_generic_plugin_test "Unit Tests" )
+BW_PROJECT_CATEGORY( core_generic_plugin_test "Unit Tests/Framework" )

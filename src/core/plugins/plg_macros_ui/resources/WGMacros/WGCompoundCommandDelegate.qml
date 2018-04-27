@@ -1,137 +1,88 @@
-import QtQuick 2.1
-import QtQuick.Controls 1.0
+import QtQuick 2.3
+import QtQuick.Controls 1.2
 import QtQuick.Layouts 1.0
+import WGControls 2.0
+import WGControls.Views 2.0
+import WGControls.Layouts 2.0
 
-import WGControls 1.0
-import WGControls.Layouts 1.0
-
-
-// Component for displaying compound commands
-Item {
+WGSubPanel {
+    objectName: "WGCompoundCommandDelegate"
     WGComponent { type: "WGCompoundCommandDelegate" }
-    
-    height: Math.max( defaultSpacing.minimumRowHeight, macroRow.height )
-
-    property QtObject macroWindow: WGMacroEditWindow{}
-    function closeHandler() {
-        if (macroWindow.accepted)
-        {
-            itemData.value.DisplayObject.UpdateMacroData
-        }
-    }
-
-    Component.onCompleted: {
-        macroWindow.closing.connect( closeHandler )
-    }
-
-    WGExpandingRowLayout {
-        id: macroRow
-        anchors.left: parent.left
-        anchors.right: parent.right
-
-        //Current item column & arrow
+    id: macroItem
+    text: itemData.value.macroName
+    property var stepsModel: itemData.value.macroStepsModel
+    property bool editing: false
+    headerObject: WGExpandingRowLayout {
+        clip: true
         Item {
-            id: expandArrow
-            objectName: "expandArrow"
+            Layout.fillWidth: true
+        }
 
-            Layout.minimumWidth: expandArrowImage.width
-            Layout.minimumHeight: expandArrowImage.height
-
-            Layout.preferredWidth: defaultSpacing.minimumRowHeight
+        WGPushButton {
             Layout.preferredHeight: defaultSpacing.minimumRowHeight
-
-            property bool expanded: false
-
-            Image {
-                id: expandArrowImage
-                source: expandArrow.expanded ? "icons/arrow_down_16x16.png" : "icons/arrow_right_16x16.png"
-                anchors.centerIn: parent
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-
-                    expandArrow.expanded = !expandArrow.expanded
-                    //expand the macro and show child actions.
-                    //this should really be handled by a TreeView of some kind.
-                }
-            }
-        }
-
-        Text{
-            id: textField
-            Layout.minimumWidth: paintedWidth
-            clip: false
-            text: itemData.value.DisplayObject.DisplayName
-            color: palette.textColor
-        }
-
-        WGToolButton {
-            objectName: "editMacroButton"
-            iconSource: "icons/edit_16x16.png"
+            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+            iconSource: "icons/play_16x16.png"
+            tooltip: "Run Macro"
             onClicked: {
-                macroWindow.sourceData = itemData.value.DisplayObject.TreeSource
-                macroWindow.accepted = false
-                macroWindow.title = "Edit " + itemData.value.DisplayObject.DisplayName
-                macroWindow.show()
+                queueCommand(itemData.value.macroId);
             }
         }
-
-        WGToolButton {
-            objectName: "dialogToggleButton"
-            iconSource: checked ? "icons/dialogue_on_16x16.png" : "icons/dialogue_off_16x16.png"
+        WGPushButton {
+            Layout.preferredHeight: defaultSpacing.minimumRowHeight
+            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
             checkable: true
-            checked: false
+            checked: macroItem.editing
+            iconSource: "icons/edit_16x16.png"
+            tooltip: "Edit Macro"
             onClicked: {
-                //turn on show a dialogue box on this step
+                macroItem.editing = !macroItem.editing;
             }
         }
-
-        Rectangle {
-            Layout.fillWidth: true
-            color: "transparent"
-        }
-
-
-        Text{
-            id: label
-            Layout.minimumWidth: paintedWidth
-            clip: false
-            text: "SelectContextObject:"
-            color: palette.textColor
-        }
-
-        WGDropDownBox {
-            id: contextObject
-            objectName: "selectContextObject"
-            Layout.fillWidth: true
-
-            WGListModel {
-                id: contextObjects
-                source: itemData.value.DisplayObject.ContextObjects
-
-                ValueExtension {}
+        WGPushButton {
+            Layout.preferredHeight: defaultSpacing.minimumRowHeight
+            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+            enabled: true
+            iconSource: "icons/delete_16x16.png"
+            tooltip: "Delete Macro"
+            onClicked: {
+                macroModel.removeItem(itemRowIndex);
             }
+        }
+    }
 
-            model: contextObjects
-            textRole: "valueType"
+    childObject: WGScrollView {
+        id: stepPanel
+        WGListView {
+            anchors.fill: parent
+            model: stepsModel
+            columnWidth: parent.width
+            columnDelegates: [macroStepsComponent]
+            property Component macroStepsComponent: WGFrame {
+                id: macroFrame
+                width: columnWidth - defaultSpacing.standardMargin * 2
+                height: contentItem.height + defaultSpacing.standardMargin * 3
 
-            Component.onCompleted: {
-                currentIndex = Qt.binding( function() {
-                    var modelIndex = contextObjects.find( itemData.value.DisplayObject.ContextObject, "value" );
-                    return contextObjects.indexRow( modelIndex ); } )
-            }
+                childObject: Item {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: defaultSpacing.minimumRowHeight * 4
 
-            Connections {
-                target: contextObject
-                onCurrentIndexChanged: {
-                    if (contextObject.currentIndex < 0) {
-                        return;
+                    ColumnLayout {
+                        anchors.fill: parent
+
+                        WGLabel {
+                            text: "Step " + (itemRowIndex + 1) + ": " + itemData.commandName
+                            font.bold: true
+                        }
+
+                        WGPropertyTreeView {
+                            Layout.fillHeight: true
+                            Layout.fillWidth: true
+                            model: itemData.commandParameters
+                            clamp: true
+                            readOnly: !macroItem.editing
+                        }
                     }
-                    var modelIndex = contextObjects.index( contextObject.currentIndex );
-                    itemData.value.DisplayObject.ContextObject = contextObjects.data( modelIndex, "value" );
                 }
             }
         }

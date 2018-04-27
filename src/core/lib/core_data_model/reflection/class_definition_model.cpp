@@ -1,8 +1,8 @@
 #include "class_definition_model.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
 #include "core_data_model/i_item_role.hpp"
-#include "core_reflection/interfaces/i_class_definition.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_reflection/utilities/reflection_utilities.hpp"
 #include "core_reflection/i_definition_manager.hpp"
@@ -32,7 +32,7 @@ public:
 	{
 		if (roleId == ValueRole::roleId_)
 		{
-			return ObjectHandle(const_cast<IClassDefinition*>(definition_));
+			return const_cast<IClassDefinition*>(definition_);
 		}
 		else if (roleId == IndexPathRole::roleId_)
 		{
@@ -73,14 +73,14 @@ ClassDefinitionModel::~ClassDefinitionModel()
 
 IItem* ClassDefinitionModel::item(size_t index) const
 {
-	assert(index < items_.size());
+	TF_ASSERT(index < items_.size());
 	return items_[index];
 }
 
 size_t ClassDefinitionModel::index(const IItem* item) const
 {
 	auto it = std::find(items_.begin(), items_.end(), item);
-	assert(it != items_.end());
+	TF_ASSERT(it != items_.end());
 	return it - items_.begin();
 }
 

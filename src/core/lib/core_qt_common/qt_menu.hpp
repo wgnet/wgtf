@@ -39,9 +39,12 @@ public:
 
 protected:
 	static void addMenuAction(QMenu& qMenu, QAction& qAction, const char* path);
+	static QMenu* addMenuPath(QMenu& qMenu, const char* path);
 	static void removeMenuAction(QMenu& qMenu, QAction& qAction);
-
+	static void updateMenuVisibility(QMenu& qMenu);
+	bool allInvisible_;
 private:
+	friend class QForwardingAction;
 	QSharedPointer<QAction> createSharedQAction(IAction& action);
 	QSharedPointer<QAction> getSharedQAction(IAction& action);
 

@@ -14,13 +14,8 @@ class TestDataSource;
 class TestDataSourceManager : public Implements<IDataSourceManager>, public IObjectManagerListener
 {
 public:
-	TestDataSourceManager() : id_(0)
-	{
-	}
-	virtual ~TestDataSourceManager()
-	{
-	}
-
+	TestDataSourceManager() = default;
+	virtual ~TestDataSourceManager() = default;
 	virtual void init(IComponentContext& contextManager) override;
 	virtual void fini() override;
 	virtual IDataSource* openDataSource() override;
@@ -29,12 +24,12 @@ public:
 
 private:
 	// IObjectManagerListener
-	void onObjectRegistered(const ObjectHandle& pObj);
-	void onObjectDeregistered(const ObjectHandle& pObj);
+	void onObjectRegistered(const ObjectHandle& pObj) override;
+	void onObjectDeregistered(const ObjectHandle& pObj) override;
 
 	typedef std::vector<std::pair<int, std::unique_ptr<TestDataSource>>> DataSources;
 	DataSources sources_;
-	int id_;
+	int id_ = 0;
 	IComponentContext* contextManager_;
 	std::unordered_map<std::string, ObjectHandle> loadedObj_;
 };
@@ -49,8 +44,7 @@ public:
 	void fini(IComponentContext& contextManager, int id);
 
 	// IDataSource
-	const ObjectHandleT<TestPage>& getTestPage() const;
-	const ObjectHandleT<TestPage2>& getTestPage2() const;
+	const ObjectHandleT<TestPage>& getTestPage() const override;
 	virtual const char* description() const override;
 
 	void setPolyStructObj(const TestPolyStructPtr& polyStruct);
@@ -59,10 +53,9 @@ public:
 private:
 	TestDataSourceManager& dataSrcMgr_;
 	std::string testPageId_;
-	std::string testPageId2_;
 	std::string description_;
-	ObjectHandleT<TestPage> testPage_;
-	ObjectHandleT<TestPage2> testPage2_;
+	ObjectHandleT<TestPage> testPageHandle_;
+	ManagedObject<TestPage> testPage_;
 };
 } // end namespace wgt
 #endif // TEST_DATASOURCE_HPP

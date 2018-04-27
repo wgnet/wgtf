@@ -9,7 +9,7 @@ Row
     id: slot
     objectName: "Slot"
     WGComponent { type: "Slot" }
-    
+
     property bool isInput
     property var slotObj
 
@@ -22,7 +22,9 @@ Row
     property bool validSlot: {
         if (canvasContainer.creatingConnection && canvasContainer.currentConnectionSlot !== slotObj)
         {
-            if (canvasContainer.creatingFromInput !== isInput && canvasContainer.creatingColor == slotObj.color && slot.parentNode != canvasContainer.creatingNode)
+            if (canvasContainer.creatingFromInput !== isInput &&
+                    Qt.colorEqual(canvasContainer.creatingColor, slotObj.color) &&
+                    slot.parentNode != canvasContainer.creatingNode)
             {
                 return true
             }
@@ -101,10 +103,10 @@ Row
                 else if (mouse.button == Qt.RightButton)
                 {
                     mouse.accepted = true;
-					if (!canvasContainer.creatingConnection)
-					{
-						removeConnection();
-					}
+                    if (!canvasContainer.creatingConnection)
+                    {
+                        removeConnection();
+                    }
                 }
             }
 

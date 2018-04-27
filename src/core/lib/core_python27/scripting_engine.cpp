@@ -78,7 +78,7 @@ bool appendPath(const wchar_t* path)
 	return true;
 }
 
-ObjectHandle import(IComponentContext& context, const char* name)
+ObjectHandle import(const char* name, IPythonObjManager& objManager)
 {
 	if (!Py_IsInitialized())
 	{
@@ -100,10 +100,10 @@ ObjectHandle import(IComponentContext& context, const char* name)
 
 	ObjectHandle parentHandle;
 	const char* childPath = "";
-	return ReflectedPython::DefinedInstance::findOrCreate(context, module, parentHandle, childPath);
+	return objManager.findOrCreate(module, parentHandle, childPath);
 }
 
-void initDebugger(const DIRef<ICommandLineParser>& commandLine)
+void initDebugger(const ICommandLineParser* commandLine)
 {
 	if (commandLine == nullptr)
 	{
@@ -167,11 +167,11 @@ void initDebugger(const DIRef<ICommandLineParser>& commandLine)
 std::unique_ptr<PythonDependencies> g_Deps;
 #endif // ENABLE_DEPLOY_PYTHON_SUPPORT
 
-Python27ScriptingEngine::Python27ScriptingEngine(IComponentContext& context) : context_(context), commandLine_(context)
+Python27ScriptingEngine::Python27ScriptingEngine()
 {
 #if ENABLE_DEPLOY_PYTHON_SUPPORT
 	assert(g_Deps == nullptr);
-	g_Deps.reset(new PythonDependencies(context_));
+	g_Deps.reset(new PythonDependencies);
 #endif // ENABLE_DEPLOY_PYTHON_SUPPORT
 }
 
@@ -197,9 +197,10 @@ bool Python27ScriptingEngine::init()
 	// Tell the interpreter the value of the argv[0]
 	// This will add the exe's folder to the interpreter's path
 	// Must be before Py_Initialize()
-	if ((commandLine_ != nullptr) && (commandLine_->argc() > 0))
+	auto commandLine = get<ICommandLineParser>();
+	if ((commandLine != nullptr) && (commandLine->argc() > 0))
 	{
-		const auto exePath = commandLine_->argv()[0];
+		const auto exePath = commandLine->argv()[0];
 		Py_SetProgramName(exePath);
 	}
 
@@ -244,7 +245,7 @@ bool Python27ScriptingEngine::init()
 #endif // ENABLE_DEPLOY_PYTHON_SUPPORT
 
 	// Import the (optional) debugging module
-	Python27ScriptingEngine_Detail::initDebugger(commandLine_);
+	Python27ScriptingEngine_Detail::initDebugger(get<ICommandLineParser>());
 
 	return true;
 }
@@ -272,7 +273,7 @@ bool Python27ScriptingEngine::appendBinPath(const wchar_t* path)
 
 ObjectHandle Python27ScriptingEngine::import(const char* moduleName)
 {
-	return Python27ScriptingEngine_Detail::import(context_, moduleName);
+	return Python27ScriptingEngine_Detail::import(moduleName, *get<IPythonObjManager>());
 }
 
 bool Python27ScriptingEngine::checkErrors()

@@ -11,13 +11,13 @@ RowLayout {
     WGComponent { type: "CurveEditorToolbar" }
 
     property bool editEnabled : true
+    property bool scalesEnabled : true
     property bool timeScaleEnabled : true
     property real time: 0
     property real value: 0
+    property real timeScale: 1
+    property real valueScale: 1
     property string title: ""
-
-    property alias timeScale: editTimeScale.number
-    property alias valueScale: editValueScale.number
 
     signal toggleX;
     signal toggleY;
@@ -46,8 +46,8 @@ RowLayout {
         minimumValue: 0
         stepSize: 0.01
         decimals: 3
-        onNumberChanged: unscaledTimeChanged(number / toolbar.timeScale)
-        number: toolbar.time * toolbar.timeScale
+        onEditingFinished: unscaledTimeChanged(value / toolbar.timeScale)
+        value: toolbar.time * toolbar.timeScale
     }
     WGLabel{
         text: "Value:"
@@ -64,8 +64,8 @@ RowLayout {
         minimumValue: -2147483647
         stepSize: 0.01
         decimals: 3
-        onNumberChanged: unscaledValueChanged(number / toolbar.valueScale)
-        number: toolbar.value * toolbar.valueScale
+        onEditingFinished: unscaledValueChanged(value / toolbar.valueScale)
+        value: toolbar.value * toolbar.valueScale
     }
     WGLabel{
         text: "Time Scale:"
@@ -76,11 +76,15 @@ RowLayout {
         Layout.minimumWidth: minTextMeasure.contentWidth + defaultSpacing.doubleMargin
         Layout.preferredWidth: implicitWidth
         Layout.fillWidth: true
-        enabled: toolbar.timeScaleEnabled
+        enabled: toolbar.timeScaleEnabled && toolbar.scalesEnabled
         maximumValue: 4294967295
         minimumValue: 0
+        onEditingFinished: {
+           setValueHelper( toolbar, "timeScale", value);
+        }
         stepSize: 0.01
         decimals: 3
+        value: toolbar.timeScale
     }
     WGLabel{
         text: "Value Scale:"
@@ -91,10 +95,15 @@ RowLayout {
         Layout.minimumWidth: minTextMeasure.contentWidth + defaultSpacing.doubleMargin
         Layout.preferredWidth: implicitWidth
         Layout.fillWidth: true
+        enabled: toolbar.scalesEnabled
         maximumValue: 4294967295
         minimumValue: 0
+        onEditingFinished: {
+           setValueHelper( toolbar, "valueScale", value);
+        }
         stepSize: 0.01
         decimals: 3
+        value: toolbar.valueScale
     }
 
     WGToolButton {

@@ -9,15 +9,10 @@
 namespace wgt
 {
 TestPluginLoader::TestPluginLoader()
+	: pluginManager_(*getPluginManager())
 {
-	IPluginContextManager& contextManager = pluginManager_.getContextManager();
-	contextManager.getGlobalContext()->registerInterface(new MemoryPluginContextCreator);
-}
-
-void TestPluginLoader::load(const PluginList& plugins)
-{
-	assert(plugins_.empty());
-	plugins_ = plugins;
+	interface_ = getGlobalContext()->registerInterface(new MemoryPluginContextCreator);
+	plugins_.push_back(L"plugins/plg_reflection");
 	pluginManager_.loadPlugins(plugins_);
 }
 
@@ -25,5 +20,10 @@ TestPluginLoader::~TestPluginLoader()
 {
 	pluginManager_.unloadPlugins(plugins_);
 	plugins_.clear();
+
+	if (interface_ != nullptr)
+	{
+		deregisterInterface(interface_.get());
+	}
 }
 } // end namespace wgt

@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 3.1.1 )
-PROJECT( wg_memory )
+PROJECT( wgtf_memory )
 
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGToolsCoreLibrary )
@@ -14,14 +14,15 @@ SET( ALL_SRCS
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS} 
 )
 BW_ADD_LIBRARY( ${PROJECT_NAME} SHARED ${BLOB_SRCS} )
 
 BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME}
 	core_common
-	wg_types
+	core_logging
+	wgtf_types
 )
 
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Wargaming Libs" )

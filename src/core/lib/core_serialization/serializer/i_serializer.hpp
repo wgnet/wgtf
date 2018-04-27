@@ -3,8 +3,8 @@
 
 #include "core_variant/variant.hpp"
 #include "core_common/deprecated.hpp"
-#include "core_reflection/object_handle.hpp"
 #include "core_serialization/serialization_dll.hpp"
+#include "core_object/managed_object.hpp"
 #include <utility>
 
 namespace wgt
@@ -23,6 +23,21 @@ public:
 
 	virtual bool serialize(const Variant& value);
 	virtual bool deserialize(Variant& value);
+
+	virtual bool serialize(const IManagedObject& object);
+	virtual bool deserialize(IManagedObject& object);
+
+	template<class T>
+	bool serialize(const ManagedObject<T>& object)
+	{
+		return this->serialize(static_cast<const IManagedObject&>(object));
+	}
+
+	template<class T>
+	bool deserialize(ManagedObject<T>& object)
+	{
+		return this->deserialize(static_cast<IManagedObject&>(object));
+	}
 
 	template <typename T>
 	bool deserialize(T& value)

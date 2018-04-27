@@ -89,6 +89,9 @@ public slots:
 	virtual void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 	{
 	}
+	virtual void onHeaderDataChanged(Qt::Orientation orientation, int first, int last)
+	{
+	}
 	virtual void onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
 	                                      QAbstractItemModel::LayoutChangeHint hint)
 	{

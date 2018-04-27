@@ -2,6 +2,8 @@
 #define QT_ITEM_DATA_HPP
 
 #include <QObject>
+#include <QModelIndex>
+
 #include <memory>
 #include "core_qt_common/qt_new_handler.hpp"
 
@@ -18,12 +20,14 @@ public:
 		MetaObject(QAbstractItemModel& model);
 		~MetaObject();
 
-		QAbstractItemModel& model_;
+		void destroy();
+		QAbstractItemModel * model_;
 		QList<int> roles_;
 		QMetaObject* metaObject_;
 	};
 
-	QtItemData(const QModelIndex& index, std::weak_ptr<MetaObject> metaObject);
+	QtItemData(const QModelIndex& index, std::shared_ptr<MetaObject> & metaObject);
+	~QtItemData();
 
 	const QModelIndex& index() const;
 
@@ -31,9 +35,8 @@ public:
 	int qt_metacall(QMetaObject::Call c, int id, void** argv) override;
 
 private:
-	struct Impl;
-	std::unique_ptr<Impl> impl_;
-
+	QModelIndex index_;
+	std::shared_ptr< MetaObject > metaObject_;
 public:
 	static std::shared_ptr<MetaObject> getMetaObject(QAbstractItemModel& model);
 };

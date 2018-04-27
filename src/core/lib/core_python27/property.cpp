@@ -8,6 +8,8 @@
 #include "core_dependency_system/depends.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_reflection/reflected_method_parameters.hpp"
+#include "core_reflection/metadata/meta_base.hpp"
+#include "core_reflection/private/property_path.hpp"
 #include "type_converters/converters.hpp"
 
 #include "wg_pyscript/py_script_object.hpp"
@@ -21,39 +23,36 @@ typedef Depends<PythonType::Converters> ImplementationDepends;
 class Property::Implementation : public ImplementationDepends
 {
 public:
-	Implementation(IComponentContext& context, const char* key, const PyScript::ScriptObject& pythonObject,
-	               MetaHandle metaData);
+	Implementation(const char* key, const PyScript::ScriptObject& pythonObject, MetaData metaData);
 
-	Implementation(IComponentContext& context, const char* key, const TypeId& typeId,
-	               const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
+	Implementation(const char* key, const TypeId& typeId, const PyScript::ScriptObject& pythonObject,
+	               MetaData metaData);
 
 	bool setValue(const Variant& value);
 	Variant getValue(const ObjectHandle& handle);
-	void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData);
+	void updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaData metaData);
 
 	// Need to store a copy of the string
 	std::string key_;
 	TypeId type_;
 	PyScript::ScriptObject pythonObject_;
-	MetaHandle metaData_;
+    MetaData metaData_;
 	uint64_t hash_;
 
 private:
 	void updatePropertyType();
 };
 
-Property::Implementation::Implementation(IComponentContext& context, const char* key,
-                                         const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
-    : ImplementationDepends(context), key_(key), pythonObject_(pythonObject), metaData_(metaData),
-      hash_(HashUtilities::compute(key_))
+Property::Implementation::Implementation(const char* key, const PyScript::ScriptObject& pythonObject,
+                                         MetaData metaData)
+    : key_(key), pythonObject_(pythonObject), metaData_(std::move(metaData)), hash_(HashUtilities::compute(key_))
 {
 	updatePropertyType();
 }
 
-Property::Implementation::Implementation(IComponentContext& context, const char* key, const TypeId& typeId,
-                                         const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
-    : ImplementationDepends(context), key_(key), type_(typeId), pythonObject_(pythonObject), metaData_(metaData),
-      hash_(HashUtilities::compute(key_))
+Property::Implementation::Implementation(const char* key, const TypeId& typeId,
+                                         const PyScript::ScriptObject& pythonObject, MetaData metaData)
+    : key_(key), type_(typeId), pythonObject_(pythonObject), metaData_(std::move(metaData)), hash_(HashUtilities::compute(key_))
 {
 	// TODO: set a default value of type_ on the attribute
 }
@@ -99,10 +98,10 @@ Variant Property::Implementation::getValue(const ObjectHandle& handle)
 }
 
 void Property::Implementation::updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject,
-                                                  MetaHandle metaData)
+                                                  MetaData metaData)
 {
 	key_ = name;
-	metaData_ = metaData;
+    metaData_ = std::move(metaData);
 	pythonObject_ = pythonObject;
 	hash_ = HashUtilities::compute(key_);
 	updatePropertyType();
@@ -115,16 +114,24 @@ void Property::Implementation::updatePropertyType()
 	type_ = PythonType::scriptTypeToTypeId(attribute);
 }
 
-Property::Property(IComponentContext& context, const char* key, const PyScript::ScriptObject& pythonObject,
-                   MetaHandle metaData)
-    : IBaseProperty(), impl_(new Implementation(context, key, pythonObject, metaData))
+Property::Property(const char* key, const PyScript::ScriptObject& pythonObject, MetaData metaData)
+    : IBaseProperty(), impl_(new Implementation(key, pythonObject, std::move(metaData)))
 {
 }
 
-Property::Property(IComponentContext& context, const char* key, const TypeId& typeId,
-                   const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
-    : IBaseProperty(), impl_(new Implementation(context, key, typeId, pythonObject, metaData))
+Property::Property(const char* key, const TypeId& typeId, const PyScript::ScriptObject& pythonObject,
+    MetaData metaData)
+    : IBaseProperty(), impl_(new Implementation(key, typeId, pythonObject, std::move(metaData)))
 {
+}
+
+std::shared_ptr<IPropertyPath> Property::generatePropertyName(const std::shared_ptr<const IPropertyPath> & parent) const
+{
+	if (isCollection())
+	{
+		return std::make_shared< CollectionPath >(parent, getName() );
+	}
+	return std::make_shared< PropertyPath >(parent, getName());
 }
 
 const TypeId& Property::getType() const /* override */
@@ -142,12 +149,12 @@ uint64_t Property::getNameHash() const /* override */
 	return impl_->hash_;
 }
 
-MetaHandle Property::getMetaData() const /* override */
+const MetaData & Property::getMetaData() const /* override */
 {
 	return impl_->metaData_;
 }
 
-bool Property::readOnly() const /* override */
+bool Property::readOnly(const ObjectHandle&) const /* override */
 {
 	// Python uses EAFP, so it can't check if a property is read-only before
 	// trying to set it.
@@ -180,6 +187,25 @@ bool Property::isValue() const /* override */
 {
 	// Attribute must exist
 	return true;
+}
+
+bool Property::isCollection() const /* override */
+{
+	// Get the attribute
+	PyScript::ScriptErrorPrint errorHandler;
+	PyScript::ScriptObject attribute = impl_->pythonObject_.getAttribute(impl_->key_.c_str(), errorHandler);
+	assert(attribute.exists());
+	if (!attribute.exists())
+	{
+		return false;
+	}
+
+	return PythonType::scriptTypeToTypeId(attribute) == TypeId::getType<Collection>();
+}
+
+bool Property::isByReference() const
+{
+	return false;
 }
 
 bool Property::set(const ObjectHandle& handle, const Variant& value,
@@ -388,9 +414,9 @@ size_t Property::parameterCount() const /* override */
 	return 0;
 }
 
-void Property::updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaHandle metaData)
+void Property::updatePropertyData(const char* name, const PyScript::ScriptObject& pythonObject, MetaData metaData)
 {
-	impl_->updatePropertyData(name, pythonObject, metaData);
+    impl_->updatePropertyData(name, pythonObject, std::move(metaData));
 }
 
 } // namespace ReflectedPython

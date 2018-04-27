@@ -4,12 +4,12 @@
 #include "core_reflection/reflected_property.hpp"
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/reflection_macros.hpp"
-#include "core_reflection/property_iterator.hpp"
+#include "core_reflection/property_accessor.hpp"
 #include "core_reflection/metadata/meta_types.hpp"
 #include "core_reflection/definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
 #include "core_reflection/reflected_method_parameters.hpp"
 #include "core_reflection/unit_test/test_reflection_fixture.hpp"
+#include "core_object/managed_object.hpp"
 #include "core/testing/reflection_objects_test/test_objects.hpp"
 #include "core/testing/reflection_objects_test/test_methods_object.hpp"
 
@@ -44,18 +44,19 @@ public:
 
 TEST_F(TestMethodsFixture, methods)
 {
-	ObjectHandle object = klass_->createManagedObject();
+	ManagedObject<TestMethodsObject> object(std::make_unique<TestMethodsObject>());
+	ObjectHandleT<TestMethodsObject> handle = object.getHandleT();
 	ReflectedMethodParameters parameters;
 
-	auto pa = klass_->bindProperty("TestMethod1", object);
+	auto pa = klass_->bindProperty("TestMethod1", handle);
 	CHECK(pa.isValid());
 	Variant result = pa.invoke(parameters);
 
-	pa = klass_->bindProperty("TestMethod2", object);
+	pa = klass_->bindProperty("TestMethod2", handle);
 	CHECK(pa.isValid());
 	result = pa.invoke(parameters);
 
-	pa = klass_->bindProperty("TestMethod3", object);
+	pa = klass_->bindProperty("TestMethod3", handle);
 	CHECK(pa.isValid());
 	parameters.push_back(int(5));
 	result = pa.invoke(parameters);
@@ -63,27 +64,22 @@ TEST_F(TestMethodsFixture, methods)
 	result.tryCast(testResult);
 	CHECK(testResult == "test3");
 
-	pa = klass_->bindProperty("TestMethod4", object);
+	pa = klass_->bindProperty("TestMethod4", handle);
 	CHECK(pa.isValid());
 	std::string parameterString = "test";
-	ObjectHandle parameter1 = &parameterString;
-	parameters = Variant(parameter1), Variant(5);
+	parameters = Variant(parameterString), Variant(5);
 	result = pa.invoke(parameters);
-	ObjectHandle checkHandle = parameters[0].cast<ObjectHandle>();
-	testResult = *checkHandle.getBase<std::string>();
-	CHECK(testResult == "test");
-	CHECK(parameterString == "test");
+	result.tryCast(testResult);
+	CHECK(testResult == "test4");
 
-	pa = klass_->bindProperty("TestMethod5", object);
+	pa = klass_->bindProperty("TestMethod5", handle);
 	CHECK(pa.isValid());
-	parameters = Variant(parameter1);
+	parameters = Variant(parameterString);
 	result = pa.invoke(parameters);
-	checkHandle = parameters[0].cast<ObjectHandle>();
-	testResult = *checkHandle.getBase<std::string>();
+	parameters[0].tryCast(testResult);
 	CHECK(testResult == "test5");
-	CHECK(parameterString == "test5");
 
-	pa = klass_->bindProperty("TestMethod6", object);
+	pa = klass_->bindProperty("TestMethod6", handle);
 	CHECK(pa.isValid());
 	parameters = Variant(&parameterString);
 	pa.invoke(parameters);
@@ -93,19 +89,19 @@ TEST_F(TestMethodsFixture, methods)
 
 	parameters.clear();
 
-	pa = klass_->bindProperty("TestMethod7", object);
+	pa = klass_->bindProperty("TestMethod7", handle);
 	CHECK(pa.isValid());
 	result = pa.invoke(Variant(double(4.4)));
 	int testIntResult = result.value<int>();
 	CHECK(testIntResult == 4);
 
-	pa = klass_->bindProperty("TestMethod8", object);
+	pa = klass_->bindProperty("TestMethod8", handle);
 	CHECK(pa.isValid());
 	result = pa.invoke(Variant(int(5)));
 	double testDoubleResult = result.value<double>();
 	CHECK(testDoubleResult == 5.0);
 
-	pa = klass_->bindProperty("TestMethod9", object);
+	pa = klass_->bindProperty("TestMethod9", handle);
 	CHECK(pa.isValid());
 	const std::string& constParameterString = parameterString;
 	parameters = Variant(constParameterString);
@@ -113,7 +109,7 @@ TEST_F(TestMethodsFixture, methods)
 	const std::string& testConstStrResult = result.cast<const std::string&>();
 	CHECK(testConstStrResult == parameterString);
 
-	pa = klass_->bindProperty("TestMethod10", object);
+	pa = klass_->bindProperty("TestMethod10", handle);
 	CHECK(pa.isValid());
 	const std::string* constParameterPtrString = &parameterString;
 	parameters = Variant(constParameterPtrString);
@@ -121,14 +117,14 @@ TEST_F(TestMethodsFixture, methods)
 	const std::string* testConstStrPtrResult = result.cast<const std::string*>();
 	CHECK(*testConstStrPtrResult == parameterString);
 
-	pa = klass_->bindProperty("TestMethod11", object);
+	pa = klass_->bindProperty("TestMethod11", handle);
 	CHECK(pa.isValid());
 	parameters = Variant(parameterString);
 	result = pa.invoke(parameters);
 	std::string& testStrResult = result.cast<std::string&>();
 	CHECK(testStrResult == parameterString);
 
-	pa = klass_->bindProperty("TestMethod12", object);
+	pa = klass_->bindProperty("TestMethod12", handle);
 	CHECK(pa.isValid());
 	parameters = Variant(&parameterString);
 	result = pa.invoke(parameters);

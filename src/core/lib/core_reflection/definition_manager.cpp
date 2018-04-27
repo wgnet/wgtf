@@ -9,6 +9,8 @@
 #include "generic/generic_definition.hpp"
 #include "generic/generic_definition_helper.hpp"
 
+#include "core_common/assert.hpp"
+
 namespace wgt
 {
 //==============================================================================
@@ -26,11 +28,9 @@ DefinitionManager::~DefinitionManager()
 
 	listeners_.clear();
 
-	for (ClassDefCollection::const_iterator it = definitions_.begin(); it != definitions_.end(); ++it)
-	{
-		delete it->second;
-	}
+    deregisterDefinitions();
 }
+
 
 //==============================================================================
 IClassDefinition* DefinitionManager::getDefinition(const char* name) const
@@ -40,13 +40,32 @@ IClassDefinition* DefinitionManager::getDefinition(const char* name) const
 		return nullptr;
 	}
 
-	ClassDefCollection::const_iterator findIt = definitions_.find(name);
-	if (findIt != definitions_.end())
+	wg_read_lock_guard readGuard(lock_);
+	auto findIt = definitions_.find(name);
+	return findIt != definitions_.end() ? findIt->second : nullptr;
+}
+
+//==============================================================================
+IClassDefinition* DefinitionManager::findDefinition(const char* name) const
+{
+	if (name == nullptr)
 	{
-		return findIt->second;
+		return nullptr;
 	}
 
-	return nullptr;
+	auto definition = getDefinition(name);
+	if (definition)
+	{
+		return definition;
+	}
+
+	auto findFn = [name](const ClassDefCollection::value_type& v) {
+		return std::string(v.first.str()).find(name) != std::string::npos;
+	};
+
+	wg_read_lock_guard readGuard(lock_);
+	auto findIt = std::find_if(definitions_.begin(), definitions_.end(), findFn);
+	return findIt != definitions_.end() ? findIt->second : nullptr;
 }
 
 //==============================================================================
@@ -59,6 +78,7 @@ IClassDefinition* DefinitionManager::getObjectDefinition(const ObjectHandle& obj
 		return definition;
 	}
 
+	wg_read_lock_guard readGuard(helpersLock_);
 	auto helperIt = helpers_.find(typeId);
 	if (helperIt != helpers_.end())
 	{
@@ -81,10 +101,11 @@ std::unique_ptr<IClassDefinitionDetails> DefinitionManager::createGenericDefinit
 //==============================================================================
 IClassDefinition* DefinitionManager::registerDefinition(std::unique_ptr<IClassDefinitionDetails> defDetails)
 {
-	assert(defDetails);
+	TF_ASSERT(defDetails);
 	IClassDefinition* definition = new ClassDefinition(std::move(defDetails));
+	wg_write_lock_guard writeGuard(lock_);
 	const auto result = definitions_.insert(std::make_pair(definition->getName(), definition));
-	assert(result.second && "Duplicate definition overwritten in map.");
+	TF_ASSERT(result.second && "Duplicate definition overwritten in map.");
 	definition->setDefinitionManager(this);
 
 	return definition;
@@ -93,15 +114,28 @@ IClassDefinition* DefinitionManager::registerDefinition(std::unique_ptr<IClassDe
 //==============================================================================
 bool DefinitionManager::deregisterDefinition(const IClassDefinition* definition)
 {
-	assert(definition);
+	TF_ASSERT(definition);
+	wg_write_lock_guard writeGuard(lock_);
 	ClassDefCollection::iterator it = definitions_.find(definition->getName());
-	assert(it != definitions_.end());
+	TF_ASSERT(it != definitions_.end());
 	if (it == definitions_.end())
 	{
 		return false;
 	}
+    delete it->second;
 	definitions_.erase(it);
 	return true;
+}
+
+//==============================================================================
+void DefinitionManager::deregisterDefinitions()
+{
+	wg_write_lock_guard writeGuard(lock_);
+	for (ClassDefCollection::const_iterator it = definitions_.begin(); it != definitions_.end(); ++it)
+    {
+        delete it->second;
+    }
+    definitions_.clear();
 }
 
 //==============================================================================
@@ -115,13 +149,17 @@ void DefinitionManager::getDefinitionsOfType(const IClassDefinition* definition,
 void DefinitionManager::getDefinitionsOfType(const std::string& baseType,
                                              std::vector<IClassDefinition*>& o_Definitions) const
 {
+	wg_read_lock_guard readGuard(lock_);
 	ClassDefCollection::const_iterator findIt = definitions_.find(baseType.c_str());
 	if (findIt == definitions_.end())
 	{
 		return;
 	}
 	IClassDefinition* baseDefinition = findIt->second;
-	o_Definitions.push_back(baseDefinition);
+	if (!baseDefinition->getDetails().isAbstract())
+	{
+		o_Definitions.push_back(baseDefinition);
+	}
 	getDefinitionsOfType(baseDefinition, o_Definitions, o_Definitions.size());
 }
 
@@ -129,11 +167,17 @@ void DefinitionManager::getDefinitionsOfType(const std::string& baseType,
 void DefinitionManager::getDefinitionsOfType(IClassDefinition* definition,
                                              std::vector<IClassDefinition*>& o_Definitions, size_t startIndex) const
 {
+	wg_read_lock_guard readGuard(lock_);
 	for (ClassDefCollection::const_iterator it = definitions_.begin(); it != definitions_.end(); ++it)
 	{
-		if (it->second->getParent() == definition)
+		const auto & parentNames = it->second->getParentNames();
+		for (const auto & parentName : parentNames)
 		{
-			o_Definitions.push_back(it->second);
+			auto def = getDefinition(parentName.c_str());
+			if (def == definition)
+			{
+				o_Definitions.push_back(it->second);
+			}
 		}
 	}
 
@@ -147,28 +191,36 @@ void DefinitionManager::getDefinitionsOfType(IClassDefinition* definition,
 //==============================================================================
 void DefinitionManager::registerDefinitionHelper(const IDefinitionHelper& helper)
 {
+	wg_write_lock_guard writeGuard(helpersLock_);
 	auto it = helpers_.insert(std::make_pair(helper.typeId(), &helper));
-	assert(it.second);
+	TF_ASSERT(it.second);
 }
 
 //==============================================================================
 void DefinitionManager::deregisterDefinitionHelper(const IDefinitionHelper& helper)
 {
+	wg_write_lock_guard writeGuard(helpersLock_);
 	auto it = helpers_.find(helper.typeId());
-	assert(it != helpers_.end());
+	TF_ASSERT(it != helpers_.end());
 	helpers_.erase(it);
 }
 
 //==============================================================================
 void DefinitionManager::registerPropertyAccessorListener(std::shared_ptr<PropertyAccessorListener>& listener)
 {
+	wg_write_lock_guard writeGuard(listenersLock_);
 	listeners_.push_back(listener);
 }
 
 //==============================================================================
 void DefinitionManager::deregisterPropertyAccessorListener(std::shared_ptr<PropertyAccessorListener>& listener)
 {
-	listeners_.erase(listener);
+	wg_write_lock_guard writeGuard(listenersLock_);
+	auto it = std::find(listeners_.begin(), listeners_.end(), listener);
+	if (it != listeners_.end())
+	{
+		listeners_.erase(it);
+	}
 }
 
 //==============================================================================

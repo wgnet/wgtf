@@ -1,9 +1,10 @@
 #include "pch.hpp"
 
 #include "core_unit_test/unit_test.hpp"
-
+#include "core_variant/collection.hpp"
 #include "core_string_utils/file_path.hpp"
 #include "core_string_utils/string_utils.hpp"
+#include "testing/data_model_test/test_data.hpp"
 
 namespace wgt
 {
@@ -116,12 +117,43 @@ TEST(convertString)
 TEST(eraseString)
 {
 	const std::string str("helloworld");
-
 	std::string input = str;
 	StringUtils::erase_string(input, "unknown");
 	CHECK(input == str);
-
 	StringUtils::erase_string(input, "world");
 	CHECK(input == "hello");
+
+	input = "[testing]";
+	StringUtils::erase_string(input, Collection::getIndexOpen());
+	StringUtils::erase_string(input, Collection::getIndexClose());
+	CHECK(input == "testing");
+
+	input = "[\"testing\"]";
+	StringUtils::erase_string(input, Collection::getIndexOpenStr());
+	StringUtils::erase_string(input, Collection::getIndexCloseStr());
+	CHECK(input == "testing");
 }
+
+TEST(trimString)
+{
+	std::string input("           hello world  ");
+	const std::string expected("hello world");
+	StringUtils::trim_string(input);
+	CHECK(input == expected);
+}
+
+TEST(sortString)
+{
+	StringList list(true);
+	auto expected = StringUtils::split(list.listOfData, ' ');
+	CHECK(expected.size() == 3479);
+
+	std::vector<std::string> input(expected.size());
+	std::reverse_copy(expected.begin(), expected.end(), input.begin());
+	CHECK(expected != input);
+
+	StringUtils::sort_strings(input);
+	CHECK(expected == input);
+}
+
 } // end namespace wgt

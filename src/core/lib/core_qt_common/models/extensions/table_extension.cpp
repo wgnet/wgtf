@@ -1,5 +1,7 @@
 #include "table_extension.hpp"
 
+#include "core_common/assert.hpp"
+
 namespace wgt
 {
 TableExtension::TableExtension()
@@ -20,7 +22,7 @@ QModelIndex TableExtension::getForwardIndex(const QModelIndex& index, QAbstractI
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	if (index.column() >= (pModel->columnCount(index.parent()) - 1))
 	{
@@ -39,7 +41,7 @@ QModelIndex TableExtension::getBackwardIndex(const QModelIndex& index, QAbstract
 		}
 		return pModel->index(0, 0);
 	}
-	assert(index.model() == pModel);
+	TF_ASSERT(index.model() == pModel);
 
 	if (index.column() <= 0)
 	{

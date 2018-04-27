@@ -1,0 +1,13 @@
+module WGControls.Global
+
+# 2.0 New Controls
+singleton WGDialogs 2.0 WGDialogs20.qml
+singleton WGDoubleClickTimer 2.0 WGDoubleClickTimer20.qml
+singleton WGJira 2.0 WGJira.qml
+singleton WGPopupTimer 2.0 WGPopupTimer20.qml
+singleton WGPressAndHoldTimer 2.0 WGPressAndHoldTimer20.qml
+singleton WGScrollBarTimer 2.0 WGScrollBarTimer20.qml
+singleton WGToolTipTimer 2.0 WGToolTipTimer20.qml
+singleton WGColor 2.0 WGColor.qml
+singleton WGPath 2.0 WGPath.qml
+singleton WGLogger 2.0 WGLogger.qml

@@ -5,6 +5,7 @@
 #include "core_qt_common/qt_application.hpp"
 #include "core_qt_common/qt_resource_system.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_variant/variant.hpp"
 #include "core_qt_common/qt_new_handler.hpp"
 #include "core_command_system/i_command_manager.hpp"
@@ -32,11 +33,11 @@ namespace wgt
 class QtPluginContextCreator : public Implements<IComponentContextCreator>
 {
 public:
-	QtPluginContextCreator(QtFramework* qtFramework) : qtFramework_(qtFramework)
+	QtPluginContextCreator(std::unique_ptr<QtFramework>&& qtFramework) : qtFrameWork_(std::move(qtFramework))
 	{
 	}
 
-	IInterface* createContext(const wchar_t* contextId)
+	InterfacePtr createContext(const wchar_t* contextId)
 	{
 		QFile resourcePathFile(getResourcePathFile(contextId));
 		if (resourcePathFile.open(QFile::ReadOnly | QFile::Text))
@@ -44,12 +45,12 @@ public:
 			QTextStream in(&resourcePathFile);
 			while (!in.atEnd())
 			{
-				qtFramework_->addImportPath(in.readLine());
+				qtFrameWork_->addImportPath(in.readLine());
 			}
 			resourcePathFile.close();
 		}
 
-		return new InterfaceHolder<QtFramework>(qtFramework_, false);
+		return std::make_shared<InterfaceHolder<QtFramework>>(qtFrameWork_.get(), false);
 	}
 
 	const char* getType() const
@@ -66,7 +67,7 @@ private:
 		path.append("/resource_paths.txt");
 		return path;
 	}
-	QtFramework* qtFramework_;
+	std::unique_ptr<QtFramework> qtFrameWork_;
 };
 
 /**
@@ -84,40 +85,37 @@ class QtPluginCommon : public PluginMain
 public:
 	QtPluginCommon(IComponentContext& contextManager)
 	{
-		contextManager.registerInterface(new UIViewCreator(contextManager));
-	}
-
-	bool PostLoad(IComponentContext& contextManager) override
-	{
-		auto clp = contextManager.queryInterface<ICommandLineParser>();
-		assert(clp != nullptr);
+		types_.push_back(contextManager.registerInterface(new UIViewCreator()));
 		types_.push_back(contextManager.registerInterface(new QtResourceSystem()));
-		qtApplication_ = new QtApplication(contextManager, clp->argc(), clp->argv());
+		auto clp = contextManager.queryInterface<ICommandLineParser>();
+		TF_ASSERT(clp != nullptr);
+		qtApplication_ = new QtApplication(clp->argc(), clp->argv());
 		types_.push_back(contextManager.registerInterface(qtApplication_));
 #if defined(USE_Qt5_WEB_ENGINE)
 		QtWebEngine::initialize();
 #endif
-		qtFramework_.reset(new QtFramework(contextManager));
-		types_.push_back(contextManager.registerInterface(new QtPluginContextCreator(qtFramework_.get())));
+		std::unique_ptr<QtFramework> qtFramework(new QtFramework(contextManager));
+		qtFramework_ = qtFramework.get();
+		types_.push_back(contextManager.registerInterface(new QtPluginContextCreator(std::move(qtFramework))));
+	}
 
+	bool PostLoad(IComponentContext& contextManager) override
+	{
 		return true;
 	}
 
 	void Initialise(IComponentContext& contextManager) override
 	{
 		qtApplication_->initialise();
-		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
 		auto commandsystem = contextManager.queryInterface<ICommandManager>();
 
 		qtCopyPasteManager_ = new QtCopyPasteManager();
-		contextManager.registerInterface(qtCopyPasteManager_);
-		qtCopyPasteManager_->init(definitionManager, commandsystem);
+		types_.push_back(contextManager.registerInterface(qtCopyPasteManager_));
 		qtFramework_->initialise(contextManager);
 	}
 
 	bool Finalise(IComponentContext& contextManager) override
 	{
-		qtCopyPasteManager_->fini();
 		qtCopyPasteManager_ = nullptr;
 		qtFramework_->finalise();
 		qtApplication_->finalise();
@@ -128,17 +126,16 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
-		qtFramework_.reset();
 		qtApplication_ = nullptr;
 	}
 
 private:
-	std::unique_ptr<QtFramework> qtFramework_;
+	QtFramework* qtFramework_;
 	QtCopyPasteManager* qtCopyPasteManager_;
 	QtApplication* qtApplication_;
-	std::vector<IInterface*> types_;
+	InterfacePtrs types_;
 };
 
 PLG_CALLBACK_FUNC(QtPluginCommon)

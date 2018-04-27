@@ -19,5 +19,6 @@ namespace wgt
 {
 bool FormatLastErrorMessage(std::string& errorMsg);
 void FlushDebugString();
+void OutputDebugToFile(const std::string& name, const std::string& debug, bool openOnSave);
 } // end namespace wgt
 #endif // __PLATFORM_DBG_HPP__

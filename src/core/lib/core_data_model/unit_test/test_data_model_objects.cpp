@@ -1,10 +1,13 @@
 #include "pch.hpp"
+
+#include "core_common/assert.hpp"
 #include "test_data_model_objects.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/filtered_list_model.hpp"
 #include "core_data_model/variant_list.hpp"
 #include "core_reflection/object_handle.hpp"
 #include "core_unit_test/unit_test.hpp"
+#include <unordered_map>
 
 namespace wgt
 {
@@ -148,7 +151,7 @@ UnitTestTreeModel::Implementation::~Implementation()
 std::vector<UnitTestTreeItem*> UnitTestTreeModel::Implementation::getSection(const UnitTestTreeItem* parent)
 {
 	auto itr = data_.find(parent);
-	assert(itr != data_.end());
+	TF_ASSERT(itr != data_.end());
 	return itr->second;
 }
 
@@ -223,7 +226,7 @@ ITreeModel::ItemIndex UnitTestTreeModel::index(const IItem* item) const
 
 	auto items = impl_->getSection(temp);
 	auto itr = std::find(items.begin(), items.end(), item);
-	assert(itr != items.end());
+	TF_ASSERT(itr != items.end());
 
 	index.first = itr - items.begin();
 	return index;
@@ -344,7 +347,7 @@ bool TestFixture::findItemInFilteredList(const char* term, bool exactMatch)
 	for (unsigned int i = 0; i < static_cast<unsigned int>(filteredTestList_.size()); ++i)
 	{
 		auto item = filteredTestList_.item(i);
-		assert(item);
+		TF_ASSERT(item);
 		Variant variant = item->getData(0, ValueRole::roleId_);
 		if (!variant.typeIs<const char*>() && !variant.typeIs<std::string>())
 		{
@@ -428,7 +431,7 @@ void TestFixture::getListItemValueAtIndex(unsigned int index, std::string& value
 	const VariantList& list = testStringData_.getVariantList();
 
 	auto item = list.item(index);
-	assert(item);
+	TF_ASSERT(item);
 
 	auto variant = item->getData(0, ValueRole::roleId_);
 	if (!variant.typeIs<const char*>() && !variant.typeIs<std::string>())
@@ -445,7 +448,7 @@ void TestFixture::updateListItemAtIndex(unsigned int index, const char* value)
 	VariantList& list = testStringData_.getVariantList();
 
 	auto item = list.item(index);
-	assert(item);
+	TF_ASSERT(item);
 
 	list.signalPreItemDataChanged(item, 0, ValueRole::roleId_, value);
 

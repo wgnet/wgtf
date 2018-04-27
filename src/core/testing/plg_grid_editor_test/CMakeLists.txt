@@ -5,15 +5,18 @@ ADD_DEFINITIONS( -DNOMINMAX )
 
 INCLUDE( WGToolsCoreProject )
 
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 SET( ALL_SRCS
+	spreadsheet_extension.mpp
+	spreadsheet_extension.cpp
+	spreadsheet_extension.hpp
 	grid_editor_test_data.cpp
 	grid_editor_test_data.hpp
-	grid_editor_test_data.mpp
+	metadata/grid_editor_test_data.mpp
 	plg_grid_test.cpp
 )
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )

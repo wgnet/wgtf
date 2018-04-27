@@ -11,8 +11,7 @@ Item {
     objectName: "WGTimelineEntryDelegate"
     WGComponent { type: "WGTimelineEntryDelegate" }
     // Width set by parent, height determined by the batch command
-    height: expandingTimelineRow.height
-    width: parent.width
+    implicitHeight: expandingTimelineRow.height
 
     property var view
     property var historyItem

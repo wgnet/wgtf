@@ -1,14 +1,13 @@
 #include "wg_list_iterator.hpp"
 
-#include "core_data_model/i_list_model.hpp"
-#include "core_data_model/i_item.hpp"
+#include "core_data_model/abstract_item_model.hpp"
 #include "core_data_model/i_item_role.hpp"
-
-#include "core_qt_common/helpers/qt_helpers.hpp"
 
 namespace wgt
 {
-WGListIterator::WGListIterator(IListModel& listModel) : listModel_(listModel), size_(listModel.size())
+ITEMROLE(value);
+
+WGListIterator::WGListIterator(AbstractListModel& listModel) : listModel_(listModel), size_(listModel.rowCount())
 {
 	reset();
 }
@@ -41,8 +40,8 @@ QVariant WGListIterator::getCurrent() const
 		return QVariant();
 	}
 
-	auto data = currentItem_->getData(0, ValueRole::roleId_);
-	return QtHelpers::toQVariant(data, const_cast<WGListIterator*>(this));
+	auto data = currentItem_->getData(0, 0, ItemRole::valueId);
+	return get<IQtHelpers>()->toQVariant(data, const_cast<WGListIterator*>(this));
 }
 
 void WGListIterator::setCurrent(QVariant& value)
@@ -52,7 +51,7 @@ void WGListIterator::setCurrent(QVariant& value)
 		return;
 	}
 
-	auto data = QtHelpers::toVariant(value);
-	currentItem_->setData(0, ValueRole::roleId_, data);
+	auto data = get<IQtHelpers>()->toVariant(value);
+	currentItem_->setData(0, 0, ItemRole::valueId, data);
 }
 } // end namespace wgt

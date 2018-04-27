@@ -3,6 +3,7 @@
 #include "core_ui_framework/i_ui_application.hpp"
 #include "core_ui_framework/i_ui_framework.hpp"
 #include "core_ui_framework/i_action.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "helpers/qt_helpers.hpp"
 
 #include <QQmlEngine>
@@ -10,11 +11,14 @@
 
 namespace wgt
 {
-struct WGAction::Implementation
+struct WGAction::Implementation : Depends<IQtHelpers, IUIApplication, IUIFramework>
 {
 	Implementation(WGAction* self)
-	    : uiFramework_(nullptr), uiApplication_(nullptr), func_(nullptr), enabledFunc_(nullptr), checkedFunc_(nullptr),
-	      checkable_(false), checked_(false), enabled_(true), visible_(true), active_(false), self_(self)
+	    // TODO: This is extremely wasteful as we don't need per instance lambdas
+	    : func_([self](IAction*) { emit self->triggered(); }),
+	      enabledFunc_([self](const IAction*) { return self->getEnabled(); }),
+	      checkedFunc_([self](const IAction*) { return self->getChecked(); }), checkable_(false), checked_(false),
+	      enabled_(true), visible_(true), self_(self), active_(false), separator_(false), componentComplete_(false)
 	{
 	}
 
@@ -23,25 +27,9 @@ struct WGAction::Implementation
 		destroyAction();
 	}
 
-	void onComponentComplete(WGAction* action)
+	void onComponentComplete()
 	{
-		func_ = [action](IAction*) { emit action->triggered(); };
-		enabledFunc_ = [action](const IAction*) { return action->getEnabled(); };
-		checkedFunc_ = [action](const IAction*) { return action->getChecked(); };
-
-		auto context = QQmlEngine::contextForObject(action);
-		assert(context != nullptr);
-
-		auto componentContextProperty = context->contextProperty("componentContext");
-		assert(componentContextProperty.isValid());
-		auto componentContextVariant = QtHelpers::toVariant(componentContextProperty);
-		assert(!componentContextVariant.isVoid());
-		auto componentContext = componentContextVariant.value<IComponentContext*>();
-		assert(componentContext != nullptr);
-
-		uiApplication_ = componentContext->queryInterface<IUIApplication>();
-		uiFramework_ = componentContext->queryInterface<IUIFramework>();
-
+		componentComplete_ = true;
 		createAction();
 	}
 
@@ -59,12 +47,13 @@ struct WGAction::Implementation
 
 		active_ = active;
 
-		if (uiApplication_ == nullptr || action_ == nullptr || visible_ == false)
+		auto uiApplication = get<IUIApplication>();
+		if (uiApplication == nullptr || action_ == nullptr || visible_ == false)
 		{
 			return;
 		}
 
-		active_ ? uiApplication_->addAction(*action_) : uiApplication_->removeAction(*action_);
+		active_ ? uiApplication->addAction(*action_) : uiApplication->removeAction(*action_);
 	}
 
 	QString getActionId() const
@@ -122,7 +111,9 @@ struct WGAction::Implementation
 
 	void setChecked(bool checked)
 	{
+		destroyAction();
 		checked_ = checked;
+		createAction();
 	}
 
 	bool getEnabled() const
@@ -140,6 +131,16 @@ struct WGAction::Implementation
 		return visible_;
 	}
 
+	bool getSeparator() const
+	{
+		return separator_;
+	}
+
+	void setSeparator(bool separator)
+	{
+		separator_ = separator;
+	}
+
 	void setVisible(bool visible)
 	{
 		if (visible_ == visible)
@@ -149,19 +150,20 @@ struct WGAction::Implementation
 
 		visible_ = visible;
 
-		if (uiApplication_ == nullptr || action_ == nullptr || active_ == false)
+		auto uiApplication = get<IUIApplication>();
+		if (uiApplication == nullptr || action_ == nullptr || active_ == false)
 		{
 			return;
 		}
 
-		visible_ ? uiApplication_->addAction(*action_) : uiApplication_->removeAction(*action_);
+		visible_ ? uiApplication->addAction(*action_) : uiApplication->removeAction(*action_);
 	}
 
 	QVariant data()
 	{
 		if (action_ && self_)
 		{
-			auto qdata = QtHelpers::toQVariant(action_->getData(), this->self_);
+			auto qdata = get<IQtHelpers>()->toQVariant(action_->getData(), this->self_);
 			return qdata;
 		}
 
@@ -172,7 +174,7 @@ struct WGAction::Implementation
 	{
 		if (action_)
 		{
-			auto data = QtHelpers::toVariant(qdata);
+			auto data = get<IQtHelpers>()->toVariant(qdata);
 			action_->setData(data);
 			emit self_->dataChanged();
 		}
@@ -180,32 +182,39 @@ struct WGAction::Implementation
 
 	void createAction()
 	{
-		if (actionId_.empty())
+		if (componentComplete_ == false)
 		{
 			return;
 		}
 
-		if (uiFramework_ == nullptr)
+		auto uiFramework = get<IUIFramework>();
+		if (uiFramework == nullptr)
 		{
 			return;
 		}
-		if (actionPath_.empty() || actionText_.empty())
+
+		if (actionId_.empty() && getSeparator())
+		{
+			action_ = uiFramework->createAction("", "", actionPath_.c_str(), nullptr, enabledFunc_, nullptr);
+		}
+		else if (actionPath_.empty() || actionText_.empty())
 		{
 			action_ =
-			uiFramework_->createAction(actionId_.c_str(), func_, enabledFunc_, checkable_ ? checkedFunc_ : nullptr);
+			uiFramework->createAction(actionId_.c_str(), func_, enabledFunc_, checkable_ ? checkedFunc_ : nullptr);
 		}
 		else
 		{
-			action_ = uiFramework_->createAction(actionId_.c_str(), actionText_.c_str(), actionPath_.c_str(), func_,
-			                                     enabledFunc_, checkable_ ? checkedFunc_ : nullptr);
+			action_ = uiFramework->createAction(actionId_.c_str(), actionText_.c_str(), actionPath_.c_str(), func_,
+			                                    enabledFunc_, checkable_ ? checkedFunc_ : nullptr);
 		}
 
-		if (uiApplication_ == nullptr || active_ == false || visible_ == false)
+		auto uiApplication = get<IUIApplication>();
+		if (action_ == nullptr || uiApplication == nullptr || active_ == false || visible_ == false)
 		{
 			return;
 		}
 
-		uiApplication_->addAction(*action_);
+		uiApplication->addAction(*action_);
 	}
 
 	void destroyAction()
@@ -215,25 +224,26 @@ struct WGAction::Implementation
 			return;
 		}
 
-		if (uiApplication_ != nullptr && active_ == true && visible_ == true)
+		auto uiApplication = get<IUIApplication>();
+		if (uiApplication != nullptr && active_ == true && visible_ == true)
 		{
-			uiApplication_->removeAction(*action_);
+			uiApplication->removeAction(*action_);
 		}
 
 		action_.reset();
 	}
 
 	WGAction* self_;
-	IUIFramework* uiFramework_;
-	IUIApplication* uiApplication_;
 	std::function<void(IAction*)> func_;
 	std::function<bool(const IAction*)> enabledFunc_;
 	std::function<bool(const IAction*)> checkedFunc_;
-	bool checkable_;
-	bool checked_;
-	bool enabled_;
-	bool visible_;
-	bool active_;
+	bool checkable_ : 1;
+	bool checked_ : 1;
+	bool enabled_ : 1;
+	bool visible_ : 1;
+	bool active_ : 1;
+	bool separator_ : 1;
+	bool componentComplete_ : 1;
 	std::string actionId_;
 	std::string actionText_;
 	std::string actionPath_;
@@ -252,7 +262,7 @@ WGAction::~WGAction()
 void WGAction::componentComplete()
 {
 	QQuickItem::componentComplete();
-	impl_->onComponentComplete(this);
+	impl_->onComponentComplete();
 }
 
 bool WGAction::getActive() const
@@ -328,6 +338,16 @@ void WGAction::setEnabled(bool enabled)
 bool WGAction::getVisible() const
 {
 	return impl_->getVisible();
+}
+
+bool WGAction::getSeparator() const
+{
+	return impl_->getSeparator();
+}
+
+void WGAction::setSeparator(bool separator)
+{
+	impl_->setSeparator(separator);
 }
 
 QVariant WGAction::data() const

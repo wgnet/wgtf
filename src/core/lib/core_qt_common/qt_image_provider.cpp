@@ -27,6 +27,12 @@ QString QtImageProvider::encode(const QPixmap& pixmap)
 	return encode(pixmap.toImage());
 }
 
+QString QtImageProvider::encode(const char* iconPath)
+{
+	QPixmap image(iconPath);
+	return encode(image.toImage());
+}
+
 QString QtImageProvider::encode(const QImage& image)
 {
 	auto key = image.cacheKey();

@@ -14,6 +14,7 @@ public:
 
 	void addAction(IAction& action, const char* path) override;
 	void removeAction(IAction& action) override;
+	void addPath(const char* path) override;
 	void onPaletteChanged();
 
 private:

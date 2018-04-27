@@ -7,7 +7,6 @@ namespace wgt
 {
 class ReflectedCollectionInsertCommandParameters
 {
-	DECLARE_REFLECTED
 public:
 	RefObjectId id_;
 	std::string path_;
@@ -27,13 +26,14 @@ public:
 	virtual ~ReflectedCollectionInsertCommand();
 
 	const char* getId() const override;
-	ObjectHandle execute(const ObjectHandle& arguments) const override;
+	const char* getName() const override;
+	virtual Variant execute(const ObjectHandle& arguments) const override;
 	bool customUndo() const override;
 	bool undo(const ObjectHandle& arguments) const override;
 	bool redo(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
-
-	ObjectHandle getCommandDescription(const ObjectHandle& arguments) const override;
+    CommandDescription getCommandDescription(const ObjectHandle& arguments) const override;
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override;
 
 private:
 	IDefinitionManager& definitionManager_;

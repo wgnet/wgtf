@@ -12,9 +12,9 @@ class CustomUndoRedoData : public UndoRedoData
 public:
 	CustomUndoRedoData(CommandInstance& commandInstance);
 
-	void undo() override;
-	void redo() override;
-	virtual ObjectHandle getCommandDescription() const override;
+	bool undo() override;
+	bool redo() override;
+	virtual CommandDescription getCommandDescription() const override;
 
 	const CommandInstance& getCommandInstance() const;
 

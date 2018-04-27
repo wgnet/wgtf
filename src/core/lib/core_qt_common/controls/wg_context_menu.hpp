@@ -23,8 +23,9 @@ class WGContextMenu : public QQuickItem
 	// will be and all actions with that path will be added to that menu.
 	Q_PROPERTY(QString path READ getPath WRITE setPath NOTIFY pathChanged)
 
-	// The object, which may be required for determining if an action should be enabled, checked, or
+	// The objects, which may be required for determining if an action should be enabled, checked, or
 	// passed in to the handler function.
+	// May be QVariantList of objects (for multiple selection) or a single object (for a single selection).
 	Q_PROPERTY(QVariant contextObject READ getContextObject WRITE setContextObject NOTIFY contextObjectChanged)
 
 	DECLARE_QT_MEMORY_HANDLER
@@ -40,11 +41,14 @@ public:
 	void setPath(const QString& path);
 
 	QVariant getContextObject() const;
-	void setContextObject(const QVariant& object);
+	void setContextObject(const QVariant& selection);
 
 	// QML invokable function to locate the menu based on the provided parameters (windowId and path) and
 	// display it to the end-user.
 	Q_INVOKABLE void popup();
+
+	// Determines whether or not the action identified by the actionId is in this menu
+	Q_INVOKABLE QObject* find(const QString& actionId) const;
 
 signals:
 	void pathChanged();

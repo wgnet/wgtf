@@ -8,30 +8,40 @@ import WGControls.Layouts 2.0
 
 /*!
  \ingroup wgcontrols
- \brief An AssetBrowser specific file dialog
+ \brief An AssetBrowser specific file dialog, 
+ can be used as an individual dialog or through the global asset browser dialog
 */
-
 WGFileDialog {
     id: mainDialog
     objectName: "WGAssetBrowserDialog"
     WGComponent { type: "WGAssetBrowserDialog" }
 
-    property alias model : assetBrowser.model
-    property alias nameFilters: assetBrowser.nameFilters
-    property alias selectedNameFilter: assetBrowser.selectedNameFilter
+    title: typeof self != 'undefined' && self.title ? self.title : ""
 
-    onOpen: {
-        if (!assetBrowser.selectPath(curValue)) {
-            assetBrowser.selectFolder(folder);
-        }
-
-        abInstance.width = dWidth
-        abInstance.height = dHeight
-        abInstance.open()
+    property alias model: dialogFrame.assetBrowserModel
+    property alias nameFilters: dialogFrame.nameFilters
+    property alias selectedNameFilter: dialogFrame.selectedNameFilter
+    property alias assetPreview: dialogFrame.assetPreview
+    property alias collapsedTreeNodeIconRole: dialogFrame.collapsedTreeNodeIconRole
+    property alias expandedTreeNodeIconRole: dialogFrame.expandedTreeNodeIconRole
+    property alias defaultCollapsedTreeNodeIconKey: dialogFrame.defaultCollapsedTreeNodeIconKey
+    property alias defaultExpandedTreeNodeIconKey: dialogFrame.defaultExpandedTreeNodeIconKey
+    property alias defaultLeafTreeNodeIconKey: dialogFrame.defaultLeafTreeNodeIconKey
+	
+    function open(dWidth, dHeight, selPath) {
+        dialogFrame.init(dWidth, dHeight, selPath, folder.toString());
+    }
+    
+    function close() {
+        dialogFrame.close();
     }
 
-    onClose: {
-        abInstance.close()
+    onOpened: {
+        dialogFrame.acceptBase(false);
+    }
+
+    onClosed: {
+        dialogFrame.closeBase();
     }
 
     Dialog {
@@ -39,75 +49,49 @@ WGFileDialog {
         modality: mainDialog.modality
         title: mainDialog.title
 
-        property var fileUrl: ""
+        contentItem: WGAssetBrowserDialogFrame {
+			id: dialogFrame
 
-        contentItem: Rectangle {
-            color: palette.mainWindowColor
+            close: function() {
+                abInstance.close();
+            }
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: defaultSpacing.standardMargin
+            init: function(dWidth, dHeight, selPath, altFolder) {
+                abInstance.width = dWidth;
+                abInstance.height = dHeight;
+                initBase(dWidth, dHeight, selPath, altFolder);
+                abInstance.open();
+            }
 
-                WGAssetBrowser {
-                    id: assetBrowser
-                    objectName: "assetBrowser"
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-
-                    onCurrentPathChanged: {
-                        abInstance.fileUrl = currentPath
-                    }
-
-                    onAssetAccepted: {
-                        abInstance.fileUrl = assetPath
-                        abInstance.accepted()
-                        abInstance.close()
-                    }
+            accept: function(accepted) {
+                acceptBase(accepted);
+                if(accepted) {
+                    mainDialog.accepted(fileUrl);   
                 }
-
-                WGExpandingRowLayout {
-                    Layout.preferredHeight: defaultSpacing.minimumRowHeight
-                    Layout.fillWidth: true
-
-                    WGLabel {
-                        text: "Selected File: "
-                    }
-
-                    WGTextBox {
-                        objectName: "fileSelectBox"
-                        Layout.preferredHeight: defaultSpacing.minimumRowHeight
-                        Layout.fillWidth: true
-                        readOnly: true
-                        text: abInstance.fileUrl
-                    }
-
-                    WGPushButton {
-                        objectName: "openButton"
-                        text: "Open"
-                        onClicked: {
-                            abInstance.accepted()
-                            abInstance.close()
-                        }
-                    }
-
-                    WGPushButton {
-                        objectName: "openButton"
-                        text: "Cancel"
-                        onClicked: {
-                            abInstance.rejected()
-                            abInstance.close()
-                        }
-                    }
+                else {
+                    mainDialog.rejected();
                 }
             }
+		}
+
+        property bool wasVisible
+        Component.onCompleted: {
+            wasVisible = visible;
         }
 
-        onAccepted: {
-            mainDialog.accepted(fileUrl)
-        }
+        onVisibleChanged: {
+            if (visible == wasVisible) {
+                return;
+            }
 
-        onRejected: {
-            mainDialog.rejected()
+            if (!visible) {
+                mainDialog.closed();
+            }
+            else {
+                mainDialog.opened();
+            }
+
+            wasVisible = visible;
         }
     }
 }

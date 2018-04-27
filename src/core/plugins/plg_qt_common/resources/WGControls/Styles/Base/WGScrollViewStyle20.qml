@@ -48,12 +48,14 @@ import WGControls 1.0
 */
 ScrollViewStyle {
     WGComponent { type: "WGScrollViewStyle20" }
-    
+
     transientScrollBars: false
 
     /* Margins can be added by setting padding property eg:
 
     padding {left: 5; top: 5; right: 5; bottom: 5} */
+
+    property int expandedSize: defaultSpacing.scrollBarSize * 2
 
     corner: Item {}
 
@@ -63,8 +65,8 @@ ScrollViewStyle {
         property bool sticky: false
         property bool hovered: styleData.hovered
 
-        implicitWidth: defaultSpacing.scrollBarSize * 3
-        implicitHeight: defaultSpacing.scrollBarSize * 3
+        implicitWidth: expandedSize
+        implicitHeight: expandedSize
 
         clip: true
         opacity: transientScrollBars ? 0.5 : 1.0
@@ -88,8 +90,8 @@ ScrollViewStyle {
     handle: Rectangle {
         property bool sticky: false
         property bool hovered: __activeControl !== "none"
-        implicitWidth: defaultSpacing.scrollBarSize * 3 + 1
-        implicitHeight: defaultSpacing.scrollBarSize * 3 + 1
+        implicitWidth: expandedSize + 1
+        implicitHeight: expandedSize + 1
 
         color: palette.highlightColor
 
@@ -102,8 +104,8 @@ ScrollViewStyle {
 
     incrementControl: Item {
         visible: !transientScrollBars
-        implicitWidth: transientScrollBars ? 0 : defaultSpacing.scrollBarSize * 3
-        implicitHeight: transientScrollBars ? 0 : defaultSpacing.scrollBarSize * 3
+        implicitWidth: transientScrollBars ? 0 : expandedSize
+        implicitHeight: transientScrollBars ? 0 : expandedSize
         WGButtonFrame {
             id: buttonFrame
             anchors.fill: parent
@@ -152,8 +154,8 @@ ScrollViewStyle {
 
     decrementControl: Item {
         visible: !transientScrollBars
-        implicitWidth: transientScrollBars ? 0 : defaultSpacing.scrollBarSize * 3
-        implicitHeight: transientScrollBars ? 0 : defaultSpacing.scrollBarSize * 3
+        implicitWidth: transientScrollBars ? 0 : expandedSize
+        implicitHeight: transientScrollBars ? 0 : expandedSize
         WGButtonFrame {
             id: horizButtonFrame
             anchors.fill: parent

@@ -3,24 +3,27 @@ PROJECT( qt_desktop )
 
 INCLUDE( WGToolsCoreProject )
 INCLUDE( WGProjectUserFile )
+INCLUDE( WGTFAppMacros )
 
-find_package(QT5)
+find_package(QT5 ${QT_FIND_PACKAGE_VERSION})
 
-SET( PLUGIN_QT_COMMON_DIR ${CMAKE_CURRENT_LIST_DIR}/../../plugins/plg_qt_common )
+ADD_DEFINITIONS( -DAPPLICATION_SETTINGS_NAME="QtDesktop" )
 
+SET( PLUGIN_QT_COMMON_DIR ${WG_TOOLS_SOURCE_DIR}/core/plugins/plg_qt_common )
+SET( APP_QT_COMMON_DIR ${WG_TOOLS_SOURCE_DIR}/core/app/qt_desktop/app )
 
 SET( APP_CODE_SRCS
-	app/main.cpp
-	app/qt_desktop_application.hpp
-	app/qt_desktop_application.cpp
+	${APP_QT_COMMON_DIR}/main.cpp
+	${APP_QT_COMMON_DIR}/qt_desktop_application.hpp
+	${APP_QT_COMMON_DIR}/qt_desktop_application.cpp
 )
-
 SOURCE_GROUP( "App" FILES ${APP_CODE_SRCS} )
 
 FILE( GLOB PLUGIN_CONFIG_FILES
 	config/plugins_pre_qt.txt
 	config/plugins_post_qt.txt
 )
+
 SOURCE_GROUP( "Plugin Configurations" FILES ${PLUGIN_CONFIG_FILES} )
 BW_CUSTOM_COPY_TO_PROJECT_OUTPUT( plugins "${PLUGIN_CONFIG_FILES}" )
 
@@ -36,29 +39,15 @@ SOURCE_GROUP("Compiled Resources" FILES ${COMPILED_RESOURCES})
 BW_QT_ADD_CONFIG_QRC()
 BW_GLOB_RESOURCE_FILES()
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${APP_CODE_SRCS}
 	${QT_CODE_SRCS}
 	${PLUGIN_CONFIG_FILES}
 	${COMPILED_RESOURCES}
 )
-BW_ADD_TOOL_EXE( qt_desktop WIN32 ${BLOB_SRCS} )
+BW_ADD_TOOL_EXE( ${PROJECT_NAME} WIN32 ${BLOB_SRCS} )
 
-IF( BW_PLATFORM_WINDOWS )
-	SET( PLATFORM_LIBRARIES
-		shlwapi)
-	SET( PLUGIN_CONFIG_FOLDER plugins )
-	SET( PLUGIN_SETTINGS_FOLDER ./ )
-ELSEIF( BW_PLATFORM_MAC )
-	SET(PLATFORM_LIBRARIES
-		core_common)
-	SET( PLUGIN_CONFIG_FOLDER ../Resources/plugins )
-	SET( PLUGIN_SETTINGS_FOLDER ./ )
-
-	SET( CMAKE_EXE_LINKER_FLAGS
-		"${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,@loader_path/../Frameworks"
-	)
-ENDIF()
+WG_APP_PLATFORM_CONFIGURATION()
 
 IF (Qt5_WEB_ENGINE_SUPPORT)
 	ADD_DEFINITIONS( -DUSE_Qt5_WEB_ENGINE=1 )
@@ -67,11 +56,13 @@ ELSE()
 	SET(Qt5_WEB_ENGINE_LIBRARY)
 ENDIF()
 
-BW_TARGET_LINK_LIBRARIES( qt_desktop PRIVATE
+BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_generic_plugin_manager
 	core_wgtf_app
-	wg_memory
+	wgtf_memory
 	core_qt_common
+	core_file_logging
+	core_serialization_xml
 	Qt5::Core
 	Qt5::Gui
 	Qt5::QuickWidgets
@@ -87,4 +78,4 @@ BW_TARGET_LINK_LIBRARIES( qt_desktop PRIVATE
 INCLUDE_DIRECTORIES(${Qt5Core_PRIVATE_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${PLUGIN_QT_COMMON_DIR})
 
-BW_PROJECT_CATEGORY( qt_desktop "Executables" )
+BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Executables" )

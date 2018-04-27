@@ -18,11 +18,11 @@ WGExpandingComponent {
     replace: true
 
     mainComponent: WGNumberBox {
-        number: itemData.value
+        value: itemData.value
         minimumValue: itemData.minValue
         maximumValue: itemData.maxValue
 
-        onValueChanged: {
+        onEditingFinished: {
             itemData.value = value
         }
     }
@@ -134,7 +134,6 @@ Item {
     readonly property int totalExpHeight: mainComponent === expandedComponent ? expandedHeight
                                                                               : (replace ? expandedHeight : mainComponent.height + verticalSpacing + expandedHeight)
     height: expanded ? totalExpHeight + expanderBox.height : mainComponent.height + expanderBox.height
-    width: parent.width
 
     function expand(expanding, sendSignal)
     {

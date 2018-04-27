@@ -1,26 +1,28 @@
 #include "wg_tree_model.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item.hpp"
-#include "core_qt_common/helpers/qt_helpers.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
 #include "core_qt_common/i_qt_framework.hpp"
 #include "core_qt_common/models/extensions/deprecated/i_model_extension_old.hpp"
 #include "core_qt_common/qt_connection_holder.hpp"
 #include "core_qt_common/qt_image_provider_old.hpp"
 #include "qt_model_helpers.hpp"
 #include "core_reflection/object_handle.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_logging/logging.hpp"
 
 #include <QApplication>
 #include <QThread>
 
 namespace wgt
 {
-class WGTreeModel::Impl
+class WGTreeModel::Impl : public Depends<IQtFramework, IQtHelpers>
 {
 public:
 	Impl();
 	static QModelIndex calculateModelIndex(const WGTreeModel& self, const IItem* pItem, int column);
 
-	IQtFramework* qtFramework_;
 	ITreeModel* model_;
 	QVariant source_;
 	QtModelHelpers::Extensions extensions_;
@@ -30,7 +32,7 @@ public:
 	QHash<int, QByteArray> defaultRoleNames_;
 };
 
-WGTreeModel::Impl::Impl() : qtFramework_(nullptr), model_(nullptr)
+WGTreeModel::Impl::Impl() : model_(nullptr)
 {
 }
 
@@ -51,8 +53,6 @@ WGTreeModel::WGTreeModel() : impl_(new Impl())
 {
 	impl_->defaultRoleNames_ = QAbstractItemModel::roleNames();
 	impl_->roleNames_ = QAbstractItemModel::roleNames();
-
-	impl_->qtFramework_ = Context::queryInterface<IQtFramework>();
 
 	impl_->qtConnections_ += QObject::connect(this, &WGTreeModel::sourceChanged, this, &WGTreeModel::onSourceChanged);
 	impl_->qtConnections_ += QObject::connect(this, &WGTreeModel::headerDataChangedThread, this,
@@ -90,7 +90,6 @@ ITreeModel* WGTreeModel::getModel() const
 void WGTreeModel::registerExtension(IModelExtensionOld* extension)
 {
 	beginResetModel();
-	extension->init(impl_->qtFramework_);
 	std::string modelName = this->objectName().toUtf8().constData();
 	extension->loadStates(modelName.c_str());
 	impl_->qtConnections_ += QObject::connect(this, &WGTreeModel::itemDataAboutToBeChanged, extension,
@@ -171,7 +170,7 @@ QModelIndex WGTreeModel::parent(const QModelIndex& child) const
 		return QModelIndex();
 	}
 
-	assert(child.isValid());
+	TF_ASSERT(child.isValid());
 	auto childItem = reinterpret_cast<IItem*>(child.internalPointer());
 	auto itemIndex = model->index(childItem);
 	auto parentItem = itemIndex.second;
@@ -187,7 +186,7 @@ QModelIndex WGTreeModel::parent(const QModelIndex& child) const
 
 QModelIndex WGTreeModel::convertItemToIndex(const QVariant& item) const
 {
-	auto variant = QtHelpers::toVariant(item);
+	auto variant = impl_->get<IQtHelpers>()->toVariant(item);
 	auto itemPtr = reinterpret_cast<IItem*>(variant.value<intptr_t>());
 	if (itemPtr != nullptr)
 	{
@@ -243,7 +242,7 @@ QVariant WGTreeModel::headerData(int section, Qt::Orientation orientation, int r
 		return QVariant::Invalid;
 	}
 
-	return QtHelpers::toQVariant(model->getData(section, roleId), const_cast<WGTreeModel*>(this));
+	return impl_->get<IQtHelpers>()->toQVariant(model->getData(section, roleId), const_cast<WGTreeModel*>(this));
 }
 
 QVariant WGTreeModel::headerData(int column, QString roleName) const
@@ -299,7 +298,7 @@ QVariant WGTreeModel::data(const QModelIndex& index, int role) const
 		if (thumbnail != nullptr)
 		{
 			auto qtImageProvider = dynamic_cast<QtImageProviderOld*>(
-			impl_->qtFramework_->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
+			impl_->get<IQtFramework>()->qmlEngine()->imageProvider(QtImageProviderOld::providerId()));
 			if (qtImageProvider != nullptr)
 			{
 				auto imagePath = qtImageProvider->encodeImage(thumbnail);
@@ -381,7 +380,12 @@ void WGTreeModel::onSourceChanged()
 {
 	ITreeModel* source = nullptr;
 
-	Variant variant = QtHelpers::toVariant(getSource());
+	auto qtHelpers = impl_->get<IQtHelpers>();
+	if (qtHelpers == nullptr && impl_->model_ == nullptr)
+	{
+		return;
+	}
+	Variant variant = qtHelpers->toVariant(getSource());
 	if (variant.typeIs<ITreeModel>())
 	{
 		source = const_cast<ITreeModel*>(variant.cast<const ITreeModel*>());
@@ -461,14 +465,14 @@ void WGTreeModel::onDestructing()
 void WGTreeModel::onModelDataChanged(int column, ItemRole::Id roleId, const Variant& data)
 {
 	auto model = getModel();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 	this->changeHeaderData(Qt::Orientation::Horizontal, column, column);
 }
 
 void WGTreeModel::onPreItemDataChanged(const IItem* item, int column, ItemRole::Id roleId, const Variant& data)
 {
 	auto model = getModel();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 	if (item == nullptr)
 	{
 		return;
@@ -482,7 +486,7 @@ void WGTreeModel::onPreItemDataChanged(const IItem* item, int column, ItemRole::
 
 	auto index = Impl::calculateModelIndex(*this, item, column);
 	// NGT-1619 Temporary workaround from @s_yuan
-	auto value = QtHelpers::toQVariant(data, this);
+	auto value = impl_->get<IQtHelpers>()->toQVariant(data, this);
 	// this->beginChangeData( index, role, value );
 	this->beginChangeData(index, role, value);
 }
@@ -490,7 +494,7 @@ void WGTreeModel::onPreItemDataChanged(const IItem* item, int column, ItemRole::
 void WGTreeModel::onPostItemDataChanged(const IItem* item, int column, ItemRole::Id roleId, const Variant& data)
 {
 	auto model = getModel();
-	assert(model != nullptr);
+	TF_ASSERT(model != nullptr);
 	if (item == nullptr)
 	{
 		return;
@@ -504,14 +508,14 @@ void WGTreeModel::onPostItemDataChanged(const IItem* item, int column, ItemRole:
 
 	auto index = Impl::calculateModelIndex(*this, item, column);
 	// NGT-1619 Temporary workaround from @s_yuan
-	auto value = QtHelpers::toQVariant(data, this);
+	auto value = impl_->get<IQtHelpers>()->toQVariant(data, this);
 	this->endChangeData(index, role, value);
 	// this->endChangeData( index, role, QVariant() );
 }
 
 void WGTreeModel::onPreItemsInserted(const IItem* parent, size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	auto parentIndex = Impl::calculateModelIndex(*this, parent, 0);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);
@@ -520,7 +524,7 @@ void WGTreeModel::onPreItemsInserted(const IItem* parent, size_t index, size_t c
 
 void WGTreeModel::onPostItemsInserted(const IItem* parent, size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	auto parentIndex = Impl::calculateModelIndex(*this, parent, 0);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);
@@ -529,7 +533,7 @@ void WGTreeModel::onPostItemsInserted(const IItem* parent, size_t index, size_t 
 
 void WGTreeModel::onPreItemsRemoved(const IItem* parent, size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	auto parentIndex = Impl::calculateModelIndex(*this, parent, 0);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);
@@ -538,7 +542,7 @@ void WGTreeModel::onPreItemsRemoved(const IItem* parent, size_t index, size_t co
 
 void WGTreeModel::onPostItemsRemoved(const IItem* parent, size_t index, size_t count)
 {
-	assert(getModel() != nullptr);
+	TF_ASSERT(getModel() != nullptr);
 	auto parentIndex = Impl::calculateModelIndex(*this, parent, 0);
 	const int first = QtModelHelpers::calculateFirst(index);
 	const int last = QtModelHelpers::calculateLast(index, count);

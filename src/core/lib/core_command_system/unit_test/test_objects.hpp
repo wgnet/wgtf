@@ -6,8 +6,6 @@
 #include "core_reflection/reflected_object.hpp"
 #include "core_reflection/reflection_macros.hpp"
 #include "core_reflection/i_definition_manager.hpp"
-#include "core_reflection/object_manager.hpp"
-#include "core_reflection/reflected_types.hpp"
 #include "core_variant/collection.hpp"
 #include "wg_types/binary_block.hpp"
 #include <vector>
@@ -45,11 +43,11 @@ public:
 	{
 		++counter_;
 	}
-	void undo(const ObjectHandle& handle, Variant variant)
+	void undo(Variant params, Variant variant)
 	{
 		--counter_;
 	}
-	void redo(const ObjectHandle& handle, Variant variant)
+	void redo(Variant params, Variant variant)
 	{
 		++counter_;
 	}
@@ -123,13 +121,18 @@ public:
 	{
 		return id_.c_str();
 	}
-	ObjectHandle execute(const ObjectHandle& arguments) const;
+	Variant execute(const ObjectHandle& arguments) const;
 
 	CommandThreadAffinity threadAffinity() const
 	{
 		return threadAffinity_;
 	}
 
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override
+	{
+		return nullptr;
+	}
+		
 	static std::string generateId(CommandThreadAffinity threadAffinity);
 
 private:
@@ -149,11 +152,16 @@ public:
 	{
 		return id_.c_str();
 	}
-	ObjectHandle execute(const ObjectHandle& arguments) const;
+	virtual Variant execute(const ObjectHandle& arguments) const override;
 
 	CommandThreadAffinity threadAffinity() const
 	{
 		return threadAffinity_;
+	}
+
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override
+	{
+		return nullptr;
 	}
 
 	static std::string generateId(int depth, CommandThreadAffinity threadAffinity);
@@ -176,11 +184,16 @@ public:
 	{
 		return id_.c_str();
 	}
-	ObjectHandle execute(const ObjectHandle& arguments) const;
+	virtual Variant execute(const ObjectHandle& arguments) const override;
 
 	CommandThreadAffinity threadAffinity() const
 	{
 		return threadAffinity_;
+	}
+
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override
+	{
+		return nullptr;
 	}
 
 	static std::string generateId(int depth, CommandThreadAffinity threadAffinity);

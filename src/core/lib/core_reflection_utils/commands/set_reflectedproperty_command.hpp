@@ -3,6 +3,7 @@
 
 #include "core_command_system/command.hpp"
 #include "core_reflection/reflected_object.hpp"
+#include "core_reflection/property_accessor.hpp"
 
 namespace wgt
 {
@@ -23,18 +24,10 @@ public:
 	void setPath(const char* path);
 	void setValue(const Variant& value);
 
-	static const char* contextIdPropertyName();
-	static const char* pathPropertyName();
-	static const char* valuePropertyName();
-
 private:
 	RefObjectId contextId_;
 	std::string propertyPath_;
 	Variant value_;
-
-	static const char* s_ContextId;
-	static const char* s_PropertyPath;
-	static const char* s_PropertyValue;
 };
 
 class SetReflectedPropertyCommand : public Command
@@ -44,9 +37,11 @@ public:
 	~SetReflectedPropertyCommand() override;
 
 	const char* getId() const override;
-	ObjectHandle execute(const ObjectHandle& arguments) const override;
+	const char* getName() const override;
+	virtual Variant execute(const ObjectHandle& arguments) const override;
 	bool validateArguments(const ObjectHandle& arguments) const override;
 	CommandThreadAffinity threadAffinity() const override;
+	ManagedObjectPtr copyArguments(const ObjectHandle& arguments) const override;
 
 private:
 	IDefinitionManager& definitionManager_;

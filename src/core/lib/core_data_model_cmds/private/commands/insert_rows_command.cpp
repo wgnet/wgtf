@@ -7,6 +7,7 @@
 #include "core_reflection/metadata/meta_utilities.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
 #include "core_variant/variant.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
@@ -39,7 +40,7 @@ bool isValid(const InsertRowsCommandArgument* pCommandArgs)
 
 } // end namespace InsertRowsCommand_Detail
 
-InsertRowsCommand::InsertRowsCommand(IComponentContext& context) : definitionManager_(context)
+InsertRowsCommand::~InsertRowsCommand()
 {
 }
 
@@ -105,31 +106,31 @@ bool InsertRowsCommand::redo(const ObjectHandle& arguments) const /* override */
 	return model.insertColumns(startPos, count, pParent);
 }
 
-ObjectHandle InsertRowsCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
+CommandDescription InsertRowsCommand::getCommandDescription(const ObjectHandle& arguments) const /* override */
 {
-	auto handle = GenericObject::create(*definitionManager_);
-	assert(handle.get() != nullptr);
-	auto& genericObject = (*handle);
+    auto object = GenericObject::create();
 
 	if (!arguments.isValid())
 	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Insert/Remove");
-		return ObjectHandle(std::move(handle));
+		object->set("Name", "Invalid");
+		object->set("Type", "Insert/Remove");
 	}
+    else
+    {
+        auto pCommandArgs = arguments.getBase<InsertRowsCommandArgument>();
+        if (!InsertRowsCommand_Detail::isValid(pCommandArgs))
+        {
+            object->set("Name", "Invalid");
+            object->set("Type", "Insert/Remove");
+        }
+        else
+        {
+            object->set("Name", "Insert");
+            object->set("Type", "Insert");
+        }
+    }
 
-	auto pCommandArgs = arguments.getBase<InsertRowsCommandArgument>();
-	if (!InsertRowsCommand_Detail::isValid(pCommandArgs))
-	{
-		genericObject.set("Name", "Invalid");
-		genericObject.set("Type", "Insert/Remove");
-		return ObjectHandle(std::move(handle));
-	}
-
-	genericObject.set("Name", "Insert");
-	genericObject.set("Type", "Insert");
-
-	return ObjectHandle(std::move(handle));
+    return std::move(object);
 }
 
 const char* InsertRowsCommand::getId() const /* override */
@@ -144,7 +145,7 @@ bool InsertRowsCommand::validateArguments(const ObjectHandle& arguments) const /
 	return InsertRowsCommand_Detail::isValid(pCommandArgs);
 }
 
-ObjectHandle InsertRowsCommand::execute(const ObjectHandle& arguments) const /* override */
+Variant InsertRowsCommand::execute(const ObjectHandle& arguments) const /* override */
 {
 	auto pCommandArgs = arguments.getBase<InsertRowsCommandArgument>();
 	if (!InsertRowsCommand_Detail::isValid(pCommandArgs))
@@ -177,4 +178,8 @@ CommandThreadAffinity InsertRowsCommand::threadAffinity() const /* override */
 	return CommandThreadAffinity::UI_THREAD;
 }
 
+ManagedObjectPtr InsertRowsCommand::copyArguments(const ObjectHandle& arguments) const
+{
+	return Command::copyArguments<InsertRowsCommandArgument>(arguments);
+}
 } // end namespace wgt

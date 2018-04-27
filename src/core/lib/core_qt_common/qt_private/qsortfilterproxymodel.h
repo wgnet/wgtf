@@ -71,6 +71,7 @@ namespace wgt
 		~QSortFilterProxyModel();
 
 		void setSourceModel(QAbstractItemModel *sourceModel) Q_DECL_OVERRIDE;
+		QAbstractItemModel * sourceModel() const;
 
 		QModelIndex mapToSource(const QModelIndex &proxyIndex) const Q_DECL_OVERRIDE;
 		QModelIndex mapFromSource(const QModelIndex &sourceIndex) const Q_DECL_OVERRIDE;
@@ -119,6 +120,10 @@ namespace wgt
 
 		void filterChanged();
 		void invalidateFilter();
+
+		//BEGIN WARGAMING MODIFICATION
+		void recalculateFilter();
+		//END WARGAMING MODIFICATION
 
 	public:
 		using QObject::parent;

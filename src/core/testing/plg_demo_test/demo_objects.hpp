@@ -1,41 +1,52 @@
 #ifndef DEMO_OBJECTS_HPP
 #define DEMO_OBJECTS_HPP
 
+#include "core_dependency_system/depends.hpp"
 #include "core_reflection/object_handle.hpp"
-#include "core_data_model/generic_list.hpp"
 #include "core_reflection/generic/generic_object.hpp"
+#include "core_reflection/reflected_object.hpp"
 #include "tinyxml2.hpp"
-#include "object_selection_helper.hpp"
-#include "core_command_system/i_env_system.hpp"
+#include "core_environment_system/i_env_system.hpp"
 #include "core_data_model/value_change_notifier.hpp"
+#include "core_data_model/abstract_item_model.hpp"
+#include "core_data_model/collection_model.hpp"
+#include "core_object/object_handle_provider.hpp"
+#include "wg_types/vector3.hpp"
 
 namespace wgt
 {
-class IComponentContext;
 class IDefinitionManager;
-class IReflectionController;
-class IListModel;
-class ITreeModel;
-class Vector3;
 class IFileSystem;
+class ICommandManager;
 
-class DemoObjectsEnvCom;
-
-class DemoObjects : public IEnvEventListener
+class DemoScene : Depends<IFileSystem, IDefinitionManager, ICommandManager>
+                , public ObjectHandleProvider<DemoScene>
 {
 public:
-	DemoObjects();
-	~DemoObjects();
-	bool init(IComponentContext& contextManager);
-	bool fini();
+	DECLARE_REFLECTED
 
-	const ITreeModel* getTreeModel() const;
-	const IListModel* getListModel() const;
-	void updateRootObject(int index);
-	const int rootObjectIndex() const;
+	DemoScene(std::function<void(int)> onObjectSelect);
+	virtual ~DemoScene();
+	void initialise(const std::string& id);
+	ObjectHandle createObject(Vector3 pos);
+	void undoCreateObject(Variant params, Variant result);
+	void redoCreateObject(Variant params, Variant result);
+	void flagDirty();
+	int selected() const;
+	bool isSelectedValid() const;
+	void selectObject(int index);
+	const AbstractTreeModel* getTreeModel() const;
+	const AbstractListModel* getListModel() const;
+
+private:
 	void setTexture(int index, std::string currfilePath, std::string newFilePath);
-	void undoSetTexture(const ObjectHandle& params, Variant result);
-	void redoSetTexture(const ObjectHandle& params, Variant result);
+	void undoSetTexture(Variant params, Variant result);
+	void redoSetTexture(Variant params, Variant result);
+	void loadData();
+	void populateDemoObject(GenericObjectPtr& genericObject, const tinyxml2::XMLNode& objectNode);
+	void createTreeModel();
+    void getSceneDirtySignal(Signal<void(Variant&)>** result) const;
+    bool getSceneDirty() const;
 
 	/**
 	* @return the path of the current texture attached to the object
@@ -43,34 +54,62 @@ public:
 	*/
 	std::string getObjectTexture(int index);
 
-	const IValueChangeNotifier* currentIndexSource() const;
-	const IValueChangeNotifier* currentListSource() const;
+	std::string id_;
+	int selectedIndex_ = -1;
+	bool sceneDirty_ = false;
+    Signal<void(Variant&)> sceneDirtyChanged_;
+	std::function<void(int)> onObjectSelect_ = nullptr;
+	std::vector<ManagedObject<GenericObject>> objects_;
+	std::vector<GenericObjectPtr> objectHandles_;
+	std::shared_ptr<CollectionModel> objectListModel_;
+	std::shared_ptr<AbstractTreeModel> treeModel_;
+	const IClassDefinition* definition_ = nullptr;
+	ObjectHandle nullSelection_;
+};
 
-	ObjectHandle createObject(Vector3 pos);
-	void undoCreateObject(const ObjectHandle& params, Variant result);
-	void redoCreateObject(const ObjectHandle& params, Variant result);
+class DemoObjects : public EnvComponentT<IEnvComponentState>
+                  , Depends<IDefinitionManager, IFileSystem>
+                  , public ObjectHandleProvider<DemoObjects>
+{
+	DECLARE_REFLECTED
 
-	// IEnvEventListener
-	virtual void onAddEnv(IEnvState* state) override;
-	virtual void onRemoveEnv(IEnvState* state) override;
-	virtual void onSelectEnv(IEnvState* state) override;
-
-	bool loadDemoData(const char* name, DemoObjectsEnvCom* objects);
+public:
+	DemoObjects(IEnvManager& envManager);
+	~DemoObjects();
+	bool init(IComponentContext& contextManager);
+	bool fini();
+	ObjectHandleT<DemoScene> createScene(const std::string& id);
 
 private:
-	void populateDemoObject(GenericObjectPtr& genericObject, const tinyxml2::XMLNode& objectNode);
+	const AbstractTreeModel* getTreeModel() const;
+	void getTreeModelSignal(Signal<void(Variant&)>** result) const;
+	void updateTreeModel(const AbstractTreeModel* model);
 
-	IDefinitionManager* pDefManager_;
-	IReflectionController* controller_;
-	IEnvManager* envManager_;
-	IFileSystem* fileSystem_;
+	const AbstractListModel* getListModel() const;
+	void getListModelSignal(Signal<void(Variant&)>** result) const;
+	void updateListModel(const AbstractListModel* model);
 
-	ObjectSelectionHelper helper_;
-	std::unique_ptr<ValueChangeNotifier<IListModel*>> pEnvChangeHelper_;
-	ObjectHandle nullSelection_;
+	DemoScene* getScene() const;
+	ObjectHandle createObject(Vector3 pos);
+	void selectObject(int index);
+	void selectScene(const std::string& scene);
+	void undoCreateObject(Variant params, Variant result);
+	void redoCreateObject(Variant params, Variant result);
 
-	DemoObjectsEnvCom* objects_;
-	mutable std::shared_ptr<ITreeModel> treeModel_;
+	virtual const char* getEnvComponentId() const override;
+	virtual void onPostEnvironmentChanged(const EnvironmentId& oldId, const EnvironmentId& newId) override;
+
+	bool initialised_ = false;
+	int selectedIndex_ = -1;
+	std::string selectedScene_;
+	std::map<std::string, ManagedObject<DemoScene>> scenes_;
+	const IClassDefinition* definition_ = nullptr;
+	
+	const AbstractTreeModel* treeModel_;
+	Signal<void(Variant&)> treeModelChanged_;
+
+	const AbstractListModel* listModel_;
+	Signal<void(Variant&)> listModelChanged_;
 };
 } // end namespace wgt
 #endif // DEMO_OBJECTS_HPP

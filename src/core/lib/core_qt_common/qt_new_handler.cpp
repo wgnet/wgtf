@@ -5,19 +5,35 @@ namespace wgt
 {
 static std::set<void*>* s_QtInPlaceNewed = nullptr;
 
-std::set<void*>& getQtInPlaceNewCollection()
+void insertItemQtInPlaceNewCollection(void* ptr)
 {
-	if (s_QtInPlaceNewed == nullptr)
-	{
-		s_QtInPlaceNewed = new std::set<void*>;
-	}
-	return *s_QtInPlaceNewed;
+    if (s_QtInPlaceNewed == nullptr)
+    {
+        s_QtInPlaceNewed = new std::set<void*>;
+    }
+    s_QtInPlaceNewed->insert(ptr);
 }
 
-void releaseQtInPlaceNewCollection()
+bool eraseItemQtInPlaceNewCollection(void* ptr)
 {
-	assert(s_QtInPlaceNewed && s_QtInPlaceNewed->empty());
-	delete s_QtInPlaceNewed;
-	s_QtInPlaceNewed = nullptr;
+    bool erased = false;
+    if (s_QtInPlaceNewed)
+    {
+        auto findIt = s_QtInPlaceNewed->find(ptr);
+        if (findIt != s_QtInPlaceNewed->end())
+        {
+            s_QtInPlaceNewed->erase(ptr);
+            erased = true;
+        }
+
+        if (s_QtInPlaceNewed->empty())
+        {
+            delete s_QtInPlaceNewed;
+            s_QtInPlaceNewed = nullptr;
+        }
+    }
+
+    return erased;
 }
+
 } // end namespace wgt

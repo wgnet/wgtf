@@ -11,19 +11,23 @@ class IComponentContext;
 class QtPreferences : public Implements<IPreferences>
 {
 public:
-	QtPreferences(IComponentContext& contextManager);
+	QtPreferences();
 	~QtPreferences();
 
-	virtual GenericObjectPtr& getPreference(const char* key) override;
-	virtual bool preferenceExists(const char* key) const override;
+	virtual GenericObjectPtr getPreference(const std::string& key, const std::string& preferenceKey = "") override;
+	virtual bool preferenceExists (const std::string& key, const std::string& preferenceKey = "") const override;
 	virtual void registerPreferencesListener(std::shared_ptr<IPreferencesListener>& listener) override;
 	virtual void deregisterPreferencesListener(std::shared_ptr<IPreferencesListener>& listener) override;
-	virtual void writePreferenceToFile(const char* fileName) override;
-	virtual void loadPreferenceFromFile(const char* fileName) override;
+	virtual bool writePreferenceToFile(const char* fileName, bool notifyListeners) override;
+	virtual bool loadPreferenceFromFile(const char* fileName, bool notifyListeners) override;
 	virtual bool hasPreferencesFile(const char* fileName) const override;
 	virtual void loadDefaultPreferences() override;
 	virtual bool setPreferencesFolder(const char* directory) override;
 	virtual bool setPreferencesFolderAsUserDirectory() override;
+	virtual const char* getPreferencesExtension() const override;
+	virtual void setDefaultPreferenceKey(const std::string& preferenceKey) override;
+	virtual const std::string& getDefaultPreferenceKey() const override;
+	virtual void clearPreferences() override;
 
 private:
 	class Implementation;

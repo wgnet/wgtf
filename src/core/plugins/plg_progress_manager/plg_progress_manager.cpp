@@ -16,7 +16,7 @@ class ProgressManagerUIPlugin : public PluginMain
 {
 public:
 	//==========================================================================
-	ProgressManagerUIPlugin(IComponentContext& contextManager) : progressManager_(new ProgressManager(contextManager))
+	ProgressManagerUIPlugin(IComponentContext& contextManager) : progressManager_(new ProgressManager())
 	{
 	}
 

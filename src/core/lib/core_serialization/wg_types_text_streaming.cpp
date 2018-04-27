@@ -6,6 +6,8 @@
 
 namespace
 {
+// Note: should check this is not the same as the locale's decimals separator
+// Russian locale uses ',' as a decimals separator
 const char g_separator = ',';
 }
 

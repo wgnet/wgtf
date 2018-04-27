@@ -3,7 +3,7 @@ PROJECT( plg_demo_test )
 
 INCLUDE( WGToolsCoreProject )
 
-FIND_PACKAGE( QT5 )
+FIND_PACKAGE( QT5 ${QT_FIND_PACKAGE_VERSION} )
 
 IF (Qt5_WEB_ENGINE_SUPPORT)
 	ADD_DEFINITIONS( -DUSE_Qt5_WEB_ENGINE=1 )
@@ -12,10 +12,9 @@ ENDIF()
 SET( ALL_SRCS
 	metadata/demo_objects.mpp
 	plg_demo_test.cpp
+	demo_doc.hpp
 	demo_objects.cpp
 	demo_objects.hpp
-	object_selection_helper.cpp
-	object_selection_helper.hpp
 	tinyxml2.cpp
 	tinyxml2.hpp
 )
@@ -38,6 +37,7 @@ BW_TARGET_LINK_LIBRARIES( ${PROJECT_NAME} PRIVATE
 	core_reflection
 	core_generic_plugin
 	core_data_model
+	core_viewport
 )
 
 BW_PROJECT_CATEGORY( ${PROJECT_NAME} "Plugins" )

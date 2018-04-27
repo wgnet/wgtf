@@ -21,7 +21,9 @@ private:
 	GenericDefinition(const char* name);
 
 public:
-	ObjectHandle create(const IClassDefinition& definition) const override;
+	ObjectHandleStoragePtr createObjectStorage(const IClassDefinition& definition) const override;
+	ManagedObjectPtr createManaged(const IClassDefinition& definition, RefObjectId id = RefObjectId::zero()) const override;
+
 	bool isAbstract() const override
 	{
 		return false;
@@ -30,19 +32,22 @@ public:
 	{
 		return true;
 	}
-	MetaHandle getMetaData() const override
+	const MetaData & getMetaData() const override
 	{
-		return nullptr;
+		static MetaData metaData_;
+		return metaData_;
 	}
-	const char* getParentName() const override
-	{
-		return nullptr;
-	}
+
 	const char* getName() const override;
 
-	void* upCast(void* object) const override
+	bool canDirectLookupProperty() const override
 	{
-		return nullptr;
+		return true;
+	}
+
+	IBasePropertyPtr directLookupProperty(const char* name) const override
+	{
+		return properties_.findProperty( name );
 	}
 
 	PropertyIteratorImplPtr getPropertyIterator() const override;
@@ -51,7 +56,9 @@ public:
 		return const_cast<GenericDefinition*>(this);
 	}
 
-	IBasePropertyPtr addProperty(const char* name, const TypeId& typeId, MetaHandle metaData) override;
+	IBasePropertyPtr addProperty(const char* name, const TypeId& typeId, MetaData metaData,
+	                             bool isCollection) override;
+	void removeProperty(const char* name) override;
 
 private:
 	const std::string name_;

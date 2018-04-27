@@ -6,6 +6,7 @@ import QtQuick.Dialogs 1.2
 import WGControls 2.0
 import WGControls.Styles 2.0
 import WGControls.Private 2.0
+import WGControls.Global 2.0
 
 /*!
  \ingroup wgcontrols
@@ -30,34 +31,12 @@ Example:
         Layout.fillWidth: true
 
         Component.onCompleted: {
-            createColorHandle(.25,handleStyle,__handlePosList.length, "red")
-            createColorHandle(.5,handleStyle,__handlePosList.length, "yellow")
-            createColorHandle(.75,handleStyle,__handlePosList.length, "white")
+            createColorHandle(.25,handleStyle,__handlePosList.length, Qt.vector4d(1,0,0,1))
+            createColorHandle(.5,handleStyle,__handlePosList.length, Qt.vector4d(1,1,0,1))
+            createColorHandle(.75,handleStyle,__handlePosList.length, Qt.vector4d(1,1,1,1))
         }
     }
 \endcode
-
-Example:
-\code{.js}
-    WGGradientSlider {
-        Layout.fillWidth: true
-
-        WGGradientSliderHandle {
-            value: 0.25
-            color: "red"
-        }
-        WGGradientSliderHandle {
-            value: 0.5
-            color: "yellow"
-        }
-        WGGradientSliderHandle {
-            value: 0.75
-            color: "white"
-        }
-    }
-\endcode
-
-\todo TODO: Test orientation = vertical. Create vertical slider. Remove option here
 */
 
 WGSlider {
@@ -69,6 +48,12 @@ WGSlider {
         This value determines whether double clicking a handle should display a color picker.
     */
     property bool useColorPicker: true
+
+    property bool defaultColorDialog: false
+
+    property bool useHDR: false
+
+    property var tonemap: function(col) { return col; }
 
     /*!
         This value determines whether the alpha value will appear when changing a color handle via a color picker.
@@ -92,7 +77,7 @@ WGSlider {
     /*!
         This value is true if the color picker is visible
     */
-    readonly property bool colorPickerOpen: colorPicker.visible;
+    readonly property bool colorPickerOpen: __dialogInstance != null ? __dialogInstance.visible : false
 
     minimumValue: 0
 
@@ -112,33 +97,10 @@ WGSlider {
 
     style: WGGradientSliderStyle{}
 
-    property var colorPicker: ColorDialog {
-        id: colorPicker
-        title: "Please choose a color"
-        showAlphaChannel: slider.showAlphaChannel
+    /*! internal */
+    property var __dialogInstance: null
 
-        property int currentColorIndex: -1
-
-        onVisibleChanged: {
-            if (visible) {
-                beginUndoFrame();
-            }
-        }
-
-        onAccepted: {
-            if(currentColorIndex >= 0)
-            {
-                colorModified(Qt.rgba(colorPicker.color.r,colorPicker.color.g,colorPicker.color.b,colorPicker.color.a), currentColorIndex)
-                endUndoFrame();
-                currentColorIndex = -1
-            }
-        }
-
-        onRejected: {
-            abortUndoFrame();
-            currentColorIndex = -1
-        }
-    }
+    property int colorEditingIndex: -1
 
     // the repeated column of gradient bars loaded in WGGradientSliderStyle
     property Component gradientFrame: Item {
@@ -220,7 +182,9 @@ WGSlider {
                         if (index == slider.__handleCount)
                         {
                             //if it's the last bar, just uses a solid color
-                            colorBar.color = slider.__handlePosList[index - 1].color
+                            var newCol = slider.__handlePosList[index - 1].color
+                            var tm_Col = tonemap(Qt.vector3d(newCol.x, newCol.y, newCol.z))
+                            colorBar.color = Qt.rgba(tm_Col.x, tm_Col.y, tm_Col.z, newCol.w)
                             return null
                         }
                         else
@@ -242,10 +206,13 @@ WGSlider {
 
                     onPressed: {
                         //adds handles when bar is Shift Clicked
-                        if ((mouse.button == Qt.LeftButton) && (mouse.modifiers & Qt.ShiftModifier) && slider.addDeleteHandles)
+                        if ((mouse.button == Qt.LeftButton) && (mouse.modifiers & Qt.ShiftModifier ||  mouse.modifiers & Qt.AltModifier) && slider.addDeleteHandles)
                         {
-                            var framePos = mapToItem(gradientFrame, mouseX, mouseY)
-                            addPointToBar(framePos)
+                            if (slider.hoveredHandle === -1)
+                            {
+                                var framePos = mapToItem(gradientFrame, mouseX, mouseY)
+                                addPointToBar(framePos)
+                            }
                         }
                         else if ((mouse.button == Qt.LeftButton) && (mouse.modifiers & Qt.sliderModifier) && slider.addDeleteHandles)
                         {
@@ -267,7 +234,7 @@ WGSlider {
     /*!
         This signal is fired when a point's color is changed
     */
-    signal colorModified(color color, int index)
+    signal colorModified(var color, int index)
 
     /*!
         creates a new color handle with value (val), handleType (handle), color (col) and gradient (grad)
@@ -322,11 +289,45 @@ WGSlider {
 
     //pick a color using ColorDialog
     onSliderDoubleClicked: {
-        if (useColorPicker)
+        if (useColorPicker && mouseModifiers === Qt.NoModifier)
         {
-            colorPicker.color = __handlePosList[index].color
-            colorPicker.currentColorIndex = index
-            colorPicker.open()
+            makeFakeMouseRelease();
+            beginUndoFrame();
+            colorEditingIndex = index
+            openColorDialog(__handlePosList[index].color)
+        }
+    }
+
+    Connections {
+        target: __dialogInstance
+        ignoreUnknownSignals: true
+
+        onAccepted: {
+
+            if(colorEditingIndex >= 0)
+            {
+                if (defaultColorDialog)
+                {
+                    colorModified(Qt.vector4d(selectedValue.r,selectedValue.g,selectedValue.b,selectedValue.a), colorEditingIndex)
+                    endUndoFrame();
+                    colorEditingIndex = -1
+                }
+                else
+                {
+                    colorModified(selectedValue, colorEditingIndex)
+                    endUndoFrame();
+                    colorEditingIndex = -1
+                }
+            }
+        }
+
+        onRejected: {
+            abortUndoFrame();
+            colorEditingIndex = -1
+        }
+
+        onClosed: {
+            __dialogInstance = null
         }
     }
 
@@ -348,6 +349,8 @@ WGSlider {
                                         "parentSlider": slider
                                     });
         }
+
+        newHandle.tonemap = slider.tonemap
 
         if (typeof color != "undefined")
         {
@@ -395,8 +398,14 @@ WGSlider {
         }
         else
         {
-            __handlePosList[index].gradient.stops[0].color = __handlePosList[index].minColor
-            __handlePosList[index].gradient.stops[1].color = __handlePosList[index].color
+
+            var tmpCol = tonemap(Qt.vector3d(__handlePosList[index].color.x, __handlePosList[index].color.y, __handlePosList[index].color.z))
+            var tm_Col = Qt.rgba(tmpCol.x, tmpCol.y, tmpCol.z, __handlePosList[index].color.w)
+            __handlePosList[index].gradient.stops[1].color = tm_Col
+
+            var tmpCol = tonemap(Qt.vector3d(__handlePosList[index].minColor.x, __handlePosList[index].minColor.y, __handlePosList[index].minColor.z))
+            var tm_MinCol = Qt.rgba(tmpCol.x, tmpCol.y, tmpCol.z, __handlePosList[index].minColor.w)
+            __handlePosList[index].gradient.stops[1].color = tm_MinCol
         }
         updateHandles()
     }
@@ -435,10 +444,10 @@ WGSlider {
 
         var handleColor = slider.__handlePosList[index].color
 
-        handleColor.r = Math.max(Math.min(handleColor.r += rDelta, 1),0)
-        handleColor.g = Math.max(Math.min(handleColor.g += gDelta, 1),0)
-        handleColor.b = Math.max(Math.min(handleColor.b += bDelta, 1),0)
-        handleColor.a = Math.max(Math.min(handleColor.a += aDelta, 1),0)
+        handleColor.x = Math.max(Math.min(handleColor.x += rDelta, 1),0)
+        handleColor.y = Math.max(Math.min(handleColor.y += gDelta, 1),0)
+        handleColor.z = Math.max(Math.min(handleColor.z += bDelta, 1),0)
+        handleColor.w = Math.max(Math.min(handleColor.w += aDelta, 1),0)
 
         return handleColor
     }
@@ -500,6 +509,42 @@ WGSlider {
                 console.log("WARNING WGGradientSlider: Child object found in __handlePosList that isn't a valid slider handle")
             }
         }
+    }
+
+    /*! This function opens the desired dialog box.
+    */
+    function openColorDialog(curColor) {
+        if (defaultColorDialog) {
+            WGDialogs.defaultColorPickerDialog.close()
+            __dialogInstance = WGDialogs.defaultColorPickerDialog
+
+            //MacOS default color picker cannot be modal.
+            __dialogInstance.modality = Qt.NonModal
+            __dialogInstance.showAlphaChannel = colorButton.showAlphaChannel
+            __dialogInstance.open(600, 380, Qt.rgba(curColor.x, curColor.y, curColor.z, curColor.w))
+        }
+        else {
+            __dialogInstance = WGDialogs.customColorPickerDialog
+            if(typeof viewId != "undefined")
+            {
+                __dialogInstance.viewId = viewId
+            }
+            if(typeof viewPreference != "undefined")
+            {
+                __dialogInstance.viewPreference = viewPreference
+            }
+            __dialogInstance.modality = Qt.ApplicationModal
+            __dialogInstance.useHDR = slider.useHDR
+            __dialogInstance.tonemap = slider.tonemap
+            __dialogInstance.showAlphaChannel = slider.showAlphaChannel
+            __dialogInstance.open(600, 380, curColor)
+        }
+    }
+
+    /*! This function closes the desired dialog box depending on whether useAssetBrowser == true or not.
+    */
+    function closeColorDialog() {
+        __dialogInstance.close()
     }
 
     Component.onCompleted: {

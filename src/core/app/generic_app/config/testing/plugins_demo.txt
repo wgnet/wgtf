@@ -2,6 +2,7 @@ plugins/plg_logging_system
 plugins/plg_reflection
 plugins/plg_object
 plugins/plg_serialization
+plugins/plg_environment_system
 plugins/plg_command_system
 plugins/plg_qt_common
 plugins/plg_editor_interaction
@@ -9,7 +10,6 @@ plugins/plg_reflection_object_test
 plugins/plg_window_test
 plugins/plg_history_ui
 plugins/plg_macros_ui
-plugins/plg_copy_paste
 plugins/plg_file_system
 plugins/plg_panel_manager
 plugins/plg_panel_manager_test

@@ -1,0 +1,9 @@
+[submodule "doc/third_party/breathe"]
+	path = doc/third_party/breathe
+	url = https://stash.wargaming.net/scm/ngt/ngt-breathe.git
+[submodule "doc/third_party/ngt-doc"]
+	path = doc/third_party/ngt-doc
+	url = https://stash.wargaming.net/scm/ngt/ngt-doc.git
+[submodule "src/core/third_party/packages"]
+	path = src/core/third_party/packages
+	url = https://stash.wargaming.net/scm/ctgsyd/ctg-packages.git

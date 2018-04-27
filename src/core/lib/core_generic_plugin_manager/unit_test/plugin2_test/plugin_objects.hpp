@@ -3,12 +3,19 @@
 
 #include <vector>
 #include "core_reflection/reflected_object.hpp"
-#include "core_reflection/interfaces/i_class_definition.hpp"
 #include "core_reflection/i_definition_manager.hpp"
 #include "core_dependency_system/i_interface.hpp"
+#include "core_object/managed_object.hpp"
 
 namespace wgt
 {
+class TestPlugin2TestObject;
+class TestPlugin2Interface;
+typedef ObjectHandleT<TestPlugin2TestObject> TestPlugin2TestObjectPtr;
+typedef ManagedObject<TestPlugin2TestObject> TestPlugin2TestObjectObj;
+typedef ObjectHandleT<TestPlugin2Interface> TestPlugin2InterfacePtr;
+typedef ManagedObject<TestPlugin2Interface> TestPlugin2InterfaceObj;
+
 //------------------------------------------------------------------------------
 class TestPlugin2TestObject
 {
@@ -51,15 +58,13 @@ public:
 	}
 };
 
-typedef ObjectHandleT<TestPlugin2TestObject> TestPlugin2TestObjectPtr;
-
 class ITestPlugin2
 {
 public:
 	virtual ~ITestPlugin2()
 	{
 	}
-	virtual TestPlugin2TestObjectPtr getObject(IDefinitionManager& defManager) = 0;
+	virtual TestPlugin2TestObjectPtr getObject() = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -68,23 +73,21 @@ class TestPlugin2Interface : public Implements<ITestPlugin2>
 	DECLARE_REFLECTED
 
 public:
-	TestPlugin2Interface() : object_(NULL)
+	TestPlugin2Interface() : object_(nullptr)
 	{
 	}
 
-	TestPlugin2TestObjectPtr getObject(IDefinitionManager& defManager)
+	TestPlugin2TestObjectPtr getObject()
 	{
-		if (object_ == NULL)
+		if (object_ == nullptr)
 		{
-			object_ = defManager.create<TestPlugin2TestObject>();
+			object_ = TestPlugin2TestObjectObj::make();
 		}
-		return object_;
+        return object_.getHandleT();
 	}
 
 private:
-	TestPlugin2TestObjectPtr object_;
+    TestPlugin2TestObjectObj object_;
 };
-
-typedef ObjectHandleT<TestPlugin2Interface> TestPlugin2InterfacePtr;
 } // end namespace wgt
 #endif // PLUGIN2_OBJECTS_HPP

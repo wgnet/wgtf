@@ -14,7 +14,7 @@ class QtApplicationAdapter : public QObject, public QtApplication, public Implem
 {
 	Q_OBJECT
 public:
-	QtApplicationAdapter(IComponentContext& context);
+	QtApplicationAdapter();
 	virtual ~QtApplicationAdapter();
 
 	int startApplication() override;

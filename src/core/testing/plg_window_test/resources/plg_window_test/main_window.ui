@@ -2,6 +2,12 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="contextMenuPolicy">
+   <enum>Qt::CustomContextMenu</enum>
+  </property>
+  <property name="contextMenuName">
+   <string>defaultContextMenu</string>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -10,8 +16,8 @@
     <height>900</height>
    </rect>
   </property>
-  <property name="contextMenuPolicy">
-   <enum>Qt::PreventContextMenu</enum>
+  <property name="theme">
+    <number>0</number>
   </property>
   <property name="windowTitle">
    <string>Generic App Test</string>
@@ -40,32 +46,29 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <item row="0" column="0">
+     <item row="0" column="0">
      <widget class="QTabWidget" name="defaultView">
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>32</height>
-       </size>
-      </property>
-      <property name="layoutTags" stdset="0">
-       <stringlist>
-        <string>doc_tab</string>
-       </stringlist>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QTabWidget" name="defaultView">
-      <property name="layoutTags" stdset="0">
+       <property name="geometry">
+         <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>600</width>
+           <height>400</height>
+         </rect>
+       </property>
+       <property name="layoutTags" stdset="0">
        <stringlist>
         <string>viewport</string>
-        <string>default</string>
        </stringlist>
       </property>
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QMenu" name="defaultContextMenu">
+   <property name="path" stdset="0">
+    <string>View</string>
+   </property>
   </widget>
   <widget class="QMenuBar" name="defaultMenuBar">
    <property name="geometry">
@@ -79,6 +82,18 @@
    <property name="path" stdset="0">
     <string/>
    </property>
+   <property name="frontOrdering" stdset="0">
+     <stringlist>
+       <string>File</string>
+       <string>Edit</string>
+       <string>View</string>
+     </stringlist>
+   </property>
+   <property name="backOrdering" stdset="0">
+     <stringlist>
+       <string>Preferences</string>
+     </stringlist>
+   </property>    
   </widget>
   <widget class="QToolBar" name="defaultToolBar">
    <property name="windowTitle">
@@ -124,6 +139,7 @@
    <property name="layoutTags" stdset="0">
     <stringlist>
      <string>test</string>
+     <string>default</string>
     </stringlist>
    </property>
    <attribute name="dockWidgetArea">
@@ -185,6 +201,8 @@
    <property name="layoutTags" stdset="0">
     <stringlist>
      <string>assetbrowser</string>
+     <string>nodeeditor</string>
+     <string>curveeditor</string>
     </stringlist>
    </property>
    <attribute name="dockWidgetArea">

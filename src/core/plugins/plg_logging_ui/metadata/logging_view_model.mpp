@@ -1,0 +1,17 @@
+#include "logging_view_model.hpp"
+
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/metadata/meta_types.hpp"
+#include "core_reflection/reflection_macros.hpp"
+#include "core_reflection/utilities/reflection_function_utilities.hpp"
+
+namespace wgt
+{
+BEGIN_EXPOSE(LoggingViewModel, MetaNone())
+EXPOSE("loggingModel", getModel)
+END_EXPOSE()
+
+BEGIN_EXPOSE(LoggingDataModel, ILoggingModel, MetaNone())
+END_EXPOSE()
+
+} // end namespace wgt

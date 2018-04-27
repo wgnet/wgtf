@@ -1,0 +1,18 @@
+#include "../test_reflected_property.hpp"
+#include "core_reflection/reflected_property.hpp"
+#include "core_reflection/function_property.hpp"
+#include "core_reflection/reflected_object.hpp"
+
+namespace wgt
+{
+
+BEGIN_EXPOSE(TestPropertyFixture::TestPropertyObject, MetaNone())
+END_EXPOSE()
+
+
+BEGIN_EXPOSE(TestCollectionFixture::TestCollectionObject, MetaNone())
+EXPOSE("int vector", int_vector_)
+END_EXPOSE()
+
+
+}

@@ -44,11 +44,13 @@ public:
 	@see deserializeString
 	*/
 	void serializeString(IDataStream& dataStream);
+	void serializeXmlString(IDataStream& dataStream);
 
 	/**
 	Deserialize string to the @a dataStream.
 	*/
 	void deserializeString(IDataStream& dataStream);
+	void deserializeXmlString(IDataStream& dataStream);
 };
 
 template <typename T>
@@ -77,13 +79,15 @@ private:
 	static No checkStreamingIn(...);
 
 public:
-	static const bool has_std_streaming_out = std::is_same<decltype(checkStreamingOut<T>(0)), Yes>::value;
-	static const bool has_std_streaming_in = std::is_same<decltype(checkStreamingIn<T>(0)), Yes>::value;
+	static const bool has_std_streaming_out = std::is_same<decltype(checkStreamingOut<T>(0)), Yes>::value
+		|| (std::is_enum<T>::value && std::is_same<decltype(checkStreamingOut<int>(0)), Yes>::value);
+	static const bool has_std_streaming_in = std::is_same<decltype(checkStreamingIn<T>(0)), Yes>::value
+		|| (std::is_enum<T>::value && std::is_same<decltype(checkStreamingIn<int>(0)), Yes>::value);
 };
 
 // Use std::ostream operator<< overload by default
 template <typename T>
-typename std::enable_if<TextStreamTraits<T>::has_std_streaming_out &&
+typename std::enable_if<TextStreamTraits<T>::has_std_streaming_out && !std::is_enum<T>::value &&
                         (!std::is_pointer<T>::value || std::is_convertible<T, const char*>::value),
                         TextStream&>::type
 operator<<(TextStream& stream, const T& v)
@@ -95,9 +99,24 @@ operator<<(TextStream& stream, const T& v)
 	return stream;
 }
 
+// Enum class needs special treatment
+template <typename T>
+typename std::enable_if<TextStreamTraits<T>::has_std_streaming_out && std::is_enum<T>::value,
+                        TextStream&>::type
+operator<<(TextStream& stream, const T& v)
+{
+	DataStreamBuf buf(stream);
+	std::ostream std_stream(&buf);
+	std_stream << static_cast<int>(v);
+	stream.setState(std_stream.rdstate());
+	return stream;
+}
+
+
 // Use std::istream operator>> overload by default
 template <typename T>
-typename std::enable_if<TextStreamTraits<T>::has_std_streaming_in && !std::is_pointer<T>::value, TextStream&>::type
+typename std::enable_if<TextStreamTraits<T>::has_std_streaming_in && 
+	!std::is_enum<T>::value && !std::is_pointer<T>::value, TextStream&>::type
 operator>>(TextStream& stream, T& v)
 {
 	DataStreamBuf buf(stream);
@@ -106,6 +125,22 @@ operator>>(TextStream& stream, T& v)
 	stream.setState(std_stream.rdstate());
 	return stream;
 }
+
+// Enum class needs special treatment
+template <typename T>
+typename std::enable_if<TextStreamTraits<T>::has_std_streaming_in && 
+	std::is_enum<T>::value && !std::is_pointer<T>::value, TextStream&>::type
+operator >> (TextStream& stream, T& v)
+{
+	DataStreamBuf buf(stream);
+	std::istream std_stream(&buf);
+	int value = 0;
+	std_stream >> value;
+	v = static_cast<T>(value);
+	stream.setState(std_stream.rdstate());
+	return stream;
+}
+
 
 // pointer serialization
 SERIALIZATION_DLL TextStream& operator<<(TextStream& stream, void* value);

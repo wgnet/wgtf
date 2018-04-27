@@ -19,7 +19,9 @@
 #include "models/bezier_point.hpp"
 #include "models/point.hpp"
 #include "models/curve.hpp"
-#include "metadata/i_curve_editor.mpp"
+
+#include "reflection_auto_reg.mpp"
+#include "core_reflection/utilities/reflection_auto_register.hpp"
 
 WGT_INIT_QRC_RESOURCE
 
@@ -36,49 +38,24 @@ namespace wgt
 class CurveEditorPlugin : public PluginMain, public Depends<IViewCreator, ICurveEditor>
 {
 public:
-	CurveEditorPlugin(IComponentContext& contextManager) : Depends(contextManager)
+	CurveEditorPlugin( IComponentContext & contextManager )
 	{
-	}
-
-	bool PostLoad(IComponentContext& contextManager) override
-	{
-		auto definitionManager = contextManager.queryInterface<IDefinitionManager>();
-		assert(definitionManager != nullptr);
-		if (definitionManager == nullptr)
-			return false;
-
-		// Setup the models for the view
-		definitionManager->registerDefinition<TypeClassDefinition<Point>>();
-		definitionManager->registerDefinition<TypeClassDefinition<BezierPoint>>();
-		definitionManager->registerDefinition<TypeClassDefinition<ICurve>>();
-		definitionManager->registerDefinition<TypeClassDefinition<ICurveEditor>>();
-
-		contextManager.registerInterface(new CurveEditor());
-
-		return true;
+		registerCallback([this, &contextManager ]( IDefinitionManager & defManager )
+		{
+			ReflectionAutoRegistration::initAutoRegistration(defManager);
+			curveEditor_ = ManagedObject<CurveEditor>::make();
+			types_.push_back(contextManager.registerInterface(curveEditor_.getPointer(), false));
+		});
 	}
 
 	void Initialise(IComponentContext& contextManager) override
 	{
-		auto viewCreator = get<IViewCreator>();
-		auto curveModel = get<ICurveEditor>();
-
-		if (viewCreator != nullptr)
-		{
-			curvePanel_ = viewCreator->createView("plg_curve_editor/CurveEditor.qml", curveModel);
-		}
+		curveEditor_->init(curveEditor_.getHandleT());
 	}
 
 	bool Finalise(IComponentContext& contextManager) override
 	{
-		auto uiApplication = contextManager.queryInterface<IUIApplication>();
-		if (uiApplication && (curvePanel_.valid()))
-		{
-			auto view = curvePanel_.get();
-			uiApplication->removeView(*view);
-			view = nullptr;
-		}
-
+        curveEditor_->fini();
 		return true;
 	}
 
@@ -86,13 +63,14 @@ public:
 	{
 		for (auto type : types_)
 		{
-			contextManager.deregisterInterface(type);
+			contextManager.deregisterInterface(type.get());
 		}
+        curveEditor_ = nullptr;
 	}
 
 private:
-	std::vector<IInterface*> types_;
-	wg_future<std::unique_ptr<IView>> curvePanel_;
+    ManagedObject<CurveEditor> curveEditor_;
+	InterfacePtrs types_;
 };
 
 PLG_CALLBACK_FUNC(CurveEditorPlugin)

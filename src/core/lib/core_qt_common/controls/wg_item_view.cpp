@@ -1,8 +1,19 @@
 #include "wg_item_view.hpp"
-#include "qt_connection_holder.hpp"
-#include "core_data_model/common_data_roles.hpp"
-#include "models/extensions/i_model_extension.hpp"
+
+#include "helpers/qt_helpers.hpp"
+#include "models/extensions/custom_model_extension.hpp"
+#include "models/extensions/model_extension_manager.hpp"
+#include "models/extensions/qt_model_extension.hpp"
 #include "models/qt_abstract_item_model.hpp"
+#include "models/role_provider.hpp"
+#include "qt_connection_holder.hpp"
+#include "qt_scripting_engine_base.hpp"
+
+#include <core_common/assert.hpp>
+#include <core_copy_paste/i_copy_paste_manager.hpp>
+#include <core_data_model/common_data_roles.hpp>
+#include <core_dependency_system/depends.hpp>
+#include <wg_types/base64.hpp>
 
 #include <functional>
 
@@ -14,50 +25,267 @@
 #include <QUuid>
 #include <QtAlgorithms>
 #include <QMimeData>
-
+#include <QQmlEngine>
+#include <QQmlContext>
+#include <QItemSelection>
 #include <private/qmetaobjectbuilder_p.h>
-#include "wg_types/base64.hpp"
 
 namespace wgt
 {
 ITEMROLE(modelIndex)
+ITEMROLE(indexPath)
 
 namespace WGItemViewDetails
 {
 const char* itemMimeKey = "application/model-item";
+const char* textMimeKey = "text/plain";
 const char* horizontalHeaderMimeKey = "application/model-horizontalHeader";
 const char* verticalHeaderMimeKey = "application/model-verticalHeader";
 }
 
 namespace
 {
-class ExtensionData : public IExtensionData
+class HeaderRowModel : public QtAbstractItemModel
+{
+public:
+	HeaderRowModel() : model_(nullptr)
+	{
+	}
+
+	void reset(QAbstractItemModel* model)
+	{
+		beginResetModel();
+		model_ = model;
+		connections_.reset();
+		roles_.clear();
+
+		if (model_ != nullptr)
+		{
+			const auto& roles = roleNames().keys();
+
+			for (auto& role : roles)
+			{
+				roles_.push_back(role);
+			}
+
+			connections_ +=
+			QObject::connect(model, &QAbstractItemModel::headerDataChanged, this, &HeaderRowModel::onHeaderDataChanged);
+			connections_ += QObject::connect(model, &QAbstractItemModel::columnsAboutToBeInserted, this,
+			                                 &HeaderRowModel::onColumnsAboutToBeInserted);
+			connections_ +=
+			QObject::connect(model, &QAbstractItemModel::columnsInserted, this, &HeaderRowModel::onColumnsInserted);
+			connections_ += QObject::connect(model, &QAbstractItemModel::columnsAboutToBeRemoved, this,
+			                                 &HeaderRowModel::onColumnsAboutToBeRemoved);
+			connections_ +=
+			QObject::connect(model, &QAbstractItemModel::columnsRemoved, this, &HeaderRowModel::onColumnsRemoved);
+			connections_ += QObject::connect(model, &QAbstractItemModel::columnsAboutToBeMoved, this,
+			                                 &HeaderRowModel::onColumnsAboutToBeMoved);
+			connections_ +=
+			QObject::connect(model, &QAbstractItemModel::columnsMoved, this, &HeaderRowModel::onColumnsMoved);
+		}
+
+		endResetModel();
+	}
+
+private:
+	QModelIndex index(int row, int column, const QModelIndex& parent) const override
+	{
+		if (model_ == nullptr || parent.isValid() || column != 0 || row < 0)
+		{
+			return QModelIndex();
+		}
+
+		return createIndex(row, column);
+	}
+
+	QModelIndex parent(const QModelIndex& child) const override
+	{
+		return QModelIndex();
+	}
+
+	int rowCount(const QModelIndex& parent) const override
+	{
+		if (model_ == nullptr || parent.isValid())
+		{
+			return 0;
+		}
+
+		return model_->columnCount(parent);
+	}
+
+	int columnCount(const QModelIndex& parent = QModelIndex()) const override
+	{
+		return 1;
+	}
+
+	bool hasChildren(const QModelIndex& parent) const override
+	{
+		if (parent.isValid())
+		{
+			return false;
+		}
+
+		return rowCount(parent) != 0;
+	}
+
+	QVariant data(const QModelIndex& index, int role) const override
+	{
+		if (model_ == nullptr || index.column() != 0 || index.parent().isValid() || index.row() < 0)
+		{
+			return QVariant();
+		}
+
+		return model_->headerData(index.row(), Qt::Orientation::Horizontal, role);
+	}
+
+	bool setData(const QModelIndex& index, const QVariant& value, int role) override
+	{
+		if (model_ == nullptr || index.column() != 0 || index.parent().isValid() || index.row() < 0)
+		{
+			return false;
+		}
+
+		return model_->setHeaderData(index.row(), Qt::Orientation::Horizontal, value, role);
+	}
+
+	QHash<int, QByteArray> roleNames() const override
+	{
+		return model_->roleNames();
+	}
+
+	void onHeaderDataChanged(Qt::Orientation orientation, int first, int last)
+	{
+		if (model_ == nullptr || orientation != Qt::Horizontal)
+		{
+			return;
+		}
+
+		dataChanged(index(first, 0, QModelIndex()), index(last, 0, QModelIndex()), roles_);
+	}
+
+	void onColumnsAboutToBeInserted(const QModelIndex& parent, int first, int last)
+	{
+		TF_ASSERT(!parent.isValid());
+		beginInsertRows(QModelIndex(), first, last);
+	}
+
+	void onColumnsInserted(const QModelIndex& parent, int first, int last)
+	{
+		TF_ASSERT(!parent.isValid());
+		endInsertRows();
+	}
+
+	void onColumnsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+	{
+		TF_ASSERT(!parent.isValid());
+		beginRemoveRows(QModelIndex(), first, last);
+	}
+
+	void onColumnsRemoved(const QModelIndex& parent, int first, int last)
+	{
+		TF_ASSERT(!parent.isValid());
+		endRemoveRows();
+	}
+
+	void onColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                             const QModelIndex& destinationParent, int destinationColumn)
+	{
+		TF_ASSERT(!sourceParent.isValid() && !destinationParent.isValid());
+		beginMoveRows(QModelIndex(), sourceFirst, sourceLast, QModelIndex(), destinationColumn);
+	}
+
+	void onColumnsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
+	                    const QModelIndex& destinationParent, int destinationColumn)
+	{
+		TF_ASSERT(!sourceParent.isValid() && !destinationParent.isValid());
+		endMoveRows();
+	}
+
+	QAbstractItemModel* model_;
+	QtConnectionHolder connections_;
+	QVector<int> roles_;
+};
+
+class ModelExtensionData : public IQtModelExtensionData
 {
 	typedef QMap<ItemRole::Id, QVariant> ItemData;
 
 public:
-	ExtensionData(QAbstractItemModel* extendedModel) : extendedModel_(extendedModel), internalModel_(nullptr)
+	ModelExtensionData(QAbstractItemModel* extendedModel) 
+		: extendedModel_(extendedModel)
+		, internalModel_(nullptr)
+		, suppressNotifications_( false )
 	{
 	}
 
 	void save()
 	{
-		persistentData_[internalModel_] = qMakePair(itemData_, indexCache_);
+		savedData_[internalModel_] = qMakePair(itemData_, qMakePair(indexCache_, indexPathCache_));
+		savedHeaderData_[internalModel_] = headerData_;
 		// TODO save to preference
 	}
 
 	void load()
 	{
-		auto findIt = persistentData_.find(internalModel_);
-		if (findIt == persistentData_.end())
+		loadItemData();
+		loadHeaderData();
+		// TODO load from preference
+	}
+
+	void loadItemData()
+	{
+		auto findIt = savedData_.find(internalModel_);
+
+		if (findIt == savedData_.end())
 		{
 			itemData_.clear();
 			indexCache_.clear();
+			indexPathCache_.clear();
 			return;
 		}
+
 		itemData_ = findIt.value().first;
-		indexCache_ = findIt.value().second;
-		// TODO load from preference
+		indexCache_ = findIt.value().second.first;
+		indexPathCache_ = findIt.value().second.second;
+	}
+
+	void loadHeaderData()
+	{
+		auto headerItr = savedHeaderData_.find(internalModel_);
+
+		if (headerItr == savedHeaderData_.end())
+		{
+			headerData_[0].clear();
+			headerData_[1].clear();
+			return;
+		}
+
+		headerData_ = headerItr.value();
+	}
+
+	void findExtensionRoles()
+	{
+		extensionRoleIds_.clear();
+		if (internalModel_ == nullptr)
+			return;
+		auto internalRoles = internalModel_->roleNames().keys();
+		auto allRoles = extendedModel_->roleNames();
+		ItemRole::Id roleId;
+
+		for (int role : allRoles.keys())
+		{
+			if (internalRoles.contains(role))
+			{
+				continue;
+			}
+
+			auto roleDecoder = dynamic_cast<RoleProvider*>(extendedModel_);
+			TF_ASSERT(roleDecoder != nullptr);
+			bool decoded = roleDecoder->decodeRole(role, roleId);
+			TF_ASSERT(decoded);
+
+			extensionRoleIds_.append(roleId);
+		}
 	}
 
 	void reset(QAbstractItemModel* internalModel)
@@ -65,32 +293,42 @@ public:
 		save();
 		internalModel_ = internalModel;
 		load();
+		findExtensionRoles();
 	}
 
 	bool encodeRole(ItemRole::Id roleId, int& o_Role) const override
 	{
-		auto model = internalModel_;
-		while (model != nullptr)
-		{
-			auto roleProvider = dynamic_cast<RoleProvider*>(model);
-			if (roleProvider != nullptr && roleProvider->encodeRole(roleId, o_Role))
-			{
-				return true;
-			}
-
-			auto extendedModel = dynamic_cast<QAbstractProxyModel*>(model);
-			model = extendedModel != nullptr ? extendedModel->sourceModel() : nullptr;
-		}
-
 		if (roleId == ItemRole::displayId)
 		{
 			o_Role = Qt::DisplayRole;
 			return true;
 		}
+
 		if (roleId == ItemRole::decorationId)
 		{
 			o_Role = Qt::DecorationRole;
 			return true;
+		}
+
+		if (extensionRoleIds_.contains(roleId))
+		{
+			auto roleProvider = dynamic_cast<RoleProvider*>(extendedModel_);
+			TF_ASSERT(roleProvider != nullptr);
+			return roleProvider->encodeRole(roleId, o_Role);
+		}
+
+		auto model = internalModel_;
+		while (model != nullptr)
+		{
+			auto roleProvider = dynamic_cast<RoleProvider*>(model);
+
+			if (roleProvider != nullptr && roleProvider->encodeRole(roleId, o_Role))
+			{
+				return true;
+			}
+
+			auto proxyModel = dynamic_cast<QAbstractProxyModel*>(model);
+			model = proxyModel == nullptr ? nullptr : proxyModel->sourceModel();
 		}
 
 		if (internalModel_ != nullptr)
@@ -111,28 +349,37 @@ public:
 
 	bool decodeRole(int role, ItemRole::Id& o_RoleId) const override
 	{
-		auto model = internalModel_;
-		while (model != nullptr)
-		{
-			auto roleProvider = dynamic_cast<RoleProvider*>(model);
-			if (roleProvider != nullptr && roleProvider->decodeRole(role, o_RoleId))
-			{
-				return true;
-			}
-
-			auto extendedModel = dynamic_cast<QAbstractProxyModel*>(model);
-			model = extendedModel != nullptr ? extendedModel->sourceModel() : nullptr;
-		}
-
 		if (role == Qt::DisplayRole)
 		{
 			o_RoleId = ItemRole::displayId;
 			return true;
 		}
+
 		if (role == Qt::DecorationRole)
 		{
 			o_RoleId = ItemRole::decorationId;
 			return true;
+		}
+
+		auto roleProvider = dynamic_cast<RoleProvider*>(extendedModel_);
+		TF_ASSERT(roleProvider != nullptr);
+		if (roleProvider->decodeRole(role, o_RoleId))
+		{
+			return true;
+		}
+
+		auto model = internalModel_;
+		while (model != nullptr)
+		{
+			auto roleProvider = dynamic_cast<RoleProvider*>(model);
+
+			if (roleProvider != nullptr && roleProvider->decodeRole(role, o_RoleId))
+			{
+				return true;
+			}
+
+			auto proxyModel = dynamic_cast<QAbstractProxyModel*>(model);
+			model = proxyModel == nullptr ? nullptr : proxyModel->sourceModel();
 		}
 
 		if (internalModel_ != nullptr)
@@ -151,91 +398,170 @@ public:
 		return false;
 	}
 
-	bool encodeRoleExt(ItemRole::Id roleId, int& o_Role) const override
-	{
-		auto roleProvider = dynamic_cast<RoleProvider*>(extendedModel_);
-		assert(roleProvider != nullptr);
-		return roleProvider->encodeRole(roleId, o_Role);
-	}
-
-	bool decodeRoleExt(int role, ItemRole::Id& o_RoleId) const override
-	{
-		auto roleProvider = dynamic_cast<RoleProvider*>(extendedModel_);
-		assert(roleProvider != nullptr);
-		return roleProvider->decodeRole(role, o_RoleId);
-	}
-
 	QVariant data(const QModelIndex& index, ItemRole::Id roleId) override
 	{
+		if (extensionRoleIds_.contains(roleId))
+		{
+			auto& itemData = getItemData(index);
+			return itemData[roleId];
+		}
+
 		int role;
+
 		if (!encodeRole(roleId, role))
 		{
-			return QVariant();
+			return QVariant::Invalid;
 		}
+
 		return extendedModel_->data(index, role);
+	}
+
+	void suppressNotifications(bool enable) override
+	{
+		suppressNotifications_ = enable;
 	}
 
 	bool setData(const QModelIndex& index, const QVariant& value, ItemRole::Id roleId) override
 	{
+		if (extensionRoleIds_.contains(roleId))
+		{
+			auto& itemData = getItemData(index);
+
+			if (itemData[roleId] == value)
+			{
+				return false;
+			}
+
+			itemData[roleId] = value;
+			int role;
+
+			if (encodeRole(roleId, role))
+			{
+				QVector<int> roles;
+				roles.append(role);
+				if (suppressNotifications_)
+				{
+					return true;
+				}
+				emit extendedModel_->dataChanged(index, index, roles);
+			}
+
+			return true;
+		}
+
 		int role;
+
 		if (!encodeRole(roleId, role))
 		{
 			return false;
 		}
+
 		return extendedModel_->setData(index, value, role);
 	}
 
-	QVariant dataExt(const QModelIndex& index, ItemRole::Id roleId) override
-	{
-		auto& itemData = getItemData(index);
-		return itemData[roleId];
-	}
-
-	bool setDataExt(const QModelIndex& index, const QVariant& value, ItemRole::Id roleId) override
-	{
-		auto& itemData = getItemData(index);
-		if (itemData[roleId] == value)
-		{
-			return false;
-		}
-		itemData[roleId] = value;
-
-		QVector<int> roles;
-		int role;
-		if (encodeRoleExt(roleId, role))
-		{
-			roles.append(role);
-			emit extendedModel_->dataChanged(index, index, roles);
-		}
-		return true;
-	}
-
-	void dataExtChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
-	                    const QVector<ItemRole::Id> roleIds) override
+	void dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
+	                 const QVector<ItemRole::Id> roleIds) override
 	{
 		QVector<int> roles;
+
 		for (auto roleId : roleIds)
 		{
 			int role;
-			auto res = encodeRoleExt(roleId, role);
-			assert(res);
+			bool encoded = encodeRole(roleId, role);
+			TF_ASSERT(encoded);
 			roles.append(role);
 		}
+
 		emit extendedModel_->dataChanged(topLeft, bottomRight, roles);
+	}
+
+	QVariant headerData(int section, Qt::Orientation orientation, ItemRole::Id roleId) override
+	{
+		if (extensionRoleIds_.contains(roleId))
+		{
+			auto& headerItemData = getHeaderData(section, orientation);
+			return headerItemData[roleId];
+		}
+
+		int role;
+
+		if (!encodeRole(roleId, role))
+		{
+			return QVariant::Invalid;
+		}
+
+		return extendedModel_->headerData(section, orientation, role);
+	}
+
+	bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, ItemRole::Id roleId) override
+	{
+		if (extensionRoleIds_.contains(roleId))
+		{
+			auto& headerItemData = getHeaderData(section, orientation);
+
+			if (headerItemData[roleId] == value)
+			{
+				return false;
+			}
+
+			headerItemData[roleId] = value;
+			headerDataChanged(orientation, section, section);
+			return true;
+		}
+
+		int role;
+
+		if (!encodeRole(roleId, role))
+		{
+			return false;
+		}
+
+		return extendedModel_->setHeaderData(section, orientation, role);
+	}
+
+	void headerDataChanged(Qt::Orientation orientation, int first, int last) override
+	{
+		emit extendedModel_->headerDataChanged(orientation, first, last);
 	}
 
 private:
 	ItemData& getItemData(const QModelIndex& index)
 	{
-		auto it = indexCache_.find(index);
-		if (it != indexCache_.end())
+		auto indexPath = data(index, ItemRole::indexPathId);
+		if (indexPath.isValid())
 		{
-			return itemData_[*it];
+			auto it = indexPathCache_.find(indexPath);
+			if (it != indexPathCache_.end())
+			{
+				return itemData_[*it];
+			}
+			indexPathCache_[indexPath] = itemData_.count();
+		}
+		else
+		{
+			auto it = indexCache_.find(index);
+			if (it != indexCache_.end())
+			{
+				return itemData_[*it];
+			}
+			indexCache_[index] = itemData_.count();
 		}
 
-		indexCache_[index] = itemData_.count();
 		itemData_.push_back(ItemData());
 		return itemData_.back();
+	}
+
+	ItemData& getHeaderData(const int section, const Qt::Orientation orientation)
+	{
+		int sectionNumber = orientation == Qt::Orientation::Horizontal ? 0 : 1;
+		auto& headerSection = headerData_[sectionNumber];
+
+		while (headerSection.count() < section)
+		{
+			headerSection.append(ItemData());
+		}
+
+		return headerSection[section];
 	}
 
 private:
@@ -244,14 +570,21 @@ private:
 
 	QVector<ItemData> itemData_;
 	QMap<QPersistentModelIndex, int> indexCache_;
-	QMap<QAbstractItemModel*, QPair<QVector<ItemData>, QMap<QPersistentModelIndex, int>>> persistentData_;
+	QMap<QVariant, int> indexPathCache_;
+	QMap<QAbstractItemModel*, QPair<QVector<ItemData>, QPair<QMap<QPersistentModelIndex, int>, QMap<QVariant, int>>>> savedData_;
+
+	std::array<QVector<ItemData>, 2> headerData_;
+	QMap<QAbstractItemModel*, std::array<QVector<ItemData>, 2>> savedHeaderData_;
+
+	QVector<ItemRole::Id> extensionRoleIds_;
+	bool suppressNotifications_;
 };
 
 class ExtendedModel : public QtAbstractItemModel, public RoleProvider
 {
 	DECLARE_QT_MEMORY_HANDLER
 public:
-	ExtendedModel(QList<IModelExtension*>& extensions) : model_(nullptr), extensions_(extensions), extensionData_(this)
+	ExtendedModel(QList<QtModelExtension*>& extensions) : model_(nullptr), extensions_(extensions), extensionData_(this)
 	{
 	}
 
@@ -261,12 +594,14 @@ public:
 		model_ = model;
 		connections_.reset();
 		roleNames_.clear();
-		extensionData_.reset(model);
 		columnMappings_.clear();
+
 		if (model_ != nullptr)
 		{
 			connections_ +=
 			QObject::connect(model, &QAbstractItemModel::dataChanged, this, &ExtendedModel::onDataChanged);
+			connections_ +=
+			QObject::connect(model, &QAbstractItemModel::headerDataChanged, this, &ExtendedModel::onHeaderDataChanged);
 			connections_ += QObject::connect(model, &QAbstractItemModel::layoutAboutToBeChanged, this,
 			                                 &ExtendedModel::onLayoutAboutToBeChanged);
 			connections_ +=
@@ -298,35 +633,40 @@ public:
 			for (auto& extension : extensions_)
 			{
 				connections_ +=
-				QObject::connect(this, &QAbstractItemModel::dataChanged, extension, &IModelExtension::onDataChanged);
+				QObject::connect(this, &QAbstractItemModel::dataChanged, extension, &QtModelExtension::onDataChanged);
+				connections_ += QObject::connect(this, &QAbstractItemModel::headerDataChanged, extension,
+				                                 &QtModelExtension::onHeaderDataChanged);
 				connections_ += QObject::connect(this, &QAbstractItemModel::layoutAboutToBeChanged, extension,
-				                                 &IModelExtension::onLayoutAboutToBeChanged);
+				                                 &QtModelExtension::onLayoutAboutToBeChanged);
 				connections_ += QObject::connect(this, &QAbstractItemModel::layoutChanged, extension,
-				                                 &IModelExtension::onLayoutChanged);
+				                                 &QtModelExtension::onLayoutChanged);
 				connections_ += QObject::connect(this, &QAbstractItemModel::rowsAboutToBeInserted, extension,
-				                                 &IModelExtension::onRowsAboutToBeInserted);
+				                                 &QtModelExtension::onRowsAboutToBeInserted);
 				connections_ +=
-				QObject::connect(this, &QAbstractItemModel::rowsInserted, extension, &IModelExtension::onRowsInserted);
+				QObject::connect(this, &QAbstractItemModel::rowsInserted, extension, &QtModelExtension::onRowsInserted);
 				connections_ += QObject::connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, extension,
-				                                 &IModelExtension::onRowsAboutToBeRemoved);
+				                                 &QtModelExtension::onRowsAboutToBeRemoved);
 				connections_ +=
-				QObject::connect(this, &QAbstractItemModel::rowsRemoved, extension, &IModelExtension::onRowsRemoved);
+				QObject::connect(this, &QAbstractItemModel::rowsRemoved, extension, &QtModelExtension::onRowsRemoved);
 				connections_ += QObject::connect(this, &QAbstractItemModel::rowsAboutToBeMoved, extension,
-				                                 &IModelExtension::onRowsAboutToBeMoved);
+				                                 &QtModelExtension::onRowsAboutToBeMoved);
 				connections_ +=
-				QObject::connect(this, &QAbstractItemModel::rowsMoved, extension, &IModelExtension::onRowsMoved);
+				QObject::connect(this, &QAbstractItemModel::rowsMoved, extension, &QtModelExtension::onRowsMoved);
 				connections_ += QObject::connect(this, &QAbstractItemModel::columnsAboutToBeInserted, extension,
-				                                 &IModelExtension::onColumnsAboutToBeInserted);
+				                                 &QtModelExtension::onColumnsAboutToBeInserted);
 				connections_ += QObject::connect(this, &QAbstractItemModel::columnsInserted, extension,
-				                                 &IModelExtension::onColumnsInserted);
+				                                 &QtModelExtension::onColumnsInserted);
 				connections_ += QObject::connect(this, &QAbstractItemModel::columnsAboutToBeRemoved, extension,
-				                                 &IModelExtension::onColumnsAboutToBeRemoved);
+				                                 &QtModelExtension::onColumnsAboutToBeRemoved);
 				connections_ += QObject::connect(this, &QAbstractItemModel::columnsRemoved, extension,
-				                                 &IModelExtension::onColumnsRemoved);
+				                                 &QtModelExtension::onColumnsRemoved);
 				connections_ += QObject::connect(this, &QAbstractItemModel::columnsAboutToBeMoved, extension,
-				                                 &IModelExtension::onColumnsAboutToBeMoved);
+				                                 &QtModelExtension::onColumnsAboutToBeMoved);
 				connections_ +=
-				QObject::connect(this, &QAbstractItemModel::columnsMoved, extension, &IModelExtension::onColumnsMoved);
+				QObject::connect(this, &QAbstractItemModel::columnsMoved, extension, &QtModelExtension::onColumnsMoved);
+
+				connections_ += QObject::connect(this, &QAbstractItemModel::modelReset, extension,
+					&QtModelExtension::onModelReset);
 			}
 
 			roleNames_ = model_->roleNames();
@@ -342,7 +682,7 @@ public:
 
 			for (auto& extension : extensions_)
 			{
-				extension->init(extensionData_);
+				extension->setExtensionData(extensionData_);
 			}
 
 			auto columnCount = model_->columnCount();
@@ -351,6 +691,8 @@ public:
 				columnMappings_.append(QPair<int, bool>(i, true));
 			}
 		}
+
+		extensionData_.reset(model);
 		endResetModel();
 	}
 
@@ -430,10 +772,10 @@ public:
 			return false;
 		}
 
-		auto sourceParent = sourceIndex(parent);
-		if (model_->canDropMimeData(data, action, row, sourceColumn(column), sourceParent))
+		auto destParent = sourceIndex(parent);
+		if (model_->canDropMimeData(data, action, row, sourceColumn(column), destParent))
 		{
-			return model_->dropMimeData(data, action, row, sourceColumn(column), sourceParent);
+			return model_->dropMimeData(data, action, row, sourceColumn(column), destParent);
 		}
 
 		bool canDrop = (data->hasFormat(WGItemViewDetails::itemMimeKey) && action == Qt::MoveAction);
@@ -442,7 +784,9 @@ public:
 			return false;
 		}
 
-		QModelIndexList indexes;
+		// Move the mime data from one spot in the model to another
+
+		QList<QPersistentModelIndex> persistentIndexes;
 		std::string decoded;
 		Base64::decode(data->data(WGItemViewDetails::itemMimeKey).data(), decoded);
 		QByteArray buffer(decoded.c_str(), static_cast<int>(decoded.length()));
@@ -457,29 +801,22 @@ public:
 			stream >> column;
 			quintptr internalId;
 			stream >> internalId;
-			indexes.append(createIndex(row, column, internalId));
+			persistentIndexes.append(sourceIndex(createIndex(row, column, internalId)));
 		}
 
-		QList<QPersistentModelIndex> persistentIndexes;
-		for (auto& index : indexes)
-		{
-			if (index.parent() != parent)
-			{
-				return true;
-			}
-			persistentIndexes.append(index);
-		}
-		std::sort(persistentIndexes.begin(), persistentIndexes.end());
 		if (persistentIndexes.empty())
 		{
 			return true;
 		}
-		QPersistentModelIndex persistentDestination =
-		index(row > persistentIndexes[0].row() ? row + 1 : row, column, parent);
+
+		std::sort(persistentIndexes.begin(), persistentIndexes.end());
+		bool moveAfter = row > persistentIndexes[0].row();
+		QPersistentModelIndex persistentDestination = index(row, column, parent);
 
 		for (QModelIndex index : persistentIndexes)
 		{
-			model_->moveRow(sourceParent, index.row(), sourceParent, persistentDestination.row());
+			int destRow = moveAfter ? persistentDestination.row() + 1 : persistentDestination.row();
+			model_->moveRow(index.parent(), index.row(), destParent, destRow);
 		}
 		return true;
 	}
@@ -487,14 +824,14 @@ public:
 	bool moveRows(const QModelIndex& sourceParent, int sourceRow, int count, const QModelIndex& destinationParent,
 	              int destinationChild) override
 	{
-		assert(false && "Not Implemented");
+		TF_ASSERT(false && "Not Implemented");
 		return false;
 	}
 
 	bool moveColumns(const QModelIndex& sourceParent, int sourceColumn, int count, const QModelIndex& destinationParent,
 	                 int destinationChild) override
 	{
-		assert(!sourceParent.isValid() && !destinationParent.isValid());
+		TF_ASSERT(!sourceParent.isValid() && !destinationParent.isValid());
 		if (!beginMoveColumns(sourceParent, sourceColumn, sourceColumn + count - 1, destinationParent,
 		                      destinationChild))
 		{
@@ -602,7 +939,6 @@ public:
 			}
 		}
 		layoutChanged();
-		headerDataChanged(Qt::Horizontal, index, columnCount(QModelIndex()));
 	}
 
 	void showAllColumns()
@@ -656,7 +992,6 @@ public:
 			endInsertColumns();
 		}
 		layoutChanged();
-		headerDataChanged(Qt::Horizontal, 0, columnCount(QModelIndex()));
 	}
 
 	QModelIndex sourceIndex(const QModelIndex& extendedIndex, int row = -1, int column = -1) const
@@ -666,7 +1001,7 @@ public:
 			return QModelIndex();
 		}
 
-		assert(extendedIndex.model() == this);
+		TF_ASSERT(extendedIndex.model() == this);
 		// To convert from an extended modelIndex to an internal modelIndex we have 2 options -
 		// 1. Use the public index functions on model_ using the row and column of the extended modelIndex.
 		//    The problem with this however is that this requires the parent of the extended modelIndex,
@@ -705,7 +1040,7 @@ public:
 			return modelIndex;
 		}
 
-		assert(modelIndex.model() == model_);
+		TF_ASSERT(modelIndex.model() == model_);
 		return createIndex(row == -1 ? modelIndex.row() : row,
 		                   column == -1 ? extendedColumn(modelIndex.column()) : column, modelIndex.internalId());
 	}
@@ -916,9 +1251,39 @@ private:
 		dataChanged(extendedIndex(topLeft), extendedIndex(bottomRight), encodedRoles);
 	}
 
+	void onHeaderDataChanged(Qt::Orientation orientation, int first, int last)
+	{
+		headerDataChanged(orientation, first, last);
+	}
+
 	void onLayoutAboutToBeChanged(const QList<QPersistentModelIndex>& parents,
 	                              QAbstractItemModel::LayoutChangeHint hint)
 	{
+		TF_ASSERT(redundantIndices_.empty());
+		auto persistentIndices = persistentIndexList();
+		QModelIndexList redundantParents;
+		for (auto& parent : parents)
+		{
+			if (parent.isValid())
+			{
+				redundantParents.append(extendedIndex(parent));
+			}
+		}
+		while (!redundantParents.empty())
+		{
+			QModelIndexList redundantIndices;
+			for (auto& persitentIndex : persistentIndices)
+			{
+				auto persistentParent = persitentIndex.parent();
+				if (redundantParents.indexOf(persistentParent) != -1)
+				{
+					redundantIndices.append(persitentIndex);
+				}
+			}
+			redundantParents = redundantIndices;
+			redundantIndices_.append(redundantIndices);
+		}
+
 		QList<QPersistentModelIndex> extendedParents;
 		for (auto& parent : parents)
 		{
@@ -929,6 +1294,12 @@ private:
 
 	void onLayoutChanged(const QList<QPersistentModelIndex>& parents, QAbstractItemModel::LayoutChangeHint hint)
 	{
+		for (auto& redundantIndex : redundantIndices_)
+		{
+			changePersistentIndex(redundantIndex, QModelIndex());
+		}
+		redundantIndices_.clear();
+
 		QList<QPersistentModelIndex> extendedParents;
 		for (auto& parent : parents)
 		{
@@ -945,7 +1316,6 @@ private:
 	void onRowsInserted(const QModelIndex& parent, int first, int last)
 	{
 		endInsertRows();
-		headerDataChanged(Qt::Vertical, first, rowCount(QModelIndex()));
 	}
 
 	void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
@@ -956,7 +1326,6 @@ private:
 	void onRowsRemoved(const QModelIndex& parent, int first, int last)
 	{
 		endRemoveRows();
-		headerDataChanged(Qt::Vertical, first, rowCount(QModelIndex()));
 	}
 
 	void onRowsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
@@ -970,17 +1339,16 @@ private:
 	                 const QModelIndex& destinationParent, int destinationRow)
 	{
 		endMoveRows();
-		headerDataChanged(Qt::Vertical, 0, rowCount(QModelIndex()));
 	}
 
 	void onColumnsAboutToBeInserted(const QModelIndex& parent, int first, int last)
 	{
-		assert(!parent.isValid());
+		TF_ASSERT(!parent.isValid());
 	}
 
 	void onColumnsInserted(const QModelIndex& parent, int first, int last)
 	{
-		assert(!parent.isValid());
+		TF_ASSERT(!parent.isValid());
 		beginInsertColumns(QModelIndex(), first, last);
 		int count = last - first + 1;
 		for (auto& columnMapping : columnMappings_)
@@ -995,14 +1363,16 @@ private:
 			columnMappings_.insert(first + i, QPair<int, bool>(first + i, true));
 		}
 		endInsertColumns();
-		headerDataChanged(Qt::Horizontal, first, columnCount(QModelIndex()));
 	}
 
 	void onColumnsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 	{
-		assert(!parent.isValid());
+		TF_ASSERT(!parent.isValid());
+		// operate on a copy
+		auto tmp = columnMappings_;
+
 		int count = last - first + 1;
-		for (auto& columnMapping : columnMappings_)
+		for (auto& columnMapping : tmp)
 		{
 			if (columnMapping.first >= first + count)
 			{
@@ -1016,9 +1386,9 @@ private:
 
 		first = -1;
 		last = -1;
-		for (int i = 0; i < columnMappings_.size(); ++i)
+		for (int i = 0; i < tmp.size(); ++i)
 		{
-			if (columnMappings_[i].first == -1)
+			if (tmp[i].first == -1)
 			{
 				if (first == -1)
 				{
@@ -1032,6 +1402,7 @@ private:
 			{
 				beginRemoveColumns(QModelIndex(), first, last);
 				columnMappings_.erase(columnMappings_.begin() + first, columnMappings_.begin() + last + 1);
+				tmp.erase(tmp.begin() + first, tmp.begin() + last + 1);
 				endRemoveColumns();
 				i -= last - first + 1;
 				first = -1;
@@ -1042,182 +1413,102 @@ private:
 		{
 			beginRemoveColumns(QModelIndex(), first, last);
 			columnMappings_.erase(columnMappings_.begin() + first, columnMappings_.end());
+			tmp.erase(tmp.begin() + first, tmp.end());
 			endRemoveColumns();
 		}
+
+		columnMappings_ = tmp;
 	}
 
 	void onColumnsRemoved(const QModelIndex& parent, int first, int last)
 	{
-		assert(!parent.isValid());
-		headerDataChanged(Qt::Horizontal, first, columnCount(QModelIndex()));
+		TF_ASSERT(!parent.isValid());
 	}
 
 	void onColumnsAboutToBeMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
 	                             const QModelIndex& destinationParent, int destinationColumn)
 	{
-		assert(!sourceParent.isValid() && !destinationParent.isValid());
+		TF_ASSERT(!sourceParent.isValid() && !destinationParent.isValid());
 		layoutAboutToBeChanged(QList<QPersistentModelIndex>(), QAbstractItemModel::HorizontalSortHint);
 	}
 
 	void onColumnsMoved(const QModelIndex& sourceParent, int sourceFirst, int sourceLast,
 	                    const QModelIndex& destinationParent, int destinationColumn)
 	{
-		assert(!sourceParent.isValid() && !destinationParent.isValid());
+		TF_ASSERT(!sourceParent.isValid() && !destinationParent.isValid());
 		layoutChanged(QList<QPersistentModelIndex>(), QAbstractItemModel::HorizontalSortHint);
-		headerDataChanged(Qt::Horizontal, 0, columnCount(QModelIndex()));
 	}
 
 	QAbstractItemModel* model_;
 	QtConnectionHolder connections_;
-	QList<IModelExtension*>& extensions_;
+	QList<QtModelExtension*>& extensions_;
 	QHash<int, QByteArray> roleNames_;
-	ExtensionData extensionData_;
+	ModelExtensionData extensionData_;
 	QList<QPair<int, bool>> columnMappings_;
-};
-
-class HeaderData : public QObject
-{
-	DECLARE_QT_MEMORY_HANDLER
-public:
-	HeaderData(QAbstractItemModel& model, int section, Qt::Orientation orientation)
-	    : model_(model), section_(section), orientation_(orientation)
-	{
-		QMetaObjectBuilder builder;
-		builder.setClassName(QUuid().toByteArray());
-		builder.setSuperClass(&QObject::staticMetaObject);
-
-		QHashIterator<int, QByteArray> itr(model_.roleNames());
-		while (itr.hasNext())
-		{
-			itr.next();
-			roles_.append(itr.key());
-			auto property = builder.addProperty(itr.value(), "QVariant");
-			property.setNotifySignal(builder.addSignal(itr.value() + "Changed(QVariant)"));
-		}
-
-		metaObject_ = builder.toMetaObject();
-	}
-	~HeaderData()
-	{
-		free(metaObject_);
-		metaObject_ = nullptr;
-	}
-
-private:
-	const QMetaObject* metaObject() const override
-	{
-		return metaObject_;
-	}
-
-	int qt_metacall(QMetaObject::Call c, int id, void** argv) override
-	{
-		id = QObject::qt_metacall(c, id, argv);
-		if (id < 0)
-		{
-			return id;
-		}
-
-		switch (c)
-		{
-		case QMetaObject::InvokeMetaMethod:
-		{
-			auto methodCount = metaObject_->methodCount() - metaObject_->methodOffset();
-			if (id < methodCount)
-			{
-				metaObject_->activate(this, id + metaObject_->methodOffset(), argv);
-			}
-			id -= methodCount;
-			break;
-		}
-		case QMetaObject::ReadProperty:
-		case QMetaObject::WriteProperty:
-		{
-			auto propertyCount = metaObject_->propertyCount() - metaObject_->propertyOffset();
-			if (id < propertyCount)
-			{
-				auto value = reinterpret_cast<QVariant*>(argv[0]);
-				auto role = roles_[id];
-				if (c == QMetaObject::ReadProperty)
-				{
-					*value = model_.headerData(section_, orientation_, role);
-				}
-				else
-				{
-					model_.setHeaderData(section_, orientation_, *value, role);
-				}
-			}
-			id -= propertyCount;
-			break;
-		}
-		default:
-			break;
-		}
-
-		return id;
-	}
-
-	QAbstractItemModel& model_;
-	int section_;
-	Qt::Orientation orientation_;
-	QList<int> roles_;
-	QMetaObject* metaObject_;
+	QModelIndexList redundantIndices_;
 };
 }
 
 struct WGItemView::Impl
+	: public Depends<ICopyPasteManager>
 {
-	Impl() : model_(nullptr)
+	Impl(WGItemView* view)
+	    : view_(view), model_(nullptr), headerRowModel_(new HeaderRowModel()), modelExtensionManager_(nullptr)
 	{
 	}
 
+	ModelExtensionManager* modelExtensionManager();
+
+	WGItemView* view_;
 	QAbstractItemModel* model_;
 	QtConnectionHolder connections_;
-	QList<IModelExtension*> extensions_;
+	QList<QtModelExtension*> extensions_;
+	QStringList extensionNames_;
 	std::unique_ptr<ExtendedModel> extendedModel_;
-	QList<QObject*> headerData_;
+	std::unique_ptr<HeaderRowModel> headerRowModel_;
+
+private:
+	ModelExtensionManager* modelExtensionManager_;
 };
 
-WGItemView::WGItemView() : impl_(new Impl())
+ModelExtensionManager* WGItemView::Impl::modelExtensionManager()
+{
+	if (modelExtensionManager_ == nullptr)
+	{
+		QQmlContext* context = QtQml::qmlContext(view_);
+		QVariant modelExtensionManager = context->contextProperty("modelExtensionManager");
+		TF_ASSERT(modelExtensionManager.canConvert<ModelExtensionManager*>());
+		modelExtensionManager_ = modelExtensionManager.value<ModelExtensionManager*>();
+	}
+
+	return modelExtensionManager_;
+}
+
+WGItemView::WGItemView() : impl_(new Impl(this))
 {
 	impl_->extendedModel_.reset(new ExtendedModel(impl_->extensions_));
+	impl_->headerRowModel_->reset(impl_->extendedModel_.get());
 
 	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::modelReset, [&]() {
 		rowCountChanged();
 		columnCountChanged();
-		refreshHeaderData();
 	});
 	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::rowsInserted, [&]() {
 		rowCountChanged();
-		refreshHeaderData();
 	});
 	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::rowsRemoved, [&]() {
 		rowCountChanged();
-		refreshHeaderData();
 	});
-	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::rowsMoved, [&]() { refreshHeaderData(); });
 	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::columnsInserted, [&]() {
 		columnCountChanged();
-		refreshHeaderData();
 	});
 	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::columnsRemoved, [&]() {
 		columnCountChanged();
-		refreshHeaderData();
 	});
-	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::columnsMoved, [&]() { refreshHeaderData(); });
-	QObject::connect(impl_->extendedModel_.get(), &QAbstractItemModel::headerDataChanged,
-	                 [&](Qt::Orientation orientation) {
-		                 if (orientation == Qt::Horizontal)
-		                 {
-			                 emit headerDataChanged();
-		                 }
-		             });
 }
 
 WGItemView::~WGItemView()
 {
-	qDeleteAll(impl_->headerData_);
-	impl_->headerData_.clear();
-	emit headerDataChanged();
 }
 
 QAbstractItemModel* WGItemView::getModel() const
@@ -1234,21 +1525,30 @@ void WGItemView::setModel(QAbstractItemModel* model)
 	impl_->connections_.reset();
 	if (impl_->model_ != nullptr)
 	{
-		impl_->connections_ += QObject::connect(impl_->model_, &QAbstractItemModel::modelReset,
-		                                        [&]() { impl_->extendedModel_->reset(impl_->model_); });
+		auto resetFunction = [&]() {
+			impl_->extendedModel_->reset(impl_->model_);
+			impl_->headerRowModel_->reset(impl_->extendedModel_.get());
+		};
+
+		impl_->connections_ += QObject::connect(impl_->model_, &QAbstractItemModel::modelReset, resetFunction);
 	}
 }
 
-QQmlListProperty<IModelExtension> WGItemView::getExtensions() const
+QQmlListProperty<QtModelExtension> WGItemView::getExtensions() const
 {
-	return QQmlListProperty<IModelExtension>(const_cast<WGItemView*>(this), nullptr, &appendExtension, &countExtensions,
-	                                         &extensionAt, &clearExtensions);
+	return QQmlListProperty<QtModelExtension>(const_cast<WGItemView*>(this), nullptr, &appendExtension,
+	                                          &countExtensions, &extensionAt, &clearExtensions);
 }
 
-void WGItemView::appendExtension(QQmlListProperty<IModelExtension>* property, IModelExtension* value)
+void WGItemView::appendExtension(QQmlListProperty<QtModelExtension>* property, QtModelExtension* value)
 {
 	auto itemView = qobject_cast<WGItemView*>(property->object);
 	if (itemView == nullptr)
+	{
+		return;
+	}
+
+	if (value == nullptr)
 	{
 		return;
 	}
@@ -1257,7 +1557,7 @@ void WGItemView::appendExtension(QQmlListProperty<IModelExtension>* property, IM
 	itemView->impl_->extendedModel_->reset(itemView->impl_->model_);
 }
 
-int WGItemView::countExtensions(QQmlListProperty<IModelExtension>* property)
+int WGItemView::countExtensions(QQmlListProperty<QtModelExtension>* property)
 {
 	auto itemView = qobject_cast<WGItemView*>(property->object);
 	if (itemView == nullptr)
@@ -1268,7 +1568,7 @@ int WGItemView::countExtensions(QQmlListProperty<IModelExtension>* property)
 	return itemView->impl_->extensions_.count();
 }
 
-IModelExtension* WGItemView::extensionAt(QQmlListProperty<IModelExtension>* property, int index)
+QtModelExtension* WGItemView::extensionAt(QQmlListProperty<QtModelExtension>* property, int index)
 {
 	auto itemView = qobject_cast<WGItemView*>(property->object);
 	if (itemView == nullptr)
@@ -1279,7 +1579,7 @@ IModelExtension* WGItemView::extensionAt(QQmlListProperty<IModelExtension>* prop
 	return itemView->impl_->extensions_[index];
 }
 
-void WGItemView::clearExtensions(QQmlListProperty<IModelExtension>* property)
+void WGItemView::clearExtensions(QQmlListProperty<QtModelExtension>* property)
 {
 	auto itemView = qobject_cast<WGItemView*>(property->object);
 	if (itemView == nullptr)
@@ -1296,39 +1596,23 @@ QAbstractItemModel* WGItemView::getExtendedModel() const
 	return impl_->extendedModel_.get();
 }
 
-QList<QObject*> WGItemView::getHeaderData() const
+QAbstractItemModel* WGItemView::getHeaderRowModel() const
 {
-	return impl_->headerData_;
+	return impl_->headerRowModel_.get();
 }
 
 int WGItemView::getRowCount() const
 {
 	QtAbstractItemModel* extendedModel = impl_->extendedModel_.get();
-	assert(extendedModel != nullptr);
+	TF_ASSERT(extendedModel != nullptr);
 	return extendedModel->rowCount(nullptr);
 }
 
 int WGItemView::getColumnCount() const
 {
 	QtAbstractItemModel* extendedModel = impl_->extendedModel_.get();
-	assert(extendedModel != nullptr);
+	TF_ASSERT(extendedModel != nullptr);
 	return extendedModel->columnCount(nullptr);
-}
-
-void WGItemView::refreshHeaderData()
-{
-	// TODO: this is terribly inefficient. This function gets called more often than it needs to be
-	// and the HeaderData object could be made much more lightweight.
-	qDeleteAll(impl_->headerData_);
-	impl_->headerData_.clear();
-	QtAbstractItemModel* extendedModel = impl_->extendedModel_.get();
-	assert(extendedModel != nullptr);
-	auto columnCount = extendedModel->columnCount();
-	for (auto i = 0; i < columnCount; i++)
-	{
-		impl_->headerData_.append(new HeaderData(*extendedModel, i, Qt::Horizontal));
-	}
-	emit headerDataChanged();
 }
 
 int WGItemView::getRow(const QModelIndex& index) const
@@ -1371,12 +1655,148 @@ QModelIndex WGItemView::extendedIndex(const QModelIndex& index) const
 	return impl_->extendedModel_->extendedIndex(index);
 }
 
+QModelIndexList WGItemView::getExtendedIndexes(const QItemSelection& sourceSelection) const
+{
+	QModelIndexList sourceIndexes = sourceSelection.indexes();
+	QItemSelection viewSelection;
+	for (int i = 0; i < sourceIndexes.size(); ++i) {
+		const QModelIndex srcIdx = impl_->extendedModel_->extendedIndex(sourceIndexes.at(i));
+		if (!srcIdx.isValid())
+			continue;
+		viewSelection << QItemSelectionRange(srcIdx);
+	}
+	return viewSelection.indexes();
+}
+
+
+bool WGItemView::canCopy(const QList<QModelIndex>& indexes) const
+{
+	auto pCopyPasteManager = impl_->get<ICopyPasteManager>();
+	if (pCopyPasteManager == nullptr)
+	{
+		return false;
+	}
+
+	auto& copyPasteManager = (*pCopyPasteManager);
+
+	// Get data for each item
+	const auto dataMap = this->mimeData(indexes);
+	if (dataMap.empty())
+	{
+		return false;
+	}
+
+	// Check if text data is empty
+	const auto it = dataMap.find(WGItemViewDetails::textMimeKey);
+	if (it != dataMap.cend())
+	{
+		const auto qByteArray = it.value().toByteArray();
+		return !qByteArray.isEmpty();
+	}
+
+	return false;
+}
+
+void WGItemView::copy(const QList<QModelIndex>& indexes) const
+{
+	auto pCopyPasteManager = impl_->get<ICopyPasteManager>();
+	if (pCopyPasteManager == nullptr)
+	{
+		return;
+	}
+	auto& copyPasteManager = (*pCopyPasteManager);
+
+	// Get data for each item
+	const auto dataMap = this->mimeData(indexes);
+
+	// Convert Qt data to clipboard format
+	MimeData wgtMimeData;
+	for (auto it = dataMap.constBegin(); it != dataMap.constEnd(); ++it)
+	{
+		const std::string key = it.key().toUtf8().data();
+
+		const auto qByteArray = it.value().toByteArray();
+		std::vector<char> value(qByteArray.begin(), qByteArray.end());
+
+		wgtMimeData.emplace(key, value);
+	}
+
+	// Set data on clipboard
+	copyPasteManager.setClipboardContents(wgtMimeData);
+}
+
+bool WGItemView::canPaste(const QList<QModelIndex>& indexes) const
+{
+	auto pCopyPasteManager = impl_->get<ICopyPasteManager>();
+	if (pCopyPasteManager == nullptr)
+	{
+		return false;
+	}
+	auto& copyPasteManager = (*pCopyPasteManager);
+
+	// Get clipboard data
+	const auto wgtMimeData = copyPasteManager.getClipboardContents();
+
+	// Convert clipboard data to Qt data
+	QVariantMap dataMap;
+	for (auto it = wgtMimeData.cbegin(); it != wgtMimeData.cend(); ++it)
+	{
+		const auto key = QString::fromUtf8(it->first.c_str(),
+			static_cast<int>(it->first.size()));
+		const QByteArray value(it->second.data(),
+			static_cast<int>(it->second.size()));
+		dataMap.insert(key, value);
+	}
+
+	// Drop data into each item
+	for (auto index : indexes)
+	{
+		const auto canDrop = this->canDropMimeData(dataMap, Qt::CopyAction, index);
+		if (canDrop)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void WGItemView::paste(const QList<QModelIndex>& indexes)
+{
+	auto pCopyPasteManager = impl_->get<ICopyPasteManager>();
+	if (pCopyPasteManager == nullptr)
+	{
+		return;
+	}
+	auto& copyPasteManager = (*pCopyPasteManager);
+
+	// Get clipboard data
+	const auto wgtMimeData = copyPasteManager.getClipboardContents();
+
+	// Convert clipboard data to Qt data
+	QVariantMap dataMap;
+	for (auto it = wgtMimeData.cbegin(); it != wgtMimeData.cend(); ++it)
+	{
+		const auto key = QString::fromUtf8(it->first.c_str(),
+			static_cast<int>(it->first.size()));
+		const QByteArray value(it->second.data(),
+			static_cast<int>(it->second.size()));
+		dataMap.insert(key, value);
+	}
+
+	// Drop data into each item
+	for (auto index : indexes)
+	{
+		this->dropMimeData(dataMap, Qt::CopyAction, index);
+	}
+}
+
 QStringList WGItemView::mimeTypes() const
 {
 	return impl_->extendedModel_->mimeTypes();
 }
 
-QVariantMap WGItemView::mimeData(const QModelIndexList& indexes)
+QVariantMap WGItemView::mimeData(const QModelIndexList& indexes) const
 {
 	QVariantMap data;
 	auto mimeData = impl_->extendedModel_->mimeData(indexes);
@@ -1515,4 +1935,42 @@ bool WGItemView::dropHeaderMimeData(const QVariantMap& data, Qt::DropAction acti
 
 	return true;
 }
+
+wgt::QtModelExtension* WGItemView::createExtension(const QString& name)
+{
+	return impl_->modelExtensionManager()->createExtension(name, "2.0", this);
+}
+
+QModelIndex WGItemView::toModelIndex(const QPersistentModelIndex& persistentModelIndex) const
+{
+	return persistentModelIndex;
+}
+
+QPersistentModelIndex WGItemView::toPersistentModelIndex(const QModelIndex& modelIndex) const
+{
+	return QPersistentModelIndex(modelIndex);
+}
+
+QModelIndexList WGItemView::toModelIndexList(const QModelIndex& modelIndex) const
+{
+	QModelIndexList modelIndexList;
+	modelIndexList.append(modelIndex);
+	return modelIndexList;
+}
+
+QModelIndexList WGItemView::toModelIndexList(const QItemSelection& itemSelection) const
+{
+	return itemSelection.indexes();
+}
+
+QItemSelection WGItemView::toItemSelection(const QModelIndexList& modelIndexList) const
+{
+	QItemSelection itemSelection;
+	for (auto& modelIndex : modelIndexList) 
+	{
+		itemSelection << QItemSelectionRange(modelIndex);
+	}
+	return itemSelection;
+}
+
 } // end namespace wgt

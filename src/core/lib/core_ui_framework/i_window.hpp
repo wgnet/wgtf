@@ -12,6 +12,7 @@ class IMenu;
 class IRegion;
 class IUIApplication;
 class IStatusBar;
+class IView;
 
 typedef std::vector<std::unique_ptr<IMenu>> Menus;
 typedef std::vector<std::unique_ptr<IRegion>> Regions;
@@ -44,6 +45,18 @@ public:
 	virtual const Menus& menus() const = 0;
 	virtual const Regions& regions() const = 0;
 	virtual IStatusBar* statusBar() const = 0;
+
+	virtual IView* getFocusedView() const = 0;
+	virtual void setFocusedView(IView* view) = 0;
+
+	virtual bool resetLayout() = 0;
+	virtual bool savePreference() = 0;
+	virtual bool loadPreference() = 0;
+
+	virtual uintptr_t getNativeWindowHandle()
+	{
+		return 0;
+	}
 
 	SignalVoid signalClose;
 	SignalConfirm signalTryClose;

@@ -28,6 +28,7 @@ BW_ADD_TOOL_PLUGIN( plg_reflection_object_test SHARED
 BW_TARGET_LINK_LIBRARIES( plg_reflection_object_test PRIVATE
 	core_generic_plugin
 	core_reflection
+	core_object
 	reflection_objects_test
 )
 

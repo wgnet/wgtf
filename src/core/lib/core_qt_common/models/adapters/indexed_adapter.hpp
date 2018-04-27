@@ -123,7 +123,10 @@ void isolateRedundantIndex(const typename std::vector<IndexedAdapter<T>>::iterat
 	indices.pop_back();
 
 	// recursively check children for found indices
-	isolateRedundantIndices(redundantIndex, indices, redundantAdapters);
+	if (redundantIndex.isValid())
+	{
+		isolateRedundantIndices(redundantIndex, indices, redundantAdapters);
+	}
 }
 } // end namespace wgt
 #endif // INDEXED_ADAPTER_HPP

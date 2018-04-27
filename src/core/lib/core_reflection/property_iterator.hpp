@@ -12,7 +12,7 @@ class IClassDefinition;
 class IBaseProperty;
 typedef std::shared_ptr<IBaseProperty> IBasePropertyPtr;
 class PropertyIteratorImplBase;
-typedef std::shared_ptr<PropertyIteratorImplBase> PropertyIteratorImplPtr;
+typedef std::shared_ptr<PropertyIteratorImplBase> PropertyIteratorImplSharedPtr;
 
 class REFLECTION_DLL PropertyIteratorImplBase
 {
@@ -36,6 +36,7 @@ public:
 
 	PropertyIterator();
 	PropertyIterator(IterateStrategy strategy, const IClassDefinition& definition);
+	~PropertyIterator();
 
 	IBasePropertyPtr get() const;
 
@@ -50,9 +51,12 @@ public:
 private:
 	void moveNext();
 
+	struct ParentDefinitionIterator;
+
 	IterateStrategy strategy_;
 	const IClassDefinition* currentDefinition_;
-	PropertyIteratorImplPtr currentIterator_;
+	PropertyIteratorImplSharedPtr currentIterator_;
+	std::shared_ptr< ParentDefinitionIterator > parentIterator_;
 };
 
 // Helper class for use with range-based-for loops and STL algorithms

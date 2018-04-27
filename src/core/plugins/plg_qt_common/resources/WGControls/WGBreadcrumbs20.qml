@@ -3,6 +3,7 @@ import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 import WGControls 2.0
 import WGControls.Layouts 2.0
+import WGControls.Global 2.0
 
 /*!
  \ingroup wgcontrols
@@ -12,7 +13,7 @@ Example:
 \code{.js}
 WGBreadcrumbs {
     model: folderModel
-	modelIndex: selectedFolderIndex
+    modelIndex: selectedFolderIndex
 }
 \endcode
 */
@@ -27,22 +28,80 @@ Rectangle {
     Layout.preferredHeight: defaultSpacing.minimumRowHeight
     Layout.fillWidth: true
     color: "transparent"
+    clip: true
 
-	property alias model: breadcrumbs.model
-	property alias modelIndex: breadcrumbs.modelIndex
-	property alias path: pathTextBox.text
+    border.color: pathMouseover.containsMouse ? palette.lightShade : "transparent"
+    border.width: defaultSpacing.standardBorderSize
 
-	signal breadcrumbSelected(var modelIndex)
-	signal pathEntered(var path)
+    property var fontSize: breadcrumbs.defaultFontSize
+    property alias model: breadcrumbs.model
+    property alias modelIndex: breadcrumbs.modelIndex
 
-	QtObject {
-		id: internal
-
-		property bool showBreadcrumbs: true
+	onModelIndexChanged: {
+		pathTextBox.text = modelIndex != null ? getPath(modelIndex) : ""
 	}
+
+    signal breadcrumbSelected(var modelIndex)
+
+	function getPath(modelIndex) {
+		var parentIndex = model.parent(modelIndex)
+		if (parentIndex == modelIndex) {
+			return "";
+		}
+
+		var path = model.data(modelIndex);
+		if (path == undefined) {
+			return "";
+		}
+
+		var parentPath = getPath(parentIndex);
+		return parentPath != "" ? parentPath + "\\" + path : path;
+	}
+
+	function getIndex(path, parentIndex) {
+		var rowCount = parentIndex != null ? model.rowCount(parentIndex) : model.rowCount();
+        for (var row = 0; row < rowCount; ++row) {
+            var rowIndex = parentIndex != null ? model.index(row, 0, parentIndex) : model.index(row, 0);
+            var rowPath = model.data(rowIndex);
+
+            var pathN = WGPath.normalisePath(path);
+            var rowPathN = WGPath.normalisePath(rowPath);
+            if (pathN == rowPathN) {
+                return rowIndex;
+            }
+
+			rowPathN += "\\";
+			if (pathN.indexOf(rowPathN) == 0) {
+				var childPath = pathN.substring(rowPathN.length);
+                var childIndex = getIndex(childPath, rowIndex);
+                if (childIndex != null) {
+                    return childIndex;
+                }
+            }
+		}
+		return null;
+	}
+
+	function selectPath(path) {
+		var index = getIndex(path);
+		if (index == null) {
+			pathTextBox.text = getPath(modelIndex);
+		}
+		else {
+			modelIndex = index;
+			breadcrumbSelected(modelIndex);
+		}
+	}
+
+    QtObject {
+        id: internal
+
+        property bool showBreadcrumbs: true
+    }
 
     // Mouse area over the path text box
     MouseArea {
+        id: pathMouseover
         objectName: "pathSelect"
         anchors.fill: parent
         enabled: internal.showBreadcrumbs
@@ -51,8 +110,10 @@ Rectangle {
         cursorShape: Qt.IBeamCursor
 
         onClicked: {
-            internal.showBreadcrumbs = false
-            pathTextBox.forceActiveFocus()
+			pathTextBox.text = getPath(modelIndex)
+			pathTextBox.selectAll()
+			pathTextBox.forceActiveFocus()
+			internal.showBreadcrumbs = false
         }
     }
 
@@ -64,22 +125,31 @@ Rectangle {
         anchors.fill: parent
         visible: !internal.showBreadcrumbs
 
+		onActiveFocusChanged: {
+			internal.showBreadcrumbs = !activeFocus
+		}
+
         onEditingFinished: {
-            internal.showBreadcrumbs = true
+			internal.showBreadcrumbs = true;
+            rootFrame.selectPath(text);
         }
 
         onAccepted: {
-			rootFrame.pathEntered(text);
+			internal.showBreadcrumbs = true;
+            rootFrame.selectPath(text);
         }
     }
 
     // Main layout of the breadcrumbs control.
     WGBreadcrumbsBase {
-		id: breadcrumbs
-		objectName: "breadcrumbs"
+        id: breadcrumbs
+        objectName: "breadcrumbs"
         visible: internal.showBreadcrumbs
-		clip: true
+        clip: true
+        fontSize: rootFrame.fontSize
 
-		onBreadcrumbSelected: rootFrame.breadcrumbSelected(modelIndex)
+        x: width > parent.width ? parent.width - width : 0
+
+        onBreadcrumbSelected: rootFrame.breadcrumbSelected(modelIndex)
     }
 } // rootFrame

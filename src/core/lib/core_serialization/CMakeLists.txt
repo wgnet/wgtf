@@ -6,26 +6,16 @@ INCLUDE( WGToolsCoreLibrary )
 
 ADD_DEFINITIONS( -DSERIALIZATION_EXPORT )
 
-find_package(Expat REQUIRED)
-
 SET( ALL_SRCS
-	serializer/details/simple_api_for_xml.cpp
-	serializer/details/simple_api_for_xml.hpp
-	serializer/details/xml_reader.cpp
-	serializer/details/xml_reader.hpp
-	serializer/details/xml_writer.cpp
-	serializer/details/xml_writer.hpp
 	serializer/i_serializer.cpp
 	serializer/i_serializer.hpp
 	serializer/i_serialization_manager.hpp
 	serializer/serialization_manager.cpp
 	serializer/serialization_manager.hpp
-	serializer/xml_serializer.cpp
-	serializer/xml_serializer.hpp
-	../../interfaces/${PROJECT_NAME}/i_file_system.hpp
-	../../interfaces/${PROJECT_NAME}/i_file_info.hpp
-	../../interfaces/${PROJECT_NAME}/i_file_utilities.hpp
-    ../../interfaces/${PROJECT_NAME}/i_resource_system.hpp
+	${WG_TOOLS_INTERFACE_DIR}/${PROJECT_NAME}/i_file_system.hpp
+	${WG_TOOLS_INTERFACE_DIR}/${PROJECT_NAME}/i_file_info.hpp
+	${WG_TOOLS_INTERFACE_DIR}/${PROJECT_NAME}/i_file_utilities.hpp
+    ${WG_TOOLS_INTERFACE_DIR}/${PROJECT_NAME}/i_resource_system.hpp
 	basic_stream.cpp
 	basic_stream.hpp
 	binary_stream.cpp
@@ -62,22 +52,10 @@ ENDIF()
 
 WG_AUTO_SOURCE_GROUPS( ${ALL_SRCS} )
 
-BW_BLOB_SOURCES( BLOB_SRCS
+WG_BLOB_SOURCES( BLOB_SRCS
 	${ALL_SRCS}
 )
 
 BW_ADD_LIBRARY( core_serialization ${BLOB_SRCS} )
-
-
-BW_TARGET_LINK_LIBRARIES( core_serialization
-	INTERFACE
-	core_variant
-	core_reflection
-
-	PUBLIC
-	expat
-)
-
-ADD_DEFINITIONS( -DXML_STATIC )
 
 BW_PROJECT_CATEGORY( core_serialization "WGT Libs" )

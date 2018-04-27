@@ -9,7 +9,8 @@
 #include "core_common/deprecated.hpp"
 // END DEPRECATED
 
-#include <cassert>
+#include "core_common/assert.hpp"
+
 #include <ios>
 #include <type_traits>
 
@@ -103,7 +104,7 @@ public:
 		}
 		else
 		{
-			assert(false);
+			TF_ASSERT(false);
 		}
 		return br;
 	}

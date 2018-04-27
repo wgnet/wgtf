@@ -1,18 +1,22 @@
 #include "reflected_property_item_new.hpp"
+
 #include "reflected_collection.hpp"
 
-#include "class_definition_model.hpp"
-#include "reflected_enum_model.hpp"
+#include "class_definition_model_new.hpp"
+#include "reflected_enum_model_new.hpp"
 #include "reflected_object_item_new.hpp"
 #include "reflected_tree_model_new.hpp"
 
+#include "core_common/assert.hpp"
 #include "core_data_model/i_item_role.hpp"
 #include "core_data_model/common_data_roles.hpp"
 #include "core_reflection/interfaces/i_base_property.hpp"
 #include "core_reflection/interfaces/i_reflection_controller.hpp"
 #include "core_reflection/metadata/meta_impl.hpp"
-#include "core_reflection/metadata/meta_utilities.hpp"
+#include "core_reflection/metadata/meta_base.hpp"
+#include "core_reflection/utilities/object_handle_reflection_utils.hpp"
 
+#include "core_logging/logging.hpp"
 #include "core_string_utils/string_utils.hpp"
 
 #include "wg_types/binary_block.hpp"
@@ -135,41 +139,33 @@ Variant getMinValue(const TypeId& typeId)
 }
 }
 
-class ReflectedPropertyItemNew::Implementation
+class ReflectedPropertyItemNew::Implementation : public Depends<IDefinitionManager, IReflectionController>
 {
 public:
-	Implementation(IComponentContext& contextManager);
-	IComponentContext& contextManager_;
 	std::string displayName_;
 	std::vector<std::unique_ptr<ReflectedTreeItemNew>> children_;
+	std::unique_ptr<AbstractListModel> enumModel_;
+	std::unique_ptr<AbstractListModel> definitionModel_;
 };
 
-ReflectedPropertyItemNew::Implementation::Implementation(IComponentContext& contextManager)
-    : contextManager_(contextManager)
-{
-}
-
-ReflectedPropertyItemNew::ReflectedPropertyItemNew(IComponentContext& contextManager, const IBasePropertyPtr& property,
-                                                   ReflectedTreeItemNew* parent, size_t index,
-                                                   const std::string& inPlacePath)
-    : ReflectedTreeItemNew(contextManager, parent, index, std::string(inPlacePath) + property->getName()),
-      impl_(new Implementation(contextManager))
+ReflectedPropertyItemNew::ReflectedPropertyItemNew(const IBasePropertyPtr& property, ReflectedTreeItemNew* parent,
+                                                   size_t index, const std::string& inPlacePath)
+    : ReflectedTreeItemNew(parent, index, std::string(inPlacePath) + property->getName()), impl_(new Implementation)
 {
 	// Must have a parent
-	assert(parent != nullptr);
-	assert(!path_.empty());
+	TF_ASSERT(parent != nullptr);
+	TF_ASSERT(!path_.empty());
 }
 
-ReflectedPropertyItemNew::ReflectedPropertyItemNew(IComponentContext& contextManager, const std::string& propertyName,
-                                                   std::string displayName, ReflectedTreeItemNew* parent, size_t index)
-    : ReflectedTreeItemNew(contextManager, parent, index, parent ? parent->getPath() + propertyName : ""),
-      impl_(new Implementation(contextManager))
+ReflectedPropertyItemNew::ReflectedPropertyItemNew(const std::string& propertyName, std::string displayName,
+                                                   ReflectedTreeItemNew* parent, size_t index)
+    : ReflectedTreeItemNew(parent, index, parent ? parent->getPath() + propertyName : ""), impl_(new Implementation)
 {
 	impl_->displayName_ = std::move(displayName);
 
 	// Must have a parent
-	assert(parent != nullptr);
-	assert(!path_.empty());
+	TF_ASSERT(parent != nullptr);
+	TF_ASSERT(!path_.empty());
 }
 
 ReflectedPropertyItemNew::~ReflectedPropertyItemNew()
@@ -178,14 +174,14 @@ ReflectedPropertyItemNew::~ReflectedPropertyItemNew()
 
 Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return Variant();
 	}
 
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = pDefinitionManager->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (roleId == ItemRole::displayId)
 	{
@@ -196,8 +192,7 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 			auto displayName = findFirstMetaData<MetaDisplayNameObj>(propertyAccessor, *pDefinitionManager);
 			if (displayName != nullptr)
 			{
-				std::wstring_convert<Utf16to8Facet> conversion(Utf16to8Facet::create());
-				impl_->displayName_ = conversion.to_bytes(displayName->getDisplayName(propertyAccessor.getObject()));
+				impl_->displayName_ = StringUtils::to_string(displayName->getDisplayName(propertyAccessor.getObject()));
 			}
 			else
 			{
@@ -218,7 +213,8 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 		auto value = propertyAccessor.getValue();
 		if (value.canCast<Collection>())
 		{
-			value = Collection(std::make_shared<ReflectedCollection>(propertyAccessor, getController()));
+			value =
+			Collection(std::make_shared<ReflectedCollection>(propertyAccessor, impl_->get<IReflectionController>()));
 		}
 		return value;
 	}
@@ -361,7 +357,7 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 		}
 
 		// Should not have a MetaThumbObj for properties that do not have a value
-		assert(propertyAccessor.canGetValue());
+		TF_ASSERT(propertyAccessor.canGetValue());
 
 		typedef std::shared_ptr<BinaryBlock> ThumbnailData;
 		const Variant value = propertyAccessor.getValue();
@@ -454,14 +450,20 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 	else if (roleId == EnumModelRole::roleId_)
 	{
 		auto enumObj = findFirstMetaData<MetaEnumObj>(propertyAccessor, *pDefinitionManager);
-		if (enumObj)
+		if (enumObj != nullptr)
 		{
 			if (getObject().isValid() == false)
 			{
 				return Variant();
 			}
-			auto enumModel = std::unique_ptr<IListModel>(new ReflectedEnumModel(propertyAccessor, enumObj));
-			return std::move(enumModel);
+
+			// Always recreate the enum model to support dynamic enum generation
+			// if (!impl_->enumModel_)
+			{
+				impl_->enumModel_.reset(new ReflectedEnumModelNew(propertyAccessor, enumObj));
+			}
+
+			return impl_->enumModel_.get();
 		}
 	}
 	else if (roleId == DefinitionRole::roleId_)
@@ -476,8 +478,8 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 		variant.tryCast(provider);
 		provider = reflectedRoot(provider, *pDefinitionManager);
 		auto definition =
-		const_cast<IClassDefinition*>(provider.isValid() ? provider.getDefinition(*pDefinitionManager) : nullptr);
-		return ObjectHandle(definition);
+		const_cast<IClassDefinition*>(provider.isValid() ? pDefinitionManager->getDefinition(provider) : nullptr);
+		return definition;
 	}
 	else if (roleId == DefinitionModelRole::roleId_)
 	{
@@ -487,9 +489,12 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 			auto definition = pDefinitionManager->getDefinition(typeId.removePointer().getName());
 			if (definition != nullptr)
 			{
-				auto definitionModel =
-				std::unique_ptr<IListModel>(new ClassDefinitionModel(definition, *pDefinitionManager));
-				return std::move(definitionModel);
+				if (!impl_->definitionModel_)
+				{
+					impl_->definitionModel_.reset(new ClassDefinitionModelNew(definition, *pDefinitionManager));
+				}
+
+				return impl_->definitionModel_.get();
 			}
 		}
 	}
@@ -547,9 +552,9 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 	{
 		TypeId typeId = propertyAccessor.getType();
 		auto readonly = findFirstMetaData<MetaReadOnlyObj>(propertyAccessor, *pDefinitionManager);
-		if (readonly)
+		if (readonly != nullptr)
 		{
-			return true;
+			return readonly->isReadOnly(propertyAccessor.getObject());
 		}
 		return false;
 	}
@@ -561,29 +566,42 @@ Variant ReflectedPropertyItemNew::getData(int column, ItemRole::Id roleId) const
 	{
 		return Variant(false);
 	}
+	else if (roleId == ItemRole::tooltipId)
+	{
+		auto tooltipObj = findFirstMetaData<MetaTooltipObj>(propertyAccessor, *pDefinitionManager);
+		if (tooltipObj != nullptr)
+		{
+			return tooltipObj->getTooltip(propertyAccessor.getObject());
+		}
+		return nullptr;
+	}
 
 	return Variant();
 }
 
 bool ReflectedPropertyItemNew::setData(int column, ItemRole::Id roleId, const Variant& data)
 {
-	auto controller = getController();
-	if (controller == nullptr)
-	{
-		return false;
-	}
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto controller = impl_->get<IReflectionController>();
+
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
 	}
 
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = pDefinitionManager->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (roleId == ValueRole::roleId_)
 	{
-		controller->setValue(propertyAccessor, data);
+		if (controller)
+		{
+			controller->setValue(propertyAccessor, data);
+		}
+		else
+		{
+			propertyAccessor.setValue(data);
+		}
 		return true;
 	}
 	else if (roleId == DefinitionRole::roleId_)
@@ -600,21 +618,26 @@ bool ReflectedPropertyItemNew::setData(int column, ItemRole::Id roleId, const Va
 			return false;
 		}
 
-		ObjectHandle provider;
-		if (!data.tryCast<ObjectHandle>(provider))
+		IClassDefinition* valueDefinition = nullptr;
+		if (!data.tryCast<IClassDefinition*>(valueDefinition))
 		{
 			return false;
 		}
 
-		auto valueDefinition = provider.getBase<IClassDefinition>();
 		if (valueDefinition == nullptr)
 		{
 			return false;
 		}
 
-		ObjectHandle value;
-		value = valueDefinition->create();
-		controller->setValue(propertyAccessor, value);
+		auto value = valueDefinition->createShared();
+		if (controller)
+		{
+			controller->setValue(propertyAccessor, value);
+		}
+		else
+		{
+			propertyAccessor.setValue(value);
+		}
 		return true;
 	}
 	return false;
@@ -648,12 +671,12 @@ ReflectedTreeItemNew* ReflectedPropertyItemNew::getChild(size_t index) const
 	}
 
 	auto obj = this->getObject();
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return nullptr;
 	}
-	auto propertyAccessor = obj.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = pDefinitionManager->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (!propertyAccessor.canGetValue())
 	{
@@ -686,7 +709,7 @@ ReflectedTreeItemNew* ReflectedPropertyItemNew::getChild(size_t index) const
 			const bool isIndex = it.key().tryCast(indexKey);
 
 			// Default to using an index
-			std::string propertyName = "[" + std::to_string(static_cast<int>(indexKey)) + "]";
+			std::string propertyName = Collection::getIndexOpen() + std::to_string(static_cast<int>(indexKey)) + Collection::getIndexClose();
 			std::string displayName = propertyName;
 
 			// If the item isn't an index
@@ -696,12 +719,11 @@ ReflectedTreeItemNew* ReflectedPropertyItemNew::getChild(size_t index) const
 				const bool isString = it.key().tryCast(displayName);
 				if (isString)
 				{
-					// Strings must be quoted to work with TextStream
-					propertyName = "[\"" + displayName + "\"]";
+					propertyName = Collection::getIndexOpenStr() + displayName + Collection::getIndexCloseStr();
 				}
 			}
 
-			child = new ReflectedPropertyItemNew(impl_->contextManager_, propertyName, std::move(displayName),
+			child = new ReflectedPropertyItemNew(propertyName, std::move(displayName),
 			                                     const_cast<ReflectedPropertyItemNew*>(this), index);
 		}
 		impl_->children_[index] = std::unique_ptr<ReflectedTreeItemNew>(child);
@@ -716,21 +738,20 @@ ReflectedTreeItemNew* ReflectedPropertyItemNew::getChild(size_t index) const
 		return nullptr;
 	}
 	baseProvider = reflectedRoot(baseProvider, *pDefinitionManager);
-	child = new ReflectedObjectItemNew(impl_->contextManager_, baseProvider,
-	                                   const_cast<ReflectedPropertyItemNew*>(this), index);
+	child = new ReflectedObjectItemNew(baseProvider, const_cast<ReflectedPropertyItemNew*>(this), index);
 	impl_->children_[index] = std::unique_ptr<ReflectedTreeItemNew>(child);
 	return child;
 }
 
 int ReflectedPropertyItemNew::rowCount() const
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return 0;
 	}
 	auto obj = getObject();
-	auto propertyAccessor = obj.getDefinition(*pDefinitionManager)->bindProperty(path_.c_str(), obj);
+	auto propertyAccessor = pDefinitionManager->getDefinition(obj)->bindProperty(path_.c_str(), obj);
 
 	if (!propertyAccessor.canGetValue())
 	{
@@ -750,7 +771,7 @@ int ReflectedPropertyItemNew::rowCount() const
 	if (isObjectHandle)
 	{
 		handle = reflectedRoot(handle, *pDefinitionManager);
-		auto def = handle.getDefinition(*pDefinitionManager);
+		auto def = pDefinitionManager->getDefinition(handle);
 		if (def != nullptr)
 		{
 			return 1;
@@ -762,7 +783,7 @@ int ReflectedPropertyItemNew::rowCount() const
 
 bool ReflectedPropertyItemNew::preSetValue(const PropertyAccessor& accessor, const Variant& value)
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
@@ -783,7 +804,7 @@ bool ReflectedPropertyItemNew::preSetValue(const PropertyAccessor& accessor, con
 			ObjectHandle handle;
 			if (value.tryCast(handle))
 			{
-				definition = handle.getDefinition(*pDefinitionManager);
+				definition = pDefinitionManager->getDefinition(handle);
 			}
 
 			const auto pModel = this->getModel();
@@ -792,7 +813,7 @@ bool ReflectedPropertyItemNew::preSetValue(const PropertyAccessor& accessor, con
 				const auto index = pModel->index(this);
 				const int column = 0;
 				const ItemRole::Id roleId = DefinitionRole::roleId_;
-				const Variant value = ObjectHandle(definition);
+				const Variant value = definition;
 				pModel->preItemDataChanged_(index, column, roleId, value);
 			}
 			return true;
@@ -826,7 +847,7 @@ bool ReflectedPropertyItemNew::preSetValue(const PropertyAccessor& accessor, con
 
 bool ReflectedPropertyItemNew::postSetValue(const PropertyAccessor& accessor, const Variant& value)
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
@@ -847,7 +868,7 @@ bool ReflectedPropertyItemNew::postSetValue(const PropertyAccessor& accessor, co
 			ObjectHandle handle;
 			if (value.tryCast(handle))
 			{
-				definition = handle.getDefinition(*pDefinitionManager);
+				definition = pDefinitionManager->getDefinition(handle);
 			}
 			impl_->children_.clear();
 
@@ -857,7 +878,7 @@ bool ReflectedPropertyItemNew::postSetValue(const PropertyAccessor& accessor, co
 				const auto index = pModel->index(this);
 				const int column = 0;
 				const ItemRole::Id roleId = DefinitionRole::roleId_;
-				const Variant value = ObjectHandle(definition);
+				const Variant value = definition;
 				pModel->postItemDataChanged_(index, column, roleId, value);
 			}
 			return true;
@@ -891,7 +912,7 @@ bool ReflectedPropertyItemNew::postSetValue(const PropertyAccessor& accessor, co
 
 bool ReflectedPropertyItemNew::preInsert(const PropertyAccessor& accessor, size_t index, size_t count)
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
@@ -904,7 +925,7 @@ bool ReflectedPropertyItemNew::preInsert(const PropertyAccessor& accessor, size_
 	if (obj == otherObj && path_ == otherPath)
 	{
 		auto model = getModel();
-		assert(model != nullptr);
+		TF_ASSERT(model != nullptr);
 		model->preRowsInserted_(model->index(this), static_cast<int>(index), static_cast<int>(count));
 		return true;
 	}
@@ -926,7 +947,7 @@ bool ReflectedPropertyItemNew::preInsert(const PropertyAccessor& accessor, size_
 
 bool ReflectedPropertyItemNew::postInserted(const PropertyAccessor& accessor, size_t index, size_t count)
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
@@ -941,7 +962,7 @@ bool ReflectedPropertyItemNew::postInserted(const PropertyAccessor& accessor, si
 		Collection collection;
 		const Variant& value = accessor.getValue();
 		bool isCollection = value.tryCast(collection);
-		assert(isCollection);
+		TF_ASSERT(isCollection);
 
 		for (auto it = impl_->children_.begin(); it != impl_->children_.end(); ++it)
 		{
@@ -980,12 +1001,12 @@ bool ReflectedPropertyItemNew::postInserted(const PropertyAccessor& accessor, si
 
 				auto oldPath = child->path_;
 				auto parentPath = oldPath.substr(0, oldPath.length() - child->impl_->displayName_.length());
-				child->path_ = parentPath + "[" + std::to_string(static_cast<int>(i)) + "]";
+				child->path_ = parentPath + Collection::getIndexOpen() + std::to_string(static_cast<int>(i)) + Collection::getIndexClose();
 			}
 		}
 
 		auto model = getModel();
-		assert(model != nullptr);
+		TF_ASSERT(model != nullptr);
 		model->postRowsInserted_(model->index(this), static_cast<int>(index), static_cast<int>(count));
 
 		if (!collection.isMapping())
@@ -1000,7 +1021,7 @@ bool ReflectedPropertyItemNew::postInserted(const PropertyAccessor& accessor, si
 
 				auto childIndex = model->index(child);
 				model->preItemDataChanged_(childIndex, 0, ItemRole::displayId, child->impl_->displayName_);
-				child->impl_->displayName_ = "[" + std::to_string(static_cast<int>(i)) + "]";
+				child->impl_->displayName_ = Collection::getIndexOpen() + std::to_string(static_cast<int>(i)) + Collection::getIndexClose();
 				model->postItemDataChanged_(childIndex, 0, ItemRole::displayId, child->impl_->displayName_);
 			}
 		}
@@ -1025,7 +1046,7 @@ bool ReflectedPropertyItemNew::postInserted(const PropertyAccessor& accessor, si
 
 bool ReflectedPropertyItemNew::preErase(const PropertyAccessor& accessor, size_t index, size_t count)
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
@@ -1038,7 +1059,7 @@ bool ReflectedPropertyItemNew::preErase(const PropertyAccessor& accessor, size_t
 	if (obj == otherObj && path_ == otherPath)
 	{
 		auto model = getModel();
-		assert(model != nullptr);
+		TF_ASSERT(model != nullptr);
 		model->preRowsRemoved_(model->index(this), static_cast<int>(index), static_cast<int>(count));
 		return true;
 	}
@@ -1060,7 +1081,7 @@ bool ReflectedPropertyItemNew::preErase(const PropertyAccessor& accessor, size_t
 
 bool ReflectedPropertyItemNew::postErased(const PropertyAccessor& accessor, size_t index, size_t count)
 {
-	auto pDefinitionManager = this->getDefinitionManager();
+	auto pDefinitionManager = impl_->get<IDefinitionManager>();
 	if (pDefinitionManager == nullptr)
 	{
 		return false;
@@ -1075,7 +1096,7 @@ bool ReflectedPropertyItemNew::postErased(const PropertyAccessor& accessor, size
 		Collection collection;
 		const Variant& value = accessor.getValue();
 		bool isCollection = value.tryCast(collection);
-		assert(isCollection);
+		TF_ASSERT(isCollection);
 
 		for (auto it = impl_->children_.begin(); it != impl_->children_.end(); ++it)
 		{
@@ -1111,12 +1132,12 @@ bool ReflectedPropertyItemNew::postErased(const PropertyAccessor& accessor, size
 
 				auto oldPath = child->path_;
 				auto parentPath = oldPath.substr(0, oldPath.length() - child->impl_->displayName_.length());
-				child->path_ = parentPath + "[" + std::to_string(static_cast<int>(i)) + "]";
+				child->path_ = parentPath + Collection::getIndexOpen() + std::to_string(static_cast<int>(i)) + Collection::getIndexClose();
 			}
 		}
 
 		auto model = getModel();
-		assert(model != nullptr);
+		TF_ASSERT(model != nullptr);
 		model->postRowsRemoved_(model->index(this), static_cast<int>(index), static_cast<int>(count));
 
 		if (!collection.isMapping())
@@ -1131,7 +1152,7 @@ bool ReflectedPropertyItemNew::postErased(const PropertyAccessor& accessor, size
 
 				auto childIndex = model->index(child);
 				model->preItemDataChanged_(childIndex, 0, ItemRole::displayId, child->impl_->displayName_);
-				child->impl_->displayName_ = "[" + std::to_string(static_cast<int>(i)) + "]";
+				child->impl_->displayName_ = Collection::getIndexOpen() + std::to_string(static_cast<int>(i)) + Collection::getIndexClose();
 				model->postItemDataChanged_(childIndex, 0, ItemRole::displayId, child->impl_->displayName_);
 			}
 		}

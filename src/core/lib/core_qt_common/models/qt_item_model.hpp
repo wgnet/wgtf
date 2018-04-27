@@ -1,37 +1,65 @@
 #ifndef QT_ITEM_MODEL_HPP
 #define QT_ITEM_MODEL_HPP
 
-#include "core_data_model_cmds/interfaces/i_item_model_controller.hpp"
-#include "core_dependency_system/di_ref.hpp"
 #include "qt_abstract_item_model.hpp"
 #include "core_qt_common/qt_new_handler.hpp"
-#include <memory>
 #include "role_provider.hpp"
+#include "core_common/assert.hpp"
+#include "core_data_model_cmds/interfaces/i_item_model_controller.hpp"
+#include "core_dependency_system/depends.hpp"
+#include "core_data_model/abstract_item_model.hpp"
+#include "core_data_model/i_item_role.hpp"
+#include "core_data_model/abstract_item_model.hpp"
+#include "core_data_model/common_data_roles.hpp"
+#include "core_qt_common/interfaces/i_qt_helpers.hpp"
+#include "core_qt_common/models/extensions/custom_model_extension.hpp"
+#include "core_qt_common/models/wgt_item_model_base.hpp"
+#include "core_qt_common/helpers/wgt_interface_provider.hpp"
+#include "core_qt_common/interfaces/i_wgt_item_model.hpp"
+#include "wg_types/base64.hpp"
+#include "core_variant/variant.hpp"
+
+
+#include <QMimeData>
+#include <memory>
+#include <unordered_map>
+
+namespace std {
+template <>
+struct hash<QModelIndex>
+{
+	std::size_t operator()(const QModelIndex& k) const
+	{
+		return qHash(k);
+	}
+};
+
+}
 
 namespace wgt
 {
-class AbstractItemModel;
-class AbstractListModel;
-class AbstractTreeModel;
-class AbstractTableModel;
-class IComponentContext;
-
 /** Adapter layer to allow any AbstractItemModel to be used by Qt and QML views.*/
-class QtItemModel : public QtAbstractItemModel, public RoleProvider
+template <class BaseModel>
+class QtItemModel : public BaseModel, public RoleProvider
+	, public WGTInterfaceProvider
+	, public Implements< IWgtItemModel >
 {
-	Q_OBJECT
+	// Q_OBJECT This does not support templates.
 	DECLARE_QT_MEMORY_HANDLER
+
 public:
-	QtItemModel(IComponentContext& context, AbstractItemModel& source);
+	typedef typename BaseModel::SourceType SourceType;
+
+	QtItemModel(SourceType& source);
 	virtual ~QtItemModel();
 
 	/** Gets AbstractItemModel that is being adapted to be used by Qt.
 	@return A constant reference to the attached AbstractItemModel. */
-	const AbstractItemModel& source() const;
+	const SourceType& source() const;
 
 	/** Gets AbstractItemModel that is being adapted to be used by Qt.
 	@return A reference to the attached AbstractItemModel. */
-	AbstractItemModel& source();
+	SourceType& source();
 
 	/** Converts a location in the model into an index.
 	@note An invalid index implies the top level of the model.
@@ -72,6 +100,11 @@ public:
 	@param role The role identifier of the value to get.
 	@return The value of the role. */
 	QVariant data(const QModelIndex& index, int role) const override;
+
+	bool canUse(QueryHelper & o_Helper) const override { return true; }
+
+	Variant variantData(
+		QueryHelper & helper, const QModelIndex& index, int role) const override;
 
 	/** Changes role data for an item at an index position.
 	This converts the index, value, and role to the format of the source model, calls
@@ -169,203 +202,729 @@ public:
 	@ingroup qmlaccessible
 	@param index The index to which the flags apply to.
 	@return The combination of flags. */
-	Q_INVOKABLE Qt::ItemFlags flags(const QModelIndex& index) const override;
+	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 
 	/** Returns a map of supported roles to be used in QML.
 	These are mapped from role identifier to role name.
 	@return The roles map. */
 	QHash<int, QByteArray> roleNames() const override;
 
+	virtual void revert() override;
+	virtual bool submit() override;
+
+	virtual QModelIndex findIndex(QVariant id) const override;
+
 	bool encodeRole(ItemRole::Id roleId, int& o_Role) const override;
 	bool decodeRole(int role, ItemRole::Id& o_RoleId) const override;
 
-protected:
-	DIRef<IItemModelController> itemModelController_;
+	static QtItemModel<BaseModel>* fromQVariant(const QVariant& variant);
 
 private:
-	struct Impl;
-	std::unique_ptr<Impl> impl_;
+
+	QModelIndex getCachedParentIndex(const QModelIndex& childIndex) const;
+
+	mutable std::unordered_map<QModelIndex, QModelIndex>	childToParentIndexCache_;
+	AbstractItemModel&										source_;
+	ConnectionHolder										connections_;
+
+	struct Dependencies : public Depends<IItemModelController, IQtHelpers>
+	{
+		IItemModelController* itemModelController() const
+		{
+			return get<IItemModelController>();
+		}
+		IQtHelpers* qtHelpers() const
+		{
+			return get<IQtHelpers>();
+		}
+	} dependencies_;
 };
 
-/** Provides QML invokable functions to iterate, insert and remove items by row.*/
-class QtListModel : public QtItemModel
+template <class BaseModel = AbstractItemModel>
+struct QtItemModelTypeHelper
 {
-	Q_OBJECT
-
-public:
-	QtListModel(IComponentContext& context, AbstractListModel& source);
-
-	/** Gets AbstractListModel that is being adapted to be used by Qt.
-	@return A constant reference to the attached AbstractListModel. */
-	const AbstractListModel& source() const;
-
-	/** Gets AbstractListModel that is being adapted to be used by Qt.
-	@return A reference to the attached AbstractListModel. */
-	AbstractListModel& source();
-
-	/** Gets the item at a row position.
-	@ingroup qmlaccessible
-	@param row The row number for the item.
-	@return The item at the given location. */
-	Q_INVOKABLE QObject* item(int row) const;
-
-	/** Gets number of rows in list.
-	@ingroup qmlaccessible
-	@return The number of rows. */
-	Q_INVOKABLE int count() const;
-
-	/** Adds a new row.
-	Inserts the item *before* the given row.
-	If row is rowCount(), the row is added to the end.
-	@ingroup qmlaccessible
-	@param row The row number for the new item.
-	@return True on success. */
-	Q_INVOKABLE bool insertItem(int row);
-
-	/** Removes a row.
-	@ingroup qmlaccessible
-	@param row The row number of item to be removed.
-	@return True on success. */
-	Q_INVOKABLE bool removeItem(int row);
-
-	/** Moves a row.
-	 @ingroup qmlaccessible
-	 @param sourceRow The row number of item to be moved.
-	 @param destinationRow The target row number to move to.
-	 @return True on success. */
-	Q_INVOKABLE bool moveItem(int sourceRow, int destinationRow);
+	typedef QtItemModel<QtAbstractItemModel> WrapperType;
 };
 
-/** Provides QML invokable functions to iterate, insert and remove items by row and parent.*/
-class QtTreeModel : public QtItemModel
+template <>
+struct QtItemModelTypeHelper<AbstractListModel>
 {
-	Q_OBJECT
-
-public:
-	QtTreeModel(IComponentContext& context, AbstractTreeModel& source);
-
-	/** Gets AbstractTreeModel that is being adapted to be used by Qt.
-	@return A constant reference to the attached AbstractTreeModel. */
-	const AbstractTreeModel& source() const;
-
-	/** Gets AbstractTreeModel that is being adapted to be used by Qt.
-	@return A reference to the attached AbstractTreeModel. */
-	AbstractTreeModel& source();
-
-	/** Gets the item at a row and parent object.
-	@ingroup qmlaccessible
-	@param row The row number for the item.
-	@param column The item's parent object.
-	@return The item at the given location. */
-	Q_INVOKABLE QObject* item(int row, QObject* parent) const;
-
-	/** Gets number of rows under parent.
-	@ingroup qmlaccessible
-	@return The number of child rows. */
-	Q_INVOKABLE int count(QObject* parent) const;
-
-	/** Adds a new row.
-	Inserts the item *before* the given row, under a parent item.
-	If row is count(), the row is added to the end.
-	@ingroup qmlaccessible
-	@note An null parent implies the top level of the model.
-	@param row The row number for the new item.
-	@param parent The parent item in the tree.
-	@return True on success. */
-	Q_INVOKABLE bool insertItem(int row, QObject* parent);
-
-	/** Removes a row.
-	Removes the item at the given row, under a parent item.
-	@ingroup qmlaccessible
-	@note An null parent implies the top level of the model.
-	@param row The row number of item to be removed.
-	@param parent The parent item in the tree.
-	@return True on success. */
-	Q_INVOKABLE bool removeItem(int row, QObject* parent);
-
-	/** Moves a row.
-	Moved a row from one parent and row number to another parent and row.
-	@ingroup qmlaccessible
-	@note An null parent implies the top level of the model.
-	@param sourceParent The parent object of the item to be moved.
-	@param sourceRow The row number of item to be moved.
-	@param destinationParent The parent object to move to.
-	@param destinationRow The target row number to move to.
-	@return True on success. */
-	Q_INVOKABLE bool moveItem(QObject* sourceParent, int sourceRow, QObject* destinationParent, int destinationRow);
+	typedef QtItemModel<QtListModel> WrapperType;
 };
 
-/** Provides QML invokable functions to iterate, insert and remove items by row and column.*/
-class QtTableModel : public QtItemModel
+template <>
+struct QtItemModelTypeHelper<AbstractTreeModel>
 {
-	Q_OBJECT
-
-public:
-	QtTableModel(IComponentContext& context, AbstractTableModel& source);
-
-	/** Gets AbstractTableModel that is being adapted to be used by Qt.
-	@return A constant reference to the attached AbstractTableModel. */
-	const AbstractTableModel& source() const;
-
-	/** Gets AbstractTableModel that is being adapted to be used by Qt.
-	@return A reference to the attached AbstractTableModel. */
-	AbstractTableModel& source();
-
-	/** Gets the item at a row and column position.
-	@ingroup qmlaccessible
-	@param row The row number for the item.
-	@param column The column number for the item.
-	@return The item at the given location. */
-	Q_INVOKABLE QObject* item(int row, int column) const;
-
-	/** Gets number of rows in the table.
-	@ingroup qmlaccessible
-	@return The number of rows. */
-	Q_INVOKABLE int rowCount() const;
-
-	/** Gets number of columns in the table.
-	@ingroup qmlaccessible
-	@return The number of columns. */
-	Q_INVOKABLE int columnCount() const;
-
-	/** Adds a new row.
-	Inserts the item *before* the given row.
-	If row is rowCount(), the row is added to the end.
-	@ingroup qmlaccessible
-	@param row The row number for the new item.
-	@return True on success. */
-	Q_INVOKABLE bool insertRow(int row);
-
-	/** Adds a new column.
-	Inserts the item *before* the given column.
-	If column is columnCount(), the column is added to the end.
-	@ingroup qmlaccessible
-	@param The column number for the new item.
-	@return True on success. */
-	Q_INVOKABLE bool insertColumn(int column);
-
-	/** Removes a row.
-	@ingroup qmlaccessible
-	@param row The row number of item to be removed.
-	@return True on success. */
-	Q_INVOKABLE bool removeRow(int row);
-
-	/** Removes a column.
-	@ingroup qmlaccessible
-	@param column The column number of item to be removed.
-	@return True on success. */
-	Q_INVOKABLE bool removeColumn(int column);
-
-	/** Moves a row.
-	@ingroup qmlaccessible
-	@param sourceRow The row number of item to be moved.
-	@param destinationRow The target row number to move to.
-	@return True on success. */
-	Q_INVOKABLE bool moveRow(int sourceRow, int destinationRow);
-
-private:
-	using QtItemModel::rowCount;
-	using QtItemModel::columnCount;
+	typedef QtItemModel<QtTreeModel> WrapperType;
 };
+
+template <>
+struct QtItemModelTypeHelper<AbstractTableModel>
+{
+	typedef QtItemModel<QtTableModel> WrapperType;
+};
+
+
+//==============================================================================
+template <class BaseModel>
+QtItemModel<BaseModel>::QtItemModel(SourceType& source)
+	: WGTInterfaceProvider( this )
+	, source_(source)
+{
+	registerInterface(*this);
+	auto changed = [this]() {
+		this->modelChanged();
+		this->childToParentIndexCache_.clear();
+	};
+	connections_.add(source_.connectModelChanged(changed));
+
+	auto preReset = [this]() {
+		this->beginResetModel();
+	};
+	connections_.add(source_.connectPreModelReset(preReset));
+
+	auto postReset = [this]() {
+		this->childToParentIndexCache_.clear();
+		this->endResetModel();
+		this->modelResetComplete();
+	};
+	connections_.add(source_.connectPostModelReset(postReset));
+
+	auto preLayoutChanged = [this](const AbstractItemModel::ItemIndex& index) {
+		auto item = source_.item(index);
+		const QModelIndex modelIndex = this->createIndex(index.row_, index.column_, item);
+
+		QList<QPersistentModelIndex> parents;
+		parents.append(modelIndex.isValid() ? modelIndex : QModelIndex());
+		this->layoutAboutToBeChanged(parents, QAbstractItemModel::VerticalSortHint);
+	};
+	connections_.add(source_.connectPreLayoutChanged(preLayoutChanged));
+
+	auto postLayoutChanged = [this](const AbstractItemModel::ItemIndex& index) {
+		auto item = source_.item(index);
+		const QModelIndex modelIndex = this->createIndex(index.row_, index.column_, item);
+
+		QList<QPersistentModelIndex> parents;
+		parents.append(modelIndex.isValid() ? modelIndex : QModelIndex());
+		this->childToParentIndexCache_.clear();
+		this->layoutChanged(parents, QAbstractItemModel::VerticalSortHint);
+		this->layoutChangedComplete();
+	};
+	connections_.add(source_.connectPostLayoutChanged(postLayoutChanged));
+
+	auto postItemData = [this](const AbstractItemModel::ItemIndex& index, ItemRole::Id roleId,
+	                           const Variant& newValue) {
+		auto item = source_.item(index);
+		const QModelIndex modelIndex = this->createIndex(index.row_, index.column_, item);
+
+		int encodedRole;
+		if (encodeRole(roleId, encodedRole))
+		{
+			const QModelIndex topLeft = modelIndex;
+			const QModelIndex bottomRight = modelIndex;
+			QVector<int> encodedRoles;
+			encodedRoles.append(encodedRole);
+			this->dataChanged(topLeft, bottomRight, encodedRoles);
+		}
+	};
+	connections_.add(source_.connectPostItemDataChanged(postItemData));
+
+	// @see AbstractItem::DataSignature
+	auto postModelData = [this](int row, int column, ItemRole::Id roleId, const Variant& value) {
+		bool validHorizontal = row == -1 && column >= 0 && column < source_.columnCount(nullptr);
+		bool validVertical = column == -1 && row >= 0 && row < source_.rowCount(nullptr);
+
+		if (validHorizontal)
+		{
+			this->headerDataChanged(Qt::Orientation::Horizontal, column, column);
+		}
+		else if (validVertical)
+		{
+			this->headerDataChanged(Qt::Orientation::Vertical, row, row);
+		}
+	};
+	connections_.add(source_.connectPostDataChanged(postModelData));
+
+	// @see AbstractItemModel::RangeSignature
+	auto preInsert = [this](const AbstractItemModel::ItemIndex& parentIndex, int startPos, int count) {
+		auto parentItem = source_.item(parentIndex);
+		const QModelIndex modelIndex = this->createIndex(parentIndex.row_, parentIndex.column_, parentItem);
+		this->beginInsertRows(modelIndex.isValid() ? modelIndex : QModelIndex(), startPos, startPos + count - 1);
+	};
+	connections_.add(source_.connectPreRowsInserted(preInsert));
+
+	auto postInserted = [this](const AbstractItemModel::ItemIndex& parentIndex, int startPos, int count) {
+		this->childToParentIndexCache_.clear();
+		this->endInsertRows();
+	};
+	connections_.add(source_.connectPostRowsInserted(postInserted));
+
+	auto preErase = [this](const AbstractItemModel::ItemIndex& parentIndex, int startPos, int count) {
+		auto parentItem = source_.item(parentIndex);
+		const QModelIndex modelIndex = this->createIndex(parentIndex.row_, parentIndex.column_, parentItem);
+		this->beginRemoveRows(modelIndex.isValid() ? modelIndex : QModelIndex(), startPos, startPos + count - 1);
+	};
+	connections_.add(source_.connectPreRowsRemoved(preErase));
+
+	auto postErased = [this](const AbstractItemModel::ItemIndex& parentIndex, int startPos, int count) {
+		this->childToParentIndexCache_.clear();
+		this->endRemoveRows();
+	};
+	connections_.add(source_.connectPostRowsRemoved(postErased));
+
+	auto preMove = [this](const AbstractItemModel::ItemIndex& sourceParentIndex, int sourceFirst, int sourceLast,
+	                      const AbstractItemModel::ItemIndex& destinationParentIndex, int destinationRow) {
+		const auto pSourceParentItem = source_.item(sourceParentIndex);
+		const QModelIndex sourceModelIndex =
+		this->createIndex(sourceParentIndex.row_, sourceParentIndex.column_, pSourceParentItem);
+		const auto pDestinationParentItem = source_.item(destinationParentIndex);
+		const QModelIndex destinationModelIndex =
+		this->createIndex(destinationParentIndex.row_, destinationParentIndex.column_, pDestinationParentItem);
+		const auto success =
+		this->beginMoveRows(sourceModelIndex, sourceFirst, sourceLast, destinationModelIndex, destinationRow);
+		TF_ASSERT(success);
+	};
+	connections_.add(source_.connectPreRowsMoved(preMove));
+
+	auto postMoved = [this](const AbstractItemModel::ItemIndex& sourceParentIndex, int sourceFirst, int sourceLast,
+	                        const AbstractItemModel::ItemIndex& destinationParentIndex,
+	                        int destinationRow) {
+		this->endMoveRows();
+		this->childToParentIndexCache_.clear();
+	};
+	connections_.add(source_.connectPostRowsMoved(postMoved));
+}
+
+template <class BaseModel>
+QtItemModel<BaseModel>::~QtItemModel()
+{
+}
+
+template <class BaseModel>
+const typename QtItemModel<BaseModel>::SourceType& QtItemModel<BaseModel>::source() const
+{
+	return static_cast<SourceType&>(source_);
+}
+
+template <class BaseModel>
+typename QtItemModel<BaseModel>::SourceType& QtItemModel<BaseModel>::source()
+{
+	return static_cast<SourceType&>(source_);
+}
+
+template <class BaseModel>
+QModelIndex QtItemModel<BaseModel>::index(int row, int column, const QModelIndex& parent) const
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+
+	AbstractItemModel::ItemIndex itemIndex(row, column, parentItem);
+	auto item = source_.item(itemIndex);
+	if (item == nullptr)
+	{
+		return QModelIndex();
+	}
+
+	return this->createIndex(row, column, item);
+}
+
+template <class BaseModel>
+QModelIndex QtItemModel<BaseModel>::parent(const QModelIndex& child) const
+{
+	if (!child.isValid())
+	{
+		return QModelIndex();
+	}
+	return getCachedParentIndex(child);
+
+}
+
+template <class BaseModel>
+int QtItemModel<BaseModel>::rowCount(const QModelIndex& parent) const
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+
+	return source_.rowCount(parentItem);
+}
+
+template <class BaseModel>
+int QtItemModel<BaseModel>::columnCount(const QModelIndex& parent) const
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+
+	return source_.columnCount(parentItem);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::hasChildren(const QModelIndex& parent) const
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+
+	return source_.hasChildren(parentItem);
+}
+
+
+//------------------------------------------------------------------------------
+template <class BaseModel>
+Variant QtItemModel<BaseModel>::variantData(
+	QueryHelper & helper,
+	const QModelIndex& index, int role) const 
+{
+	auto item = index.isValid() ? reinterpret_cast<AbstractItem*>(index.internalId()) : nullptr;
+
+	if (item == nullptr)
+	{
+		return Variant();
+	}
+
+	ItemRole::Id roleId;
+	if (!decodeRole(role, roleId))
+	{
+		if (role == RoleProvider::convertRole( ItemRole::itemIdId))
+		{
+			return intptr_t( index.internalId() );
+		}
+		return Variant();
+	}
+	return item->getData(index.row(), index.column(), roleId);
+}
+
+
+//------------------------------------------------------------------------------
+template <class BaseModel>
+QVariant QtItemModel<BaseModel>::data(const QModelIndex& index, int role) const
+{
+	QueryHelper helper;
+	auto variant = variantData(helper, index, role);
+	auto qtHelpers = dependencies_.qtHelpers();
+	TF_ASSERT(qtHelpers != nullptr);
+	return qtHelpers->toQVariant(variant, const_cast<QtItemModel*>(this));
+}
+
+
+//------------------------------------------------------------------------------
+template <class BaseModel>
+bool QtItemModel<BaseModel>::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+	auto item = index.isValid() ? reinterpret_cast<AbstractItem*>(index.internalId()) : nullptr;
+
+	if (item == nullptr)
+	{
+		return false;
+	}
+
+	ItemRole::Id roleId;
+	if (!decodeRole(role, roleId))
+	{
+		return false;
+	}
+
+	auto qtHelpers = dependencies_.qtHelpers();
+	// Use QVariant for comparison
+	// because QVariant has lower precision than Variant
+	auto oldValue = qtHelpers->toQVariant(item->getData(index.row(), index.column(), roleId), this);
+
+	// Prevent binding loops with self-assignment check
+	// Note that self-assignment check will not detect floating-point error
+	if (value == oldValue)
+	{
+		return true;
+	}
+
+	auto data = qtHelpers->toVariant(value);
+	auto controller = dependencies_.itemModelController();
+
+	// Item already uses the Command System or the Command System is not available
+	if (item->hasController() || controller == nullptr)
+	{
+		// Set property directly
+		return item->setData(index.row(), index.column(), roleId, data);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	auto pParent = index.parent().isValid() ? reinterpret_cast<AbstractItem*>(index.parent().internalId()) : nullptr;
+	AbstractItemModel::ItemIndex dataModelIndex(index.row(), index.column(), pParent);
+
+	return controller->setValue(source_, dataModelIndex, roleId, data);
+}
+
+template <class BaseModel>
+QVariant QtItemModel<BaseModel>::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	ItemRole::Id roleId;
+	if (!decodeRole(role, roleId))
+	{
+		return QVariant();
+	}
+
+	auto row = orientation == Qt::Vertical ? section : -1;
+	auto column = orientation == Qt::Horizontal ? section : -1;
+	auto data = source_.getData(row, column, roleId);
+	auto qtHelpers = dependencies_.qtHelpers();
+	TF_ASSERT(qtHelpers != nullptr);
+	return qtHelpers->toQVariant(data, const_cast<QtItemModel*>(this));
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role)
+{
+	ItemRole::Id roleId;
+	if (!decodeRole(role, roleId))
+	{
+		return false;
+	}
+
+	auto row = orientation == Qt::Vertical ? section : -1;
+	auto column = orientation == Qt::Horizontal ? section : -1;
+	auto qtHelpers = dependencies_.qtHelpers();
+	TF_ASSERT(qtHelpers != nullptr);
+	auto data = qtHelpers->toVariant(value);
+	auto controller = dependencies_.itemModelController();
+
+	// Item already uses the Command System or the Command System is not available
+	if (source_.hasController() || controller == nullptr)
+	{
+		// Set property directly
+		return source_.setData(row, column, roleId, data);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return controller->setModelData(source_, row, column, roleId, data);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::insertRows(int row, int count, const QModelIndex& parent)
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+	auto controller = dependencies_.itemModelController();
+
+	// Item already uses the Command System or the Command System is not available
+	if (source_.hasController() || controller == nullptr)
+	{
+		// Set property directly
+		return source_.insertRows(row, count, parentItem);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return controller->insertRows(source_, row, count, parentItem);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::insertColumns(int column, int count, const QModelIndex& parent)
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+	auto controller = dependencies_.itemModelController();
+
+	// Item already uses the Command System or the Command System is not available
+	if (source_.hasController() || controller == nullptr)
+	{
+		// Set property directly
+		return source_.insertColumns(column, count, parentItem);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return controller->insertColumns(source_, column, count, parentItem);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::removeRows(int row, int count, const QModelIndex& parent)
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+	auto controller = dependencies_.itemModelController();
+
+	// Item already uses the Command System or the Command System is not available
+	if (source_.hasController() || controller == nullptr)
+	{
+		// Set property directly
+		return source_.removeRows(row, count, parentItem);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return controller->removeRows(source_, row, count, parentItem);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::removeColumns(int column, int count, const QModelIndex& parent)
+{
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+	auto controller = dependencies_.itemModelController();
+
+	// Item already uses the Command System or the Command System is not available
+	if (source_.hasController() || controller == nullptr)
+	{
+		// Set property directly
+		return source_.removeColumns(column, count, parentItem);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return controller->removeColumns(source_, column, count, parentItem);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::moveRows(const QModelIndex& sourceParent, int sourceRow, int count,
+                                      const QModelIndex& destinationParent, int destinationChild) /* override */
+{
+	const auto sourceParentItem =
+	sourceParent.isValid() ? reinterpret_cast<AbstractItem*>(sourceParent.internalId()) : nullptr;
+	const auto destinationParentItem =
+	destinationParent.isValid() ? reinterpret_cast<AbstractItem*>(destinationParent.internalId()) : nullptr;
+	auto controller = dependencies_.itemModelController();
+
+	// Item already uses the Command System or the Command System is not available
+	if (source_.hasController() || controller == nullptr)
+	{
+		// Set property directly
+		return source_.moveRows(sourceParentItem, sourceRow, count, destinationParentItem, destinationChild);
+	}
+
+	// Queue with Command System, to register undo/redo data
+	return controller->moveRows(source_, sourceParentItem, sourceRow, count, destinationParentItem, destinationChild);
+}
+
+//------------------------------------------------------------------------------
+template <class BaseModel>
+QStringList QtItemModel<BaseModel>::mimeTypes() const
+{
+	QStringList result;
+	source_.iterateMimeTypes([&result](const char* mimeType) {
+		QString qstr = mimeType;
+		result.push_back(qstr);
+	});
+	return result;
+}
+
+//------------------------------------------------------------------------------
+template <class BaseModel>
+QMimeData* QtItemModel<BaseModel>::mimeData(const QModelIndexList& indexes) const
+{
+	QMimeData* data = new QMimeData();
+
+	std::vector<AbstractItemModel::ItemIndex> itemIndices;
+	for (auto& index : indexes)
+	{
+		auto parentIndex = index.parent();
+		auto parentItem = parentIndex.isValid() ? reinterpret_cast<AbstractItem*>(parentIndex.internalId()) : nullptr;
+		AbstractItemModel::ItemIndex itemIndex(index.row(), index.column(), parentItem);
+		itemIndices.push_back(itemIndex);
+	}
+
+	MimeData mimeData = source_.mimeData(itemIndices);
+	for (auto it = mimeData.begin(); it != mimeData.end(); ++it)
+	{
+		QByteArray buffer(it->second.data(), (int)it->second.size());
+		data->setData(it->first.c_str(), buffer);
+	}
+
+	return data;
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column,
+                                             const QModelIndex& parent) const
+{
+	TF_ASSERT(data != nullptr);
+
+	MimeData mimeData;
+	for (auto& format : data->formats())
+	{
+		const QByteArray& dataArr = data->data(format);
+		const char* dataBytes = dataArr.constData();
+		std::vector<char> buffer(dataBytes, dataBytes + dataArr.size());
+		mimeData[format.toUtf8().data()] = buffer;
+	}
+
+	DropAction dropAction = DropAction::InvalidAction;
+	switch (action)
+	{
+	case Qt::MoveAction:
+		dropAction = DropAction::MoveAction;
+		break;
+
+	case Qt::CopyAction:
+		dropAction = DropAction::CopyAction;
+		break;
+
+	default:
+		break;
+	}
+
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+	AbstractItemModel::ItemIndex itemIndex(row, column, parentItem);
+
+	return source_.canDropMimeData(mimeData, dropAction, itemIndex);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column,
+                                          const QModelIndex& parent)
+{
+	TF_ASSERT(data != nullptr);
+
+	MimeData mimeData;
+	for (auto& format : data->formats())
+	{
+		const QByteArray& dataArr = data->data(format);
+		const char* dataBytes = dataArr.constData();
+		std::vector<char> buffer(dataBytes, dataBytes + dataArr.size());
+		mimeData[format.toUtf8().data()] = buffer;
+	}
+
+	DropAction dropAction = DropAction::InvalidAction;
+	switch (action)
+	{
+	case Qt::MoveAction:
+		dropAction = DropAction::MoveAction;
+		break;
+
+	case Qt::CopyAction:
+		dropAction = DropAction::CopyAction;
+		break;
+
+	default:
+		break;
+	}
+
+	auto parentItem = parent.isValid() ? reinterpret_cast<AbstractItem*>(parent.internalId()) : nullptr;
+	AbstractItemModel::ItemIndex itemIndex(row, column, parentItem);
+
+	return source_.dropMimeData(mimeData, dropAction, itemIndex);
+}
+
+template <class BaseModel>
+Qt::ItemFlags QtItemModel<BaseModel>::flags(const QModelIndex& index) const
+{
+	const auto defaultFlags = QAbstractItemModel::flags(index);
+
+	if (index.isValid())
+	{
+		const auto readOnlyFlags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | defaultFlags;
+		const auto editableFlags = Qt::ItemIsEditable | readOnlyFlags;
+		return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | editableFlags;
+	}
+	else
+	{
+		return Qt::ItemIsDropEnabled | defaultFlags;
+	}
+}
+
+template <class BaseModel>
+QHash<int, QByteArray> QtItemModel<BaseModel>::roleNames() const
+{
+	auto roleNames = QAbstractItemModel::roleNames();
+	source_.iterateRoles([this, &roleNames](const char* roleName) { registerRole(roleName, roleNames); });
+	return roleNames;
+}
+
+template <class BaseModel>
+void QtItemModel<BaseModel>::revert()
+{
+	source_.revert();
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::submit()
+{
+	return source_.submit();
+}
+
+template <class BaseModel>
+QModelIndex QtItemModel<BaseModel>::findIndex(QVariant id) const
+{
+	auto item = reinterpret_cast<AbstractItem*>(id.value<quintptr>());
+	if (item == nullptr)
+	{
+		return QModelIndex();
+	}
+
+	AbstractItemModel::ItemIndex index;
+	source_.index(item, index);
+	if (!index.isValid())
+	{
+		return QModelIndex();
+	}
+
+	return this->createIndex(index.row_, index.column_, item);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::encodeRole(ItemRole::Id roleId, int& o_Role) const
+{
+	if (roleId == ItemRole::displayId)
+	{
+		o_Role = Qt::DisplayRole;
+		return true;
+	}
+	if (roleId == ItemRole::decorationId)
+	{
+		o_Role = Qt::DecorationRole;
+		return true;
+	}
+	return RoleProvider::encodeRole(roleId, o_Role);
+}
+
+template <class BaseModel>
+bool QtItemModel<BaseModel>::decodeRole(int role, ItemRole::Id& o_RoleId) const
+{
+	switch (role)
+	{
+	case Qt::DisplayRole:
+		o_RoleId = ItemRole::displayId;
+		return true;
+
+	case Qt::DecorationRole:
+		o_RoleId = ItemRole::decorationId;
+		return true;
+
+	default:
+		return RoleProvider::decodeRole(role, o_RoleId);
+	}
+}
+
+template <class BaseModel>
+QtItemModel<BaseModel>* QtItemModel<BaseModel>::fromQVariant(const QVariant& variant)
+{
+	if (!variant.canConvert<QtItemModel<BaseModel>*>())
+	{
+		return nullptr;
+	}
+
+	// The following doesn't work because it requires QtItemModel to have the Q_OBJECT macro.
+	// auto model = qVariant.value<QtItemModel<QtTableModel>*>();
+
+	auto baseModel = variant.value<QtAbstractItemModel*>();
+	return static_cast<QtItemModel<BaseModel>*>(baseModel);
+}
+
+template <class BaseModel>
+QModelIndex QtItemModel<BaseModel>::getCachedParentIndex(const QModelIndex &child) const
+{
+	auto found = childToParentIndexCache_.find(child);
+	if (found != childToParentIndexCache_.end())
+	{
+		return found->second;
+	}
+
+	auto childItem = reinterpret_cast<AbstractItem*>(child.internalId());
+	AbstractItemModel::ItemIndex childIndex;
+	source_.index(childItem, childIndex);
+	if (!childIndex.isValid())
+	{
+		return childToParentIndexCache_[child] = QModelIndex();
+	}
+
+	auto parentItem = const_cast<AbstractItem*>(childIndex.parent_);
+	if (parentItem == nullptr)
+	{
+		return childToParentIndexCache_[child] = QModelIndex();
+	}
+
+	AbstractItemModel::ItemIndex parentIndex;
+	source_.index(parentItem, parentIndex);
+	if (!parentIndex.isValid())
+	{
+		return childToParentIndexCache_[child] = QModelIndex();
+	}
+
+	return childToParentIndexCache_[child] = this->createIndex(parentIndex.row_, parentIndex.column_, parentItem);
+}
 } // end namespace wgt
 #endif // QT_ITEM_MODEL_HPP

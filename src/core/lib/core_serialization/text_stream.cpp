@@ -71,6 +71,63 @@ void TextStream::serializeString(IDataStream& dataStream)
 	*this << '"';
 }
 
+void TextStream::serializeXmlString(IDataStream& dataStream)
+{
+	(*this) << '"';
+	while (true)
+	{
+		char c;
+		if (dataStream.read(&c, 1) <= 0)
+		{
+			break;
+		}
+
+		switch (c)
+		{
+		case '\\':
+			(*this) << "\\\\";
+			break;
+
+		case '\0':
+			(*this) << "\\0";
+			break;
+
+		case '\r':
+			(*this) << "\\r";
+			break;
+
+		case '\n':
+			(*this) << "\\n";
+			break;
+
+		case '<':
+			(*this) << "&lt;";
+			break;
+
+		case '>':
+			(*this) << "&gt;";
+			break;
+
+		case '"':
+			(*this) << "&quot;";
+			break;
+
+		case '\'':
+			(*this) << "&apos;";
+			break;
+
+		case '&':
+			(*this) << "&amp;";
+			break;
+
+		default:
+			(*this) << c;
+			break;
+		}
+	}
+	*this << '"';
+}
+
 void TextStream::deserializeString(IDataStream& dataStream)
 {
 	if (!beginReadField())
@@ -111,6 +168,108 @@ void TextStream::deserializeString(IDataStream& dataStream)
 				break;
 
 			case '"':
+				break;
+
+			case '0':
+				t = '\0';
+				break;
+
+			case 'r':
+				t = '\r';
+				break;
+
+			case 'n':
+				t = '\n';
+				break;
+
+			default:
+				// unexpected escape char
+				setState(std::ios_base::failbit);
+				return;
+			}
+		}
+
+		dataStream.write(&t, 1);
+	}
+
+	// unexpected EOF
+	setState(std::ios_base::failbit);
+}
+
+void TextStream::deserializeXmlString(IDataStream& dataStream)
+{
+	if (!beginReadField())
+	{
+		return;
+	}
+
+	if (get() != '"')
+	{
+		// string must begin from quote
+		setState(std::ios_base::failbit);
+		return;
+	}
+
+	bool escape = false;
+	for (int c = get(); c != EOF; c = get())
+	{
+		char t = static_cast<char>(c);
+		if (!escape)
+		{
+			switch (t)
+			{
+			case '\\':
+				escape = true;
+				continue;
+
+			case '&':
+				char buf[4];
+				c = get();
+				t = static_cast<char>(c);
+				for (int i = 0; i < 4 && c != EOF && t != ';'; ++i)
+				{
+					buf[i] = t;
+					c = get();
+					t = static_cast<char>(c);
+				}
+				if (strncmp(buf, "lt", 2) == 0)
+				{
+					t = '<';
+				}
+				else if (strncmp(buf, "gt", 2) == 0)
+				{
+					t = '>';
+				}
+				else if (strncmp(buf, "quot", 4) == 0)
+				{
+					t = '"';
+				}
+				else if (strncmp(buf, "apos", 4) == 0)
+				{
+					t = '\'';
+				}
+				else if (strncmp(buf, "amp", 3) == 0)
+				{
+					t = '<';
+				}
+				else
+				{
+					setState(std::ios_base::failbit);
+					return;
+				}
+				break;
+
+			case '"':
+				// got closing quote, we're done
+				return;
+			}
+		}
+		else if (escape)
+		{
+			escape = false;
+			switch (t)
+			{
+			case '\\':
 				break;
 
 			case '0':
